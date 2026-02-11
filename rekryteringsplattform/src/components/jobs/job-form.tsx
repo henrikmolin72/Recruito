@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FeeCalculator } from "./fee-calculator";
+import { ExclusivityPrompt } from "./exclusivity-prompt";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -41,6 +42,7 @@ interface JobFormProps {
 
 export function JobForm({ companyId, initialData }: JobFormProps) {
   const [loading, setLoading] = useState(false);
+  const [isExclusive, setIsExclusive] = useState(true);
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!initialData?.id;
@@ -70,11 +72,17 @@ export function JobForm({ companyId, initialData }: JobFormProps) {
   async function onSubmit(values: CreateJobInput, status: "draft" | "active") {
     setLoading(true);
 
+    const exclusivityEndDate = isExclusive
+      ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
     const jobData = {
       ...values,
       company_id: companyId,
       status,
       published_at: status === "active" ? new Date().toISOString() : null,
+      is_exclusive: isExclusive,
+      exclusivity_end_date: exclusivityEndDate,
     };
 
     let error;
@@ -369,6 +377,9 @@ export function JobForm({ companyId, initialData }: JobFormProps) {
             feePercentage={feePercentage}
           />
         </div>
+
+        {/* Section: Exclusivity */}
+        <ExclusivityPrompt isExclusive={isExclusive} onChange={setIsExclusive} />
 
         {/* Actions */}
         <div className="flex gap-3">

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Building2, MapPin, Users, Briefcase } from "lucide-react";
+import { ExclusivityBadge } from "@/components/jobs/exclusivity-badge";
 import { TakeMandateButton } from "@/components/jobs/take-mandate-button";
 import { CandidateSubmitForm } from "@/components/candidates/candidate-form";
 
@@ -82,6 +83,10 @@ export default async function RecruiterJobDetailPage({
           {company?.city && <><span>·</span><MapPin className="size-3.5" />{company.city}</>}
         </div>
         <h1 className="mt-1 text-2xl font-bold">{job.title}</h1>
+        <ExclusivityBadge
+          isExclusive={job.is_exclusive ?? false}
+          exclusivityEndDate={job.exclusivity_end_date ?? null}
+        />
         <div className="mt-2 flex flex-wrap gap-2">
           <Badge variant="secondary">{job.industry}</Badge>
           <Badge variant="secondary">{job.location}</Badge>
