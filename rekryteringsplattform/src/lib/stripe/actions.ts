@@ -1,13 +1,13 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { stripe } from "./client";
+import { getStripe } from "./client";
 
 export async function createConnectAccount(
   recruiterId: string,
   email: string
 ): Promise<string> {
-  const account = await stripe.accounts.create({
+  const account = await getStripe().accounts.create({
     type: "express",
     country: "SE",
     email,
@@ -32,7 +32,7 @@ export async function createConnectAccount(
 export async function createOnboardingLink(
   accountId: string
 ): Promise<string> {
-  const link = await stripe.accountLinks.create({
+  const link = await getStripe().accountLinks.create({
     account: accountId,
     refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/recruiter/earnings?refresh=true`,
     return_url: `${process.env.NEXT_PUBLIC_APP_URL}/recruiter/earnings?onboarding=complete`,
@@ -43,7 +43,7 @@ export async function createOnboardingLink(
 }
 
 export async function createLoginLink(accountId: string): Promise<string> {
-  const link = await stripe.accounts.createLoginLink(accountId);
+  const link = await getStripe().accounts.createLoginLink(accountId);
   return link.url;
 }
 
@@ -74,7 +74,7 @@ export async function getOrCreateStripeCustomer(
     .eq("id", company.user_id)
     .single();
 
-  const customer = await stripe.customers.create({
+  const customer = await getStripe().customers.create({
     name: company.company_name,
     email: company.billing_email || profile?.email || undefined,
     metadata: {

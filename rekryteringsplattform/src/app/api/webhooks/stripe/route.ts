@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { stripe } from "@/lib/stripe/client";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getStripe } from "@/lib/stripe/client";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         const placementId = invoice.metadata?.placement_id;
 
         if (placementId) {
-          await supabaseAdmin
+          await getSupabaseAdmin()
             .from("placements")
             .update({
               status: "guarantee_active",
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           const isOnboarded =
             account.charges_enabled && account.payouts_enabled;
 
-          await supabaseAdmin
+          await getSupabaseAdmin()
             .from("recruiters")
             .update({
               stripe_onboarding_complete: isOnboarded,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
             .eq("id", recruiterId);
         } else {
           // Fallback: look up recruiter by stripe_connect_id
-          await supabaseAdmin
+          await getSupabaseAdmin()
             .from("recruiters")
             .update({
               stripe_onboarding_complete:

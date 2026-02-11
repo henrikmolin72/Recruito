@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { stripe } from "@/lib/stripe/client";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { getStripe } from "@/lib/stripe/client";
 import { getOrCreateStripeCustomer } from "@/lib/stripe/actions";
 
 export async function POST(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch placement with relations
-    const { data: placement, error: placementError } = await supabaseAdmin
+    const { data: placement, error: placementError } = await getSupabaseAdmin()
       .from("placements")
       .select(
         `
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const jobTitle = (placement.jobs as any)?.title || "Okänd tjänst";
 
     // Create Stripe Invoice
-    const invoice = await stripe.invoices.create({
+    const invoice = await getStripe().invoices.create({
       customer: customerId,
       collection_method: "send_invoice",
       days_until_due: 30,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Add invoice item for the recruitment fee
-    await stripe.invoiceItems.create({
+    await getStripe().invoiceItems.create({
       customer: customerId,
       invoice: invoice.id,
       amount: Math.round(placement.total_fee * 100), // Convert to öre
@@ -73,10 +73,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Finalize and send the invoice
-    const sentInvoice = await stripe.invoices.sendInvoice(invoice.id);
+    const sentInvoice = await getStripe().invoices.sendInvoice(invoice.id);
 
     // Update placement status
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("placements")
       .update({
         status: "invoice_sent",

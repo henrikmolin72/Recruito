@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { stripe } from "@/lib/stripe/client";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { getStripe } from "@/lib/stripe/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the placement
-    const { data: placement, error: placementError } = await supabaseAdmin
+    const { data: placement, error: placementError } = await getSupabaseAdmin()
       .from("placements")
       .select("*, recruiters ( stripe_connect_id )")
       .eq("id", placementId)
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Stripe Transfer to recruiter's connected account
-    const transfer = await stripe.transfers.create({
+    const transfer = await getStripe().transfers.create({
       amount: Math.round(placement.recruiter_fee * 100), // Convert to öre
       currency: (placement.salary_currency || "sek").toLowerCase(),
       destination: stripeConnectId,
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Update placement status to payout_released
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from("placements")
       .update({
         status: "payout_released",
