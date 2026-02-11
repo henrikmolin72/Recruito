@@ -27,6 +27,7 @@ const statusStyles: Record<string, string> = {
   payout_released: "bg-emerald-50 text-emerald-700 border-emerald-200",
   guarantee_failed: "bg-red-50 text-red-700 border-red-200",
   refund_processing: "bg-orange-50 text-orange-700 border-orange-200",
+  paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
 };
 
 const statusLabels: Record<string, string> = {
@@ -55,6 +56,7 @@ const statusLabels: Record<string, string> = {
   payout_released: "Utbetalning gjord",
   guarantee_failed: "Garanti misslyckad",
   refund_processing: "Återbetalning pågår",
+  paid: "Betald",
 };
 
 interface StatusBadgeProps {

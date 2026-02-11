@@ -9,6 +9,7 @@ import {
   RECRUITER_COMMISSION_PERCENTAGE,
   GUARANTEE_PERIOD_DAYS,
 } from "@/types/enums";
+import { createInterviewBonus } from "@/lib/payments/interview-bonus";
 
 export async function updateCandidateStatus(
   candidateId: string,
@@ -29,7 +30,7 @@ export async function updateCandidateStatus(
   // Get the candidate with current status
   const { data: candidate, error: candidateError } = await supabase
     .from("candidates")
-    .select("id, status, job_id")
+    .select("id, status, job_id, recruiter_id")
     .eq("id", candidateId)
     .single();
 
@@ -68,6 +69,23 @@ export async function updateCandidateStatus(
 
   if (updateError) {
     return { error: "Kunde inte uppdatera kandidatstatus" };
+  }
+
+  // Trigger interview bonus if applicable
+  if (newStatus === "interview") {
+    await createInterviewBonus(
+      candidateId,
+      candidate.job_id,
+      candidate.recruiter_id,
+      "first_interview"
+    );
+  } else if (newStatus === "offered") {
+    await createInterviewBonus(
+      candidateId,
+      candidate.job_id,
+      candidate.recruiter_id,
+      "final_interview"
+    );
   }
 
   revalidatePath(`/company/jobs/${candidate.job_id}`);
