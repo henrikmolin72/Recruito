@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #1A1A2E;
+  --brand-50: #EBF5FB;
+  --brand-100: #D6EAF8;
+  --brand-200: #AED6F1;
+  --brand-300: #85C1E9;
+  --brand-400: #5DADE2;
+  --brand-500: #2E86C1;
+  --brand-600: #1B4F72;
+  --brand-700: #154360;
+  --brand-800: #0E2F44;
+  --brand-900: #071B28;
+  --success-500: #27AE60;
+  --warning-500: #F39C12;
+  --danger-500: #E74C3C;
+  --muted: #6B7280;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-success: var(--success-500);
+  --color-warning: var(--warning-500);
+  --color-danger: var(--danger-500);
+  --color-muted: var(--muted);
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
