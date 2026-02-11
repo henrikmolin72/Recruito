@@ -14,6 +14,7 @@ export const createJobSchema = z.object({
   fee_percentage: z.number().min(5).max(25),
   max_recruiters: z.number().min(1).max(10),
   is_exclusive: z.boolean().optional(),
+  show_interview_bonus: z.boolean().optional(),
 });
 
 export type CreateJobInput = z.infer<typeof createJobSchema>;

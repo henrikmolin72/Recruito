@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Building2, MapPin, Users, Briefcase } from "lucide-react";
+import { Building2, MapPin, Users, Briefcase, Gift } from "lucide-react";
 import { ExclusivityBadge } from "@/components/jobs/exclusivity-badge";
+import { InterviewBonusBadge } from "@/components/jobs/interview-bonus-badge";
 import { TakeMandateButton } from "@/components/jobs/take-mandate-button";
 import { CandidateSubmitForm } from "@/components/candidates/candidate-form";
 
@@ -83,10 +84,13 @@ export default async function RecruiterJobDetailPage({
           {company?.city && <><span>·</span><MapPin className="size-3.5" />{company.city}</>}
         </div>
         <h1 className="mt-1 text-2xl font-bold">{job.title}</h1>
-        <ExclusivityBadge
-          isExclusive={job.is_exclusive ?? false}
-          exclusivityEndDate={job.exclusivity_end_date ?? null}
-        />
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          <ExclusivityBadge
+            isExclusive={job.is_exclusive ?? false}
+            exclusivityEndDate={job.exclusivity_end_date ?? null}
+          />
+          <InterviewBonusBadge showBonus={job.show_interview_bonus ?? false} />
+        </div>
         <div className="mt-2 flex flex-wrap gap-2">
           <Badge variant="secondary">{job.industry}</Badge>
           <Badge variant="secondary">{job.location}</Badge>
@@ -133,6 +137,29 @@ export default async function RecruiterJobDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {(job.show_interview_bonus ?? false) && (
+        <Card className="border-emerald-300 bg-emerald-50">
+          <CardContent className="flex items-start gap-4 pt-6">
+            <div className="rounded-full bg-emerald-100 p-2">
+              <Gift className="h-5 w-5 text-emerald-700" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-emerald-900">Intervjubonus</h3>
+              <p className="mt-1 text-sm text-emerald-800">
+                Detta jobb erbjuder extra bonus utöver den vanliga rekryteringsavgiften:
+              </p>
+              <ul className="mt-2 space-y-1 text-sm text-emerald-800">
+                <li><span className="font-medium">50 EUR</span> — när din kandidat kallas till första intervjun</li>
+                <li><span className="font-medium">100 EUR</span> — när din kandidat kallas till slutintervju/erbjudande</li>
+              </ul>
+              <p className="mt-2 text-xs text-emerald-700">
+                Bonus utbetalas automatiskt via banköverföring oavsett om kandidaten anställs eller inte.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {!hasMandate && (
         <TakeMandateButton

@@ -44,3 +44,6 @@ CREATE INDEX idx_interview_bonuses_status ON interview_bonuses(status);
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS is_exclusive BOOLEAN DEFAULT TRUE;
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS exclusivity_end_date TIMESTAMPTZ;
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS exclusivity_accepted BOOLEAN DEFAULT FALSE;
+
+-- Interview bonus visibility per job (company decides if recruiters see the bonus)
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS show_interview_bonus BOOLEAN DEFAULT FALSE;

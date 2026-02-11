@@ -205,6 +205,7 @@ export type Database = {
           is_exclusive: boolean | null;
           exclusivity_end_date: string | null;
           exclusivity_accepted: boolean | null;
+          show_interview_bonus: boolean | null;
           created_at: string;
           updated_at: string;
         };
@@ -232,6 +233,7 @@ export type Database = {
           is_exclusive?: boolean | null;
           exclusivity_end_date?: string | null;
           exclusivity_accepted?: boolean | null;
+          show_interview_bonus?: boolean | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -259,6 +261,7 @@ export type Database = {
           is_exclusive?: boolean | null;
           exclusivity_end_date?: string | null;
           exclusivity_accepted?: boolean | null;
+          show_interview_bonus?: boolean | null;
           created_at?: string;
           updated_at?: string;
         };

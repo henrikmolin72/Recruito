@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { FeeCalculator } from "./fee-calculator";
 import { ExclusivityPrompt } from "./exclusivity-prompt";
+import { InterviewBonusToggle } from "./interview-bonus-toggle";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -43,6 +44,7 @@ interface JobFormProps {
 export function JobForm({ companyId, initialData }: JobFormProps) {
   const [loading, setLoading] = useState(false);
   const [isExclusive, setIsExclusive] = useState(true);
+  const [showInterviewBonus, setShowInterviewBonus] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!initialData?.id;
@@ -83,6 +85,7 @@ export function JobForm({ companyId, initialData }: JobFormProps) {
       published_at: status === "active" ? new Date().toISOString() : null,
       is_exclusive: isExclusive,
       exclusivity_end_date: exclusivityEndDate,
+      show_interview_bonus: showInterviewBonus,
     };
 
     let error;
@@ -380,6 +383,9 @@ export function JobForm({ companyId, initialData }: JobFormProps) {
 
         {/* Section: Exclusivity */}
         <ExclusivityPrompt isExclusive={isExclusive} onChange={setIsExclusive} />
+
+        {/* Section: Interview Bonus */}
+        <InterviewBonusToggle enabled={showInterviewBonus} onChange={setShowInterviewBonus} />
 
         {/* Actions */}
         <div className="flex gap-3">

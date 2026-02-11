@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, MapPin, Building2, Users } from "lucide-react";
 import { formatCurrency, formatRelativeDate } from "@/lib/utils";
 import { ExclusivityBadge } from "@/components/jobs/exclusivity-badge";
+import { InterviewBonusBadge } from "@/components/jobs/interview-bonus-badge";
 
 export default async function RecruiterJobsPage() {
   const supabase = await createClient();
@@ -63,10 +64,13 @@ export default async function RecruiterJobsPage() {
                   <CardTitle className="text-base">
                     {job.title}
                   </CardTitle>
-                  <ExclusivityBadge
-                    isExclusive={job.is_exclusive ?? false}
-                    exclusivityEndDate={job.exclusivity_end_date ?? null}
-                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    <ExclusivityBadge
+                      isExclusive={job.is_exclusive ?? false}
+                      exclusivityEndDate={job.exclusivity_end_date ?? null}
+                    />
+                    <InterviewBonusBadge showBonus={job.show_interview_bonus ?? false} />
+                  </div>
                 </CardHeader>
                 <CardContent className="flex flex-1 flex-col justify-between gap-4">
                   <div className="space-y-2 text-sm">
