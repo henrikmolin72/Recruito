@@ -14,6 +14,8 @@ import {
   DollarSign,
   Settings,
   LogOut,
+  Sparkles,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,11 +39,13 @@ const companyNav: NavItem[] = [
 
 const recruiterNav: NavItem[] = [
   { label: "Dashboard", href: "/recruiter", icon: LayoutDashboard },
+  { label: "AI-matchning", href: "/recruiter/matching", icon: Sparkles },
   { label: "Hitta jobb", href: "/recruiter/jobs", icon: Briefcase },
   { label: "Mina mandat", href: "/recruiter/mandates", icon: UserSearch },
   { label: "Kandidater", href: "/recruiter/candidates", icon: Users },
   { label: "Meddelanden", href: "/recruiter/messages", icon: MessageSquare },
   { label: "Intäkter", href: "/recruiter/earnings", icon: DollarSign },
+  { label: "Kandidatskydd", href: "/recruiter/ownership", icon: Shield },
   { label: "Profil", href: "/recruiter/profile", icon: Building2 },
 ];
 
@@ -51,6 +55,8 @@ const adminNav: NavItem[] = [
   { label: "Rekryterare", href: "/admin/recruiters", icon: UserSearch },
   { label: "Jobb", href: "/admin/jobs", icon: Briefcase },
   { label: "Placeringar", href: "/admin/placements", icon: Users },
+  { label: "Kandidatskydd", href: "/admin/ownership", icon: Shield },
+  { label: "Analys", href: "/admin/analytics", icon: BarChart3 },
   { label: "Inställningar", href: "/admin/settings", icon: Settings },
 ];
 

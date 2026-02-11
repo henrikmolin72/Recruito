@@ -16,13 +16,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sidebar } from "./sidebar";
 import { NotificationDropdown } from "./notification-dropdown";
+import { LanguageSwitcher } from "./language-switcher";
 import { createClient } from "@/lib/supabase/client";
+import type { Locale } from "@/lib/i18n/translations";
 
 interface HeaderProps {
   role: "company" | "recruiter" | "admin";
   userName?: string;
   companyName?: string;
   avatarUrl?: string;
+  locale?: Locale;
 }
 
 const roleLabels: Record<string, string> = {
@@ -31,7 +34,7 @@ const roleLabels: Record<string, string> = {
   admin: "Administrator",
 };
 
-export function Header({ role, userName, companyName, avatarUrl }: HeaderProps) {
+export function Header({ role, userName, companyName, avatarUrl, locale = "sv" }: HeaderProps) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -76,6 +79,9 @@ export function Header({ role, userName, companyName, avatarUrl }: HeaderProps) 
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Language switcher */}
+        <LanguageSwitcher currentLocale={locale} />
+
         {/* Notifications */}
         <NotificationDropdown />
 

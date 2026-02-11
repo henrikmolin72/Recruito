@@ -1,0 +1,343 @@
+export type Locale = "sv" | "no" | "da" | "en";
+
+export const localeNames: Record<Locale, string> = {
+  sv: "Svenska",
+  no: "Norsk",
+  da: "Dansk",
+  en: "English",
+};
+
+export const translations: Record<Locale, Record<string, string>> = {
+  sv: {
+    // Navigation
+    "nav.dashboard": "Dashboard",
+    "nav.jobs": "Jobb",
+    "nav.findJobs": "Hitta jobb",
+    "nav.candidates": "Kandidater",
+    "nav.messages": "Meddelanden",
+    "nav.billing": "Fakturering",
+    "nav.profile": "Profil",
+    "nav.mandates": "Mina mandat",
+    "nav.earnings": "Intäkter",
+    "nav.companies": "Företag",
+    "nav.recruiters": "Rekryterare",
+    "nav.placements": "Placeringar",
+    "nav.settings": "Inställningar",
+    "nav.matching": "AI-matchning",
+    "nav.analytics": "Analys",
+    "nav.logout": "Logga ut",
+
+    // Common
+    "common.save": "Spara",
+    "common.cancel": "Avbryt",
+    "common.delete": "Radera",
+    "common.edit": "Redigera",
+    "common.create": "Skapa",
+    "common.search": "Sök",
+    "common.filter": "Filtrera",
+    "common.loading": "Laddar...",
+    "common.noResults": "Inga resultat",
+    "common.viewAll": "Visa alla",
+    "common.approve": "Godkänn",
+    "common.reject": "Neka",
+    "common.today": "Idag",
+    "common.yesterday": "Igår",
+    "common.daysAgo": "dagar sedan",
+    "common.weeksAgo": "veckor sedan",
+
+    // Dashboard
+    "dashboard.title": "Dashboard",
+    "dashboard.overview": "Översikt",
+    "dashboard.recentActivity": "Senaste aktivitet",
+    "dashboard.activeJobs": "Aktiva jobb",
+    "dashboard.totalCompanies": "Totalt företag",
+    "dashboard.totalRecruiters": "Rekryterare",
+    "dashboard.totalPlacements": "Placeringar",
+    "dashboard.platformRevenue": "Plattformsintäkt",
+    "dashboard.avgTimeToHire": "Snitt tid till anställning",
+    "dashboard.days": "dagar",
+
+    // Jobs
+    "jobs.title": "Jobb",
+    "jobs.createNew": "Skapa nytt jobb",
+    "jobs.noJobs": "Inga jobb tillgängliga",
+    "jobs.noJobsDesc": "Det finns inga aktiva jobb just nu. Kom tillbaka snart!",
+    "jobs.recruiters": "rekryterare",
+    "jobs.full": "Fullt",
+    "jobs.yourMandate": "Ditt mandat",
+    "jobs.published": "Publicerad",
+    "jobs.salary": "Lönespann",
+    "jobs.fee": "Avgift",
+    "jobs.yourShare": "Din andel",
+    "jobs.viewJob": "Visa jobb",
+    "jobs.viewAndTake": "Visa & ta mandat",
+
+    // Auth
+    "auth.login": "Logga in",
+    "auth.register": "Registrera",
+    "auth.email": "E-post",
+    "auth.password": "Lösenord",
+    "auth.forgotPassword": "Glömt lösenord?",
+    "auth.registerCompany": "Registrera företag",
+    "auth.registerRecruiter": "Registrera rekryterare",
+
+    // Recruiter
+    "recruiter.recommended": "Rekommenderade jobb",
+    "recruiter.matchScore": "Matchningspoäng",
+    "recruiter.browseJobs": "Bläddra bland aktiva jobbannonser och ta mandat",
+
+    // Settings
+    "settings.language": "Språk",
+    "settings.chooseLanguage": "Välj språk för gränssnittet",
+  },
+  no: {
+    // Navigation
+    "nav.dashboard": "Dashboard",
+    "nav.jobs": "Jobber",
+    "nav.findJobs": "Finn jobber",
+    "nav.candidates": "Kandidater",
+    "nav.messages": "Meldinger",
+    "nav.billing": "Fakturering",
+    "nav.profile": "Profil",
+    "nav.mandates": "Mine mandater",
+    "nav.earnings": "Inntekter",
+    "nav.companies": "Selskaper",
+    "nav.recruiters": "Rekrutterere",
+    "nav.placements": "Plasseringer",
+    "nav.settings": "Innstillinger",
+    "nav.matching": "AI-matching",
+    "nav.analytics": "Analyse",
+    "nav.logout": "Logg ut",
+
+    // Common
+    "common.save": "Lagre",
+    "common.cancel": "Avbryt",
+    "common.delete": "Slett",
+    "common.edit": "Rediger",
+    "common.create": "Opprett",
+    "common.search": "Søk",
+    "common.filter": "Filtrer",
+    "common.loading": "Laster...",
+    "common.noResults": "Ingen resultater",
+    "common.viewAll": "Vis alle",
+    "common.approve": "Godkjenn",
+    "common.reject": "Avvis",
+    "common.today": "I dag",
+    "common.yesterday": "I går",
+    "common.daysAgo": "dager siden",
+    "common.weeksAgo": "uker siden",
+
+    // Dashboard
+    "dashboard.title": "Dashboard",
+    "dashboard.overview": "Oversikt",
+    "dashboard.recentActivity": "Nylig aktivitet",
+    "dashboard.activeJobs": "Aktive jobber",
+    "dashboard.totalCompanies": "Totalt selskaper",
+    "dashboard.totalRecruiters": "Rekrutterere",
+    "dashboard.totalPlacements": "Plasseringer",
+    "dashboard.platformRevenue": "Plattforminntekt",
+    "dashboard.avgTimeToHire": "Gjennomsnittlig tid til ansettelse",
+    "dashboard.days": "dager",
+
+    // Jobs
+    "jobs.title": "Jobber",
+    "jobs.createNew": "Opprett ny jobb",
+    "jobs.noJobs": "Ingen jobber tilgjengelig",
+    "jobs.noJobsDesc": "Det finnes ingen aktive jobber akkurat nå. Kom tilbake snart!",
+    "jobs.recruiters": "rekrutterere",
+    "jobs.full": "Fullt",
+    "jobs.yourMandate": "Ditt mandat",
+    "jobs.published": "Publisert",
+    "jobs.salary": "Lønnsintervall",
+    "jobs.fee": "Avgift",
+    "jobs.yourShare": "Din andel",
+    "jobs.viewJob": "Vis jobb",
+    "jobs.viewAndTake": "Vis & ta mandat",
+
+    // Auth
+    "auth.login": "Logg inn",
+    "auth.register": "Registrer",
+    "auth.email": "E-post",
+    "auth.password": "Passord",
+    "auth.forgotPassword": "Glemt passord?",
+    "auth.registerCompany": "Registrer selskap",
+    "auth.registerRecruiter": "Registrer rekrutterer",
+
+    // Recruiter
+    "recruiter.recommended": "Anbefalte jobber",
+    "recruiter.matchScore": "Matchpoeng",
+    "recruiter.browseJobs": "Bla gjennom aktive stillingsannonser og ta mandat",
+
+    // Settings
+    "settings.language": "Språk",
+    "settings.chooseLanguage": "Velg språk for grensesnittet",
+  },
+  da: {
+    // Navigation
+    "nav.dashboard": "Dashboard",
+    "nav.jobs": "Jobs",
+    "nav.findJobs": "Find jobs",
+    "nav.candidates": "Kandidater",
+    "nav.messages": "Beskeder",
+    "nav.billing": "Fakturering",
+    "nav.profile": "Profil",
+    "nav.mandates": "Mine mandater",
+    "nav.earnings": "Indtægter",
+    "nav.companies": "Virksomheder",
+    "nav.recruiters": "Rekrutterere",
+    "nav.placements": "Placeringer",
+    "nav.settings": "Indstillinger",
+    "nav.matching": "AI-matching",
+    "nav.analytics": "Analyse",
+    "nav.logout": "Log ud",
+
+    // Common
+    "common.save": "Gem",
+    "common.cancel": "Annuller",
+    "common.delete": "Slet",
+    "common.edit": "Rediger",
+    "common.create": "Opret",
+    "common.search": "Søg",
+    "common.filter": "Filtrer",
+    "common.loading": "Indlæser...",
+    "common.noResults": "Ingen resultater",
+    "common.viewAll": "Vis alle",
+    "common.approve": "Godkend",
+    "common.reject": "Afvis",
+    "common.today": "I dag",
+    "common.yesterday": "I går",
+    "common.daysAgo": "dage siden",
+    "common.weeksAgo": "uger siden",
+
+    // Dashboard
+    "dashboard.title": "Dashboard",
+    "dashboard.overview": "Oversigt",
+    "dashboard.recentActivity": "Seneste aktivitet",
+    "dashboard.activeJobs": "Aktive jobs",
+    "dashboard.totalCompanies": "Totalt virksomheder",
+    "dashboard.totalRecruiters": "Rekrutterere",
+    "dashboard.totalPlacements": "Placeringer",
+    "dashboard.platformRevenue": "Platformindtægt",
+    "dashboard.avgTimeToHire": "Gennemsnitlig tid til ansættelse",
+    "dashboard.days": "dage",
+
+    // Jobs
+    "jobs.title": "Jobs",
+    "jobs.createNew": "Opret nyt job",
+    "jobs.noJobs": "Ingen jobs tilgængelige",
+    "jobs.noJobsDesc": "Der er ingen aktive jobs lige nu. Kom tilbage snart!",
+    "jobs.recruiters": "rekrutterere",
+    "jobs.full": "Fuldt",
+    "jobs.yourMandate": "Dit mandat",
+    "jobs.published": "Publiceret",
+    "jobs.salary": "Løninterval",
+    "jobs.fee": "Gebyr",
+    "jobs.yourShare": "Din andel",
+    "jobs.viewJob": "Vis job",
+    "jobs.viewAndTake": "Vis & tag mandat",
+
+    // Auth
+    "auth.login": "Log ind",
+    "auth.register": "Registrer",
+    "auth.email": "E-mail",
+    "auth.password": "Adgangskode",
+    "auth.forgotPassword": "Glemt adgangskode?",
+    "auth.registerCompany": "Registrer virksomhed",
+    "auth.registerRecruiter": "Registrer rekrutterer",
+
+    // Recruiter
+    "recruiter.recommended": "Anbefalede jobs",
+    "recruiter.matchScore": "Matchpoint",
+    "recruiter.browseJobs": "Gennemse aktive stillingsopslag og tag mandat",
+
+    // Settings
+    "settings.language": "Sprog",
+    "settings.chooseLanguage": "Vælg sprog for grænsefladen",
+  },
+  en: {
+    // Navigation
+    "nav.dashboard": "Dashboard",
+    "nav.jobs": "Jobs",
+    "nav.findJobs": "Find jobs",
+    "nav.candidates": "Candidates",
+    "nav.messages": "Messages",
+    "nav.billing": "Billing",
+    "nav.profile": "Profile",
+    "nav.mandates": "My mandates",
+    "nav.earnings": "Earnings",
+    "nav.companies": "Companies",
+    "nav.recruiters": "Recruiters",
+    "nav.placements": "Placements",
+    "nav.settings": "Settings",
+    "nav.matching": "AI matching",
+    "nav.analytics": "Analytics",
+    "nav.logout": "Log out",
+
+    // Common
+    "common.save": "Save",
+    "common.cancel": "Cancel",
+    "common.delete": "Delete",
+    "common.edit": "Edit",
+    "common.create": "Create",
+    "common.search": "Search",
+    "common.filter": "Filter",
+    "common.loading": "Loading...",
+    "common.noResults": "No results",
+    "common.viewAll": "View all",
+    "common.approve": "Approve",
+    "common.reject": "Reject",
+    "common.today": "Today",
+    "common.yesterday": "Yesterday",
+    "common.daysAgo": "days ago",
+    "common.weeksAgo": "weeks ago",
+
+    // Dashboard
+    "dashboard.title": "Dashboard",
+    "dashboard.overview": "Overview",
+    "dashboard.recentActivity": "Recent activity",
+    "dashboard.activeJobs": "Active jobs",
+    "dashboard.totalCompanies": "Total companies",
+    "dashboard.totalRecruiters": "Recruiters",
+    "dashboard.totalPlacements": "Placements",
+    "dashboard.platformRevenue": "Platform revenue",
+    "dashboard.avgTimeToHire": "Avg. time to hire",
+    "dashboard.days": "days",
+
+    // Jobs
+    "jobs.title": "Jobs",
+    "jobs.createNew": "Create new job",
+    "jobs.noJobs": "No jobs available",
+    "jobs.noJobsDesc": "There are no active jobs right now. Come back soon!",
+    "jobs.recruiters": "recruiters",
+    "jobs.full": "Full",
+    "jobs.yourMandate": "Your mandate",
+    "jobs.published": "Published",
+    "jobs.salary": "Salary range",
+    "jobs.fee": "Fee",
+    "jobs.yourShare": "Your share",
+    "jobs.viewJob": "View job",
+    "jobs.viewAndTake": "View & take mandate",
+
+    // Auth
+    "auth.login": "Log in",
+    "auth.register": "Register",
+    "auth.email": "Email",
+    "auth.password": "Password",
+    "auth.forgotPassword": "Forgot password?",
+    "auth.registerCompany": "Register company",
+    "auth.registerRecruiter": "Register recruiter",
+
+    // Recruiter
+    "recruiter.recommended": "Recommended jobs",
+    "recruiter.matchScore": "Match score",
+    "recruiter.browseJobs": "Browse active job listings and take mandates",
+
+    // Settings
+    "settings.language": "Language",
+    "settings.chooseLanguage": "Choose the interface language",
+  },
+};
+
+export function t(key: string, locale: Locale = "sv"): string {
+  return translations[locale]?.[key] ?? translations.sv[key] ?? key;
+}

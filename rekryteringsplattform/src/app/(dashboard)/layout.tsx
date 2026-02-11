@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { getLocale } from "@/lib/i18n/locale";
 
 export default async function DashboardLayout({
   children,
@@ -38,6 +39,7 @@ export default async function DashboardLayout({
   }
 
   const role = profile.role as "company" | "recruiter" | "admin";
+  const locale = await getLocale();
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -53,6 +55,7 @@ export default async function DashboardLayout({
           role={role}
           userName={profile.full_name}
           companyName={companyName}
+          locale={locale}
         />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>

@@ -9,6 +9,8 @@ import { Briefcase, MapPin, Building2, Users } from "lucide-react";
 import { formatCurrency, formatRelativeDate } from "@/lib/utils";
 import { ExclusivityBadge } from "@/components/jobs/exclusivity-badge";
 import { InterviewBonusBadge } from "@/components/jobs/interview-bonus-badge";
+import { MatchScoreBadge } from "@/components/matching/match-score-badge";
+import { getMatchedJobsForRecruiter } from "@/lib/matching/score";
 
 export default async function RecruiterJobsPage() {
   const supabase = await createClient();
@@ -35,6 +37,13 @@ export default async function RecruiterJobsPage() {
     .select("*, companies(company_name)")
     .eq("status", "active")
     .order("created_at", { ascending: false });
+
+  // Build match score map for the recruiter
+  const matchedJobs = await getMatchedJobsForRecruiter(recruiter.id);
+  const scoreMap = new Map<string, { score: number; reasons: string[] }>();
+  for (const m of matchedJobs) {
+    scoreMap.set(m.job.id as string, { score: m.score, reasons: m.reasons });
+  }
 
   return (
     <div className="space-y-6">
@@ -70,6 +79,13 @@ export default async function RecruiterJobsPage() {
                       exclusivityEndDate={job.exclusivity_end_date ?? null}
                     />
                     <InterviewBonusBadge showBonus={job.show_interview_bonus ?? false} />
+                    {scoreMap.has(job.id) && (
+                      <MatchScoreBadge
+                        score={scoreMap.get(job.id)!.score}
+                        reasons={scoreMap.get(job.id)!.reasons}
+                        showReasons
+                      />
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="flex flex-1 flex-col justify-between gap-4">

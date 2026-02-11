@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, Users, CalendarCheck, DollarSign, Search, AlertCircle, Clock, XCircle } from "lucide-react";
 import { formatCurrency, formatRelativeDate } from "@/lib/utils";
+import { Suspense } from "react";
+import { RecommendedJobs } from "@/components/matching/recommended-jobs";
 
 export default async function RecruiterDashboard() {
   const supabase = await createClient();
@@ -142,6 +144,19 @@ export default async function RecruiterDashboard() {
           icon={<DollarSign className="size-4" />}
         />
       </div>
+
+      <Suspense fallback={
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Rekommenderade jobb</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Laddar rekommendationer...</p>
+          </CardContent>
+        </Card>
+      }>
+        <RecommendedJobs recruiterId={recruiter.id} limit={5} />
+      </Suspense>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

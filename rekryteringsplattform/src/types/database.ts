@@ -632,6 +632,56 @@ export type Database = {
           created_at?: string;
         };
       };
+      candidate_ownership: {
+        Row: {
+          id: string;
+          candidate_id: string;
+          recruiter_id: string;
+          company_id: string;
+          job_id: string;
+          candidate_email: string | null;
+          candidate_name: string;
+          ownership_start: string;
+          ownership_end: string;
+          status: string;
+          claimed_placement_id: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          candidate_id: string;
+          recruiter_id: string;
+          company_id: string;
+          job_id: string;
+          candidate_email?: string | null;
+          candidate_name: string;
+          ownership_start?: string;
+          ownership_end?: string;
+          status?: string;
+          claimed_placement_id?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          candidate_id?: string;
+          recruiter_id?: string;
+          company_id?: string;
+          job_id?: string;
+          candidate_email?: string | null;
+          candidate_name?: string;
+          ownership_start?: string;
+          ownership_end?: string;
+          status?: string;
+          claimed_placement_id?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -686,3 +736,4 @@ export type Message = Tables<"messages">;
 export type Notification = Tables<"notifications">;
 export type ActivityLog = Tables<"activity_log">;
 export type InterviewBonus = Tables<"interview_bonuses">;
+export type CandidateOwnership = Tables<"candidate_ownership">;
