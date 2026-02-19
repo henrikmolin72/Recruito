@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@theme {
+  --color-brand-50: #EBF5FB;
+  --color-brand-100: #D6EAF8;
+  --color-brand-200: #AED6F1;
+  --color-brand-300: #85C1E9;
+  --color-brand-400: #5DADE2;
+  --color-brand-500: #2E86C1;
+  --color-brand-600: #1B4F72;
+  --color-brand-700: #154360;
+  --color-brand-800: #0E2F44;
+  --color-brand-900: #071B28;
+
+  --color-success-50: #EAFAF1;
+  --color-success-500: #27AE60;
+  --color-success-700: #1E8449;
+
+  --color-warning-50: #FEF9E7;
+  --color-warning-500: #F39C12;
+  --color-warning-700: #D68910;
+
+  --color-danger-50: #FDEDEC;
+  --color-danger-500: #E74C3C;
+  --color-danger-700: #CB4335;
+
+  --color-border: hsl(214.3 31.8% 91.4%);
+  --color-input: hsl(214.3 31.8% 91.4%);
+  --color-ring: hsl(207 65% 27%);
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 84% 4.9%);
+  --color-primary: hsl(207 65% 27%);
+  --color-primary-foreground: hsl(210 40% 98%);
+  --color-secondary: hsl(210 40% 96.1%);
+  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  --color-accent: hsl(210 40% 96.1%);
+  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222.2 84% 4.9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222.2 84% 4.9%);
+
+  --radius: 0.5rem;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
