@@ -55,46 +55,93 @@ const ADMIN_NAV: NavItem[] = [
   { label: "Inställningar", href: "/admin/settings", icon: Settings },
 ];
 
-const NAV_MAP: Record<string, NavItem[]> = {
+export const NAV_MAP: Record<string, NavItem[]> = {
   company: COMPANY_NAV,
   recruiter: RECRUITER_NAV,
   admin: ADMIN_NAV,
 };
 
+import { useState, useEffect } from "react";
+
 export function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
   const navItems = NAV_MAP[role] || COMPANY_NAV;
+  const [userData, setUserData] = useState<{ fullName: string, initials: string } | null>(null);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    import("@/lib/actions/user").then(({ getSidebarData }) => {
+      getSidebarData().then(data => {
+        if (data) setUserData(data);
+      });
+    });
+
+    const fetchUnread = () => {
+      import("@/lib/actions/messages").then(({ getUnreadMessageCount }) => {
+        getUnreadMessageCount().then(count => {
+          setUnreadMessages(count);
+        });
+      });
+    };
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const isRecruiter = role === "recruiter";
 
   return (
-    <aside className="hidden lg:flex lg:flex-col w-64 border-r border-border bg-white">
+    <aside className={cn(
+      "hidden lg:flex lg:flex-col w-64 border-r border-border transition-all duration-300",
+      isRecruiter ? "bg-slate-900 border-slate-800 text-white" : "bg-white text-foreground"
+    )}>
       <div className="p-6">
         <Link href="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-brand-600 flex items-center justify-center">
+          <div className={cn(
+            "h-8 w-8 rounded-lg flex items-center justify-center transition-colors shadow-sm",
+            isRecruiter ? "bg-brand-500" : "bg-brand-600"
+          )}>
             <span className="text-white font-bold text-sm">R</span>
           </div>
-          <span className="text-xl font-bold text-brand-600">Rekryto</span>
+          <span className={cn(
+            "text-xl font-bold transition-colors tracking-tight",
+            isRecruiter ? "text-white" : "text-brand-600"
+          )}>
+            Recruito
+          </span>
         </Link>
       </div>
 
       <nav className="flex-1 px-3 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== `/${role}` && pathname.startsWith(item.href));
+          const badge = item.label === "Meddelanden" && unreadMessages > 0 ? unreadMessages.toString() : item.badge;
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all group",
                 isActive
-                  ? "bg-brand-50 text-brand-600"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? (isRecruiter ? "bg-brand-500 text-white shadow-md shadow-brand-500/20" : "bg-brand-50 text-brand-600")
+                  : (isRecruiter ? "text-slate-400 hover:bg-slate-800/50 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground")
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className={cn(
+                "h-5 w-5 transition-colors",
+                isActive ? "" : (isRecruiter ? "text-slate-500 group-hover:text-brand-400" : "text-muted-foreground")
+              )} />
               {item.label}
-              {item.badge && (
-                <span className="ml-auto text-xs bg-brand-100 text-brand-600 rounded-full px-2 py-0.5">
-                  {item.badge}
+              {badge && (
+                <span className={cn(
+                  "ml-auto text-xs rounded-full px-2 py-0.5 font-bold transition-transform group-hover:scale-110",
+                  item.label === "Meddelanden"
+                    ? "bg-danger-500 text-white shadow-sm"
+                    : (isRecruiter ? "bg-white/10 text-brand-400" : "bg-brand-100 text-brand-600")
+                )}>
+                  {badge}
                 </span>
               )}
             </Link>
@@ -102,18 +149,32 @@ export function Sidebar({ role }: { role: string }) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-border">
+      <div className={cn(
+        "p-4 border-t",
+        isRecruiter ? "border-slate-800 bg-slate-950/30" : "border-border bg-muted/10 font-medium"
+      )}>
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-brand-100 flex items-center justify-center">
-            <span className="text-sm font-medium text-brand-600">
-              {role === "company" ? "AB" : role === "recruiter" ? "EL" : "AD"}
+          <div className={cn(
+            "h-9 w-9 rounded-full flex items-center justify-center border transition-colors",
+            isRecruiter ? "bg-slate-800 border-slate-700 text-brand-400 font-black" : "bg-brand-100 border-brand-200 text-brand-600 font-bold"
+          )}>
+            <span className="text-xs uppercase tracking-tighter">
+              {userData?.initials || (role === "company" ? "AB" : role === "recruiter" ? "EL" : "AD")}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">
-              {role === "company" ? "TechCorp AB" : role === "recruiter" ? "Erik Lindgren" : "Admin"}
+            <p className={cn(
+              "text-sm font-bold truncate leading-none mb-1",
+              isRecruiter ? "text-white" : "text-foreground"
+            )}>
+              {userData?.fullName || (role === "company" ? "TechCorp AB" : role === "recruiter" ? "Erik Lindgren" : "Admin")}
             </p>
-            <p className="text-xs text-muted-foreground capitalize">{role}</p>
+            <p className={cn(
+              "text-[9px] uppercase font-black tracking-widest opacity-70",
+              isRecruiter ? "text-brand-400" : "text-muted-foreground"
+            )}>
+              {role === "recruiter" ? "Professionell" : "Corporate"}
+            </p>
           </div>
         </div>
       </div>

@@ -1,52 +1,70 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { Avatar } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/server";
+import { CandidatePipeline } from "@/components/dashboard/company/candidate-pipeline";
 
-const MOCK_CANDIDATES = [
-  { id: 1, name: "Johan Berg", role: "Senior Frontend-utvecklare", job: "Senior Frontend-utvecklare", status: "interview", recruiter: "Erik Lindgren", submitted: "2025-01-20" },
-  { id: 2, name: "Sara Nilsson", role: "DevOps Engineer", job: "DevOps Engineer", status: "reviewing", recruiter: "Anna Svensson", submitted: "2025-01-25" },
-  { id: 3, name: "Marcus Holm", role: "Frontend-utvecklare", job: "Senior Frontend-utvecklare", status: "submitted", recruiter: "Erik Lindgren", submitted: "2025-02-01" },
-  { id: 4, name: "Lisa Andersson", role: "Backend-utvecklare", job: "Backend-utvecklare Python", status: "hired", recruiter: "Karl Pettersson", submitted: "2024-12-15" },
-  { id: 5, name: "Peter Eriksson", role: "DevOps Lead", job: "DevOps Engineer", status: "rejected", recruiter: "Anna Svensson", submitted: "2025-01-22" },
-];
+async function getCompanyCandidates() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-export default function CompanyCandidatesPage() {
+  if (!user) return [];
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  if (!company) return [];
+
+  const { data: jobs } = await supabase
+    .from("jobs")
+    .select("id")
+    .eq("company_id", company.id);
+
+  const jobIds = jobs?.map(j => j.id) || [];
+  if (jobIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("candidates")
+    .select(`
+      *,
+      job:jobs!inner (
+        id,
+        title
+      ),
+      recruiter:recruiters (
+        profile:profiles!recruiters_user_id_fkey (
+          full_name
+        )
+      )
+    `)
+    .in("job_id", jobIds)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching candidates:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export default async function CompanyCandidatesPage() {
+  const candidates = await getCompanyCandidates();
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Kandidater</h1>
-        <p className="text-muted-foreground">Granska presenterade kandidater</p>
+        <p className="text-muted-foreground">Alla kandidater presenterade för dina uppdrag</p>
       </div>
 
-      <div className="grid gap-4">
-        {MOCK_CANDIDATES.map((candidate) => (
-          <Card key={candidate.id}>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <Avatar initials={candidate.name.split(" ").map(n => n[0]).join("")} size="lg" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-semibold">{candidate.name}</h3>
-                    <StatusBadge status={candidate.status} />
-                  </div>
-                  <p className="text-sm text-muted-foreground">{candidate.role}</p>
-                  <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                    <span>Jobb: {candidate.job}</span>
-                    <span>Rekryterare: {candidate.recruiter}</span>
-                    <span>Presenterad: {candidate.submitted}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">Visa CV</Button>
-                  <Button size="sm">Granska</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {candidates.length === 0 ? (
+        <div className="p-12 text-center border-2 border-dashed rounded-lg bg-muted/20">
+          <p className="text-muted-foreground">Inga kandidater har presenterats än.</p>
+        </div>
+      ) : (
+        <CandidatePipeline candidates={candidates} />
+      )}
     </div>
   );
 }

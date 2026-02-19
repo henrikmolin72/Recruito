@@ -2,15 +2,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
+import { getRecruiterCandidates } from "@/lib/actions/recruiter";
+import { formatDate } from "@/lib/utils";
+import Link from "next/link";
 
-const MOCK_CANDIDATES = [
-  { id: 1, name: "Johan Berg", role: "Frontend Lead", job: "Senior Frontend-utvecklare", company: "TechCorp AB", status: "interview", submitted: "2025-01-20" },
-  { id: 2, name: "Marcus Holm", role: "Frontend-utvecklare", job: "Senior Frontend-utvecklare", company: "TechCorp AB", status: "submitted", submitted: "2025-02-01" },
-  { id: 3, name: "Sara Nilsson", role: "DevOps Engineer", job: "DevOps Engineer", company: "TechCorp AB", status: "reviewing", submitted: "2025-01-25" },
-  { id: 4, name: "Lisa Andersson", role: "Backend-utvecklare", job: "Backend-utvecklare Python", company: "TechCorp AB", status: "hired", submitted: "2024-12-15" },
-];
+export default async function RecruiterCandidatesPage() {
+  const candidates = await getRecruiterCandidates();
 
-export default function RecruiterCandidatesPage() {
   return (
     <div className="space-y-6">
       <div>
@@ -19,26 +17,41 @@ export default function RecruiterCandidatesPage() {
       </div>
 
       <div className="grid gap-4">
-        {MOCK_CANDIDATES.map((candidate) => (
-          <Card key={candidate.id}>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <Avatar initials={candidate.name.split(" ").map(n => n[0]).join("")} size="lg" />
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-semibold">{candidate.name}</h3>
-                    <StatusBadge status={candidate.status} />
+        {candidates.length === 0 ? (
+          <div className="p-12 text-center border-2 border-dashed rounded-lg bg-muted/20">
+            <p className="text-muted-foreground">Du har inte presenterat några kandidater än.</p>
+            <Link href="/recruiter/mandates">
+              <Button variant="outline" size="sm" className="mt-4">Gå till mina mandat</Button>
+            </Link>
+          </div>
+        ) : (
+          candidates.map((candidate: any) => {
+            const company = Array.isArray(candidate.job?.company) ? candidate.job.company[0] : candidate.job?.company;
+
+            return (
+              <Card key={candidate.id}>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <Avatar initials={(candidate.first_name?.[0] || "") + (candidate.last_name?.[0] || "")} size="lg" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-semibold">{candidate.first_name} {candidate.last_name}</h3>
+                        <StatusBadge status={candidate.status} />
+                      </div>
+                      <p className="text-sm text-muted-foreground">{candidate.current_title || "Ingen titel"}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {candidate.job?.title || "Okänt jobb"} — {company?.company_name || "Okänt företag"} — Presenterad {formatDate(candidate.created_at)}
+                      </p>
+                    </div>
+                    <Link href={`/recruiter/mandates/${candidate.mandate_id}/candidates/${candidate.id}`}>
+                      <Button variant="outline" size="sm">Detaljer</Button>
+                    </Link>
                   </div>
-                  <p className="text-sm text-muted-foreground">{candidate.role}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {candidate.job} — {candidate.company} — Presenterad {candidate.submitted}
-                  </p>
-                </div>
-                <Button variant="outline" size="sm">Detaljer</Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
       </div>
     </div>
   );

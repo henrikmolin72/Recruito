@@ -1,16 +1,43 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { CreditCard, FileText, Clock, CheckCircle } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { CreditCard, Clock, CheckCircle } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/server";
 
-const MOCK_INVOICES = [
-  { id: "INV-001", job: "Backend-utvecklare Python", candidate: "Lisa Andersson", amount: 103500, status: "paid", date: "2025-01-15" },
-  { id: "INV-002", job: "Senior Frontend-utvecklare", candidate: "Johan Berg", amount: 108000, status: "pending", date: "2025-02-01" },
-];
+async function getCompanyBilling() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { placements: [], stats: { total: 0, pending: 0, count: 0 } };
 
-export default function CompanyBillingPage() {
+  const { data: company } = await supabase.from("companies").select("id").eq("user_id", user.id).single();
+  if (!company) return { placements: [], stats: { total: 0, pending: 0, count: 0 } };
+
+  const { data: placements, error } = await supabase
+    .from("placements")
+    .select(`
+      *,
+      candidate:candidates (first_name, last_name),
+      job:jobs (title)
+    `)
+    .eq("company_id", company.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching billing:", error);
+    return { placements: [], stats: { total: 0, pending: 0, count: 0 } };
+  }
+
+  const data = placements || [];
+  const total = data.reduce((sum, p) => sum + (p.total_fee || 0), 0);
+  const pending = data.filter(p => p.status !== "payment_received" && p.status !== "payout_released").reduce((sum, p) => sum + (p.total_fee || 0), 0);
+
+  return { placements: data, stats: { total, pending, count: data.length } };
+}
+
+export default async function CompanyBillingPage() {
+  const { placements, stats } = await getCompanyBilling();
+
   return (
     <div className="space-y-6">
       <div>
@@ -19,9 +46,9 @@ export default function CompanyBillingPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatsCard title="Totalt fakturerat" value={formatCurrency(211500)} icon={CreditCard} />
-        <StatsCard title="Väntande betalning" value={formatCurrency(108000)} icon={Clock} />
-        <StatsCard title="Antal placeringar" value={2} icon={CheckCircle} />
+        <StatsCard title="Totalt fakturerat" value={formatCurrency(stats.total)} icon={CreditCard} />
+        <StatsCard title="Väntande betalning" value={formatCurrency(stats.pending)} icon={Clock} />
+        <StatsCard title="Antal placeringar" value={stats.count} icon={CheckCircle} />
       </div>
 
       <Card>
@@ -29,34 +56,46 @@ export default function CompanyBillingPage() {
           <CardTitle>Fakturor</CardTitle>
         </CardHeader>
         <CardContent>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left">
-                <th className="pb-3 font-medium text-muted-foreground">Faktura</th>
-                <th className="pb-3 font-medium text-muted-foreground">Jobb</th>
-                <th className="pb-3 font-medium text-muted-foreground">Kandidat</th>
-                <th className="pb-3 font-medium text-muted-foreground">Belopp</th>
-                <th className="pb-3 font-medium text-muted-foreground">Status</th>
-                <th className="pb-3 font-medium text-muted-foreground">Datum</th>
-              </tr>
-            </thead>
-            <tbody>
-              {MOCK_INVOICES.map((inv) => (
-                <tr key={inv.id} className="border-b border-border last:border-0">
-                  <td className="py-3 font-medium">{inv.id}</td>
-                  <td className="py-3">{inv.job}</td>
-                  <td className="py-3">{inv.candidate}</td>
-                  <td className="py-3 font-medium">{formatCurrency(inv.amount)}</td>
-                  <td className="py-3">
-                    <Badge variant={inv.status === "paid" ? "success" : "warning"}>
-                      {inv.status === "paid" ? "Betald" : "Väntande"}
-                    </Badge>
-                  </td>
-                  <td className="py-3 text-muted-foreground">{inv.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {placements.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              Inga fakturor än. Fakturor skapas automatiskt vid lyckade placeringar.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="pb-3 font-medium text-muted-foreground">Jobb</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Kandidat</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Belopp</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Status</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Datum</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {placements.map((p: any) => {
+                    const candidate = Array.isArray(p.candidate) ? p.candidate[0] : p.candidate;
+                    const job = Array.isArray(p.job) ? p.job[0] : p.job;
+                    const isPaid = p.status === "payment_received" || p.status === "payout_released";
+
+                    return (
+                      <tr key={p.id} className="border-b border-border last:border-0">
+                        <td className="py-3 font-medium">{job?.title || "—"}</td>
+                        <td className="py-3">{candidate ? `${candidate.first_name} ${candidate.last_name}` : "—"}</td>
+                        <td className="py-3 font-medium">{formatCurrency(p.total_fee)}</td>
+                        <td className="py-3">
+                          <Badge variant={isPaid ? "success" : "warning"}>
+                            {isPaid ? "Betald" : "Väntande"}
+                          </Badge>
+                        </td>
+                        <td className="py-3 text-muted-foreground">{formatDate(p.created_at)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

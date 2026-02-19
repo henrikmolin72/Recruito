@@ -1,11 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { login } from "@/lib/actions/auth";
 
 export default function LoginPage() {
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(formData: FormData) {
+    setLoading(true);
+    setError(null);
+    const result = await login(formData);
+    if (result?.error) {
+      setError(result.error);
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-muted flex items-center justify-center p-6">
       <div className="w-full max-w-md">
@@ -14,7 +29,7 @@ export default function LoginPage() {
             <div className="h-10 w-10 rounded-lg bg-brand-600 flex items-center justify-center">
               <span className="text-white font-bold">R</span>
             </div>
-            <span className="text-2xl font-bold text-brand-600">Rekryto</span>
+            <span className="text-2xl font-bold text-brand-600">Recruito</span>
           </Link>
         </div>
 
@@ -24,14 +39,19 @@ export default function LoginPage() {
             <CardDescription>Ange dina uppgifter för att fortsätta</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4">
+            {error && (
+              <div className="mb-4 p-3 rounded-lg bg-danger-50 text-danger-700 text-sm">
+                {error}
+              </div>
+            )}
+            <form action={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5">E-post</label>
-                <Input type="email" placeholder="namn@foretag.se" />
+                <Input type="email" name="email" placeholder="namn@foretag.se" required />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">Lösenord</label>
-                <Input type="password" placeholder="Ange lösenord" />
+                <Input type="password" name="password" placeholder="Ange lösenord" required />
               </div>
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2">
@@ -40,7 +60,9 @@ export default function LoginPage() {
                 </label>
                 <a href="#" className="text-brand-600 hover:underline">Glömt lösenord?</a>
               </div>
-              <Button className="w-full" size="lg">Logga in</Button>
+              <Button className="w-full" size="lg" disabled={loading}>
+                {loading ? "Loggar in..." : "Logga in"}
+              </Button>
             </form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
