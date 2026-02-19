@@ -63,7 +63,7 @@ export default function AdminSettingsPage() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5">Avsändarnamn</label>
-                <Input defaultValue="Rekryto" />
+                <Input defaultValue="Recruito" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">Avsändaradress</label>

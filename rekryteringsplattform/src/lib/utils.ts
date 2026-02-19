@@ -5,7 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency: string = "SEK"): string {
+export function formatCurrency(amount: number | null | undefined, currency: string = "SEK"): string {
+  if (amount == null || isNaN(amount)) return "—";
   return new Intl.NumberFormat("sv-SE", {
     style: "currency",
     currency,
@@ -14,12 +15,15 @@ export function formatCurrency(amount: number, currency: string = "SEK"): string
   }).format(amount);
 }
 
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return "—";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat("sv-SE", {
     year: "numeric",
     month: "long",
     day: "numeric",
-  }).format(new Date(date));
+  }).format(d);
 }
 
 export function calculateFee(annualSalary: number, feePercentage: number = 15) {

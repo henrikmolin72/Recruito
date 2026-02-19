@@ -34,7 +34,7 @@ export default function LandingPage() {
             <div className="h-8 w-8 rounded-lg bg-brand-600 flex items-center justify-center">
               <span className="text-white font-bold text-sm">R</span>
             </div>
-            <span className="text-xl font-bold text-brand-600">Rekryto</span>
+            <span className="text-xl font-bold text-brand-600">Recruito</span>
           </div>
           <div className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#how-it-works" className="hover:text-foreground">Så fungerar det</a>
@@ -177,7 +177,7 @@ export default function LandingPage() {
                 <p className="text-2xl font-bold text-danger-700 mt-1">{formatCurrency(traditionalFee)}</p>
               </div>
               <div className="p-4 bg-success-50 rounded-lg text-center">
-                <p className="text-sm text-muted-foreground">Rekryto (15%)</p>
+                <p className="text-sm text-muted-foreground">Recruito (15%)</p>
                 <p className="text-2xl font-bold text-success-700 mt-1">{formatCurrency(fees.totalFee)}</p>
               </div>
             </div>
@@ -226,7 +226,7 @@ export default function LandingPage() {
                 <div className="h-8 w-8 rounded-lg bg-brand-600 flex items-center justify-center">
                   <span className="text-white font-bold text-sm">R</span>
                 </div>
-                <span className="text-xl font-bold text-brand-600">Rekryto</span>
+                <span className="text-xl font-bold text-brand-600">Recruito</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Skandinaviens rekryteringsmarknadsplats.
@@ -258,7 +258,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="mt-10 pt-6 border-t border-border text-center text-sm text-muted-foreground">
-            &copy; 2025 Rekryto. Alla rättigheter förbehållna.
+            &copy; 2025 Recruito. Alla rättigheter förbehållna.
           </div>
         </div>
       </footer>

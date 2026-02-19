@@ -12,10 +12,10 @@ export default function RegisterPage() {
             <div className="h-10 w-10 rounded-lg bg-brand-600 flex items-center justify-center">
               <span className="text-white font-bold">R</span>
             </div>
-            <span className="text-2xl font-bold text-brand-600">Rekryto</span>
+            <span className="text-2xl font-bold text-brand-600">Recruito</span>
           </Link>
           <h1 className="text-2xl font-bold mt-6">Välj kontotyp</h1>
-          <p className="text-muted-foreground mt-2">Hur vill du använda Rekryto?</p>
+          <p className="text-muted-foreground mt-2">Hur vill du använda Recruito?</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
