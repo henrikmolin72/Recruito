@@ -7,6 +7,7 @@ import { logout } from "@/lib/actions/auth";
 import { NotificationsDropdown } from "@/components/layout/notifications-dropdown";
 import { QuickActions } from "@/components/layout/quick-actions";
 import { NAV_MAP } from "@/components/layout/sidebar";
+import { AppLogo } from "@/components/shared/app-logo";
 import { cn } from "@/lib/utils";
 
 import { useState, useEffect } from "react";
@@ -137,18 +138,10 @@ export function Header({ role }: { role: string }) {
             {/* Drawer header */}
             <div className="flex items-center justify-between p-5 border-b border-border/10">
               <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileNavOpen(false)}>
-                <div className={cn(
-                  "h-8 w-8 rounded-lg flex items-center justify-center shadow-sm",
-                  isRecruiter ? "bg-brand-500" : "bg-brand-600"
-                )}>
-                  <span className="text-white font-bold text-sm">R</span>
-                </div>
-                <span className={cn(
-                  "text-xl font-bold tracking-tight",
-                  isRecruiter ? "text-white" : "text-brand-600"
-                )}>
-                  Recruito
-                </span>
+                <AppLogo
+                  size="sm"
+                  textClassName={isRecruiter ? "text-white" : "text-brand-600"}
+                />
               </Link>
               <button
                 onClick={() => setIsMobileNavOpen(false)}

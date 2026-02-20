@@ -3,20 +3,41 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { validateJobForm } from "@/lib/validation/forms";
+import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
+
+async function verifyJobOwnership(jobId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Ej inloggad", supabase, user: null };
+
+    const { data: company } = await supabase
+        .from("companies")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!company) return { error: "Ingen företagsprofil hittades", supabase, user };
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("id")
+        .eq("id", jobId)
+        .eq("company_id", company.id)
+        .single();
+
+    if (!job) return { error: "Jobbet hittades inte eller tillhör inte ditt företag", supabase, user };
+
+    return { error: null, supabase, user };
+}
 
 export async function createJob(formData: FormData) {
     const supabase = await createClient();
 
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
-    const location = formData.get("location") as string;
-    const industry = formData.get("industry") as string;
-    const employment_type = formData.get("employment_type") as string;
-    const salary_min = parseInt(formData.get("salary_min") as string) || null;
-    const salary_max = parseInt(formData.get("salary_max") as string) || null;
-    const salary_currency = formData.get("salary_currency") as string;
-    const fee_percentage = parseFloat(formData.get("fee_percentage") as string) || 15.0;
-    const max_recruiters = parseInt(formData.get("max_recruiters") as string) || 5;
+    const parsed = validateJobForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
+    }
 
     // 1. Get current user
     const { data: { user } } = await supabase.auth.getUser();
@@ -37,20 +58,32 @@ export async function createJob(formData: FormData) {
         return { error: "Kunde inte hitta företagsprofilen" };
     }
 
-    // 3. Insert job
+    // 3. Calculate fee from volume tier
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - TIER_WINDOW_MONTHS);
+
+    const { count: recentPlacements } = await supabase
+        .from("placements")
+        .select("*", { count: "exact", head: true })
+        .eq("company_id", company.id)
+        .gte("created_at", twelveMonthsAgo.toISOString());
+
+    const feePercentage = getFeePercentage(recentPlacements ?? 0);
+
+    // 4. Insert job
     const { error: jobError } = await supabase.from("jobs").insert({
         company_id: company.id,
-        title,
-        description,
-        location,
-        industry,
-        employment_type,
-        salary_min,
-        salary_max,
-        salary_currency,
-        fee_percentage,
-        max_recruiters,
-        status: "active", // Default to active for now
+        title: parsed.data.title,
+        description: parsed.data.description,
+        location: parsed.data.location,
+        industry: parsed.data.industry,
+        employment_type: parsed.data.employment_type,
+        salary_min: parsed.data.salary_min,
+        salary_max: parsed.data.salary_max,
+        salary_currency: parsed.data.salary_currency,
+        fee_percentage: feePercentage,
+        max_recruiters: parsed.data.max_recruiters,
+        status: "active",
     });
 
     if (jobError) {
@@ -95,37 +128,26 @@ export async function getCompanyJobs() {
 }
 
 export async function updateJob(jobId: string, formData: FormData) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { error: authError, supabase } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
 
-    if (!user) {
-        redirect("/login");
+    const parsed = validateJobForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
     }
-
-    const title = formData.get("title") as string;
-    const description = formData.get("description") as string;
-    const location = formData.get("location") as string;
-    const industry = formData.get("industry") as string;
-    const employment_type = formData.get("employment_type") as string;
-    const salary_min = parseInt(formData.get("salary_min") as string) || null;
-    const salary_max = parseInt(formData.get("salary_max") as string) || null;
-    const salary_currency = formData.get("salary_currency") as string;
-    const fee_percentage = parseFloat(formData.get("fee_percentage") as string) || 15.0;
-    const max_recruiters = parseInt(formData.get("max_recruiters") as string) || 5;
 
     const { error } = await supabase
         .from("jobs")
         .update({
-            title,
-            description,
-            location,
-            industry,
-            employment_type,
-            salary_min,
-            salary_max,
-            salary_currency,
-            fee_percentage,
-            max_recruiters,
+            title: parsed.data.title,
+            description: parsed.data.description,
+            location: parsed.data.location,
+            industry: parsed.data.industry,
+            employment_type: parsed.data.employment_type,
+            salary_min: parsed.data.salary_min,
+            salary_max: parsed.data.salary_max,
+            salary_currency: parsed.data.salary_currency,
+            max_recruiters: parsed.data.max_recruiters,
         })
         .eq("id", jobId);
 
@@ -140,63 +162,45 @@ export async function updateJob(jobId: string, formData: FormData) {
 }
 
 export async function closeJob(jobId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect("/login");
-    }
+    const { error: authError, supabase } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
 
     const { error } = await supabase
         .from("jobs")
         .update({ status: 'closed' })
         .eq("id", jobId);
 
-    if (error) {
-        return { error: error.message };
-    }
+    if (error) return { error: error.message };
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
 }
 
 export async function pauseJob(jobId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect("/login");
-    }
+    const { error: authError, supabase } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
 
     const { error } = await supabase
         .from("jobs")
         .update({ status: 'paused' })
         .eq("id", jobId);
 
-    if (error) {
-        return { error: error.message };
-    }
+    if (error) return { error: error.message };
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
 }
 
 export async function resumeJob(jobId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect("/login");
-    }
+    const { error: authError, supabase } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
 
     const { error } = await supabase
         .from("jobs")
         .update({ status: 'active' })
         .eq("id", jobId);
 
-    if (error) {
-        return { error: error.message };
-    }
+    if (error) return { error: error.message };
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");

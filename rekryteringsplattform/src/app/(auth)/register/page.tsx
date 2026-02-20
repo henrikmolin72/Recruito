@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { AppLogo } from "@/components/shared/app-logo";
 import { Building2, UserCircle, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
@@ -9,10 +10,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
-            <div className="h-10 w-10 rounded-lg bg-brand-600 flex items-center justify-center">
-              <span className="text-white font-bold">R</span>
-            </div>
-            <span className="text-2xl font-bold text-brand-600">Recruito</span>
+            <AppLogo size="md" priority />
           </Link>
           <h1 className="text-2xl font-bold mt-6">Välj kontotyp</h1>
           <p className="text-muted-foreground mt-2">Hur vill du använda Recruito?</p>

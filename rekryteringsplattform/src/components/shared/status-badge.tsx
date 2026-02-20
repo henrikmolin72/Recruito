@@ -19,6 +19,13 @@ const STATUS_STYLES: Record<string, { variant: "success" | "warning" | "danger" 
   pending: { variant: "warning", label: "Väntande" },
   approved: { variant: "success", label: "Godkänd" },
   suspended: { variant: "danger", label: "Avstängd" },
+  confirmed: { variant: "blue", label: "Bekräftad" },
+  invoice_sent: { variant: "warning", label: "Faktura skickad" },
+  payment_received: { variant: "success", label: "Betald" },
+  guarantee_active: { variant: "blue", label: "Garantiperiod" },
+  payout_released: { variant: "success", label: "Utbetald" },
+  guarantee_failed: { variant: "danger", label: "Garanti fallerad" },
+  refund_processing: { variant: "warning", label: "Återbetalning" },
 };
 
 export function StatusBadge({ status }: { status: string }) {

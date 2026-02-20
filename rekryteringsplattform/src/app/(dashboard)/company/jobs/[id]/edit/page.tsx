@@ -124,11 +124,12 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Rekryteringsarvode (%)</label>
-                                <div className="relative">
-                                    <Input type="number" name="fee_percentage" defaultValue={job.fee_percentage} step="0.5" min="10" max="100" />
-                                    <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">%</span>
+                                <label className="text-sm font-medium">Rekryteringsarvode</label>
+                                <div className="flex items-center h-10 px-3 rounded-md border border-input bg-muted">
+                                    <span className="text-sm font-semibold">{job.fee_percentage}%</span>
+                                    <span className="ml-2 text-xs text-muted-foreground">(satt vid skapandet)</span>
                                 </div>
+                                <input type="hidden" name="fee_percentage" value={job.fee_percentage} />
                             </div>
 
                         </div>

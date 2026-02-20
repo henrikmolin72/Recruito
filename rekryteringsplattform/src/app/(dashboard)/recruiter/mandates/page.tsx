@@ -32,7 +32,9 @@ export default async function RecruiterMandatesPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-semibold">{mandate.title}</h3>
+                      <Link href={`/recruiter/mandates/${mandate.id}`} className="text-lg font-semibold hover:text-brand-600 transition-colors">
+                        {mandate.title}
+                      </Link>
                       <StatusBadge status={mandate.status} />
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">

@@ -3,16 +3,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
+import { getAppUrl } from "@/lib/app-url";
+import {
+    validateLoginForm,
+    validatePasswordResetRequestForm,
+    validateRegisterCompanyForm,
+    validateRegisterRecruiterForm,
+} from "@/lib/validation/forms";
 
 export async function login(formData: FormData) {
     const supabase = await createClient();
 
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    const parsed = validateLoginForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
+    }
 
     const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: parsed.data.email,
+        password: parsed.data.password,
     });
 
     if (error) {
@@ -29,21 +38,21 @@ export async function login(formData: FormData) {
 export async function registerCompany(formData: FormData) {
     const supabase = await createClient();
     const supabaseAdmin = createAdminClient();
+    const appUrl = await getAppUrl();
 
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const fullName = formData.get("full_name") as string;
-    const companyName = formData.get("company_name") as string;
-    const orgNumber = formData.get("org_number") as string;
-    const industry = formData.get("industry") as string;
+    const parsed = validateRegisterCompanyForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
+    }
 
     const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: parsed.data.email,
+        password: parsed.data.password,
         options: {
+            emailRedirectTo: `${appUrl}/callback`,
             data: {
                 role: "company",
-                full_name: fullName,
+                full_name: parsed.data.full_name,
             },
         },
     });
@@ -56,15 +65,15 @@ export async function registerCompany(formData: FormData) {
     if (data.user) {
         const { error: companyError } = await supabaseAdmin.from("companies").insert({
             user_id: data.user.id,
-            company_name: companyName,
-            org_number: orgNumber || null,
-            industry: industry || null,
+            company_name: parsed.data.company_name,
+            org_number: parsed.data.org_number,
+            industry: parsed.data.industry,
         });
 
         if (companyError) {
-            // If company creation fails, we might want to clean up the user, but for now just return error
             console.error("Company creation failed:", companyError);
-            return { error: "Kunde inte skapa företagsprofil: " + companyError.message };
+            await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+            return { error: "Kunde inte skapa företagsprofil. Försök igen." };
         }
     }
 
@@ -74,21 +83,21 @@ export async function registerCompany(formData: FormData) {
 export async function registerRecruiter(formData: FormData) {
     const supabase = await createClient();
     const supabaseAdmin = createAdminClient();
+    const appUrl = await getAppUrl();
 
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const fullName = formData.get("full_name") as string;
-    const headline = formData.get("headline") as string;
-    const linkedinUrl = formData.get("linkedin_url") as string;
-    const yearsExperience = parseInt(formData.get("years_experience") as string) || 0;
+    const parsed = validateRegisterRecruiterForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
+    }
 
     const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: parsed.data.email,
+        password: parsed.data.password,
         options: {
+            emailRedirectTo: `${appUrl}/callback`,
             data: {
                 role: "recruiter",
-                full_name: fullName,
+                full_name: parsed.data.full_name,
             },
         },
     });
@@ -101,14 +110,15 @@ export async function registerRecruiter(formData: FormData) {
     if (data.user) {
         const { error: recruiterError } = await supabaseAdmin.from("recruiters").insert({
             user_id: data.user.id,
-            headline: headline || null,
-            linkedin_url: linkedinUrl || null,
-            years_experience: yearsExperience || null,
+            headline: parsed.data.headline,
+            linkedin_url: parsed.data.linkedin_url,
+            years_experience: parsed.data.years_experience,
         });
 
         if (recruiterError) {
             console.error("Recruiter creation failed:", recruiterError);
-            return { error: "Kunde inte skapa rekryterarprofil: " + recruiterError.message };
+            await supabaseAdmin.auth.admin.deleteUser(data.user.id);
+            return { error: "Kunde inte skapa rekryterarprofil. Försök igen." };
         }
     }
 
@@ -119,4 +129,25 @@ export async function logout() {
     const supabase = await createClient();
     await supabase.auth.signOut();
     redirect("/");
+}
+
+export async function requestPasswordReset(formData: FormData) {
+    const supabase = await createClient();
+    const appUrl = await getAppUrl();
+
+    const parsed = validatePasswordResetRequestForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+        redirectTo: `${appUrl}/reset-password`,
+    });
+
+    if (error) {
+        console.error("Password reset request failed:", error);
+        return { error: "Kunde inte skicka återställningslänk just nu" };
+    }
+
+    return { success: true };
 }

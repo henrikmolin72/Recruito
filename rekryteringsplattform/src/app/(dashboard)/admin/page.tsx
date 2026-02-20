@@ -1,10 +1,20 @@
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Building2, Users, Briefcase, Banknote, UserCheck, TrendingUp } from "lucide-react";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { Building2, Users, Briefcase, Banknote, TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { getAdminStats, getPendingRecruiters, getAdminPlacements } from "@/lib/actions/admin";
+import { RecruiterApprovalActions } from "@/components/dashboard/admin/recruiter-approval-actions";
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+  const [stats, pendingRecruiters, placements] = await Promise.all([
+    getAdminStats(),
+    getPendingRecruiters(),
+    getAdminPlacements(),
+  ]);
+
+  const recentPlacements = placements.slice(0, 5);
+
   return (
     <div className="space-y-6">
       <div>
@@ -13,12 +23,11 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatsCard title="Företag" value={47} icon={Building2} trend={{ value: 8, positive: true }} />
-        <StatsCard title="Rekryterare" value={124} icon={Users} trend={{ value: 15, positive: true }} />
-        <StatsCard title="Aktiva jobb" value={89} icon={Briefcase} trend={{ value: 12, positive: true }} />
-        <StatsCard title="Lyckade placeringar" value={34} icon={UserCheck} description="Senaste 90 dagarna" />
-        <StatsCard title="Plattformens intäkter" value={formatCurrency(425000)} icon={Banknote} trend={{ value: 22, positive: true }} />
-        <StatsCard title="Väntande godkännanden" value={4} icon={TrendingUp} />
+        <StatsCard title="Företag" value={stats.companies} icon={Building2} />
+        <StatsCard title="Rekryterare" value={stats.recruiters} icon={Users} />
+        <StatsCard title="Aktiva jobb" value={stats.activeJobs} icon={Briefcase} />
+        <StatsCard title="Plattformens intäkter" value={formatCurrency(stats.totalRevenue)} icon={Banknote} />
+        <StatsCard title="Väntande godkännanden" value={stats.pendingRecruiters} icon={TrendingUp} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -27,25 +36,21 @@ export default function AdminDashboard() {
             <CardTitle>Väntande rekryterare</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { name: "Sofia Larsson", email: "sofia@email.se", industry: "Finans & Bank", applied: "2025-02-10" },
-                { name: "Andreas Björk", email: "andreas@email.se", industry: "IT & Tech", applied: "2025-02-09" },
-                { name: "Maria Ek", email: "maria@email.se", industry: "Sälj & Marknad", applied: "2025-02-08" },
-                { name: "Johan Ström", email: "johan@email.se", industry: "Life Science", applied: "2025-02-07" },
-              ].map((recruiter, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium">{recruiter.name}</p>
-                    <p className="text-xs text-muted-foreground">{recruiter.email} — {recruiter.industry}</p>
+            {pendingRecruiters.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Inga väntande godkännanden</p>
+            ) : (
+              <div className="space-y-3">
+                {pendingRecruiters.map((recruiter) => (
+                  <div key={recruiter.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium">{recruiter.name}</p>
+                      <p className="text-xs text-muted-foreground">{recruiter.email} — {recruiter.headline || "Rekryterare"}</p>
+                    </div>
+                    <RecruiterApprovalActions recruiterId={recruiter.id} />
                   </div>
-                  <div className="flex gap-2">
-                    <button className="text-xs px-3 py-1 rounded bg-success-500 text-white hover:bg-success-700">Godkänn</button>
-                    <button className="text-xs px-3 py-1 rounded bg-danger-500 text-white hover:bg-danger-700">Neka</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -54,26 +59,24 @@ export default function AdminDashboard() {
             <CardTitle>Senaste placeringar</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {[
-                { job: "Backend-utvecklare Python", company: "TechCorp AB", recruiter: "Karl Pettersson", amount: 103500, status: "guarantee" },
-                { job: "Senior Frontend-utvecklare", company: "TechCorp AB", recruiter: "Erik Lindgren", amount: 108000, status: "pending" },
-                { job: "Ekonomichef", company: "AccountFirm", recruiter: "Anna Svensson", amount: 126000, status: "completed" },
-              ].map((placement, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium">{placement.job}</p>
-                    <p className="text-xs text-muted-foreground">{placement.company} — {placement.recruiter}</p>
+            {recentPlacements.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Inga placeringar ännu</p>
+            ) : (
+              <div className="space-y-3">
+                {recentPlacements.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium">{p.job}</p>
+                      <p className="text-xs text-muted-foreground">{p.company} — {p.recruiter}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{formatCurrency(p.totalFee)}</p>
+                      <StatusBadge status={p.status} />
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{formatCurrency(placement.amount)}</p>
-                    <Badge variant={placement.status === "completed" ? "success" : placement.status === "guarantee" ? "blue" : "warning"}>
-                      {placement.status === "completed" ? "Slutförd" : placement.status === "guarantee" ? "Garanti" : "Väntande"}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

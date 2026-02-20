@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { AppLogo } from "@/components/shared/app-logo";
 import {
   LayoutDashboard,
   Briefcase,
@@ -98,18 +99,10 @@ export function Sidebar({ role }: { role: string }) {
     )}>
       <div className="p-6">
         <Link href="/" className="flex items-center gap-2">
-          <div className={cn(
-            "h-8 w-8 rounded-lg flex items-center justify-center transition-colors shadow-sm",
-            isRecruiter ? "bg-brand-500" : "bg-brand-600"
-          )}>
-            <span className="text-white font-bold text-sm">R</span>
-          </div>
-          <span className={cn(
-            "text-xl font-bold transition-colors tracking-tight",
-            isRecruiter ? "text-white" : "text-brand-600"
-          )}>
-            Recruito
-          </span>
+          <AppLogo
+            size="sm"
+            textClassName={isRecruiter ? "text-white" : "text-brand-600"}
+          />
         </Link>
       </div>
 

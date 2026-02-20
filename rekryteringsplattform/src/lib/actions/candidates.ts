@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/actions/notifications";
+import { validateCandidateForm } from "@/lib/validation/forms";
 
 export async function createCandidate(mandateId: string, formData: FormData) {
     const supabase = await createClient();
@@ -35,21 +36,16 @@ export async function createCandidate(mandateId: string, formData: FormData) {
         return { error: "Obehörig åtgärd." };
     }
 
-    const firstName = formData.get("first_name") as string;
-    const lastName = formData.get("last_name") as string;
-    const email = formData.get("email") as string;
-    const phone = formData.get("phone") as string;
-    const linkedinUrl = formData.get("linkedin_url") as string;
-    const currentTitle = formData.get("current_title") as string;
-    const currentCompany = formData.get("current_company") as string;
-    const yearsExperience = parseInt(formData.get("years_experience") as string) || null;
-    const expectedSalary = parseInt(formData.get("expected_salary") as string) || null;
-    const coverNote = formData.get("cover_note") as string;
-    const cvFile = formData.get("cv_file") as File;
+    const parsed = validateCandidateForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
+    }
+
+    const cvFile = parsed.data.cv_file;
 
     let cvFilePath = null;
 
-    if (cvFile && cvFile.size > 0) {
+    if (cvFile.size > 0) {
         const fileExt = cvFile.name.split('.').pop();
         const fileName = `${mandate.job_id}/${recruiter.id}/${Date.now()}.${fileExt}`;
 
@@ -70,16 +66,16 @@ export async function createCandidate(mandateId: string, formData: FormData) {
             job_id: mandate.job_id,
             recruiter_id: recruiter.id,
             mandate_id: mandateId,
-            first_name: firstName,
-            last_name: lastName,
-            email,
-            phone,
-            linkedin_url: linkedinUrl,
-            current_title: currentTitle,
-            current_company: currentCompany,
-            years_experience: yearsExperience,
-            expected_salary: expectedSalary,
-            cover_note: coverNote,
+            first_name: parsed.data.first_name,
+            last_name: parsed.data.last_name,
+            email: parsed.data.email,
+            phone: parsed.data.phone,
+            linkedin_url: parsed.data.linkedin_url,
+            current_title: parsed.data.current_title,
+            current_company: parsed.data.current_company,
+            years_experience: parsed.data.years_experience,
+            expected_salary: parsed.data.expected_salary,
+            cover_note: parsed.data.cover_note,
             cv_file_path: cvFilePath,
             status: 'submitted'
         });
@@ -109,7 +105,7 @@ export async function createCandidate(mandateId: string, formData: FormData) {
             await createNotification(
                 targetUserId,
                 "Ny kandidat presenterad!",
-                `En kandidat (${firstName} ${lastName}) har presenterats för: ${jobInfo.title}`,
+                `En kandidat (${parsed.data.first_name} ${parsed.data.last_name}) har presenterats för: ${jobInfo.title}`,
                 `/company/jobs/${mandate.job_id}`
             );
         }
@@ -125,6 +121,22 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return { error: "Utloggad!" };
+
+    const allowedStatuses = new Set([
+        "submitted",
+        "reviewing",
+        "interview",
+        "offered",
+        "hired",
+        "guarantee_period",
+        "completed",
+        "rejected",
+        "declined",
+        "paused",
+    ]);
+    if (!allowedStatuses.has(status)) {
+        return { error: "Ogiltig kandidatstatus" };
+    }
 
     // Verify user owns the company that owns the job
     const { data: job } = await supabase
