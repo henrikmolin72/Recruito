@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Recruiter } from "@/types/db-types";
 import { createNotification } from "@/lib/actions/notifications";
+import { validateRecruiterProfileForm } from "@/lib/validation/forms";
 
 function handleError(error: any) {
     console.error(error);
@@ -30,25 +31,29 @@ export async function updateRecruiterProfile(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Ej inloggad" };
 
-    const fullName = formData.get("full_name") as string;
-    const phone = formData.get("phone") as string;
-    const headline = formData.get("headline") as string;
-    const bio = formData.get("bio") as string;
-    const linkedinUrl = formData.get("linkedin_url") as string;
+    const parsed = validateRecruiterProfileForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
+    }
 
-    if (fullName) {
-        await supabase.from("profiles").update({
-            full_name: fullName,
-            phone: phone || null,
-        }).eq("id", user.id);
+    const profileUpdates: Record<string, string | null> = {};
+    if (parsed.data.full_name) {
+        profileUpdates.full_name = parsed.data.full_name;
+    }
+    if (parsed.data.phone !== undefined) {
+        profileUpdates.phone = parsed.data.phone;
+    }
+
+    if (Object.keys(profileUpdates).length > 0) {
+        await supabase.from("profiles").update(profileUpdates).eq("id", user.id);
     }
 
     const { error } = await supabase
         .from("recruiters")
         .update({
-            headline: headline || null,
-            bio: bio || null,
-            linkedin_url: linkedinUrl || null,
+            headline: parsed.data.headline,
+            bio: parsed.data.bio,
+            linkedin_url: parsed.data.linkedin_url,
         })
         .eq("user_id", user.id);
 
@@ -277,12 +282,16 @@ export async function claimMandate(jobId: string) {
 
     const { data: recruiter } = await supabase
         .from("recruiters")
-        .select("id")
+        .select("id, approval_status")
         .eq("user_id", user.id)
         .single();
 
     if (!recruiter) {
         return { error: "Ingen rekryterarprofil hittades" };
+    }
+
+    if (recruiter.approval_status !== "approved") {
+        return { error: "Din profil måste vara godkänd av admin innan du kan ta mandat" };
     }
 
     const { data: job } = await supabase
@@ -415,4 +424,87 @@ export async function getRecruiterMandates() {
             status: c.status
         })) || []
     }));
+}
+
+export async function getRecruiterMandateById(mandateId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    const { data: recruiter } = await supabase
+        .from("recruiters")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!recruiter) return null;
+
+    const { data: mandate, error } = await supabase
+        .from("job_mandates")
+        .select(`
+      id,
+      is_active,
+      claimed_at,
+      job:jobs(
+        id,
+        title,
+        description,
+        location,
+        industry,
+        employment_type,
+        salary_min,
+        salary_max,
+        salary_currency,
+        fee_percentage,
+        status,
+        company:companies(company_name)
+      ),
+      candidates:candidates(
+        id,
+        first_name,
+        last_name,
+        status,
+        created_at
+      )
+    `)
+        .eq("id", mandateId)
+        .eq("recruiter_id", recruiter.id)
+        .eq("is_active", true)
+        .single();
+
+    if (error || !mandate) {
+        return null;
+    }
+
+    const job = Array.isArray(mandate.job) ? mandate.job[0] : mandate.job;
+    const company = Array.isArray(job?.company) ? job.company[0] : job?.company;
+    const candidates = (mandate.candidates || [])
+        .slice()
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .map((candidate: any) => ({
+            id: candidate.id,
+            name: `${candidate.first_name} ${candidate.last_name}`,
+            status: candidate.status,
+            created_at: candidate.created_at,
+        }));
+
+    return {
+        id: mandate.id,
+        claimed_at: mandate.claimed_at,
+        is_active: mandate.is_active,
+        job_id: job?.id,
+        title: job?.title || "Okänt jobb",
+        description: job?.description || "",
+        company: company?.company_name || "Okänt företag",
+        location: job?.location || "",
+        industry: job?.industry || "",
+        employment_type: job?.employment_type || "",
+        salary_min: job?.salary_min,
+        salary_max: job?.salary_max,
+        salary_currency: job?.salary_currency || "SEK",
+        fee_percentage: job?.fee_percentage,
+        status: job?.status || "active",
+        candidates,
+    };
 }

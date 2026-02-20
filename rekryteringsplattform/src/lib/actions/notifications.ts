@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 export async function getNotifications() {
@@ -51,22 +52,24 @@ export async function markAllAsRead() {
 
 // Internal helper to create notification (not exposed as action)
 export async function createNotification(userId: string, title: string, body: string, link?: string) {
-    const supabase = await createClient();
+    const supabaseAdmin = createAdminClient();
 
-    // We use service role or just ensure the trigger allows inserts? 
-    // RLS policy: "System can create notifications" ON notifications FOR INSERT WITH CHECK (TRUE);
-    // This allows authenticated users to insert notifications (technically for anyone if RLS allows TRUE on insert)
-    // Secure approach: In server actions we are authenticated. 
-    // Is the policy "System can create notifications" safe?
-    // CREATE POLICY "System can create notifications" ON notifications FOR INSERT WITH CHECK (TRUE);
-    // This effectively allow any auth user to insert notifications for anyone. 
-    // In a real app we might want to restrict this to server-side only or specific triggers.
-    // For now, it works for our server actions.
+    const normalizedTitle = title.trim();
+    const normalizedBody = body.trim();
+    const normalizedLink = link?.trim() || null;
 
-    await supabase.from("notifications").insert({
+    if (!normalizedTitle || !normalizedBody || !userId) {
+        return;
+    }
+
+    const { error } = await supabaseAdmin.from("notifications").insert({
         user_id: userId,
-        title,
-        body,
-        link
+        title: normalizedTitle,
+        body: normalizedBody,
+        link: normalizedLink
     });
+
+    if (error) {
+        console.error("Failed to create notification:", error);
+    }
 }

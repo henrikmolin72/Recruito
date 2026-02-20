@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { AppLogo } from "@/components/shared/app-logo";
 import { registerCompany } from "@/lib/actions/auth";
 
 export default function RegisterCompanyPage() {
@@ -26,10 +27,7 @@ export default function RegisterCompanyPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
-            <div className="h-10 w-10 rounded-lg bg-brand-600 flex items-center justify-center">
-              <span className="text-white font-bold">R</span>
-            </div>
-            <span className="text-2xl font-bold text-brand-600">Recruito</span>
+            <AppLogo size="md" priority />
           </Link>
         </div>
 

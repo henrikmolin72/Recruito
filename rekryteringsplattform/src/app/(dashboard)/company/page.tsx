@@ -2,12 +2,15 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Briefcase, Users, Clock, CheckCircle } from "lucide-react";
+import { Briefcase, Users, Clock, CheckCircle, TrendingDown } from "lucide-react";
 import { getCompanyDashboard } from "@/lib/actions/company";
 import { formatDate } from "@/lib/utils";
+import { getTierForPlacementCount, placementsUntilNextTier, PRICING_TIERS } from "@/lib/pricing";
 
 export default async function CompanyDashboard() {
   const { company, jobs, stats, recentActivity } = await getCompanyDashboard();
+  const currentTier = getTierForPlacementCount(stats.recentPlacements);
+  const nextTierInfo = placementsUntilNextTier(stats.recentPlacements);
 
   return (
     <div className="space-y-6">
@@ -22,6 +25,35 @@ export default async function CompanyDashboard() {
         <StatsCard title="Pågående intervjuer" value={stats.interviews} icon={Clock} />
         <StatsCard title="Lyckade placeringar" value={stats.placements} icon={CheckCircle} description="Totalt antal" />
       </div>
+
+      <Card className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">Ert prisavtal</p>
+            <p className="text-2xl font-bold mt-1">{currentTier.feePercentage}%</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Nivå: {currentTier.label} ({stats.recentPlacements} placering{stats.recentPlacements !== 1 ? "ar" : ""} senaste 12 mån)
+            </p>
+            {nextTierInfo && (
+              <p className="text-xs text-brand-600 mt-1">
+                {nextTierInfo.needed} placering{nextTierInfo.needed > 1 ? "ar" : ""} till för att nå {nextTierInfo.nextTier.label} ({nextTierInfo.nextTier.feePercentage}%)
+              </p>
+            )}
+          </div>
+          <div className="h-12 w-12 rounded-lg bg-brand-50 flex items-center justify-center">
+            <TrendingDown className="h-6 w-6 text-brand-600" />
+          </div>
+        </div>
+        <div className="flex gap-4 mt-4 pt-4 border-t border-border">
+          {PRICING_TIERS.slice().reverse().map((tier) => (
+            <div key={tier.label} className={`flex-1 text-center p-2 rounded-lg ${tier.label === currentTier.label ? "bg-brand-50 ring-1 ring-brand-200" : "bg-muted"}`}>
+              <p className="text-xs text-muted-foreground">{tier.label}</p>
+              <p className="text-sm font-bold">{tier.feePercentage}%</p>
+              <p className="text-[10px] text-muted-foreground">{tier.minPlacements}+ placeringar</p>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <Card>
         <CardHeader>

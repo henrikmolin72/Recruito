@@ -2,6 +2,18 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+1. Create environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+2. Set real Supabase keys and `NEXT_PUBLIC_APP_URL` for your environment.
+
+`NEXT_PUBLIC_APP_URL` must be your deployed domain in production (for auth/email redirects), for example `https://app.recruito.se`.
+
+3. Run the development server:
+
 First, run the development server:
 
 ```bash

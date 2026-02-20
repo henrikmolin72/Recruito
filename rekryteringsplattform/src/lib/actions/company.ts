@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { Job, Company } from "@/types/db-types";
 
 import { revalidatePath } from "next/cache";
+import { validateCompanyProfileForm } from "@/lib/validation/forms";
+import { TIER_WINDOW_MONTHS } from "@/lib/pricing";
 
 // Helper to handle errors or redirect
 function handleError(error: any) {
@@ -31,34 +33,30 @@ export async function updateCompanyProfile(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Ej inloggad" };
 
-    const companyName = formData.get("company_name") as string;
-    const orgNumber = formData.get("org_number") as string;
-    const description = formData.get("description") as string;
-    const city = formData.get("city") as string;
-    const industry = formData.get("industry") as string;
-    const website = formData.get("website") as string;
-    const contactName = formData.get("contact_name") as string;
-    const contactEmail = formData.get("contact_email") as string;
+    const parsed = validateCompanyProfileForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
+    }
 
     // Update company
     const { error: companyError } = await supabase
         .from("companies")
         .update({
-            company_name: companyName,
-            org_number: orgNumber || null,
-            description: description || null,
-            city: city || null,
-            industry: industry || null,
-            website: website || null,
-            billing_email: contactEmail || null,
+            company_name: parsed.data.company_name,
+            org_number: parsed.data.org_number,
+            description: parsed.data.description,
+            city: parsed.data.city,
+            industry: parsed.data.industry,
+            website: parsed.data.website,
+            billing_email: parsed.data.contact_email,
         })
         .eq("user_id", user.id);
 
     if (companyError) return { error: companyError.message };
 
     // Update profile name
-    if (contactName) {
-        await supabase.from("profiles").update({ full_name: contactName }).eq("id", user.id);
+    if (parsed.data.contact_name) {
+        await supabase.from("profiles").update({ full_name: parsed.data.contact_name }).eq("id", user.id);
     }
 
     revalidatePath("/company/profile");
@@ -88,7 +86,7 @@ export async function getCompanyDashboard() {
         return {
             company: { company_name: user.user_metadata.full_name || "Mitt Företag" } as Company,
             jobs: [],
-            stats: { activeJobs: 0, candidates: 0, interviews: 0, placements: 0 },
+            stats: { activeJobs: 0, candidates: 0, interviews: 0, placements: 0, recentPlacements: 0 },
             recentActivity: []
         };
     }
@@ -129,6 +127,15 @@ export async function getCompanyDashboard() {
         .select("*", { count: 'exact', head: true })
         .eq("company_id", company.id);
 
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - TIER_WINDOW_MONTHS);
+
+    const { count: recentPlacements } = await supabase
+        .from("placements")
+        .select("*", { count: "exact", head: true })
+        .eq("company_id", company.id)
+        .gte("created_at", twelveMonthsAgo.toISOString());
+
     const activeJobsCount = jobs?.filter(j => j.status === 'active').length || 0;
 
     // Transform jobs for display
@@ -145,9 +152,35 @@ export async function getCompanyDashboard() {
             activeJobs: activeJobsCount,
             candidates: totalCandidates || 0,
             interviews: activeInterviews || 0,
-            placements: successfulPlacements || 0
+            placements: successfulPlacements || 0,
+            recentPlacements: recentPlacements ?? 0,
         },
         // We don't have activity log yet populated, return empty or mock
         recentActivity: []
     };
+}
+
+export async function getCompanyPlacementCountRecent(): Promise<number> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 0;
+
+    const { data: company } = await supabase
+        .from("companies")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!company) return 0;
+
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - TIER_WINDOW_MONTHS);
+
+    const { count } = await supabase
+        .from("placements")
+        .select("*", { count: "exact", head: true })
+        .eq("company_id", company.id)
+        .gte("created_at", twelveMonthsAgo.toISOString());
+
+    return count ?? 0;
 }

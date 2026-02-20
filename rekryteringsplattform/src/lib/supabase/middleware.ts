@@ -46,6 +46,16 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
+    // Admin routes require admin role
+    if (user && request.nextUrl.pathname.startsWith("/admin")) {
+        const role = user.user_metadata?.role;
+        if (role !== "admin") {
+            const url = request.nextUrl.clone();
+            url.pathname = `/${role || "company"}`;
+            return NextResponse.redirect(url);
+        }
+    }
+
     // If logged in user tries to access login/register, redirect to dashboard
     const authPaths = ["/login", "/register"];
     const isAuthRoute = authPaths.some((path) =>
