@@ -2,15 +2,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getAdminPlacements } from "@/lib/actions/admin";
+import { getDictionary } from "@/i18n/server";
 
 export default async function AdminPlacementsPage() {
   const placements = await getAdminPlacements();
+  const dict = await getDictionary();
+  const a = dict.admin;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Placeringar</h1>
-        <p className="text-muted-foreground">Hantera placeringar och utbetalningar ({placements.length} totalt)</p>
+        <h1 className="text-2xl font-bold">{a.placementsPageTitle}</h1>
+        <p className="text-muted-foreground">{a.placementsPageSubtitle.replace("{count}", String(placements.length))}</p>
       </div>
 
       <Card>
@@ -18,21 +21,21 @@ export default async function AdminPlacementsPage() {
           <table className="w-full text-sm min-w-[1100px]">
             <thead>
               <tr className="border-b border-border text-left">
-                <th className="p-4 font-medium text-muted-foreground">Jobb</th>
-                <th className="p-4 font-medium text-muted-foreground">Företag</th>
-                <th className="p-4 font-medium text-muted-foreground">Rekryterare</th>
-                <th className="p-4 font-medium text-muted-foreground">Kandidat</th>
-                <th className="p-4 font-medium text-muted-foreground">Total avgift</th>
-                <th className="p-4 font-medium text-muted-foreground">Plattform</th>
-                <th className="p-4 font-medium text-muted-foreground">Rekryterare</th>
-                <th className="p-4 font-medium text-muted-foreground">Status</th>
-                <th className="p-4 font-medium text-muted-foreground">Datum</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementJob}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementCompany}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementRecruiter}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementCandidate}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tableTotalFee}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePlatformFee}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tableRecruiterFee}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementStatus}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementDate}</th>
               </tr>
             </thead>
             <tbody>
               {placements.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-muted-foreground">Inga placeringar ännu</td>
+                  <td colSpan={9} className="p-8 text-center text-muted-foreground">{a.noPlacementsRegistered}</td>
                 </tr>
               ) : (
                 placements.map((placement) => (

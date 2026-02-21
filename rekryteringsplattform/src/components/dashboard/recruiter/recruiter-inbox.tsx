@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { CandidateChat } from "@/components/shared/candidate-chat";
 import { cn } from "@/lib/utils";
 import { markConversationAsRead } from "@/lib/actions/messages";
+import { useTranslations } from "@/i18n/client";
 
 interface RecruiterInboxProps {
     initialConversations: any[];
@@ -18,6 +19,7 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
         initialConversations.length > 0 ? initialConversations[0].id : null
     );
     const [search, setSearch] = useState("");
+    const { t } = useTranslations();
 
     useEffect(() => {
         if (selectedConvId) {
@@ -38,7 +40,7 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
             <div className="w-full md:w-80 border-r border-border flex flex-col bg-muted/10">
                 <div className="p-4 border-b border-border bg-white">
                     <Input
-                        placeholder="Sök konversationer..."
+                        placeholder={t("components.inboxSearchPlaceholder")}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -46,7 +48,7 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
                 <div className="flex-1 overflow-y-auto">
                     {filteredConversations.length === 0 ? (
                         <div className="p-8 text-center text-muted-foreground text-sm">
-                            Inga konversationer hittades.
+                            {t("components.inboxNoConversations")}
                         </div>
                     ) : (
                         filteredConversations.map((conv) => {
@@ -76,7 +78,7 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
                                             {conv.candidate?.job?.company?.company_name}
                                         </p>
                                         <p className="text-xs text-muted-foreground truncate italic">
-                                            {lastMsg ? lastMsg.content : "Inga meddelanden än"}
+                                            {lastMsg ? lastMsg.content : t("components.inboxNoMessages")}
                                         </p>
                                     </div>
                                 </div>
@@ -93,11 +95,11 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
                         <div className="p-4 border-b border-border bg-white flex items-center justify-between">
                             <div>
                                 <p className="font-bold text-brand-900">{selectedConv.candidate?.first_name} {selectedConv.candidate?.last_name}</p>
-                                <p className="text-xs text-muted-foreground">Applikation för: <span className="font-medium text-foreground">{selectedConv.candidate?.job?.title}</span></p>
+                                <p className="text-xs text-muted-foreground">{t("components.recruiterInboxApplicationFor")} <span className="font-medium text-foreground">{selectedConv.candidate?.job?.title}</span></p>
                             </div>
                             <div className="text-right">
                                 <p className="text-sm font-medium">{selectedConv.candidate?.job?.company?.company_name}</p>
-                                <p className="text-[10px] text-muted-foreground italic">Direktkontakt med kund</p>
+                                <p className="text-[10px] text-muted-foreground italic">{t("components.recruiterInboxDirectContactClient")}</p>
                             </div>
                         </div>
                         <div className="flex-1 overflow-hidden p-0 border-none shadow-none">
@@ -114,8 +116,8 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
                         <div className="bg-white p-6 rounded-full shadow-sm mb-4">
                             <Avatar initials="?" size="lg" />
                         </div>
-                        <p className="font-medium">Välj en konversation för att börja chatta</p>
-                        <p className="text-sm">Här ser du alla dina pågående dialoger med kunder.</p>
+                        <p className="font-medium">{t("components.recruiterInboxSelectConversation")}</p>
+                        <p className="text-sm">{t("components.recruiterInboxAllDialogs")}</p>
                     </div>
                 )}
             </div>

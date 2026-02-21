@@ -9,50 +9,7 @@ import { updateCandidateStatus } from "@/lib/actions/candidates";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-
-const PIPELINE_STAGES = [
-  { key: "submitted", label: "Presenterade", color: "bg-blue-500" },
-  { key: "reviewing", label: "Under granskning", color: "bg-yellow-500" },
-  { key: "interview", label: "Intervju", color: "bg-purple-500" },
-  { key: "offered", label: "Erbjudande", color: "bg-brand-500" },
-  { key: "hired", label: "Anställda", color: "bg-success-500" },
-  { key: "paused", label: "Pausade", color: "bg-orange-400" },
-  { key: "rejected", label: "Avvisade", color: "bg-slate-400" },
-] as const;
-
-type TransitionAction = { label: string; next: string; variant?: "default" | "outline" | "danger" | "ghost" };
-
-const STATUS_TRANSITIONS: Record<string, TransitionAction[]> = {
-  submitted: [
-    { label: "Granska", next: "reviewing" },
-    { label: "Pausa", next: "paused", variant: "outline" },
-    { label: "Avvisa", next: "rejected", variant: "outline" },
-  ],
-  reviewing: [
-    { label: "Boka intervju", next: "interview" },
-    { label: "Tillbaka", next: "submitted", variant: "ghost" },
-    { label: "Pausa", next: "paused", variant: "outline" },
-    { label: "Avvisa", next: "rejected", variant: "outline" },
-  ],
-  interview: [
-    { label: "Ge erbjudande", next: "offered" },
-    { label: "Tillbaka", next: "reviewing", variant: "ghost" },
-    { label: "Pausa", next: "paused", variant: "outline" },
-    { label: "Avvisa", next: "rejected", variant: "outline" },
-  ],
-  offered: [
-    { label: "Markera anställd", next: "hired" },
-    { label: "Tillbaka", next: "interview", variant: "ghost" },
-    { label: "Pausa", next: "paused", variant: "outline" },
-    { label: "Avvisa", next: "rejected", variant: "outline" },
-  ],
-  paused: [
-    { label: "Återuppta", next: "submitted" },
-  ],
-  rejected: [
-    { label: "Återuppta", next: "submitted" },
-  ],
-};
+import { useTranslations } from "@/i18n/client";
 
 interface CandidatePipelineProps {
   candidates: any[];
@@ -60,6 +17,7 @@ interface CandidatePipelineProps {
 
 export function CandidatePipeline({ candidates }: CandidatePipelineProps) {
   const [view, setView] = useState<"pipeline" | "list">("pipeline");
+  const { t } = useTranslations();
 
   return (
     <div className="space-y-4">
@@ -72,7 +30,7 @@ export function CandidatePipeline({ candidates }: CandidatePipelineProps) {
             view === "pipeline" ? "bg-brand-600 text-white shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"
           )}
         >
-          Pipeline
+          {t("common.pipeline")}
         </button>
         <button
           onClick={() => setView("list")}
@@ -81,10 +39,10 @@ export function CandidatePipeline({ candidates }: CandidatePipelineProps) {
             view === "list" ? "bg-brand-600 text-white shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"
           )}
         >
-          Lista
+          {t("common.list")}
         </button>
         <div className="ml-auto text-sm text-muted-foreground font-medium">
-          {candidates.length} kandidater totalt
+          {t("common.candidatesTotalCount").replace("{count}", String(candidates.length))}
         </div>
       </div>
 
@@ -100,6 +58,51 @@ export function CandidatePipeline({ candidates }: CandidatePipelineProps) {
 function PipelineView({ candidates }: { candidates: any[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const { t } = useTranslations();
+
+  const PIPELINE_STAGES = [
+    { key: "submitted", label: t("components.pipelinePresented"), color: "bg-blue-500" },
+    { key: "reviewing", label: t("components.pipelineUnderReview"), color: "bg-yellow-500" },
+    { key: "interview", label: t("components.pipelineInterview"), color: "bg-purple-500" },
+    { key: "offered", label: t("components.pipelineOffer"), color: "bg-brand-500" },
+    { key: "hired", label: t("components.pipelineHired"), color: "bg-success-500" },
+    { key: "paused", label: t("components.pipelinePaused"), color: "bg-orange-400" },
+    { key: "rejected", label: t("components.pipelineRejected"), color: "bg-slate-400" },
+  ] as const;
+
+  type TransitionAction = { label: string; next: string; variant?: "default" | "outline" | "danger" | "ghost" };
+
+  const STATUS_TRANSITIONS: Record<string, TransitionAction[]> = {
+    submitted: [
+      { label: t("components.pipelineActionReview"), next: "reviewing" },
+      { label: t("components.pipelineActionPause"), next: "paused", variant: "outline" },
+      { label: t("components.pipelineActionReject"), next: "rejected", variant: "outline" },
+    ],
+    reviewing: [
+      { label: t("components.pipelineActionBookInterview"), next: "interview" },
+      { label: t("components.pipelineActionBack"), next: "submitted", variant: "ghost" },
+      { label: t("components.pipelineActionPause"), next: "paused", variant: "outline" },
+      { label: t("components.pipelineActionReject"), next: "rejected", variant: "outline" },
+    ],
+    interview: [
+      { label: t("components.pipelineActionGiveOffer"), next: "offered" },
+      { label: t("components.pipelineActionBack"), next: "reviewing", variant: "ghost" },
+      { label: t("components.pipelineActionPause"), next: "paused", variant: "outline" },
+      { label: t("components.pipelineActionReject"), next: "rejected", variant: "outline" },
+    ],
+    offered: [
+      { label: t("components.pipelineActionMarkHired"), next: "hired" },
+      { label: t("components.pipelineActionBack"), next: "interview", variant: "ghost" },
+      { label: t("components.pipelineActionPause"), next: "paused", variant: "outline" },
+      { label: t("components.pipelineActionReject"), next: "rejected", variant: "outline" },
+    ],
+    paused: [
+      { label: t("components.pipelineActionResume"), next: "submitted" },
+    ],
+    rejected: [
+      { label: t("components.pipelineActionResume"), next: "submitted" },
+    ],
+  };
 
   const handleStatusChange = async (candidateId: string, jobId: string, newStatus: string) => {
     setLoading(candidateId);
@@ -128,7 +131,7 @@ function PipelineView({ candidates }: { candidates: any[] }) {
             <div className="space-y-2 min-h-[80px]">
               {stageCandidates.length === 0 ? (
                 <div className="p-4 text-center text-xs text-muted-foreground border-2 border-dashed rounded-xl bg-muted/10">
-                  Inga kandidater
+                  {t("common.noCandidates")}
                 </div>
               ) : (
                 stageCandidates.map((candidate: any) => (
@@ -144,7 +147,7 @@ function PipelineView({ candidates }: { candidates: any[] }) {
                             {candidate.first_name} {candidate.last_name}
                           </Link>
                           <p className="text-xs text-muted-foreground truncate">
-                            {candidate.current_title || "Ingen titel"}
+                            {candidate.current_title || t("common.noTitle")}
                           </p>
                           <p className="text-[10px] text-brand-600 font-medium mt-1">
                             {candidate.job?.title}
@@ -185,6 +188,8 @@ function PipelineView({ candidates }: { candidates: any[] }) {
 }
 
 function ListView({ candidates }: { candidates: any[] }) {
+  const { t } = useTranslations();
+
   return (
     <div className="grid gap-4">
       {candidates.map((candidate: any) => (
@@ -197,16 +202,16 @@ function ListView({ candidates }: { candidates: any[] }) {
                   <h3 className="font-semibold">{candidate.first_name} {candidate.last_name}</h3>
                   <StatusBadge status={candidate.status} />
                 </div>
-                <p className="text-sm text-muted-foreground">{candidate.current_title || 'Ingen titel'}</p>
+                <p className="text-sm text-muted-foreground">{candidate.current_title || t("common.noTitle")}</p>
                 <div className="flex flex-wrap items-center gap-y-1 gap-x-4 mt-2 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">Jobb: <span className="text-foreground font-medium">{candidate.job?.title}</span></span>
-                  <span className="flex items-center gap-1">Rekryterare: <span className="text-foreground font-medium">{candidate.recruiter?.profile?.full_name || 'Rekryterare'}</span></span>
-                  <span className="flex items-center gap-1">Presenterad: <span className="text-foreground font-medium">{new Date(candidate.created_at).toLocaleDateString()}</span></span>
+                  <span className="flex items-center gap-1">{t("components.recruiterJobsListJobLabel")} <span className="text-foreground font-medium">{candidate.job?.title}</span></span>
+                  <span className="flex items-center gap-1">{t("components.recruiterJobsListRecruiterLabel")} <span className="text-foreground font-medium">{candidate.recruiter?.profile?.full_name || t("common.recruiter")}</span></span>
+                  <span className="flex items-center gap-1">{t("components.recruiterJobsListPresentedLabel")} <span className="text-foreground font-medium">{new Date(candidate.created_at).toLocaleDateString()}</span></span>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Link href={`/company/jobs/${candidate.job_id}/candidates/${candidate.id}`}>
-                  <Button variant="outline" size="sm">Visa profil</Button>
+                  <Button variant="outline" size="sm">{t("common.showProfile")}</Button>
                 </Link>
               </div>
             </div>

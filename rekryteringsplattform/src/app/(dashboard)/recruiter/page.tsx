@@ -5,32 +5,35 @@ import { Badge } from "@/components/ui/badge";
 import { Briefcase, Users, Wallet, FileCheck } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getRecruiterDashboard } from "@/lib/actions/recruiter";
+import { getDictionary } from "@/i18n/server";
 
 export default async function RecruiterDashboard() {
   const { recruiter, userName, mandates, stats, recentActivity } = await getRecruiterDashboard();
+  const dict = await getDictionary();
+  const r = dict.recruiter;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Välkommen tillbaka, {userName}</p>
+        <h1 className="text-2xl font-bold">{r.dashboardTitle}</h1>
+        <p className="text-muted-foreground">{r.welcomeBack.replace("{name}", userName)}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title="Aktiva mandat" value={stats.activeMandates || 0} icon={FileCheck} />
-        <StatsCard title="Presenterade kandidater" value={stats.candidates || 0} icon={Users} />
-        <StatsCard title="Tillgängliga jobb" value={stats.availableJobs || 0} icon={Briefcase} />
-        <StatsCard title="Intäkter" value={formatCurrency(stats.revenue || 0)} icon={Wallet} description="Totalt intjänat" />
+        <StatsCard title={r.activeMandates} value={stats.activeMandates || 0} icon={FileCheck} />
+        <StatsCard title={r.presentedCandidates} value={stats.candidates || 0} icon={Users} />
+        <StatsCard title={r.availableJobs} value={stats.availableJobs || 0} icon={Briefcase} />
+        <StatsCard title={r.revenueTitle} value={formatCurrency(stats.revenue || 0)} icon={Wallet} description={r.totalEarned} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Mina aktiva mandat</CardTitle>
+          <CardTitle>{r.myActiveMandates}</CardTitle>
         </CardHeader>
         <CardContent>
           {mandates.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              Du har inga aktiva mandat just nu. Gå till &quot;Hitta uppdrag&quot; för att se tillgängliga jobb.
+              {r.noActiveMandates}
             </div>
           ) : (
             <div className="space-y-4">
@@ -41,7 +44,7 @@ export default async function RecruiterDashboard() {
                     <p className="text-sm text-muted-foreground">{mandate.company} — {mandate.location}</p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Badge variant="blue">{mandate.candidates} kandidater</Badge>
+                    <Badge variant="blue">{mandate.candidates} {dict.nav.candidates.toLowerCase()}</Badge>
                     <StatusBadge status={mandate.status} />
                   </div>
                 </div>
@@ -53,7 +56,7 @@ export default async function RecruiterDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Senaste aktiviteten</CardTitle>
+          <CardTitle>{r.recentActivity}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -68,7 +71,7 @@ export default async function RecruiterDashboard() {
                 </div>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">Ingen aktivitet att visa än.</p>
+              <p className="text-sm text-muted-foreground">{r.noActivityYet}</p>
             )}
           </div>
         </CardContent>

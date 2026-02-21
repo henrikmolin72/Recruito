@@ -70,5 +70,29 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
+    // Auto-detect locale for first-time visitors
+    const localeCookie = request.cookies.get("NEXT_LOCALE");
+    if (!localeCookie) {
+        const acceptLang = request.headers.get("accept-language") || "";
+        const detected = detectLocaleFromHeader(acceptLang);
+        supabaseResponse.cookies.set("NEXT_LOCALE", detected, {
+            path: "/",
+            maxAge: 60 * 60 * 24 * 365,
+            sameSite: "lax",
+        });
+    }
+
     return supabaseResponse;
+}
+
+function detectLocaleFromHeader(acceptLanguage: string): string {
+    const supported = ["sv", "en", "da", "no", "nb", "nn"];
+    const parts = acceptLanguage.split(",");
+    for (const part of parts) {
+        const lang = part.split(";")[0].trim().toLowerCase();
+        const short = lang.split("-")[0];
+        if (short === "nb" || short === "nn") return "no";
+        if (supported.includes(short)) return short;
+    }
+    return "sv";
 }

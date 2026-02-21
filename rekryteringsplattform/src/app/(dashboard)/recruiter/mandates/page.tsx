@@ -5,24 +5,27 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { MapPin, Building2, Users, Plus } from "lucide-react";
 import { getRecruiterMandates } from "@/lib/actions/recruiter";
 import { DownloadJobDescription } from "@/components/dashboard/recruiter/download-job-description";
+import { getDictionary } from "@/i18n/server";
 
 export default async function RecruiterMandatesPage() {
   const mandates = await getRecruiterMandates();
+  const dict = await getDictionary();
+  const r = dict.recruiter;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Mina mandat</h1>
-        <p className="text-muted-foreground">Du har {mandates.length} aktiva mandat</p>
+        <h1 className="text-2xl font-bold">{r.mandatesPageTitle}</h1>
+        <p className="text-muted-foreground">{r.mandatesPageSubtitle.replace("{count}", String(mandates.length))}</p>
       </div>
 
       <div className="grid gap-4">
         {mandates.length === 0 ? (
           <div className="text-center py-12 bg-muted/30 rounded-lg border border-border border-dashed">
-            <h3 className="text-lg font-medium">Inga mandat än</h3>
-            <p className="text-muted-foreground mb-4">Hitta intressanta uppdrag att arbeta med.</p>
+            <h3 className="text-lg font-medium">{r.noMandatesTitle}</h3>
+            <p className="text-muted-foreground mb-4">{r.noMandatesDesc}</p>
             <Link href="/recruiter/jobs">
-              <Button>Hitta uppdrag</Button>
+              <Button>{r.findJobs}</Button>
             </Link>
           </div>
         ) : (
@@ -46,7 +49,7 @@ export default async function RecruiterMandatesPage() {
                     <DownloadJobDescription mandate={mandate} />
                     <Link href={`/recruiter/mandates/${mandate.id}/candidates/new`}>
                       <Button size="sm" className="gap-1 bg-success-500 hover:bg-success-700">
-                        <Plus className="h-4 w-4" /> Presentera kandidat
+                        <Plus className="h-4 w-4" /> {r.presentCandidate}
                       </Button>
                     </Link>
                   </div>
@@ -54,7 +57,7 @@ export default async function RecruiterMandatesPage() {
 
                 {mandate.candidates.length > 0 ? (
                   <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-sm font-medium mb-2">Presenterade kandidater</p>
+                    <p className="text-sm font-medium mb-2">{r.presentedCandidatesTitle}</p>
                     <div className="space-y-2">
                       {mandate.candidates.map((candidate: any) => (
                         <div key={candidate.id} className="flex items-center justify-between p-3 bg-muted rounded-lg group">
@@ -68,7 +71,7 @@ export default async function RecruiterMandatesPage() {
                                   href={`/recruiter/mandates/${mandate.id}/candidates/${candidate.id}`}
                                   className="text-[10px] font-bold text-brand-600 hover:text-brand-700 uppercase tracking-widest bg-white px-2 py-0.5 rounded border border-brand-100 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                  Öppna chatt
+                                  {r.openChat}
                                 </Link>
                               </div>
                             </div>
@@ -79,7 +82,7 @@ export default async function RecruiterMandatesPage() {
                   </div>
                 ) : (
                   <div className="mt-4 pt-4 border-t border-border text-center py-6">
-                    <p className="text-sm text-muted-foreground">Inga kandidater presenterade ännu</p>
+                    <p className="text-sm text-muted-foreground">{r.noCandidatesPresentedYet}</p>
                   </div>
                 )}
               </CardContent>

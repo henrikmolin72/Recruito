@@ -8,12 +8,15 @@ import { NotificationsDropdown } from "@/components/layout/notifications-dropdow
 import { QuickActions } from "@/components/layout/quick-actions";
 import { NAV_MAP } from "@/components/layout/sidebar";
 import { AppLogo } from "@/components/shared/app-logo";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { useTranslations } from "@/i18n/client";
 import { cn } from "@/lib/utils";
 
 import { useState, useEffect } from "react";
 
 export function Header({ role }: { role: string }) {
   const pathname = usePathname();
+  const { t } = useTranslations();
   const [initials, setInitials] = useState("U");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -44,7 +47,7 @@ export function Header({ role }: { role: string }) {
           <button
             className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-black/5 active:scale-95 transition-all"
             onClick={() => setIsMobileNavOpen(true)}
-            aria-label="Öppna meny"
+            aria-label={t("common.openMenu")}
           >
             <Menu className={cn("h-5 w-5", isRecruiter ? "text-slate-300" : "text-slate-600")} />
           </button>
@@ -56,7 +59,7 @@ export function Header({ role }: { role: string }) {
               : "bg-blue-50 border-blue-100 text-blue-600"
           )}>
             <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", isRecruiter ? "bg-brand-400" : "bg-blue-500")} />
-            {isRecruiter ? "Professional Recruiter" : "Corporate"}
+            {isRecruiter ? t("nav.professional") : t("nav.corporate")}
           </div>
         </div>
 
@@ -86,7 +89,7 @@ export function Header({ role }: { role: string }) {
                 />
                 <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-border/50 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 text-slate-900">
                   <div className="px-4 py-2 border-b border-border/10 mb-1">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Konto</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t("common.account")}</p>
                   </div>
                   <Link
                     href={`/${role}/profile`}
@@ -94,7 +97,7 @@ export function Header({ role }: { role: string }) {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <User className="h-4 w-4 text-slate-400 group-hover/item:text-brand-600" />
-                    <span className="font-medium text-slate-700 group-hover/item:text-slate-900">Min profil</span>
+                    <span className="font-medium text-slate-700 group-hover/item:text-slate-900">{t("common.myProfile")}</span>
                   </Link>
                   <Link
                     href={`/${role}/profile`}
@@ -102,8 +105,10 @@ export function Header({ role }: { role: string }) {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Settings className="h-4 w-4 text-slate-400 group-hover/item:text-brand-600" />
-                    <span className="font-medium text-slate-700 group-hover/item:text-slate-900">Inställningar</span>
+                    <span className="font-medium text-slate-700 group-hover/item:text-slate-900">{t("common.settings")}</span>
                   </Link>
+                  <div className="my-1 border-t border-border/10" />
+                  <LanguageSwitcher />
                   <div className="my-1 border-t border-border/10" />
                   <form action={logout}>
                     <button
@@ -111,7 +116,7 @@ export function Header({ role }: { role: string }) {
                       className="flex items-center gap-3 px-4 py-2.5 text-sm w-full text-left transition-all hover:bg-danger-50 group/logout"
                     >
                       <LogOut className="h-4 w-4 text-danger-500 group-hover/logout:scale-110 transition-transform" />
-                      <span className="font-bold text-danger-600">Logga ut</span>
+                      <span className="font-bold text-danger-600">{t("common.logOut")}</span>
                     </button>
                   </form>
                 </div>
@@ -149,7 +154,7 @@ export function Header({ role }: { role: string }) {
                   "p-2 rounded-lg transition-colors",
                   isRecruiter ? "hover:bg-slate-800 text-slate-400" : "hover:bg-slate-100 text-slate-500"
                 )}
-                aria-label="Stäng meny"
+                aria-label={t("common.closeMenu")}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -176,7 +181,7 @@ export function Header({ role }: { role: string }) {
                       "h-5 w-5",
                       isActive ? "" : (isRecruiter ? "text-slate-500" : "text-muted-foreground")
                     )} />
-                    {item.label}
+                    {t(item.labelKey)}
                     {item.badge && (
                       <span className={cn(
                         "ml-auto text-xs rounded-full px-2 py-0.5 font-bold",
@@ -190,18 +195,19 @@ export function Header({ role }: { role: string }) {
               })}
             </div>
 
-            {/* Drawer footer - logout */}
+            {/* Drawer footer */}
             <div className={cn(
               "p-4 border-t",
               isRecruiter ? "border-slate-800" : "border-border"
             )}>
-              <form action={logout}>
+              <LanguageSwitcher />
+              <form action={logout} className="mt-2">
                 <button
                   type="submit"
                   className="flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium rounded-lg transition-colors hover:bg-danger-50 text-danger-600"
                 >
                   <LogOut className="h-5 w-5" />
-                  Logga ut
+                  {t("common.logOut")}
                 </button>
               </form>
             </div>

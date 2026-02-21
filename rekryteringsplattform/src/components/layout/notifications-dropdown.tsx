@@ -6,6 +6,7 @@ import { Bell, MessageSquare, Briefcase, UserPlus, CreditCard, CheckCircle2, XCi
 import { getNotifications, markAsRead, markAllAsRead } from "@/lib/actions/notifications";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 type Notification = {
     id: string;
@@ -33,6 +34,7 @@ export function NotificationsDropdown() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [open, setOpen] = useState(false);
     const router = useRouter();
+    const { t } = useTranslations();
 
     const fetchNotifications = async () => {
         const data = await getNotifications();
@@ -86,8 +88,8 @@ export function NotificationsDropdown() {
                 <div className="absolute right-0 top-full mt-2 w-96 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-border/50 py-0 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="px-5 py-4 border-b border-border/50 flex justify-between items-center bg-white/50">
                         <div>
-                            <h3 className="text-sm font-bold text-foreground">Notifieringar</h3>
-                            <p className="text-[10px] text-muted-foreground">Du har {unreadCount} olästa händelser</p>
+                            <h3 className="text-sm font-bold text-foreground">{t("components.notificationsTitle")}</h3>
+                            <p className="text-[10px] text-muted-foreground">{t("components.notificationsUnreadCount").replace("{count}", String(unreadCount))}</p>
                         </div>
                         {unreadCount > 0 && (
                             <button
@@ -97,7 +99,7 @@ export function NotificationsDropdown() {
                                 }}
                                 className="text-xs font-medium text-brand-600 hover:text-brand-700 hover:underline"
                             >
-                                Markera alla lästa
+                                {t("components.markAllRead")}
                             </button>
                         )}
                     </div>
@@ -108,7 +110,7 @@ export function NotificationsDropdown() {
                                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted/30 mb-3">
                                     <Bell className="h-6 w-6 text-muted-foreground/50" />
                                 </div>
-                                <p>Inga nya notiser</p>
+                                <p>{t("components.noNewNotifications")}</p>
                             </div>
                         ) : (
                             <div className="divide-y divide-border/30">

@@ -3,6 +3,7 @@
 import { Plus, Briefcase, UserPlus, Zap } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,6 +18,7 @@ interface QuickActionsProps {
 }
 
 export function QuickActions({ role }: QuickActionsProps) {
+    const { t } = useTranslations();
     const isRecruiter = role === "recruiter";
 
     return (
@@ -29,13 +31,13 @@ export function QuickActions({ role }: QuickActionsProps) {
                         : "bg-brand-600 text-white ring-brand-700 hover:bg-brand-700"
                 )}>
                     <Zap className="h-3.5 w-3.5 fill-current" />
-                    <span className="hidden sm:inline">Snabbval</span>
+                    <span className="hidden sm:inline">{t("components.quickActionsLabel")}</span>
                     <Plus className="h-3.5 w-3.5" />
                 </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 mt-2 p-2 rounded-xl shadow-2xl border-border/50">
                 <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2 py-1.5">
-                    Snabba åtgärder
+                    {t("components.quickActionsTitle")}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="opacity-50" />
 
@@ -45,8 +47,8 @@ export function QuickActions({ role }: QuickActionsProps) {
                             <Link href="/recruiter/jobs" className="flex items-center gap-2 cursor-pointer py-2.5">
                                 <Briefcase className="h-4 w-4 text-brand-500" />
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-sm">Hitta uppdrag</span>
-                                    <span className="text-[10px] text-muted-foreground">Bläddra bland lediga jobb</span>
+                                    <span className="font-bold text-sm">{t("components.quickActionFindJobs")}</span>
+                                    <span className="text-[10px] text-muted-foreground">{t("components.quickActionFindJobsDesc")}</span>
                                 </div>
                             </Link>
                         </DropdownMenuItem>
@@ -54,8 +56,8 @@ export function QuickActions({ role }: QuickActionsProps) {
                             <Link href="/recruiter/mandates" className="flex items-center gap-2 cursor-pointer py-2.5">
                                 <UserPlus className="h-4 w-4 text-brand-500" />
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-sm">Mina mandat</span>
-                                    <span className="text-[10px] text-muted-foreground">Hantera dina kandidater</span>
+                                    <span className="font-bold text-sm">{t("components.quickActionMyMandates")}</span>
+                                    <span className="text-[10px] text-muted-foreground">{t("components.quickActionMyMandatesDesc")}</span>
                                 </div>
                             </Link>
                         </DropdownMenuItem>
@@ -66,8 +68,8 @@ export function QuickActions({ role }: QuickActionsProps) {
                             <Link href="/company/jobs/new" className="flex items-center gap-2 cursor-pointer py-2.5">
                                 <Plus className="h-4 w-4 text-brand-600" />
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-sm">Skapa uppdrag</span>
-                                    <span className="text-[10px] text-muted-foreground">Starta en ny rekrytering</span>
+                                    <span className="font-bold text-sm">{t("components.quickActionCreateJob")}</span>
+                                    <span className="text-[10px] text-muted-foreground">{t("components.quickActionCreateJobDesc")}</span>
                                 </div>
                             </Link>
                         </DropdownMenuItem>
@@ -75,8 +77,8 @@ export function QuickActions({ role }: QuickActionsProps) {
                             <Link href="/company/messages" className="flex items-center gap-2 cursor-pointer py-2.5">
                                 <Briefcase className="h-4 w-4 text-brand-600" />
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-sm">Inkorg</span>
-                                    <span className="text-[10px] text-muted-foreground">Se meddelanden från rekryterare</span>
+                                    <span className="font-bold text-sm">{t("components.quickActionInbox")}</span>
+                                    <span className="text-[10px] text-muted-foreground">{t("components.quickActionInboxDesc")}</span>
                                 </div>
                             </Link>
                         </DropdownMenuItem>

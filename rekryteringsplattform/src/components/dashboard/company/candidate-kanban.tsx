@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 interface Candidate {
     id: string;
@@ -30,16 +31,17 @@ interface Candidate {
     };
 }
 
-const COLUMN_CONFIG = [
-    { title: "Nya / Granskas", statuses: ["submitted", "reviewing"], color: "bg-blue-500" },
-    { title: "Intervju", statuses: ["interview"], color: "bg-purple-500" },
-    { title: "Erbjudande", statuses: ["offered"], color: "bg-amber-500" },
-    { title: "Beslut", statuses: ["hired", "rejected"], color: "bg-slate-500" },
-    { title: "Pausade", statuses: ["paused"], color: "bg-orange-400" }
-];
-
 export function CandidateKanban({ candidates: initialCandidates, jobId }: { candidates: Candidate[], jobId: string }) {
     const [candidates, setCandidates] = useState(initialCandidates);
+    const { t } = useTranslations();
+
+    const COLUMN_CONFIG = [
+        { title: t("components.kanbanNewReviewing"), statuses: ["submitted", "reviewing"], color: "bg-blue-500" },
+        { title: t("components.kanbanInterview"), statuses: ["interview"], color: "bg-purple-500" },
+        { title: t("components.kanbanOffer"), statuses: ["offered"], color: "bg-amber-500" },
+        { title: t("components.kanbanDecision"), statuses: ["hired", "rejected"], color: "bg-slate-500" },
+        { title: t("components.kanbanPaused"), statuses: ["paused"], color: "bg-orange-400" }
+    ];
 
     const handleStatusChange = async (candidateId: string, newStatus: string) => {
         // Optimistic update
@@ -48,10 +50,10 @@ export function CandidateKanban({ candidates: initialCandidates, jobId }: { cand
 
         const result = await updateCandidateStatus(candidateId, jobId, newStatus);
         if (result.error) {
-            toast.error("Kunde inte uppdatera status: " + result.error);
+            toast.error(t("components.kanbanUpdateError") + result.error);
             setCandidates(oldCandidates);
         } else {
-            toast.success("Status uppdaterad");
+            toast.success(t("components.kanbanUpdateSuccess"));
         }
     };
 
@@ -92,7 +94,7 @@ export function CandidateKanban({ candidates: initialCandidates, jobId }: { cand
                                                         {candidate.first_name} {candidate.last_name}
                                                     </h4>
                                                     <p className="text-[11px] text-slate-500 truncate w-32">
-                                                        {candidate.current_title || "Ingen titel angiven"}
+                                                        {candidate.current_title || t("common.noTitleSpecified")}
                                                     </p>
                                                 </div>
                                             </div>
@@ -103,13 +105,13 @@ export function CandidateKanban({ candidates: initialCandidates, jobId }: { cand
                                         </div>
 
                                         <div className="flex items-center gap-2 mb-4">
-                                            {candidate.status === 'submitted' && <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">Inskickad</span>}
-                                            {candidate.status === 'reviewing' && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">Granskas</span>}
-                                            {candidate.status === 'interview' && <span className="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">Intervju</span>}
-                                            {candidate.status === 'offered' && <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">Erbjudande</span>}
-                                            {candidate.status === 'hired' && <span className="text-[10px] bg-success-50 text-success-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">Anställd</span>}
-                                            {candidate.status === 'rejected' && <span className="text-[10px] bg-danger-50 text-danger-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">Avböjd</span>}
-                                            {candidate.status === 'paused' && <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">Pausad</span>}
+                                            {candidate.status === 'submitted' && <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">{t("components.kanbanStatusSubmitted")}</span>}
+                                            {candidate.status === 'reviewing' && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">{t("components.kanbanStatusReviewing")}</span>}
+                                            {candidate.status === 'interview' && <span className="text-[10px] bg-purple-50 text-purple-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">{t("components.kanbanStatusInterview")}</span>}
+                                            {candidate.status === 'offered' && <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">{t("components.kanbanStatusOffered")}</span>}
+                                            {candidate.status === 'hired' && <span className="text-[10px] bg-success-50 text-success-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">{t("components.kanbanStatusHired")}</span>}
+                                            {candidate.status === 'rejected' && <span className="text-[10px] bg-danger-50 text-danger-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">{t("components.kanbanStatusDeclined")}</span>}
+                                            {candidate.status === 'paused' && <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">{t("components.kanbanStatusPaused")}</span>}
                                         </div>
 
                                         <div className="flex items-center justify-between pt-3 border-t border-slate-50">
@@ -122,7 +124,7 @@ export function CandidateKanban({ candidates: initialCandidates, jobId }: { cand
                                                 href={`/company/jobs/${jobId}/candidates/${candidate.id}`}
                                                 className="text-[10px] font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform"
                                             >
-                                                Visa profil <MoveRight className="h-3 w-3" />
+                                                {t("common.showProfile")} <MoveRight className="h-3 w-3" />
                                             </Link>
                                         </div>
                                     </motion.div>
@@ -137,15 +139,16 @@ export function CandidateKanban({ candidates: initialCandidates, jobId }: { cand
 
 function DropdownMenuAction({ candidate, onStatusChange }: { candidate: Candidate, onStatusChange: (s: string) => void }) {
     const status = candidate.status;
+    const { t } = useTranslations();
 
     // Build actions based on current status — forward, backward, pause, reject
     const allActions: { label: string; value: string; icon: React.ReactNode; className?: string }[] = [];
 
-    if (status !== 'submitted') allActions.push({ label: "Presenterad", value: "submitted", icon: <Users className="h-3.5 w-3.5 text-blue-400" /> });
-    if (status !== 'reviewing') allActions.push({ label: "Granska", value: "reviewing", icon: <Calendar className="h-3.5 w-3.5 text-indigo-400" /> });
-    if (status !== 'interview') allActions.push({ label: "Intervju", value: "interview", icon: <MessageSquare className="h-3.5 w-3.5 text-purple-400" /> });
-    if (status !== 'offered') allActions.push({ label: "Erbjudande", value: "offered", icon: <Sparkles className="h-3.5 w-3.5 text-amber-400" /> });
-    if (status !== 'hired') allActions.push({ label: "Anställd", value: "hired", icon: <CheckCircle2 className="h-3.5 w-3.5 text-success-600" />, className: "text-success-600 font-bold" });
+    if (status !== 'submitted') allActions.push({ label: t("components.kanbanActionSubmitted"), value: "submitted", icon: <Users className="h-3.5 w-3.5 text-blue-400" /> });
+    if (status !== 'reviewing') allActions.push({ label: t("components.kanbanActionReview"), value: "reviewing", icon: <Calendar className="h-3.5 w-3.5 text-indigo-400" /> });
+    if (status !== 'interview') allActions.push({ label: t("components.kanbanActionInterview"), value: "interview", icon: <MessageSquare className="h-3.5 w-3.5 text-purple-400" /> });
+    if (status !== 'offered') allActions.push({ label: t("components.kanbanActionOffer"), value: "offered", icon: <Sparkles className="h-3.5 w-3.5 text-amber-400" /> });
+    if (status !== 'hired') allActions.push({ label: t("components.kanbanActionHired"), value: "hired", icon: <CheckCircle2 className="h-3.5 w-3.5 text-success-600" />, className: "text-success-600 font-bold" });
 
     return (
         <div className="relative group/menu">
@@ -153,7 +156,7 @@ function DropdownMenuAction({ candidate, onStatusChange }: { candidate: Candidat
                 <MoreHorizontal className="h-4 w-4" />
             </button>
             <div className="hidden group-hover/menu:block absolute right-0 top-full mt-1 w-44 bg-white shadow-xl border border-slate-200 rounded-xl py-1 z-50 animate-in fade-in zoom-in-95">
-                <p className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 mb-1">Flytta till</p>
+                <p className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 mb-1">{t("components.kanbanMoveToLabel")}</p>
                 {allActions.map((action) => (
                     <button key={action.value} onClick={() => onStatusChange(action.value)} className={cn("w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-slate-700 flex items-center gap-2", action.className)}>
                         {action.icon} {action.label}
@@ -162,12 +165,12 @@ function DropdownMenuAction({ candidate, onStatusChange }: { candidate: Candidat
                 <div className="border-t border-slate-100 mt-1 pt-1">
                     {status !== 'paused' && (
                         <button onClick={() => onStatusChange('paused')} className="w-full text-left px-3 py-2 text-xs hover:bg-orange-50 text-orange-600 flex items-center gap-2">
-                            <PauseCircle className="h-3.5 w-3.5" /> Pausa kandidat
+                            <PauseCircle className="h-3.5 w-3.5" /> {t("components.kanbanPauseCandidate")}
                         </button>
                     )}
                     {status !== 'rejected' && (
                         <button onClick={() => onStatusChange('rejected')} className="w-full text-left px-3 py-2 text-xs hover:bg-slate-50 text-danger-500 flex items-center gap-2">
-                            <XCircle className="h-3.5 w-3.5" /> Avböj
+                            <XCircle className="h-3.5 w-3.5" /> {t("components.kanbanDecline")}
                         </button>
                     )}
                 </div>

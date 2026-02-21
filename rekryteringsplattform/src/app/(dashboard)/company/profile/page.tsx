@@ -3,21 +3,24 @@ import { Input } from "@/components/ui/input";
 import { Building2 } from "lucide-react";
 import { getCompanyProfile, updateCompanyProfile } from "@/lib/actions/company";
 import { SubmitButton } from "@/components/shared/submit-button";
+import { getDictionary } from "@/i18n/server";
 
 export default async function CompanyProfilePage() {
   const { profile, company } = await getCompanyProfile();
+  const dict = await getDictionary();
+  const c = dict.company;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Företagsprofil</h1>
-        <p className="text-muted-foreground">Hantera din företagsinformation</p>
+        <h1 className="text-2xl font-bold">{c.profilePageTitle}</h1>
+        <p className="text-muted-foreground">{c.profilePageSubtitle}</p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Företagsinformation</CardTitle>
+            <CardTitle>{c.companyInfoTitle}</CardTitle>
           </CardHeader>
           <CardContent>
             <form action={async (formData: FormData) => {
@@ -26,61 +29,61 @@ export default async function CompanyProfilePage() {
             }} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Företagsnamn</label>
+                  <label className="block text-sm font-medium mb-1.5">{c.companyNameLabel}</label>
                   <Input name="company_name" defaultValue={company?.company_name || ""} required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Organisationsnummer</label>
+                  <label className="block text-sm font-medium mb-1.5">{c.orgNumberLabel}</label>
                   <Input name="org_number" defaultValue={company?.org_number || ""} placeholder="556xxx-xxxx" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Stad</label>
-                  <Input name="city" defaultValue={company?.city || ""} placeholder="t.ex. Stockholm" />
+                  <label className="block text-sm font-medium mb-1.5">{c.cityLabel}</label>
+                  <Input name="city" defaultValue={company?.city || ""} placeholder={c.cityPlaceholder} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Bransch</label>
-                  <Input name="industry" defaultValue={company?.industry || ""} placeholder="t.ex. IT & SaaS" />
+                  <label className="block text-sm font-medium mb-1.5">{c.industryLabel}</label>
+                  <Input name="industry" defaultValue={company?.industry || ""} placeholder={c.industryInputPlaceholder} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Webbplats</label>
+                <label className="block text-sm font-medium mb-1.5">{c.websiteLabel}</label>
                 <Input name="website" defaultValue={company?.website || ""} placeholder="https://" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Kontaktperson</label>
+                  <label className="block text-sm font-medium mb-1.5">{c.contactPersonLabel}</label>
                   <Input name="contact_name" defaultValue={profile?.full_name || ""} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">E-post</label>
+                  <label className="block text-sm font-medium mb-1.5">{dict.common.email}</label>
                   <Input name="contact_email" defaultValue={company?.billing_email || profile?.email || ""} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Beskrivning</label>
+                <label className="block text-sm font-medium mb-1.5">{c.descriptionLabel}</label>
                 <textarea
                   name="description"
                   className="flex w-full rounded-lg border border-input bg-white px-3 py-2 text-sm min-h-[100px]"
                   defaultValue={company?.description || ""}
-                  placeholder="Berätta kort om ert företag..."
+                  placeholder={c.descriptionPlaceholder}
                 />
               </div>
-              <SubmitButton>Spara ändringar</SubmitButton>
+              <SubmitButton>{dict.common.saveChanges}</SubmitButton>
             </form>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Logotyp</CardTitle>
+            <CardTitle>{c.logoTitle}</CardTitle>
           </CardHeader>
           <CardContent className="text-center">
             <div className="h-24 w-24 rounded-xl bg-brand-50 flex items-center justify-center mx-auto mb-4">
               <Building2 className="h-12 w-12 text-brand-600" />
             </div>
-            <p className="text-xs text-muted-foreground">Logotyp-uppladdning kommer snart</p>
+            <p className="text-xs text-muted-foreground">{c.logoUploadComingSoon}</p>
           </CardContent>
         </Card>
       </div>

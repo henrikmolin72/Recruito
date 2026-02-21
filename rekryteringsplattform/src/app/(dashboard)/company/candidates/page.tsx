@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { CandidatePipeline } from "@/components/dashboard/company/candidate-pipeline";
+import { getDictionary } from "@/i18n/server";
 
 async function getCompanyCandidates() {
   const supabase = await createClient();
@@ -50,17 +51,19 @@ async function getCompanyCandidates() {
 
 export default async function CompanyCandidatesPage() {
   const candidates = await getCompanyCandidates();
+  const dict = await getDictionary();
+  const c = dict.company;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Kandidater</h1>
-        <p className="text-muted-foreground">Alla kandidater presenterade för dina uppdrag</p>
+        <h1 className="text-2xl font-bold">{c.candidatesPageTitle}</h1>
+        <p className="text-muted-foreground">{c.candidatesPageSubtitle}</p>
       </div>
 
       {candidates.length === 0 ? (
         <div className="p-12 text-center border-2 border-dashed rounded-lg bg-muted/20">
-          <p className="text-muted-foreground">Inga kandidater har presenterats än.</p>
+          <p className="text-muted-foreground">{c.noCandidatesPresented}</p>
         </div>
       ) : (
         <CandidatePipeline candidates={candidates} />

@@ -8,6 +8,7 @@ import { ArrowLeft, Download, Mail, Phone, Linkedin } from "lucide-react";
 import { CandidateStatusActions } from "@/components/dashboard/company/candidate-status-actions";
 import { CandidateChat } from "@/components/shared/candidate-chat";
 import { getCandidateConversation } from "@/lib/actions/messages";
+import { getDictionary } from "@/i18n/server";
 
 async function getCandidate(candidateId: string, jobId: string) {
     const supabase = await createClient();
@@ -15,7 +16,6 @@ async function getCandidate(candidateId: string, jobId: string) {
 
     if (!user) return null;
 
-    // 1. Hämta jobbet för att kontrollera att användaren äger det
     const { data: job } = await supabase
         .from("jobs")
         .select("company:companies(user_id)")
@@ -29,7 +29,6 @@ async function getCandidate(candidateId: string, jobId: string) {
         return null;
     }
 
-    // 2. Hämta kandidaten
     const { data: candidate, error: candidateError } = await supabase
         .from("candidates")
         .select(`
@@ -61,6 +60,8 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
     const { data: { user } } = await supabase.auth.getUser();
     const conversation = await getCandidateConversation(candidateId);
     const initialMessages = (conversation as any)?.messages || [];
+    const dict = await getDictionary();
+    const c = dict.company;
 
     let cvUrl = null;
     if (candidate.cv_file_path) {
@@ -90,7 +91,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                             <StatusBadge status={candidate.status} />
                         </div>
                         <p className="text-muted-foreground mt-1">
-                            Presenterades av {candidate.recruiter?.profile?.full_name || 'Rekryterare'}
+                            {c.presentedBy.replace("{name}", candidate.recruiter?.profile?.full_name || dict.common.recruiter)}
                         </p>
                     </div>
                 </div>
@@ -99,7 +100,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                     {cvUrl && (
                         <a href={cvUrl} target="_blank" rel="noreferrer">
                             <Button variant="outline" className="gap-2">
-                                <Download className="h-4 w-4" /> Ladda ner CV
+                                <Download className="h-4 w-4" /> {c.downloadCv}
                             </Button>
                         </a>
                     )}
@@ -115,32 +116,32 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                 <div className="md:col-span-2 space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Profil & Erfarenhet</CardTitle>
+                            <CardTitle>{c.candidateProfileTitle}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                 <div>
-                                    <p className="text-muted-foreground">Nuvarande roll</p>
+                                    <p className="text-muted-foreground">{c.currentRole}</p>
                                     <p className="font-semibold">{candidate.current_title || '-'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground">Nuvarande arbetsgivare</p>
+                                    <p className="text-muted-foreground">{c.currentEmployer}</p>
                                     <p className="font-semibold">{candidate.current_company || '-'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground">Erfarenhet</p>
-                                    <p className="font-semibold">{candidate.years_experience} år</p>
+                                    <p className="text-muted-foreground">{c.experience}</p>
+                                    <p className="font-semibold">{candidate.years_experience} {dict.common.years}</p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground">Löneanspråk</p>
-                                    <p className="font-semibold">{candidate.expected_salary ? `${candidate.expected_salary} kr/mån` : '-'}</p>
+                                    <p className="text-muted-foreground">{c.salaryExpectation}</p>
+                                    <p className="font-semibold">{candidate.expected_salary ? `${candidate.expected_salary} ${dict.common.perMonth}` : '-'}</p>
                                 </div>
                             </div>
 
                             <div>
-                                <p className="font-medium mb-2">Motivering / Cover Note</p>
+                                <p className="font-medium mb-2">{c.motivationTitle}</p>
                                 <div className="p-4 bg-muted/30 rounded-lg text-sm whitespace-pre-wrap italic">
-                                    "{candidate.cover_note || 'Ingen motivering angiven.'}"
+                                    &quot;{candidate.cover_note || c.noMotivationProvided}&quot;
                                 </div>
                             </div>
                         </CardContent>
@@ -150,7 +151,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">Kontaktuppgifter</CardTitle>
+                            <CardTitle className="text-base">{c.contactInfoTitle}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-3">
@@ -166,7 +167,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                             {candidate.linkedin_url && (
                                 <div className="flex items-center gap-3">
                                     <Linkedin className="h-4 w-4 text-muted-foreground" />
-                                    <a href={candidate.linkedin_url} target="_blank" rel="noreferrer" className="text-sm text-brand-600 hover:underline">LinkedIn Profil</a>
+                                    <a href={candidate.linkedin_url} target="_blank" rel="noreferrer" className="text-sm text-brand-600 hover:underline">{dict.common.linkedInProfile}</a>
                                 </div>
                             )}
                         </CardContent>
@@ -175,7 +176,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
             </div>
 
             <div className="pt-6 border-t">
-                <h2 className="text-xl font-bold mb-4">Meddelanden</h2>
+                <h2 className="text-xl font-bold mb-4">{c.candidateMessagesTitle}</h2>
                 <CandidateChat
                     candidateId={candidateId}
                     jobId={jobId}

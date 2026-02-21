@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AppLogo } from "@/components/shared/app-logo";
 import { registerRecruiter } from "@/lib/actions/auth";
+import { useTranslations } from "@/i18n/client";
 
 export default function RegisterRecruiterPage() {
+  const { t } = useTranslations();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,8 +35,8 @@ export default function RegisterRecruiterPage() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Bli rekryterare</CardTitle>
-            <CardDescription>Skapa ett rekryterarkonto och börja tjäna pengar</CardDescription>
+            <CardTitle>{t("auth.registerRecruiterTitle")}</CardTitle>
+            <CardDescription>{t("auth.registerRecruiterDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
@@ -44,35 +46,35 @@ export default function RegisterRecruiterPage() {
             )}
             <form action={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5">Fullständigt namn</label>
-                <Input name="full_name" placeholder="Förnamn Efternamn" required />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.fullNameLabel")}</label>
+                <Input name="full_name" placeholder={t("auth.contactPersonPlaceholder")} required />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">E-post</label>
-                <Input type="email" name="email" placeholder="erik@example.se" required />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.emailLabel")}</label>
+                <Input type="email" name="email" placeholder={t("auth.emailPlaceholder")} required />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Rubrik / Headline</label>
-                <Input name="headline" placeholder="T.ex. Senior IT-rekryterare med 10 års erfarenhet" />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.headlineLabel")}</label>
+                <Input name="headline" placeholder={t("auth.headlinePlaceholder")} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">LinkedIn-profil</label>
+                <label className="block text-sm font-medium mb-1.5">{t("auth.linkedinLabel")}</label>
                 <Input name="linkedin_url" placeholder="https://linkedin.com/in/..." />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Års erfarenhet</label>
+                <label className="block text-sm font-medium mb-1.5">{t("auth.yearsExperienceLabel")}</label>
                 <Input type="number" name="years_experience" placeholder="5" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Lösenord</label>
-                <Input type="password" name="password" placeholder="Minst 8 tecken" required />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.passwordLabel")}</label>
+                <Input type="password" name="password" placeholder={t("auth.passwordMinPlaceholder")} required />
               </div>
               <Button className="w-full bg-success-500 hover:bg-success-700" size="lg" disabled={loading}>
-                {loading ? "Skickar ansökan..." : "Skicka ansökan"}
+                {loading ? t("auth.sendingApplication") : t("auth.sendApplication")}
               </Button>
             </form>
             <p className="text-center text-sm text-muted-foreground mt-6">
-              Din ansökan granskas innan kontot aktiveras.
+              {t("auth.applicationReviewNotice")}
             </p>
           </CardContent>
         </Card>

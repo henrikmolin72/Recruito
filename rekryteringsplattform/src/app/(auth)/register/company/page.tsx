@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AppLogo } from "@/components/shared/app-logo";
 import { registerCompany } from "@/lib/actions/auth";
+import { useTranslations } from "@/i18n/client";
 
 export default function RegisterCompanyPage() {
+  const { t } = useTranslations();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,8 +35,8 @@ export default function RegisterCompanyPage() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Registrera företag</CardTitle>
-            <CardDescription>Skapa ett företagskonto för att börja rekrytera</CardDescription>
+            <CardTitle>{t("auth.registerCompanyTitle")}</CardTitle>
+            <CardDescription>{t("auth.registerCompanyDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
@@ -44,36 +46,36 @@ export default function RegisterCompanyPage() {
             )}
             <form action={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5">Företagsnamn</label>
-                <Input name="company_name" placeholder="AB Företaget" required />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.companyNameLabel")}</label>
+                <Input name="company_name" placeholder={t("auth.companyNamePlaceholder")} required />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Organisationsnummer</label>
-                <Input name="org_number" placeholder="556xxx-xxxx" />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.orgNumberLabel")}</label>
+                <Input name="org_number" placeholder={t("auth.orgNumberPlaceholder")} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Bransch</label>
-                <Input name="industry" placeholder="T.ex. IT & Tech, Finans" />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.industryLabel")}</label>
+                <Input name="industry" placeholder={t("auth.industryPlaceholder")} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Kontaktperson</label>
-                <Input name="full_name" placeholder="Förnamn Efternamn" required />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.contactPersonLabel")}</label>
+                <Input name="full_name" placeholder={t("auth.contactPersonPlaceholder")} required />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">E-post</label>
-                <Input type="email" name="email" placeholder="namn@foretag.se" required />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.emailLabel")}</label>
+                <Input type="email" name="email" placeholder={t("auth.emailPlaceholder")} required />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Lösenord</label>
-                <Input type="password" name="password" placeholder="Minst 8 tecken" required />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.passwordLabel")}</label>
+                <Input type="password" name="password" placeholder={t("auth.passwordMinPlaceholder")} required />
               </div>
               <Button className="w-full" size="lg" disabled={loading}>
-                {loading ? "Skapar konto..." : "Skapa konto"}
+                {loading ? t("auth.creatingAccount") : t("auth.createAccount")}
               </Button>
             </form>
             <p className="text-center text-sm text-muted-foreground mt-6">
-              Redan registrerad?{" "}
-              <Link href="/login" className="text-brand-600 hover:underline font-medium">Logga in</Link>
+              {t("auth.alreadyRegistered")}{" "}
+              <Link href="/login" className="text-brand-600 hover:underline font-medium">{t("auth.loginButton")}</Link>
             </p>
           </CardContent>
         </Card>

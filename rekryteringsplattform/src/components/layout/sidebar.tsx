@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { AppLogo } from "@/components/shared/app-logo";
+import { useTranslations } from "@/i18n/client";
 import {
   LayoutDashboard,
   Briefcase,
@@ -22,38 +23,39 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 interface NavItem {
-  label: string;
+  labelKey: string;
   href: string;
   icon: LucideIcon;
   badge?: string;
+  isMessages?: boolean;
 }
 
 const COMPANY_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/company", icon: LayoutDashboard },
-  { label: "Jobb", href: "/company/jobs", icon: Briefcase },
-  { label: "Kandidater", href: "/company/candidates", icon: Users },
-  { label: "Meddelanden", href: "/company/messages", icon: MessageSquare },
-  { label: "Fakturering", href: "/company/billing", icon: CreditCard },
-  { label: "Profil", href: "/company/profile", icon: Building2 },
+  { labelKey: "nav.dashboard", href: "/company", icon: LayoutDashboard },
+  { labelKey: "nav.jobs", href: "/company/jobs", icon: Briefcase },
+  { labelKey: "nav.candidates", href: "/company/candidates", icon: Users },
+  { labelKey: "nav.messages", href: "/company/messages", icon: MessageSquare, isMessages: true },
+  { labelKey: "nav.billing", href: "/company/billing", icon: CreditCard },
+  { labelKey: "nav.profile", href: "/company/profile", icon: Building2 },
 ];
 
 const RECRUITER_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/recruiter", icon: LayoutDashboard },
-  { label: "Bläddra jobb", href: "/recruiter/jobs", icon: Search },
-  { label: "Mina mandat", href: "/recruiter/mandates", icon: FileCheck, badge: "3/5" },
-  { label: "Kandidater", href: "/recruiter/candidates", icon: Users },
-  { label: "Meddelanden", href: "/recruiter/messages", icon: MessageSquare },
-  { label: "Intäkter", href: "/recruiter/earnings", icon: Wallet },
-  { label: "Profil", href: "/recruiter/profile", icon: UserCircle },
+  { labelKey: "nav.dashboard", href: "/recruiter", icon: LayoutDashboard },
+  { labelKey: "nav.browseJobs", href: "/recruiter/jobs", icon: Search },
+  { labelKey: "nav.myMandates", href: "/recruiter/mandates", icon: FileCheck, badge: "3/5" },
+  { labelKey: "nav.candidates", href: "/recruiter/candidates", icon: Users },
+  { labelKey: "nav.messages", href: "/recruiter/messages", icon: MessageSquare, isMessages: true },
+  { labelKey: "nav.earnings", href: "/recruiter/earnings", icon: Wallet },
+  { labelKey: "nav.profile", href: "/recruiter/profile", icon: UserCircle },
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Rekryterare", href: "/admin/recruiters", icon: UserCheck, badge: "4" },
-  { label: "Företag", href: "/admin/companies", icon: Building2 },
-  { label: "Jobb", href: "/admin/jobs", icon: Briefcase },
-  { label: "Placeringar", href: "/admin/placements", icon: Banknote },
-  { label: "Inställningar", href: "/admin/settings", icon: Settings },
+  { labelKey: "nav.dashboard", href: "/admin", icon: LayoutDashboard },
+  { labelKey: "nav.recruiters", href: "/admin/recruiters", icon: UserCheck, badge: "4" },
+  { labelKey: "nav.companies", href: "/admin/companies", icon: Building2 },
+  { labelKey: "nav.jobs", href: "/admin/jobs", icon: Briefcase },
+  { labelKey: "nav.placements", href: "/admin/placements", icon: Banknote },
+  { labelKey: "nav.settings", href: "/admin/settings", icon: Settings },
 ];
 
 export const NAV_MAP: Record<string, NavItem[]> = {
@@ -66,6 +68,7 @@ import { useState, useEffect } from "react";
 
 export function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
+  const { t } = useTranslations();
   const navItems = NAV_MAP[role] || COMPANY_NAV;
   const [userData, setUserData] = useState<{ fullName: string, initials: string } | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -109,7 +112,7 @@ export function Sidebar({ role }: { role: string }) {
       <nav className="flex-1 px-3 space-y-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== `/${role}` && pathname.startsWith(item.href));
-          const badge = item.label === "Meddelanden" && unreadMessages > 0 ? unreadMessages.toString() : item.badge;
+          const badge = item.isMessages && unreadMessages > 0 ? unreadMessages.toString() : item.badge;
 
           return (
             <Link
@@ -126,11 +129,11 @@ export function Sidebar({ role }: { role: string }) {
                 "h-5 w-5 transition-colors",
                 isActive ? "" : (isRecruiter ? "text-slate-500 group-hover:text-brand-400" : "text-muted-foreground")
               )} />
-              {item.label}
+              {t(item.labelKey)}
               {badge && (
                 <span className={cn(
                   "ml-auto text-xs rounded-full px-2 py-0.5 font-bold transition-transform group-hover:scale-110",
-                  item.label === "Meddelanden"
+                  item.isMessages
                     ? "bg-danger-500 text-white shadow-sm"
                     : (isRecruiter ? "bg-white/10 text-brand-400" : "bg-brand-100 text-brand-600")
                 )}>
@@ -166,7 +169,7 @@ export function Sidebar({ role }: { role: string }) {
               "text-[9px] uppercase font-black tracking-widest opacity-70",
               isRecruiter ? "text-brand-400" : "text-muted-foreground"
             )}>
-              {role === "recruiter" ? "Professionell" : "Corporate"}
+              {role === "recruiter" ? t("nav.professional") : t("nav.corporate")}
             </p>
           </div>
         </div>

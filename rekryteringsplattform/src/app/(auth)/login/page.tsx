@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AppLogo } from "@/components/shared/app-logo";
 import { login } from "@/lib/actions/auth";
+import { useTranslations } from "@/i18n/client";
 
 export default function LoginPage() {
+  const { t } = useTranslations();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,8 +35,8 @@ export default function LoginPage() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Logga in</CardTitle>
-            <CardDescription>Ange dina uppgifter för att fortsätta</CardDescription>
+            <CardTitle>{t("auth.loginTitle")}</CardTitle>
+            <CardDescription>{t("auth.loginDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
@@ -44,29 +46,29 @@ export default function LoginPage() {
             )}
             <form action={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5">E-post</label>
-                <Input type="email" name="email" placeholder="namn@foretag.se" required />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.emailLabel")}</label>
+                <Input type="email" name="email" placeholder={t("auth.emailPlaceholder")} required />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Lösenord</label>
-                <Input type="password" name="password" placeholder="Ange lösenord" required />
+                <label className="block text-sm font-medium mb-1.5">{t("auth.passwordLabel")}</label>
+                <Input type="password" name="password" placeholder={t("auth.passwordPlaceholder")} required />
               </div>
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2">
                   <input type="checkbox" className="rounded" />
-                  Kom ihåg mig
+                  {t("auth.rememberMe")}
                 </label>
-                <Link href="/forgot-password" className="text-brand-600 hover:underline">Glömt lösenord?</Link>
+                <Link href="/forgot-password" className="text-brand-600 hover:underline">{t("auth.forgotPassword")}</Link>
               </div>
               <Button className="w-full" size="lg" disabled={loading}>
-                {loading ? "Loggar in..." : "Logga in"}
+                {loading ? t("auth.loggingIn") : t("auth.loginButton")}
               </Button>
             </form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              Har du inget konto?{" "}
+              {t("auth.noAccountPrompt")}{" "}
               <Link href="/register" className="text-brand-600 hover:underline font-medium">
-                Registrera dig
+                {t("auth.registerLink")}
               </Link>
             </div>
           </CardContent>

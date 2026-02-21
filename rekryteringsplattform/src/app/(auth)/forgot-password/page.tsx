@@ -7,8 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { requestPasswordReset } from "@/lib/actions/auth";
+import { useTranslations } from "@/i18n/client";
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslations();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -40,8 +42,8 @@ export default function ForgotPasswordPage() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Glömt lösenord</CardTitle>
-            <CardDescription>Ange din e-post så skickar vi en återställningslänk.</CardDescription>
+            <CardTitle>{t("auth.forgotPasswordTitle")}</CardTitle>
+            <CardDescription>{t("auth.forgotPasswordDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             {error ? (
@@ -51,25 +53,25 @@ export default function ForgotPasswordPage() {
             {success ? (
               <div className="space-y-4">
                 <div className="p-3 rounded-lg bg-success-50 text-success-700 text-sm">
-                  Om adressen finns i systemet har en återställningslänk skickats.
+                  {t("auth.resetLinkSentMessage")}
                 </div>
-                <p className="text-sm text-muted-foreground">Kontrollera inkorg och skräppost, och följ länken i mailet.</p>
+                <p className="text-sm text-muted-foreground">{t("auth.checkInboxMessage")}</p>
                 <Link href="/login" className="inline-block text-sm text-brand-600 hover:underline font-medium">
-                  Tillbaka till inloggning
+                  {t("auth.backToLogin")}
                 </Link>
               </div>
             ) : (
               <form action={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">E-post</label>
-                  <Input type="email" name="email" placeholder="namn@foretag.se" required />
+                  <label className="block text-sm font-medium mb-1.5">{t("auth.emailLabel")}</label>
+                  <Input type="email" name="email" placeholder={t("auth.emailPlaceholder")} required />
                 </div>
                 <Button className="w-full" size="lg" disabled={loading}>
-                  {loading ? "Skickar..." : "Skicka återställningslänk"}
+                  {loading ? t("auth.sending") : t("auth.sendResetLink")}
                 </Button>
                 <div className="text-center text-sm text-muted-foreground">
                   <Link href="/login" className="text-brand-600 hover:underline font-medium">
-                    Tillbaka till inloggning
+                    {t("auth.backToLogin")}
                   </Link>
                 </div>
               </form>

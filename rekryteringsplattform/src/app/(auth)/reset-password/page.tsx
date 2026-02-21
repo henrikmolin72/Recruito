@@ -8,8 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { useTranslations } from "@/i18n/client";
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslations();
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(false);
@@ -52,12 +54,12 @@ export default function ResetPasswordPage() {
     setError(null);
 
     if (password.length < 8) {
-      setError("Lösenordet måste vara minst 8 tecken");
+      setError(t("auth.passwordMinLengthError"));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Lösenorden matchar inte");
+      setError(t("auth.passwordMismatchError"));
       return;
     }
 
@@ -66,7 +68,7 @@ export default function ResetPasswordPage() {
     const { error: updateError } = await supabase.auth.updateUser({ password });
 
     if (updateError) {
-      setError(updateError.message || "Kunde inte uppdatera lösenordet");
+      setError(updateError.message || t("auth.passwordUpdateFailedError"));
       setLoading(false);
       return;
     }
@@ -92,36 +94,36 @@ export default function ResetPasswordPage() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Nytt lösenord</CardTitle>
-            <CardDescription>Skapa ett nytt lösenord för ditt konto.</CardDescription>
+            <CardTitle>{t("auth.resetPasswordTitle")}</CardTitle>
+            <CardDescription>{t("auth.resetPasswordDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             {!ready ? (
               <div className="space-y-4 text-sm">
                 <div className="p-3 rounded-lg bg-warning-50 text-warning-700">
-                  Session för återställning hittades inte. Öppna länken från ditt återställningsmail igen.
+                  {t("auth.sessionNotFoundWarning")}
                 </div>
                 <Link href="/forgot-password" className="text-brand-600 hover:underline font-medium">
-                  Skicka ny återställningslänk
+                  {t("auth.sendNewResetLink")}
                 </Link>
               </div>
             ) : success ? (
               <div className="p-3 rounded-lg bg-success-50 text-success-700 text-sm">
-                Lösenord uppdaterat. Du skickas till inloggning...
+                {t("auth.passwordUpdatedMessage")}
               </div>
             ) : (
               <form action={handleSubmit} className="space-y-4">
                 {error ? <div className="p-3 rounded-lg bg-danger-50 text-danger-700 text-sm">{error}</div> : null}
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Nytt lösenord</label>
-                  <Input type="password" name="password" placeholder="Minst 8 tecken" required />
+                  <label className="block text-sm font-medium mb-1.5">{t("auth.newPasswordLabel")}</label>
+                  <Input type="password" name="password" placeholder={t("auth.passwordMinPlaceholder")} required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Bekräfta lösenord</label>
-                  <Input type="password" name="confirm_password" placeholder="Upprepa lösenord" required />
+                  <label className="block text-sm font-medium mb-1.5">{t("auth.confirmPasswordLabel")}</label>
+                  <Input type="password" name="confirm_password" placeholder={t("auth.confirmPasswordPlaceholder")} required />
                 </div>
                 <Button className="w-full" size="lg" disabled={loading}>
-                  {loading ? "Sparar..." : "Uppdatera lösenord"}
+                  {loading ? t("auth.savingPassword") : t("auth.updatePassword")}
                 </Button>
               </form>
             )}

@@ -3,15 +3,15 @@ export interface PricingTier {
     minPlacements: number;
     /** Fee percentage for this tier */
     feePercentage: number;
-    /** Human-readable tier name */
-    label: string;
+    /** Translation key for the tier name (e.g. "pricing.gold") */
+    labelKey: string;
 }
 
 /** Tiers ordered from highest threshold to lowest. First match wins. */
 export const PRICING_TIERS: PricingTier[] = [
-    { minPlacements: 5, feePercentage: 12, label: "Guld" },
-    { minPlacements: 3, feePercentage: 13, label: "Silver" },
-    { minPlacements: 0, feePercentage: 15, label: "Standard" },
+    { minPlacements: 5, feePercentage: 12, labelKey: "pricing.gold" },
+    { minPlacements: 3, feePercentage: 13, labelKey: "pricing.silver" },
+    { minPlacements: 0, feePercentage: 15, labelKey: "pricing.standard" },
 ];
 
 /** Rolling window in months for tier qualification */
