@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { DownloadJobDescription } from "@/components/dashboard/recruiter/download-job-description";
 import { getRecruiterMandateById } from "@/lib/actions/recruiter";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { getDictionary } from "@/i18n/server";
 
 export default async function RecruiterMandateDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,12 +17,15 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
     notFound();
   }
 
+  const dict = await getDictionary();
+  const r = dict.recruiter;
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
           <Link href="/recruiter/mandates" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Tillbaka till mandat
+            <ArrowLeft className="h-4 w-4" /> {r.backToMandates}
           </Link>
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold">{mandate.title}</h1>
@@ -29,8 +33,8 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
           </div>
           <div className="flex items-center flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1"><Building2 className="h-3.5 w-3.5" /> {mandate.company}</span>
-            <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {mandate.location || "Ej angiven"}</span>
-            <span className="inline-flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" /> {mandate.employment_type || "Ej angiven"}</span>
+            <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {mandate.location || dict.common.notSpecified}</span>
+            <span className="inline-flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" /> {mandate.employment_type || dict.common.notSpecified}</span>
           </div>
         </div>
 
@@ -38,7 +42,7 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
           <DownloadJobDescription mandate={mandate} />
           <Link href={`/recruiter/mandates/${mandate.id}/candidates/new`}>
             <Button size="sm" className="bg-success-500 hover:bg-success-700 gap-1">
-              <Plus className="h-4 w-4" /> Presentera kandidat
+              <Plus className="h-4 w-4" /> {r.presentCandidate}
             </Button>
           </Link>
         </div>
@@ -47,19 +51,19 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
       <Card>
         <CardContent className="p-6 grid md:grid-cols-3 gap-6">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Bransch</p>
-            <p className="mt-1 text-sm">{mandate.industry || "Ej angiven"}</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{r.industryLabel}</p>
+            <p className="mt-1 text-sm">{mandate.industry || dict.common.notSpecified}</p>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Arvode</p>
-            <p className="mt-1 text-sm">{mandate.fee_percentage ? `${mandate.fee_percentage}%` : "Ej angivet"}</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{r.feeLabel}</p>
+            <p className="mt-1 text-sm">{mandate.fee_percentage ? `${mandate.fee_percentage}%` : dict.common.notSpecifiedNeutral}</p>
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Lönespann</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{r.salaryRange}</p>
             <p className="mt-1 text-sm">
               {mandate.salary_min
                 ? `${formatCurrency(mandate.salary_min)}${mandate.salary_max ? ` - ${formatCurrency(mandate.salary_max)}` : ""}`
-                : "Ej angivet"}
+                : dict.common.notSpecifiedNeutral}
             </p>
           </div>
         </CardContent>
@@ -67,27 +71,27 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
 
       <Card>
         <CardContent className="p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Rollbeskrivning</p>
-          <p className="text-sm whitespace-pre-wrap">{mandate.description || "Ingen beskrivning tillgänglig."}</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{r.roleDescription}</p>
+          <p className="text-sm whitespace-pre-wrap">{mandate.description || r.noDescriptionAvailable}</p>
         </CardContent>
       </Card>
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
           <div className="p-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-semibold inline-flex items-center gap-2"><Users className="h-4 w-4" /> Kandidater ({mandate.candidates.length})</h2>
+            <h2 className="font-semibold inline-flex items-center gap-2"><Users className="h-4 w-4" /> {r.candidatesHeader.replace("{count}", String(mandate.candidates.length))}</h2>
           </div>
 
           {mandate.candidates.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">Inga kandidater presenterade ännu.</div>
+            <div className="p-8 text-center text-sm text-muted-foreground">{r.noCandidatesPresentedTable}</div>
           ) : (
             <table className="w-full text-sm min-w-[620px]">
               <thead>
                 <tr className="text-left border-b border-border">
-                  <th className="p-4 font-medium text-muted-foreground">Namn</th>
-                  <th className="p-4 font-medium text-muted-foreground">Status</th>
-                  <th className="p-4 font-medium text-muted-foreground">Skickad</th>
-                  <th className="p-4 font-medium text-muted-foreground">Åtgärd</th>
+                  <th className="p-4 font-medium text-muted-foreground">{r.tableNameHeader}</th>
+                  <th className="p-4 font-medium text-muted-foreground">{r.tableStatusHeader}</th>
+                  <th className="p-4 font-medium text-muted-foreground">{r.tableSentHeader}</th>
+                  <th className="p-4 font-medium text-muted-foreground">{r.tableActionHeader}</th>
                 </tr>
               </thead>
               <tbody>
@@ -98,7 +102,7 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
                     <td className="p-4 text-muted-foreground">{formatDate(candidate.created_at)}</td>
                     <td className="p-4">
                       <Link href={`/recruiter/mandates/${mandate.id}/candidates/${candidate.id}`} className="text-brand-600 hover:text-brand-700 font-medium">
-                        Öppna kandidat
+                        {r.openCandidate}
                       </Link>
                     </td>
                   </tr>

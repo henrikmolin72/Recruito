@@ -4,10 +4,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { claimMandate } from "@/lib/actions/recruiter";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "@/i18n/client";
 
 export function TakeMandateButton({ jobId }: { jobId: string }) {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const { t } = useTranslations();
 
     const handleClaim = async () => {
         setLoading(true);
@@ -15,8 +17,6 @@ export function TakeMandateButton({ jobId }: { jobId: string }) {
         if (result?.error) {
             alert(result.error);
         } else {
-            // Success, maybe redirect or just let revalidatePath handle update
-            // Router refresh helps to update client cache if revalidatePath isn't enough for client side navigation state
             router.push('/recruiter');
         }
         setLoading(false);
@@ -29,7 +29,7 @@ export function TakeMandateButton({ jobId }: { jobId: string }) {
             onClick={handleClaim}
             disabled={loading}
         >
-            {loading ? "Bearbetar..." : "Ta mandat"}
+            {loading ? t("recruiter.takingMandate") : t("recruiter.takeMandate")}
         </Button>
     );
 }

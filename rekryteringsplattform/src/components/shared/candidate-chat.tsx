@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Send, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 interface Message {
     id: string;
@@ -38,6 +39,7 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslations();
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -107,12 +109,12 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
                                 {candidate.first_name} {candidate.last_name}
                             </h4>
                             <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">
-                                {candidate.current_title || "Kandidat"}
+                                {candidate.current_title || t("components.chatCandidate")}
                             </p>
                         </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{t("components.chatStatusLabel")}</span>
                         <div className="text-xs font-bold text-brand-600 bg-white px-3 py-1 rounded-full border border-brand-100 shadow-sm">
                             {candidate.status}
                         </div>
@@ -129,9 +131,9 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
                         <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
                             <Sparkles className="h-8 w-8 text-slate-200" />
                         </div>
-                        <p className="text-sm font-bold text-slate-900">Starta diskussionen</p>
+                        <p className="text-sm font-bold text-slate-900">{t("components.chatStartDiscussion")}</p>
                         <p className="text-xs text-slate-400 mt-1 max-w-[200px] leading-relaxed">
-                            Använd chatten för att stämma av intervjutider eller feedback kring kandidaten.
+                            {t("components.chatEmptyHint")}
                         </p>
                     </div>
                 ) : (
@@ -159,7 +161,7 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
                             >
                                 <div className="flex items-center gap-2 mb-1.5 px-1">
                                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                        {isMe ? "Du" : (msg.sender?.full_name || 'Okänd')}
+                                        {isMe ? t("components.chatYou") : (msg.sender?.full_name || t("common.unknown"))}
                                     </span>
                                 </div>
                                 <div
@@ -184,7 +186,7 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
             <CardFooter className="p-6 pt-2 bg-slate-50/50">
                 <form onSubmit={handleSend} className="flex w-full gap-3 p-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm focus-within:border-brand-300 focus-within:ring-4 focus-within:ring-brand-500/10 transition-all">
                     <Input
-                        placeholder="Skriv ett meddelande..."
+                        placeholder={t("components.chatMessagePlaceholder")}
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         disabled={isLoading}

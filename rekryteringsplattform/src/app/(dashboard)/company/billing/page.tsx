@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreditCard, Clock, CheckCircle } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
+import { getDictionary } from "@/i18n/server";
 
 async function getCompanyBilling() {
   const supabase = await createClient();
@@ -37,39 +38,41 @@ async function getCompanyBilling() {
 
 export default async function CompanyBillingPage() {
   const { placements, stats } = await getCompanyBilling();
+  const dict = await getDictionary();
+  const c = dict.company;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Fakturering</h1>
-        <p className="text-muted-foreground">Översikt av fakturor och betalningar</p>
+        <h1 className="text-2xl font-bold">{c.billingPageTitle}</h1>
+        <p className="text-muted-foreground">{c.billingPageSubtitle}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatsCard title="Totalt fakturerat" value={formatCurrency(stats.total)} icon={CreditCard} />
-        <StatsCard title="Väntande betalning" value={formatCurrency(stats.pending)} icon={Clock} />
-        <StatsCard title="Antal placeringar" value={stats.count} icon={CheckCircle} />
+        <StatsCard title={c.totalInvoiced} value={formatCurrency(stats.total)} icon={CreditCard} />
+        <StatsCard title={c.pendingPayment} value={formatCurrency(stats.pending)} icon={Clock} />
+        <StatsCard title={c.placementCount} value={stats.count} icon={CheckCircle} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Fakturor</CardTitle>
+          <CardTitle>{c.invoicesTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           {placements.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground text-sm">
-              Inga fakturor än. Fakturor skapas automatiskt vid lyckade placeringar.
+              {c.noInvoicesYet}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left">
-                    <th className="pb-3 font-medium text-muted-foreground">Jobb</th>
-                    <th className="pb-3 font-medium text-muted-foreground">Kandidat</th>
-                    <th className="pb-3 font-medium text-muted-foreground">Belopp</th>
-                    <th className="pb-3 font-medium text-muted-foreground">Status</th>
-                    <th className="pb-3 font-medium text-muted-foreground">Datum</th>
+                    <th className="pb-3 font-medium text-muted-foreground">{c.tableJob}</th>
+                    <th className="pb-3 font-medium text-muted-foreground">{c.tableCandidate}</th>
+                    <th className="pb-3 font-medium text-muted-foreground">{c.tableAmount}</th>
+                    <th className="pb-3 font-medium text-muted-foreground">{dict.common.status}</th>
+                    <th className="pb-3 font-medium text-muted-foreground">{dict.common.date}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -85,7 +88,7 @@ export default async function CompanyBillingPage() {
                         <td className="py-3 font-medium">{formatCurrency(p.total_fee)}</td>
                         <td className="py-3">
                           <Badge variant={isPaid ? "success" : "warning"}>
-                            {isPaid ? "Betald" : "Väntande"}
+                            {isPaid ? c.paid : c.pendingStatus}
                           </Badge>
                         </td>
                         <td className="py-3 text-muted-foreground">{formatDate(p.created_at)}</td>

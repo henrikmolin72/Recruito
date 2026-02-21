@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 interface DownloadJobDescriptionProps {
     mandate: {
@@ -20,22 +21,24 @@ interface DownloadJobDescriptionProps {
 }
 
 export function DownloadJobDescription({ mandate }: DownloadJobDescriptionProps) {
+    const { t } = useTranslations();
+
     const handleDownload = () => {
         const salary = mandate.salary_min
             ? `${formatCurrency(mandate.salary_min)} - ${formatCurrency(mandate.salary_max || mandate.salary_min)}`
-            : "Ej angiven";
+            : t("common.notSpecified");
 
         const content = [
             mandate.title,
             "=".repeat(mandate.title.length),
             "",
-            `Företag: ${mandate.company}`,
-            `Plats: ${mandate.location}`,
-            `Bransch: ${mandate.industry}`,
-            `Anställningsform: ${mandate.employment_type}`,
-            `Löneindikation: ${salary}`,
+            `${t("components.downloadJobCompanyLabel")} ${mandate.company}`,
+            `${t("components.downloadJobLocationLabel")} ${mandate.location}`,
+            `${t("components.downloadJobIndustryLabel")} ${mandate.industry}`,
+            `${t("components.downloadJobEmploymentTypeLabel")} ${mandate.employment_type}`,
+            `${t("components.downloadJobSalaryLabel")} ${salary}`,
             "",
-            "Arbetsbeskrivning",
+            t("components.downloadJobDescriptionLabel"),
             "-".repeat(18),
             "",
             mandate.description,
@@ -54,7 +57,7 @@ export function DownloadJobDescription({ mandate }: DownloadJobDescriptionProps)
 
     return (
         <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5">
-            <Download className="h-3.5 w-3.5" /> Ladda ner jobbeskrivning
+            <Download className="h-3.5 w-3.5" /> {t("components.downloadJobDescriptionButton")}
         </Button>
     );
 }

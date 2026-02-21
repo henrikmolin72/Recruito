@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { CandidateChat } from "@/components/shared/candidate-chat";
 import { cn } from "@/lib/utils";
 import { markConversationAsRead } from "@/lib/actions/messages";
+import { useTranslations } from "@/i18n/client";
 
 interface CompanyInboxProps {
     initialConversations: any[];
@@ -18,6 +19,7 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
         initialConversations.length > 0 ? initialConversations[0].id : null
     );
     const [search, setSearch] = useState("");
+    const { t } = useTranslations();
 
     useEffect(() => {
         if (selectedConvId) {
@@ -28,7 +30,7 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
     const selectedConv = initialConversations.find(c => c.id === selectedConvId);
 
     const filteredConversations = initialConversations.filter(conv => {
-        const recruiterName = conv.candidate?.recruiter?.profile?.full_name || "Okänd Rekryterare";
+        const recruiterName = conv.candidate?.recruiter?.profile?.full_name || t("common.unknown");
         const candidateName = `${conv.candidate?.first_name} ${conv.candidate?.last_name}`;
         const searchStr = `${recruiterName} ${candidateName}`.toLowerCase();
         return searchStr.includes(search.toLowerCase());
@@ -40,7 +42,7 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
             <div className="w-full md:w-80 border-r border-border flex flex-col bg-muted/10">
                 <div className="p-4 border-b border-border bg-white">
                     <Input
-                        placeholder="Sök konversationer..."
+                        placeholder={t("components.inboxSearchPlaceholder")}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -48,13 +50,13 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
                 <div className="flex-1 overflow-y-auto">
                     {filteredConversations.length === 0 ? (
                         <div className="p-8 text-center text-muted-foreground text-sm">
-                            Inga konversationer hittades.
+                            {t("components.inboxNoConversations")}
                         </div>
                     ) : (
                         filteredConversations.map((conv) => {
                             const lastMsg = conv.messages?.length > 0 ? conv.messages[conv.messages.length - 1] : null;
                             const isActive = selectedConvId === conv.id;
-                            const recruiterName = conv.candidate?.recruiter?.profile?.full_name || "Rekryterare";
+                            const recruiterName = conv.candidate?.recruiter?.profile?.full_name || t("common.recruiter");
                             const candidateName = `${conv.candidate?.first_name} ${conv.candidate?.last_name}`;
 
                             return (
@@ -77,10 +79,10 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
                                             </span>
                                         </div>
                                         <p className="text-xs text-brand-600 font-medium truncate mb-1">
-                                            Ang: {candidateName}
+                                            {t("components.inboxRegarding").replace("{name}", candidateName)}
                                         </p>
                                         <p className="text-xs text-muted-foreground truncate italic">
-                                            {lastMsg ? lastMsg.content : "Inga meddelanden än"}
+                                            {lastMsg ? lastMsg.content : t("components.inboxNoMessages")}
                                         </p>
                                     </div>
                                 </div>
@@ -96,12 +98,12 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
                     <div className="flex-1 flex flex-col h-full">
                         <div className="p-4 border-b border-border bg-white flex items-center justify-between">
                             <div>
-                                <p className="font-bold text-brand-900">{selectedConv.candidate?.recruiter?.profile?.full_name || "Rekryterare"}</p>
-                                <p className="text-xs text-muted-foreground">Kandidat: <span className="font-medium text-foreground">{selectedConv.candidate?.first_name} {selectedConv.candidate?.last_name}</span></p>
+                                <p className="font-bold text-brand-900">{selectedConv.candidate?.recruiter?.profile?.full_name || t("common.recruiter")}</p>
+                                <p className="text-xs text-muted-foreground">{t("components.inboxCandidateLabel")} <span className="font-medium text-foreground">{selectedConv.candidate?.first_name} {selectedConv.candidate?.last_name}</span></p>
                             </div>
                             <div className="text-right">
                                 <p className="text-sm font-medium">{selectedConv.candidate?.job?.title}</p>
-                                <p className="text-[10px] text-muted-foreground italic">Direktkontakt med rekryterare</p>
+                                <p className="text-[10px] text-muted-foreground italic">{t("components.inboxDirectContactRecruiter")}</p>
                             </div>
                         </div>
                         <div className="flex-1 overflow-hidden p-0 border-none shadow-none">
@@ -118,8 +120,8 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
                         <div className="bg-white p-6 rounded-full shadow-sm mb-4">
                             <Avatar initials="?" size="lg" />
                         </div>
-                        <p className="font-medium">Välj en konversation</p>
-                        <p className="text-sm">Här chattar du direkt med rekryterarna.</p>
+                        <p className="font-medium">{t("components.inboxSelectConversation")}</p>
+                        <p className="text-sm">{t("components.inboxChatWithRecruiters")}</p>
                     </div>
                 )}
             </div>

@@ -4,27 +4,29 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { approveRecruiter, rejectRecruiter, suspendRecruiter } from "@/lib/actions/admin";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "@/i18n/client";
 
 export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string }) {
     const [loading, setLoading] = useState<string | null>(null);
     const router = useRouter();
+    const { t } = useTranslations();
 
     const handleApprove = async () => {
         setLoading("approve");
         const result = await approveRecruiter(recruiterId);
         if (result.error) {
-            alert("Fel: " + result.error);
+            alert(t("common.error") + ": " + result.error);
         }
         router.refresh();
         setLoading(null);
     };
 
     const handleReject = async () => {
-        if (!confirm("Är du säker på att du vill neka denna rekryterare?")) return;
+        if (!confirm(t("admin.confirmRejectRecruiter"))) return;
         setLoading("reject");
         const result = await rejectRecruiter(recruiterId);
         if (result.error) {
-            alert("Fel: " + result.error);
+            alert(t("common.error") + ": " + result.error);
         }
         router.refresh();
         setLoading(null);
@@ -38,7 +40,7 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
                 onClick={handleApprove}
                 disabled={loading !== null}
             >
-                {loading === "approve" ? "..." : "Godkänn"}
+                {loading === "approve" ? "..." : t("admin.approveButton")}
             </Button>
             <Button
                 size="sm"
@@ -47,7 +49,7 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
                 onClick={handleReject}
                 disabled={loading !== null}
             >
-                {loading === "reject" ? "..." : "Neka"}
+                {loading === "reject" ? "..." : t("admin.rejectButton")}
             </Button>
         </div>
     );
@@ -56,13 +58,14 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
 export function RecruiterManageActions({ recruiterId, status }: { recruiterId: string; status: string }) {
     const [loading, setLoading] = useState<string | null>(null);
     const router = useRouter();
+    const { t } = useTranslations();
 
     const handleSuspend = async () => {
-        if (!confirm("Är du säker på att du vill stänga av denna rekryterare?")) return;
+        if (!confirm(t("admin.confirmSuspendRecruiter"))) return;
         setLoading("suspend");
         const result = await suspendRecruiter(recruiterId);
         if (result.error) {
-            alert("Fel: " + result.error);
+            alert(t("common.error") + ": " + result.error);
         }
         router.refresh();
         setLoading(null);
@@ -72,7 +75,7 @@ export function RecruiterManageActions({ recruiterId, status }: { recruiterId: s
         setLoading("approve");
         const result = await approveRecruiter(recruiterId);
         if (result.error) {
-            alert("Fel: " + result.error);
+            alert(t("common.error") + ": " + result.error);
         }
         router.refresh();
         setLoading(null);
@@ -87,7 +90,7 @@ export function RecruiterManageActions({ recruiterId, status }: { recruiterId: s
                 onClick={handleSuspend}
                 disabled={loading !== null}
             >
-                {loading === "suspend" ? "..." : "Stäng av"}
+                {loading === "suspend" ? "..." : t("admin.suspendButton")}
             </Button>
         );
     }
@@ -100,7 +103,7 @@ export function RecruiterManageActions({ recruiterId, status }: { recruiterId: s
                 onClick={handleReapprove}
                 disabled={loading !== null}
             >
-                {loading === "approve" ? "..." : "Återaktivera"}
+                {loading === "approve" ? "..." : t("admin.reactivateButton")}
             </Button>
         );
     }

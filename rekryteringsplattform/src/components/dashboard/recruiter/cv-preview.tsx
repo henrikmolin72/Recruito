@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, X, Eye, FileCheck, Loader2 } from "lucide-react";
+import { FileText, X, Eye, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 export function CVPreview() {
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const { t } = useTranslations();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -43,8 +44,8 @@ export function CVPreview() {
                         <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                             <FileText className="h-6 w-6 text-slate-400 group-hover:text-brand-500" />
                         </div>
-                        <p className="text-sm font-bold text-slate-600">Ladda upp CV</p>
-                        <p className="text-xs text-slate-400 mt-1">Dra och släpp eller klicka för att bläddra</p>
+                        <p className="text-sm font-bold text-slate-600">{t("components.cvUploadLabel")}</p>
+                        <p className="text-xs text-slate-400 mt-1">{t("components.cvUploadHint")}</p>
                     </div>
                 </div>
             ) : (
@@ -70,7 +71,7 @@ export function CVPreview() {
                                     onClick={() => window.open(previewUrl, '_blank')}
                                     className="h-8 px-3 rounded-lg text-slate-500 hover:text-brand-600"
                                 >
-                                    <Eye className="h-4 w-4 mr-2" /> Granska
+                                    <Eye className="h-4 w-4 mr-2" /> {t("components.cvPreviewReview")}
                                 </Button>
                             )}
                             <button

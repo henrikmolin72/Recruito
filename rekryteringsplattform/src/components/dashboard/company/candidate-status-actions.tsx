@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateCandidateStatus } from "@/lib/actions/candidates";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "@/i18n/client";
 
 export function CandidateStatusActions({
     candidateId,
@@ -17,6 +17,7 @@ export function CandidateStatusActions({
 }) {
     const [status, setStatus] = useState(currentStatus);
     const [loading, setLoading] = useState(false);
+    const { t } = useTranslations();
 
     const handleStatusChange = async (newStatus: string) => {
         setLoading(true);
@@ -34,7 +35,7 @@ export function CandidateStatusActions({
 
     return (
         <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Status:</span>
+            <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">{t("components.candidateStatusLabel")}</span>
             <Select
                 value={status}
                 onValueChange={handleStatusChange}
@@ -42,15 +43,15 @@ export function CandidateStatusActions({
             >
                 <SelectTrigger className="w-[180px]">
                     {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    <SelectValue placeholder="Välj status" />
+                    <SelectValue placeholder={t("components.candidateStatusPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="submitted">Inskickad</SelectItem>
-                    <SelectItem value="reviewing">Granskas</SelectItem>
-                    <SelectItem value="interview">Intervju</SelectItem>
-                    <SelectItem value="offer">Erbjudande</SelectItem>
-                    <SelectItem value="hired">Anställd</SelectItem>
-                    <SelectItem value="rejected">Avböjd</SelectItem>
+                    <SelectItem value="submitted">{t("components.candidateStatusSubmitted")}</SelectItem>
+                    <SelectItem value="reviewing">{t("components.candidateStatusReviewing")}</SelectItem>
+                    <SelectItem value="interview">{t("components.candidateStatusInterview")}</SelectItem>
+                    <SelectItem value="offer">{t("components.candidateStatusOffer")}</SelectItem>
+                    <SelectItem value="hired">{t("components.candidateStatusHired")}</SelectItem>
+                    <SelectItem value="rejected">{t("components.candidateStatusRejected")}</SelectItem>
                 </SelectContent>
             </Select>
         </div>
