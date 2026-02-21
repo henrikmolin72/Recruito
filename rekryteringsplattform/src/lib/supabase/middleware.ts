@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { DEFAULT_LOCALE } from "@/i18n/config";
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
@@ -86,13 +87,19 @@ export async function updateSession(request: NextRequest) {
 }
 
 function detectLocaleFromHeader(acceptLanguage: string): string {
-    const supported = ["sv", "en", "da", "no", "nb", "nn"];
+    const supported: Record<string, string> = {
+        sv: "sv",
+        da: "da",
+        no: "no",
+        nb: "no",
+        nn: "no",
+    };
     const parts = acceptLanguage.split(",");
     for (const part of parts) {
         const lang = part.split(";")[0].trim().toLowerCase();
         const short = lang.split("-")[0];
-        if (short === "nb" || short === "nn") return "no";
-        if (supported.includes(short)) return short;
+        const matched = supported[short];
+        if (matched) return matched;
     }
-    return "sv";
+    return DEFAULT_LOCALE;
 }

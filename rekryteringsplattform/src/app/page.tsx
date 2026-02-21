@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AppLogo } from "@/components/shared/app-logo";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { formatCurrency, calculateFee } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 import {
@@ -41,9 +42,10 @@ export default function LandingPage() {
             <a href="#companies" className="hover:text-foreground">{t("landing.navCompanies")}</a>
             <a href="#recruiters" className="hover:text-foreground">{t("landing.navRecruiters")}</a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher variant="dropdown" compact />
             <Link href="/login">
-              <Button variant="ghost" size="sm">{t("common.logIn")}</Button>
+              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">{t("common.logIn")}</Button>
             </Link>
             <Link href="/register">
               <Button size="sm">{t("common.getStarted")}</Button>
@@ -53,55 +55,62 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative overflow-hidden py-14 md:py-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(37,99,235,0.14),transparent_40%)]" />
-        <div className="max-w-6xl mx-auto px-6 relative">
-          <div className="grid lg:grid-cols-[1fr_1.05fr] gap-8 lg:gap-12 items-center">
-            <div>
-              <span className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
-                {t("landing.heroBadge")}
-              </span>
+      <section className="relative overflow-hidden py-16 md:py-24">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,rgba(14,165,233,0.22),transparent_38%),radial-gradient(circle_at_88%_22%,rgba(59,130,246,0.16),transparent_34%),linear-gradient(to_bottom,#f7fbff_0%,#f8fafc_70%,#ffffff_100%)]" />
+        <div className="pointer-events-none absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-200/70 to-transparent" />
+        <div className="relative mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div>
+            <span className="inline-flex items-center rounded-full border border-brand-200/80 bg-white/80 px-4 py-1.5 text-sm font-semibold text-brand-700 backdrop-blur">
+              {t("landing.heroBadge")}
+            </span>
 
-              <h1 className="mt-5 text-4xl md:text-5xl lg:text-6xl font-bold text-brand-900 leading-tight">
-                {t("landing.heroTitleLine1")}
-                <br />
-                <span className="text-brand-600">– {t("landing.heroTitleLine2")}</span>
-              </h1>
+            <h1 className="mt-6 max-w-3xl text-[clamp(2.8rem,5vw,5.2rem)] font-black leading-[0.95] tracking-tight text-slate-950">
+              {t("landing.heroTitleLine1")}
+              <span className="mt-3 block text-brand-700">{t("landing.heroTitleLine2")}</span>
+            </h1>
 
-              <ul className="mt-6 space-y-3 max-w-xl">
-                {[
-                  { title: t("landing.heroBullet1Title"), desc: t("landing.heroBullet1Desc") },
-                  { title: t("landing.heroBullet2Title"), desc: t("landing.heroBullet2Desc") },
-                  { title: t("landing.heroBullet3Title"), desc: t("landing.heroBullet3Desc") },
-                  { title: t("landing.heroBullet4Title"), desc: t("landing.heroBullet4Desc") },
-                  { title: t("landing.heroBullet5Title"), desc: t("landing.heroBullet5Desc") },
-                ].map((item) => (
-                  <li key={item.title} className="flex items-start gap-3">
-                    <CheckCircle className="h-5 w-5 text-brand-600 mt-0.5 shrink-0" />
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-semibold text-foreground">{item.title}:</span> {item.desc}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
+              {t("landing.heroDescription")}
+            </p>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                <Link href="/register/company">
-                  <Button size="lg" className="w-full sm:w-auto gap-2">
-                    <Building2 className="h-5 w-5" /> {t("landing.ctaCompanyButton")}
-                  </Button>
-                </Link>
-                <Link href="/register/recruiter">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto gap-2 border-success-500 text-success-700 hover:bg-success-50">
-                    <UserCircle className="h-5 w-5" /> {t("landing.ctaRecruiterButton")}
-                  </Button>
-                </Link>
-              </div>
+            <ul className="mt-8 grid max-w-2xl gap-3.5">
+              {[
+                { title: t("landing.heroBullet1Title"), desc: t("landing.heroBullet1Desc") },
+                { title: t("landing.heroBullet2Title"), desc: t("landing.heroBullet2Desc") },
+                { title: t("landing.heroBullet3Title"), desc: t("landing.heroBullet3Desc") },
+                { title: t("landing.heroBullet4Title"), desc: t("landing.heroBullet4Desc") },
+                { title: t("landing.heroBullet5Title"), desc: t("landing.heroBullet5Desc") },
+              ].map((item) => (
+                <li key={item.title} className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-sm">
+                  <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
+                    <CheckCircle className="h-4 w-4" />
+                  </span>
+                  <p className="text-[15px] leading-relaxed text-slate-600 md:text-base">
+                    <span className="font-semibold text-slate-900">{item.title}:</span> {item.desc}
+                  </p>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-9 flex flex-col sm:flex-row gap-4">
+              <Link href="/register/company">
+                <Button size="lg" className="w-full sm:w-auto gap-2 shadow-sm">
+                  <Building2 className="h-5 w-5" /> {t("landing.ctaCompanyButton")}
+                </Button>
+              </Link>
+              <Link href="/register/recruiter">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto gap-2 border-success-500 text-success-700 hover:bg-success-50">
+                  <UserCircle className="h-5 w-5" /> {t("landing.ctaRecruiterButton")}
+                </Button>
+              </Link>
             </div>
+          </div>
 
-            <div className="relative">
-              <div className="absolute -top-8 -right-8 h-44 w-44 rounded-full bg-brand-200/30 blur-3xl" />
-              <div className="relative aspect-[3/2] overflow-hidden rounded-3xl border border-brand-100 shadow-[0_22px_50px_-22px_rgba(30,58,138,0.55)]">
+          <div className="relative lg:pl-4">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-brand-300/30 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-10 -left-8 h-44 w-44 rounded-full bg-cyan-200/35 blur-3xl" />
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_28px_70px_-24px_rgba(15,23,42,0.45)]">
+              <div className="aspect-[16/11]">
                 <Image
                   src="/images/recruito-hero-team.png"
                   alt={t("landing.heroImageAlt")}
@@ -110,16 +119,16 @@ export default function LandingPage() {
                   priority
                   className="h-full w-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-tr from-brand-900/30 via-transparent to-white/35" />
-                <div className="absolute bottom-4 left-4 right-4 grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-white/90 backdrop-blur px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("landing.matchingLabel")}</p>
-                    <p className="text-xs font-semibold text-foreground">{t("landing.matchingText")}</p>
-                  </div>
-                  <div className="rounded-lg bg-white/90 backdrop-blur px-3 py-2">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("landing.safetyLabel")}</p>
-                    <p className="text-xs font-semibold text-foreground">{t("landing.safetyText")}</p>
-                  </div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-slate-900/35 via-transparent to-white/35" />
+              </div>
+              <div className="absolute inset-x-5 bottom-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <div className="rounded-xl bg-white/92 px-3.5 py-2.5 backdrop-blur">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{t("landing.matchingLabel")}</p>
+                  <p className="text-sm font-semibold text-slate-900">{t("landing.matchingText")}</p>
+                </div>
+                <div className="rounded-xl bg-white/92 px-3.5 py-2.5 backdrop-blur">
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{t("landing.safetyLabel")}</p>
+                  <p className="text-sm font-semibold text-slate-900">{t("landing.safetyText")}</p>
                 </div>
               </div>
             </div>

@@ -64,6 +64,9 @@ export function Header({ role }: { role: string }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden md:block">
+            <LanguageSwitcher variant="dropdown" compact tone={isRecruiter ? "dark" : "light"} />
+          </div>
           <QuickActions role={role} />
           <NotificationsDropdown />
           <div className="relative">
@@ -107,8 +110,6 @@ export function Header({ role }: { role: string }) {
                     <Settings className="h-4 w-4 text-slate-400 group-hover/item:text-brand-600" />
                     <span className="font-medium text-slate-700 group-hover/item:text-slate-900">{t("common.settings")}</span>
                   </Link>
-                  <div className="my-1 border-t border-border/10" />
-                  <LanguageSwitcher />
                   <div className="my-1 border-t border-border/10" />
                   <form action={logout}>
                     <button
@@ -200,7 +201,7 @@ export function Header({ role }: { role: string }) {
               "p-4 border-t",
               isRecruiter ? "border-slate-800" : "border-border"
             )}>
-              <LanguageSwitcher />
+              <LanguageSwitcher variant="dropdown" compact tone={isRecruiter ? "dark" : "light"} />
               <form action={logout} className="mt-2">
                 <button
                   type="submit"
