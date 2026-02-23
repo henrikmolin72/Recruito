@@ -5,11 +5,25 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Recruiter } from "@/types/db-types";
 import { createNotification } from "@/lib/actions/notifications";
-import { validateRecruiterProfileForm } from "@/lib/validation/forms";
+import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
+import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
 
 function handleError(error: any) {
-    console.error(error);
-    if (error.message === "JWT_EXPIRED") {
+    const normalized = {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        raw: (() => {
+            try {
+                return JSON.stringify(error);
+            } catch {
+                return String(error);
+            }
+        })()
+    };
+    console.error("Recruiter action error:", normalized);
+    if (error?.message === "JWT_EXPIRED") {
         redirect("/login");
     }
     throw new Error("Kunde inte hämta data");
@@ -60,6 +74,120 @@ export async function updateRecruiterProfile(formData: FormData) {
     if (error) return { error: error.message };
 
     revalidatePath("/recruiter/profile");
+    return { success: true };
+}
+
+export async function completeRecruiterOnboarding(formData: FormData) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Ej inloggad" };
+
+    const { data: recruiter } = await supabase
+        .from("recruiters")
+        .select("id, current_country, experience_bracket, years_experience, linkedin_url")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!recruiter) {
+        return { error: "Rekryterarprofil saknas" };
+    }
+
+    const parsed = validateRecruiterOnboardingProfileForm(formData);
+    if (!parsed.success) {
+        return { error: parsed.error };
+    }
+
+    let avatarUrl: string | null = null;
+    const photo = formData.get("photo");
+    if (photo instanceof File && photo.size > 0) {
+        const ext = photo.name.split(".").pop() || "jpg";
+        const fileName = `recruiters/${recruiter.id}/avatar-${Date.now()}.${ext}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("cvs")
+            .upload(fileName, photo, { upsert: true });
+
+        if (uploadError) {
+            console.error("Recruiter photo upload error:", uploadError);
+            return { error: "Kunde inte ladda upp profilfoto." };
+        }
+
+        avatarUrl = uploadData?.path || null;
+    }
+
+    const { error: recruiterUpdateError } = await supabase
+        .from("recruiters")
+        .update({
+            primary_industries: parsed.data.primary_industries,
+            primary_industries_other: parsed.data.primary_industries_other,
+            countries_experience: parsed.data.countries_experience,
+            languages_spoken: parsed.data.languages_spoken,
+            seniority_focus: parsed.data.seniority_focus,
+            roles_per_week: parsed.data.roles_per_week,
+            candidates_sourced_last_12m: parsed.data.candidates_sourced_last_12m,
+            successful_placements_last_12m: parsed.data.successful_placements_last_12m,
+            average_time_to_fill: parsed.data.average_time_to_fill,
+            challenging_role_example: parsed.data.challenging_role_example,
+            sourcing_channels: parsed.data.sourcing_channels,
+            sourcing_channels_other: parsed.data.sourcing_channels_other,
+            available_hours_per_week: parsed.data.available_hours_per_week,
+            onboarding_completed_at: new Date().toISOString(),
+            onboarding_email_sent_at: new Date().toISOString(),
+        })
+        .eq("id", recruiter.id);
+
+    if (recruiterUpdateError) {
+        console.error("Recruiter onboarding update error:", recruiterUpdateError);
+        return { error: recruiterUpdateError.message };
+    }
+
+    if (avatarUrl) {
+        const { error: profileError } = await supabase
+            .from("profiles")
+            .update({ avatar_url: avatarUrl })
+            .eq("id", user.id);
+
+        if (profileError) {
+            console.error("Recruiter onboarding avatar profile update error:", profileError);
+        }
+    }
+
+    try {
+        const { data: profile } = await supabase.from("profiles").select("full_name, email").eq("id", user.id).single();
+        await sendInternalRecruiterEmail({
+            subject: `Recruiter onboarding completed: ${profile?.full_name || user.id}`,
+            text: [
+                "Recruiter profile completion form inkom.",
+                "",
+                `Namn: ${profile?.full_name || "—"}`,
+                `E-post: ${profile?.email || "—"}`,
+                `Land: ${recruiter.current_country || "—"}`,
+                `LinkedIn: ${recruiter.linkedin_url || "—"}`,
+                `Erfarenhet: ${recruiter.experience_bracket || recruiter.years_experience || "—"}`,
+                `Primary industries: ${parsed.data.primary_industries.join(", ")}`,
+                `Primary industries other: ${parsed.data.primary_industries_other || "—"}`,
+                `Countries experience: ${parsed.data.countries_experience.join(", ")}`,
+                `Languages: ${parsed.data.languages_spoken.map((l: any) => `${l.language} (${l.proficiency})`).join(", ")}`,
+                `Seniority focus: ${parsed.data.seniority_focus.join(", ")}`,
+                `Roles/week: ${parsed.data.roles_per_week}`,
+                `Candidates sourced 12m: ${parsed.data.candidates_sourced_last_12m}`,
+                `Placements 12m: ${parsed.data.successful_placements_last_12m}`,
+                `Average time to fill: ${parsed.data.average_time_to_fill}`,
+                `Challenging role: ${parsed.data.challenging_role_example}`,
+                `Sourcing channels: ${parsed.data.sourcing_channels.join(", ")}`,
+                `Sourcing channels other: ${parsed.data.sourcing_channels_other || "—"}`,
+                `Available hours/week: ${parsed.data.available_hours_per_week}`,
+                `Photo uploaded: ${avatarUrl ? "Ja" : "Nej"}`,
+                "",
+                `Recruiter ID: ${recruiter.id}`,
+                `User ID: ${user.id}`,
+            ].join("\n"),
+        });
+    } catch (mailError) {
+        console.error("Failed to send recruiter onboarding completion email:", mailError);
+    }
+
+    revalidatePath("/recruiter/profile");
+    revalidatePath("/recruiter");
     return { success: true };
 }
 
@@ -137,10 +265,17 @@ export async function getRecruiterDashboard() {
         .from("recruiters")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
     if (recruiterError || !recruiter) {
-        console.error("No recruiter profile found:", recruiterError);
+        if (recruiterError) {
+            console.error("Error loading recruiter profile for dashboard:", {
+                message: recruiterError.message,
+                code: (recruiterError as any).code,
+                details: (recruiterError as any).details,
+                hint: (recruiterError as any).hint,
+            });
+        }
         return {
             recruiter: { user_id: user.id } as Recruiter,
             mandates: [],
@@ -458,6 +593,7 @@ export async function getRecruiterMandateById(mandateId: string) {
         salary_currency,
         fee_percentage,
         status,
+        pipeline_stages,
         company:companies(company_name)
       ),
       candidates:candidates(
@@ -465,6 +601,7 @@ export async function getRecruiterMandateById(mandateId: string) {
         first_name,
         last_name,
         status,
+        current_pipeline_stage,
         created_at
       )
     `)
@@ -485,7 +622,10 @@ export async function getRecruiterMandateById(mandateId: string) {
         .map((candidate: any) => ({
             id: candidate.id,
             name: `${candidate.first_name} ${candidate.last_name}`,
+            first_name: candidate.first_name,
+            last_name: candidate.last_name,
             status: candidate.status,
+            current_pipeline_stage: candidate.current_pipeline_stage,
             created_at: candidate.created_at,
         }));
 
@@ -505,6 +645,81 @@ export async function getRecruiterMandateById(mandateId: string) {
         salary_currency: job?.salary_currency || "SEK",
         fee_percentage: job?.fee_percentage,
         status: job?.status || "active",
+        pipeline_stages: (job as any)?.pipeline_stages || [],
         candidates,
     };
+}
+
+export async function getRecruiterApplicationsForJob(jobId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data: recruiter } = await supabase
+        .from("recruiters")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!recruiter) return [];
+
+    const { data: mandate } = await supabase
+        .from("job_mandates")
+        .select("id")
+        .eq("job_id", jobId)
+        .eq("recruiter_id", recruiter.id)
+        .eq("is_active", true)
+        .maybeSingle();
+
+    if (!mandate) return [];
+
+    const { data: applications, error: applicationsError } = await supabase
+        .from("applications")
+        .select("id, job_id, recruiter_id, full_name, email, status, source, created_at")
+        .eq("job_id", jobId)
+        .eq("recruiter_id", recruiter.id)
+        .order("created_at", { ascending: false });
+
+    if (applicationsError) {
+        console.error("Error fetching recruiter applications:", applicationsError);
+        return [];
+    }
+
+    const applicationIds = (applications || []).map((app: any) => app.id);
+    if (applicationIds.length === 0) return [];
+
+    const { data: screenings, error: screeningsError } = await supabase
+        .from("ai_screenings")
+        .select("application_id, match_score, analysis_json, status, screened_at, error_message")
+        .in("application_id", applicationIds);
+
+    if (screeningsError) {
+        console.error("Error fetching AI screenings for recruiter applications:", screeningsError);
+    }
+
+    const screeningMap: Record<string, any> = {};
+    (screenings || []).forEach((row: any) => {
+        let analysis = row.analysis_json || {};
+        if (typeof analysis === "string") {
+            try {
+                analysis = JSON.parse(analysis);
+            } catch {
+                analysis = {};
+            }
+        }
+
+        screeningMap[row.application_id] = {
+            status: row.status || null,
+            screened_at: row.screened_at || null,
+            error_message: row.error_message || null,
+            score: typeof row.match_score === "number" ? row.match_score : Number(row.match_score || 0),
+            reasoning: Array.isArray(analysis?.reasoning) ? analysis.reasoning : [],
+            missingSkills: Array.isArray(analysis?.missingSkills) ? analysis.missingSkills : [],
+        };
+    });
+
+    return (applications || []).map((app: any) => ({
+        ...app,
+        screening: screeningMap[app.id] || null,
+    }));
 }

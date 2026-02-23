@@ -298,6 +298,7 @@
     "jobDetailsPipeline": "Pipeline",
     "jobDetailsDescription": "Description",
     "jobDetailsRecruiters": "Recruiters",
+    "jobDetailsProcess": "Process",
     "jobDetailsFee": "Fee",
     "jobDescriptionTitle": "Job description",
     "specificationsTitle": "Specifications",
@@ -386,7 +387,13 @@
     "contactInfoTitle": "Contact information",
     "downloadCv": "Download CV",
     "presentedBy": "Presented by {name}",
-    "candidateMessagesTitle": "Messages"
+    "candidateMessagesTitle": "Messages",
+    "processTitle": "Recruitment process",
+    "processDescription": "Customize the steps in your recruitment process for this assignment",
+    "pipelineSaved": "The process has been saved!",
+    "pipelineWarningCandidates": "There are active candidates in this process. Be careful when removing stages.",
+    "stepProcess": "Process",
+    "stepProcessDesc": "Recruitment process"
   },
   "recruiter": {
     "dashboardTitle": "Dashboard",
@@ -514,7 +521,8 @@
     "profileOverview": "Profile overview",
     "currentRoleLabel": "Current role",
     "yourMotivation": "Your cover note",
-    "downloadJobDescription": "Download job description"
+    "downloadJobDescription": "Download job description",
+    "hiringProcess": "Recruitment process"
   },
   "admin": {
     "dashboardTitle": "Admin Dashboard",
@@ -772,6 +780,16 @@
     "downloadJobDescriptionLabel": "Job description",
     "recruiterJobsListJobLabel": "Job:",
     "recruiterJobsListRecruiterLabel": "Recruiter:",
-    "recruiterJobsListPresentedLabel": "Presented:"
+    "recruiterJobsListPresentedLabel": "Presented:",
+    "pipelineSubmitted": "Submitted",
+    "pipelineYourStages": "Your stages",
+    "pipelineEmpty": "None",
+    "pipelineAddInterview": "Add interview",
+    "pipelineAddTest": "Add test",
+    "pipelineAddScreening": "Add screening",
+    "pipelineStagesUsed": "stages used",
+    "pipelineInterviews": "interviews",
+    "pipelineTests": "tests",
+    "kanbanStatusLabel": "Status"
   }
 }

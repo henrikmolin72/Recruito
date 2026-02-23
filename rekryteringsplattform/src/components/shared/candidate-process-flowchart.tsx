@@ -1,33 +1,19 @@
 import type { PipelineStage } from "@/types/db-types";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { cn } from "@/lib/utils";
 import {
-    ArrowLeft,
-    Mail,
-    Phone,
-    Linkedin,
-    FileText,
-    GitBranch,
-    Search,
-    MessageSquare,
-    ClipboardCheck,
-    Inbox,
     Award,
     CheckCircle2,
     Circle,
+    ClipboardCheck,
+    GitBranch,
+    Inbox,
+    MessageSquare,
     PauseCircle,
+    Search,
     Sparkles,
 } from "lucide-react";
-import { CandidateChat } from "@/components/shared/candidate-chat";
-import { CompanyNextStepPanel } from "@/components/dashboard/recruiter/company-next-step-panel";
-import { RecruiterPipelineControls } from "@/components/dashboard/recruiter/recruiter-pipeline-controls";
-import { getCandidateConversation } from "@/lib/actions/messages";
-import { getDictionary } from "@/i18n/server";
-import { cn } from "@/lib/utils";
 
 type CandidatePipelineNode = {
     id: string;
@@ -146,7 +132,19 @@ function getPipelineNodeIcon(node: CandidatePipelineNode) {
     }
 }
 
-function RecruiterCandidateProcessCard({ candidate, dict }: { candidate: any; dict: any }) {
+export function CandidateProcessFlowchart({
+    candidate,
+    dict,
+    eyebrow,
+    helperText,
+    className,
+}: {
+    candidate: any;
+    dict: any;
+    eyebrow?: string;
+    helperText?: string | null;
+    className?: string;
+}) {
     const nodes = buildCandidatePipelineNodes(candidate, dict);
     const activeNodeId = getCandidateActivePipelineNodeId(candidate, nodes);
     const activeIndex = Math.max(nodes.findIndex((node) => node.id === activeNodeId), 0);
@@ -154,13 +152,13 @@ function RecruiterCandidateProcessCard({ candidate, dict }: { candidate: any; di
     const isNegativeTerminal = candidate.status === "rejected" || candidate.status === "declined";
 
     return (
-        <Card className="border-none shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+        <Card className={cn("border-none shadow-xl shadow-slate-200/50 bg-white overflow-hidden", className)}>
             <CardHeader className="pb-3">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                             <GitBranch className="h-3.5 w-3.5" />
-                            {(dict.recruiter as any).hiringProcess || "Rekryteringsprocess"}
+                            {eyebrow || (dict.recruiter as any)?.hiringProcess || (dict.company as any)?.hiringProcess || "Rekryteringsprocess"}
                         </p>
                         <p className="mt-2 text-sm font-bold text-slate-900 truncate">
                             {activeNode?.label}
@@ -168,6 +166,11 @@ function RecruiterCandidateProcessCard({ candidate, dict }: { candidate: any; di
                         {activeNode?.description && (
                             <p className="mt-1 text-xs text-slate-500 leading-relaxed line-clamp-2">
                                 {activeNode.description}
+                            </p>
+                        )}
+                        {!activeNode?.description && helperText && (
+                            <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                                {helperText}
                             </p>
                         )}
                     </div>
@@ -255,166 +258,3 @@ function RecruiterCandidateProcessCard({ candidate, dict }: { candidate: any; di
     );
 }
 
-async function getCandidate(candidateId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) return null;
-
-    const { data: candidate } = await supabase
-        .from("candidates")
-        .select(`
-            *,
-            job:jobs(
-                title,
-                pipeline_stages,
-                company:companies(company_name)
-            )
-        `)
-        .eq("id", candidateId)
-        .single();
-
-    return candidate;
-}
-
-export default async function RecruiterCandidateDetailsPage({ params }: { params: Promise<{ id: string, candidateId: string }> }) {
-    const { id: mandateId, candidateId } = await params;
-    const candidate = await getCandidate(candidateId);
-
-    if (!candidate) {
-        notFound();
-    }
-
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const conversation = await getCandidateConversation(candidateId);
-    const initialMessages = (conversation as any)?.messages || [];
-    const dict = await getDictionary();
-    const r = dict.recruiter;
-
-    return (
-        <div className="space-y-8 max-w-5xl mx-auto py-2">
-            <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between border-b pb-8 border-slate-100">
-                <div className="flex items-start gap-5">
-                    <Link href="/recruiter/mandates">
-                        <Button variant="ghost" size="icon" className="rounded-full bg-white shadow-sm border border-slate-100">
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                    </Link>
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-3xl font-black tracking-tight text-slate-900">
-                                {candidate.first_name} {candidate.last_name}
-                            </h1>
-                            <StatusBadge status={candidate.status} />
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-                            <span className="text-slate-400">{r.assignmentLabel}</span>
-                            <span className="text-brand-600 font-bold">{candidate.job?.title || dict.common.unknownJob}</span>
-                            <span className="text-slate-300">•</span>
-                            <span>{(candidate.job?.company as any)?.company_name || dict.common.unknownCompany}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    <RecruiterCandidateProcessCard candidate={candidate} dict={dict} />
-
-                    <RecruiterPipelineControls
-                        candidateId={candidateId}
-                        jobId={candidate.job_id}
-                        candidateStatus={candidate.status}
-                        currentPipelineStage={candidate.current_pipeline_stage}
-                        pipelineStages={(candidate.job as any)?.pipeline_stages || []}
-                    />
-
-                    <CompanyNextStepPanel
-                        candidateId={candidateId}
-                        jobId={candidate.job_id}
-                        candidateStatus={candidate.status}
-                        pendingRequest={candidate.company_requested_next_step}
-                        pendingRequestNote={candidate.company_requested_next_step_note}
-                        pendingRequestAt={candidate.company_requested_next_step_at}
-                        pipelineStages={(candidate.job as any)?.pipeline_stages || []}
-                    />
-
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-4">
-                            {r.candidateDetailDiscussionTitle}
-                        </h3>
-                        <CandidateChat
-                            candidateId={candidateId}
-                            jobId={candidate.job_id}
-                            initialMessages={initialMessages}
-                            currentUserId={user?.id || ''}
-                            candidate={candidate}
-                        />
-                    </div>
-                </div>
-
-                <div className="space-y-6">
-                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
-                        <CardHeader className="pb-2">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">{r.profileOverview}</h3>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
-                                        <Mail className="h-4 w-4 text-slate-400" />
-                                    </div>
-                                    <span className="text-sm font-bold text-slate-700">{candidate.email}</span>
-                                </div>
-                                {candidate.phone && (
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
-                                            <Phone className="h-4 w-4 text-slate-400" />
-                                        </div>
-                                        <span className="text-sm font-bold text-slate-700">{candidate.phone}</span>
-                                    </div>
-                                )}
-                                {candidate.linkedin_url && (
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
-                                            <Linkedin className="h-4 w-4 text-slate-400" />
-                                        </div>
-                                        <a href={candidate.linkedin_url} target="_blank" rel="noreferrer" className="text-sm font-bold text-brand-600 hover:underline">{dict.common.linkedInProfile}</a>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="pt-4 border-t border-slate-50 space-y-4">
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{r.currentRoleLabel}</p>
-                                    <p className="text-sm font-bold text-slate-700">{candidate.current_title || '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{r.experienceLabel}</p>
-                                    <p className="text-sm font-bold text-slate-700">{candidate.years_experience} {dict.common.years}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{r.salaryExpectationLabel}</p>
-                                    <p className="text-sm font-bold text-slate-700">{candidate.expected_salary ? `${candidate.expected_salary} ${dict.common.perMonth}` : '-'}</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-slate-900 text-white overflow-hidden">
-                        <CardContent className="p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <FileText className="h-5 w-5 text-brand-400" />
-                                <h3 className="font-bold">{r.yourMotivation}</h3>
-                            </div>
-                            <p className="text-sm text-slate-400 italic leading-relaxed">
-                                &quot;{candidate.cover_note || dict.company.noMotivationProvided}&quot;
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-        </div>
-    );
-}

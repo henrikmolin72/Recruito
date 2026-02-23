@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  AVERAGE_TIME_TO_FILL_OPTIONS,
+  AVAILABLE_HOURS_OPTIONS,
+  EXPERIENCE_BRACKET_OPTIONS,
+  LANGUAGE_PROFICIENCY_OPTIONS,
+} from "@/lib/recruiter-onboarding-options";
 
 const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MIN_LENGTH = 8;
@@ -35,6 +41,11 @@ const optionalInteger = (min: number, max: number) =>
 const toString = (value: FormDataEntryValue | null) =>
   typeof value === "string" ? value : "";
 
+const toStringArray = (values: FormDataEntryValue[]) =>
+  values.filter((v): v is string => typeof v === "string").map((v) => v.trim()).filter(Boolean);
+
+const toCheckboxBoolean = (value: FormDataEntryValue | null) => toString(value) === "on";
+
 const toOptionalInt = (value: FormDataEntryValue | null) => {
   const raw = toString(value).trim();
   if (!raw) return null;
@@ -52,6 +63,43 @@ const toOptionalFloat = (value: FormDataEntryValue | null) => {
 function firstError(error: z.ZodError): string {
   const issue = error.issues[0];
   return issue?.message || "Ogiltig inmatning";
+}
+
+// Pipeline stage validation
+const pipelineStageSchema = z.object({
+  id: z.string().min(1).max(50),
+  type: z.enum(['screening', 'interview', 'test', 'assessment']),
+  title: z.string().trim().min(1, "Titel krävs").max(80, "Max 80 tecken"),
+  description: z.string().trim().max(500).optional().nullable(),
+  order: z.number().int().min(0).max(7),
+});
+
+const pipelineStagesSchema = z
+  .array(pipelineStageSchema)
+  .min(1, "Minst ett steg krävs")
+  .max(8, "Max 8 steg tillåtna")
+  .refine(
+    (stages) => stages.filter(s => s.type === 'interview').length <= 4,
+    "Max 4 intervjusteg"
+  )
+  .refine(
+    (stages) => stages.filter(s => s.type === 'test' || s.type === 'assessment').length <= 4,
+    "Max 4 test-/bedömningssteg"
+  )
+  .refine(
+    (stages) => {
+      const ids = stages.map(s => s.id);
+      return new Set(ids).size === ids.length;
+    },
+    "Alla steg-ID måste vara unika"
+  );
+
+export function validatePipelineStages(stages: unknown) {
+  const parsed = pipelineStagesSchema.safeParse(stages);
+  if (!parsed.success) {
+    return { success: false as const, error: firstError(parsed.error) };
+  }
+  return { success: true as const, data: parsed.data };
 }
 
 const loginSchema = z.object({
@@ -127,9 +175,17 @@ const registerRecruiterSchema = z.object({
     .min(PASSWORD_MIN_LENGTH, `Lösenord måste vara minst ${PASSWORD_MIN_LENGTH} tecken`)
     .max(PASSWORD_MAX_LENGTH, `Lösenord får max vara ${PASSWORD_MAX_LENGTH} tecken`),
   full_name: requiredText("Namn", 2, 100),
-  headline: optionalText(140),
+  current_country: requiredText("Land", 2, 80),
   linkedin_url: optionalUrl,
-  years_experience: optionalInteger(0, 60),
+  years_experience_bracket: z.enum(EXPERIENCE_BRACKET_OPTIONS, {
+    message: "Välj erfarenhetsnivå"
+  }),
+  agreement_freelance_recruiter: z
+    .boolean()
+    .refine((value) => value === true, { message: "Du måste godkänna frilansvillkoret" }),
+  agreement_commission_after_guarantee: z
+    .boolean()
+    .refine((value) => value === true, { message: "Du måste godkänna provisionsvillkoret" }),
 });
 
 export function validateRegisterRecruiterForm(formData: FormData) {
@@ -137,9 +193,11 @@ export function validateRegisterRecruiterForm(formData: FormData) {
     email: toString(formData.get("email")),
     password: toString(formData.get("password")),
     full_name: toString(formData.get("full_name")),
-    headline: toString(formData.get("headline")),
+    current_country: toString(formData.get("current_country")),
     linkedin_url: toString(formData.get("linkedin_url")),
-    years_experience: toOptionalInt(formData.get("years_experience")),
+    years_experience_bracket: toString(formData.get("years_experience_bracket")),
+    agreement_freelance_recruiter: toCheckboxBoolean(formData.get("agreement_freelance_recruiter")),
+    agreement_commission_after_guarantee: toCheckboxBoolean(formData.get("agreement_commission_after_guarantee")),
   });
 
   if (!parsed.success) {
@@ -292,6 +350,60 @@ export function validateRecruiterProfileForm(formData: FormData) {
     headline: toString(formData.get("headline")),
     bio: toString(formData.get("bio")),
     linkedin_url: toString(formData.get("linkedin_url")),
+  });
+
+  if (!parsed.success) {
+    return { success: false as const, error: firstError(parsed.error) };
+  }
+
+  return { success: true as const, data: parsed.data };
+}
+
+const languageRowSchema = z.object({
+  language: z.string().trim().min(1).max(50),
+  proficiency: z.enum(LANGUAGE_PROFICIENCY_OPTIONS),
+});
+
+const recruiterOnboardingProfileSchema = z.object({
+  primary_industries: z.array(z.string().min(1)).min(1, "Välj minst en bransch").max(10),
+  primary_industries_other: optionalText(100),
+  countries_experience: z.array(z.string().min(1)).min(1, "Välj minst ett land").max(30),
+  languages_spoken: z.array(languageRowSchema).min(1, "Lägg till minst ett språk").max(8),
+  seniority_focus: z.array(z.string().min(1)).min(1, "Välj minst ett senioritetsfokus").max(10),
+  roles_per_week: z.number().int().min(1, "Ange 1–10 roller").max(10, "Ange 1–10 roller"),
+  candidates_sourced_last_12m: z.number().int().min(0).max(100000),
+  successful_placements_last_12m: z.number().int().min(0).max(10000),
+  average_time_to_fill: z.enum(AVERAGE_TIME_TO_FILL_OPTIONS),
+  challenging_role_example: requiredText("Exempelroll", 10, 500),
+  sourcing_channels: z.array(z.string().min(1)).min(1, "Välj minst en sourcingkanal").max(20),
+  sourcing_channels_other: optionalText(120),
+  available_hours_per_week: z.enum(AVAILABLE_HOURS_OPTIONS),
+});
+
+export function validateRecruiterOnboardingProfileForm(formData: FormData) {
+  const languages: { language: string; proficiency: string }[] = [];
+
+  for (let i = 1; i <= 4; i += 1) {
+    const language = toString(formData.get(`language_name_${i}`));
+    const proficiency = toString(formData.get(`language_level_${i}`));
+    if (!language && !proficiency) continue;
+    languages.push({ language, proficiency });
+  }
+
+  const parsed = recruiterOnboardingProfileSchema.safeParse({
+    primary_industries: toStringArray(formData.getAll("primary_industries")),
+    primary_industries_other: toString(formData.get("primary_industries_other")),
+    countries_experience: toStringArray(formData.getAll("countries_experience")),
+    languages_spoken: languages,
+    seniority_focus: toStringArray(formData.getAll("seniority_focus")),
+    roles_per_week: toOptionalInt(formData.get("roles_per_week")),
+    candidates_sourced_last_12m: toOptionalInt(formData.get("candidates_sourced_last_12m")),
+    successful_placements_last_12m: toOptionalInt(formData.get("successful_placements_last_12m")),
+    average_time_to_fill: toString(formData.get("average_time_to_fill")),
+    challenging_role_example: toString(formData.get("challenging_role_example")),
+    sourcing_channels: toStringArray(formData.getAll("sourcing_channels")),
+    sourcing_channels_other: toString(formData.get("sourcing_channels_other")),
+    available_hours_per_week: toString(formData.get("available_hours_per_week")),
   });
 
   if (!parsed.success) {

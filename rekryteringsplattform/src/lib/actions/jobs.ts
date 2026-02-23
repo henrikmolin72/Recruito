@@ -3,8 +3,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { validateJobForm } from "@/lib/validation/forms";
+import { validateJobForm, validatePipelineStages } from "@/lib/validation/forms";
 import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
+import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
+import { createNotification } from "@/lib/actions/notifications";
+import type { PipelineStage } from "@/types/db-types";
 
 async function verifyJobOwnership(jobId: string) {
     const supabase = await createClient();
@@ -70,7 +73,20 @@ export async function createJob(formData: FormData) {
 
     const feePercentage = getFeePercentage(recentPlacements ?? 0);
 
-    // 4. Insert job
+    // 4. Parse pipeline stages (optional, defaults applied)
+    let pipelineStages: PipelineStage[] = DEFAULT_PIPELINE_STAGES;
+    const rawPipeline = formData.get("pipeline_stages");
+    if (rawPipeline && typeof rawPipeline === "string") {
+        try {
+            const parsedPipeline = JSON.parse(rawPipeline);
+            const validation = validatePipelineStages(parsedPipeline);
+            if (validation.success) {
+                pipelineStages = validation.data;
+            }
+        } catch { /* use default */ }
+    }
+
+    // 5. Insert job
     const { error: jobError } = await supabase.from("jobs").insert({
         company_id: company.id,
         title: parsed.data.title,
@@ -83,6 +99,7 @@ export async function createJob(formData: FormData) {
         salary_currency: parsed.data.salary_currency,
         fee_percentage: feePercentage,
         max_recruiters: parsed.data.max_recruiters,
+        pipeline_stages: pipelineStages,
         status: "active",
     });
 
@@ -204,4 +221,66 @@ export async function resumeJob(jobId: string) {
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
+}
+
+export async function updatePipelineStages(jobId: string, stages: PipelineStage[]) {
+    const { error: authError, supabase } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
+
+    const validation = validatePipelineStages(stages);
+    if (!validation.success) return { error: validation.error };
+
+    // Check no active candidates are orphaned
+    const { data: activeCandidates } = await supabase
+        .from("candidates")
+        .select("id, current_pipeline_stage")
+        .eq("job_id", jobId)
+        .not("current_pipeline_stage", "is", null)
+        .not("status", "in", "(hired,rejected,declined,completed)");
+
+    const newStageIds = new Set(validation.data.map(s => s.id));
+    const orphaned = activeCandidates?.filter(
+        c => c.current_pipeline_stage && !newStageIds.has(c.current_pipeline_stage)
+    );
+
+    if (orphaned && orphaned.length > 0) {
+        return { error: "Det finns aktiva kandidater i steg som du försöker ta bort. Flytta dem först." };
+    }
+
+    const { error } = await supabase
+        .from("jobs")
+        .update({ pipeline_stages: validation.data })
+        .eq("id", jobId);
+
+    if (error) return { error: error.message };
+
+    // Notify recruiters that the pipeline has changed
+    const { data: mandates } = await supabase
+        .from("job_mandates")
+        .select("recruiter:recruiters(user_id)")
+        .eq("job_id", jobId)
+        .eq("is_active", true);
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("title")
+        .eq("id", jobId)
+        .single();
+
+    if (mandates) {
+        for (const mandate of mandates) {
+            const userId = (mandate.recruiter as any)?.user_id;
+            if (userId) {
+                await createNotification(
+                    userId,
+                    "Rekryteringsprocess uppdaterad",
+                    `Processen för "${job?.title}" har ändrats. Kontrollera de nya stegen.`,
+                    `/recruiter/mandates`
+                );
+            }
+        }
+    }
+
+    revalidatePath(`/company/jobs/${jobId}`);
+    return { success: true };
 }

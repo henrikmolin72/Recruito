@@ -298,6 +298,7 @@
     "jobDetailsPipeline": "Pipeline",
     "jobDetailsDescription": "Beskrivelse",
     "jobDetailsRecruiters": "Rekrutterere",
+    "jobDetailsProcess": "Proces",
     "jobDetailsFee": "Honorar",
     "jobDescriptionTitle": "Stillingsbeskrivelse",
     "specificationsTitle": "Specifikationer",
@@ -386,7 +387,13 @@
     "contactInfoTitle": "Kontaktoplysninger",
     "downloadCv": "Download CV",
     "presentedBy": "Præsenteret af {name}",
-    "candidateMessagesTitle": "Beskeder"
+    "candidateMessagesTitle": "Beskeder",
+    "processTitle": "Rekrutteringsproces",
+    "processDescription": "Tilpas trinnene i jeres rekrutteringsproces for denne opgave",
+    "pipelineSaved": "Processen er gemt!",
+    "pipelineWarningCandidates": "Der er aktive kandidater i denne proces. Vær forsigtig ved fjernelse af trin.",
+    "stepProcess": "Proces",
+    "stepProcessDesc": "Rekrutteringsproces"
   },
   "recruiter": {
     "dashboardTitle": "Dashboard",
@@ -514,7 +521,8 @@
     "profileOverview": "Profiloversigt",
     "currentRoleLabel": "Nuværende rolle",
     "yourMotivation": "Din motivering",
-    "downloadJobDescription": "Download jobbeskrivelse"
+    "downloadJobDescription": "Download jobbeskrivelse",
+    "hiringProcess": "Rekrutteringsproces"
   },
   "admin": {
     "dashboardTitle": "Admin Dashboard",
@@ -772,6 +780,16 @@
     "downloadJobDescriptionLabel": "Stillingsbeskrivelse",
     "recruiterJobsListJobLabel": "Job:",
     "recruiterJobsListRecruiterLabel": "Rekrutterer:",
-    "recruiterJobsListPresentedLabel": "Præsenteret:"
+    "recruiterJobsListPresentedLabel": "Præsenteret:",
+    "pipelineSubmitted": "Indsendt",
+    "pipelineYourStages": "Dine trin",
+    "pipelineEmpty": "Ingen",
+    "pipelineAddInterview": "Tilføj samtale",
+    "pipelineAddTest": "Tilføj test",
+    "pipelineAddScreening": "Tilføj screening",
+    "pipelineStagesUsed": "trin brugt",
+    "pipelineInterviews": "samtaler",
+    "pipelineTests": "tests",
+    "kanbanStatusLabel": "Status"
   }
 }

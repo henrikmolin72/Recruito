@@ -10,8 +10,22 @@ import { TIER_WINDOW_MONTHS } from "@/lib/pricing";
 
 // Helper to handle errors or redirect
 function handleError(error: any) {
-    console.error(error);
-    if (error.message === "JWT_EXPIRED") {
+    const normalized = {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        raw: (() => {
+            try {
+                return JSON.stringify(error);
+            } catch {
+                return String(error);
+            }
+        })()
+    };
+    console.error("Company action error:", normalized);
+
+    if (error?.message === "JWT_EXPIRED") {
         redirect("/login");
     }
     throw new Error("Kunde inte hämta data");
@@ -94,11 +108,7 @@ export async function getCompanyDashboard() {
     // 3. Get jobs for this company
     const { data: jobs, error: jobsError } = await supabase
         .from("jobs")
-        .select(`
-      *,
-      candidates:candidates(count),
-      mandates:job_mandates(count)
-    `)
+        .select("*")
         .eq("company_id", company.id)
         .order("created_at", { ascending: false });
 
@@ -106,21 +116,44 @@ export async function getCompanyDashboard() {
         handleError(jobsError);
     }
 
+    const jobIds = jobs?.map(j => j.id) || [];
+
     // 4. Calculate stats
     // For candidates count, we need a separate query or join.
     // The above join gives counts per job.
 
     // Let's get total candidates across all jobs
-    const { count: totalCandidates } = await supabase
-        .from("candidates")
-        .select("*", { count: 'exact', head: true })
-        .in("job_id", jobs?.map(j => j.id) || []);
+    const { count: totalCandidates } = jobIds.length > 0
+        ? await supabase
+            .from("candidates")
+            .select("*", { count: 'exact', head: true })
+            .in("job_id", jobIds)
+        : { count: 0 };
 
-    const { count: activeInterviews } = await supabase
-        .from("candidates")
-        .select("*", { count: 'exact', head: true })
-        .in("job_id", jobs?.map(j => j.id) || [])
-        .eq("status", "interview");
+    const { count: activeInterviews } = jobIds.length > 0
+        ? await supabase
+            .from("candidates")
+            .select("*", { count: 'exact', head: true })
+            .in("job_id", jobIds)
+            .eq("status", "interview")
+        : { count: 0 };
+
+    const { data: candidateJobRows, error: candidateJobRowsError } = jobIds.length > 0
+        ? await supabase
+            .from("candidates")
+            .select("job_id")
+            .in("job_id", jobIds)
+        : { data: [], error: null as any };
+
+    if (candidateJobRowsError) {
+        handleError(candidateJobRowsError);
+    }
+
+    const candidatesCountByJob: Record<string, number> = {};
+    (candidateJobRows || []).forEach((row: any) => {
+        if (!row?.job_id) return;
+        candidatesCountByJob[row.job_id] = (candidatesCountByJob[row.job_id] || 0) + 1;
+    });
 
     const { count: successfulPlacements } = await supabase
         .from("placements")
@@ -141,7 +174,7 @@ export async function getCompanyDashboard() {
     // Transform jobs for display
     const jobsFormatted = jobs?.map((job) => ({
         ...job,
-        candidates_count: job.candidates?.[0]?.count || 0, // supabase returns array of objects for count
+        candidates_count: candidatesCountByJob[job.id] || 0,
         recruiters_count: job.current_recruiter_count || 0,
     })) || [];
 

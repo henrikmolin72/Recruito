@@ -30,7 +30,7 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
     const selectedConv = initialConversations.find(c => c.id === selectedConvId);
 
     const filteredConversations = initialConversations.filter(conv => {
-        const recruiterName = conv.candidate?.recruiter?.profile?.full_name || t("common.unknown");
+        const recruiterName = conv.candidate?.recruiter?.profile?.full_name || conv.otherParticipantName || "";
         const candidateName = `${conv.candidate?.first_name} ${conv.candidate?.last_name}`;
         const searchStr = `${recruiterName} ${candidateName}`.toLowerCase();
         return searchStr.includes(search.toLowerCase());
@@ -56,7 +56,7 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
                         filteredConversations.map((conv) => {
                             const lastMsg = conv.messages?.length > 0 ? conv.messages[conv.messages.length - 1] : null;
                             const isActive = selectedConvId === conv.id;
-                            const recruiterName = conv.candidate?.recruiter?.profile?.full_name || t("common.recruiter");
+                            const recruiterName = conv.candidate?.recruiter?.profile?.full_name || conv.otherParticipantName || t("common.recruiter");
                             const candidateName = `${conv.candidate?.first_name} ${conv.candidate?.last_name}`;
 
                             return (
@@ -98,7 +98,7 @@ export function CompanyInbox({ initialConversations, currentUserId }: CompanyInb
                     <div className="flex-1 flex flex-col h-full">
                         <div className="p-4 border-b border-border bg-white flex items-center justify-between">
                             <div>
-                                <p className="font-bold text-brand-900">{selectedConv.candidate?.recruiter?.profile?.full_name || t("common.recruiter")}</p>
+                                <p className="font-bold text-brand-900">{selectedConv.candidate?.recruiter?.profile?.full_name || selectedConv.otherParticipantName || t("common.recruiter")}</p>
                                 <p className="text-xs text-muted-foreground">{t("components.inboxCandidateLabel")} <span className="font-medium text-foreground">{selectedConv.candidate?.first_name} {selectedConv.candidate?.last_name}</span></p>
                             </div>
                             <div className="text-right">

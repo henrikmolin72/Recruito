@@ -219,7 +219,7 @@
     "step2Title": "2. Rekryterare söker",
     "step2Desc": "Godkända rekryterare presenterar sina bästa kandidater från sina nätverk. Du väljer de bästa.",
     "step3Title": "3. Betala vid framgång",
-    "step3Desc": "Betala från 12% av årslönen vid lyckad anställning. Lägre arvode vid fler placeringar.",
+    "step3Desc": "Lägre arvode vid fler placeringar.",
     "companyBenefitsTitle": "Fördelar för företag",
     "companyBenefitsSubtitle": "Spara pengar och hitta bättre kandidater snabbare.",
     "benefit60Cheaper": "60% billigare",
@@ -298,6 +298,7 @@
     "jobDetailsPipeline": "Pipeline",
     "jobDetailsDescription": "Beskrivning",
     "jobDetailsRecruiters": "Rekryterare",
+    "jobDetailsProcess": "Process",
     "jobDetailsFee": "Arvode",
     "jobDescriptionTitle": "Arbetsbeskrivning",
     "specificationsTitle": "Specifikationer",
@@ -386,7 +387,13 @@
     "contactInfoTitle": "Kontaktuppgifter",
     "downloadCv": "Ladda ner CV",
     "presentedBy": "Presenterades av {name}",
-    "candidateMessagesTitle": "Meddelanden"
+    "candidateMessagesTitle": "Meddelanden",
+    "processTitle": "Rekryteringsprocess",
+    "processDescription": "Anpassa stegen i er rekryteringsprocess för detta uppdrag",
+    "pipelineSaved": "Processen har sparats!",
+    "pipelineWarningCandidates": "Det finns aktiva kandidater i denna process. Var försiktig vid borttagning av steg.",
+    "stepProcess": "Process",
+    "stepProcessDesc": "Rekryteringsprocess"
   },
   "recruiter": {
     "dashboardTitle": "Dashboard",
@@ -514,7 +521,8 @@
     "profileOverview": "Profilöversikt",
     "currentRoleLabel": "Nuvarande roll",
     "yourMotivation": "Din motivering",
-    "downloadJobDescription": "Ladda ner jobbeskrivning"
+    "downloadJobDescription": "Ladda ner jobbeskrivning",
+    "hiringProcess": "Rekryteringsprocess"
   },
   "admin": {
     "dashboardTitle": "Admin Dashboard",
@@ -772,6 +780,16 @@
     "downloadJobDescriptionLabel": "Arbetsbeskrivning",
     "recruiterJobsListJobLabel": "Jobb:",
     "recruiterJobsListRecruiterLabel": "Rekryterare:",
-    "recruiterJobsListPresentedLabel": "Presenterad:"
+    "recruiterJobsListPresentedLabel": "Presenterad:",
+    "pipelineSubmitted": "Inskickad",
+    "pipelineYourStages": "Dina steg",
+    "pipelineEmpty": "Inga",
+    "pipelineAddInterview": "Lägg till intervju",
+    "pipelineAddTest": "Lägg till test",
+    "pipelineAddScreening": "Lägg till screening",
+    "pipelineStagesUsed": "steg använda",
+    "pipelineInterviews": "intervjuer",
+    "pipelineTests": "tester",
+    "kanbanStatusLabel": "Status"
   }
 }

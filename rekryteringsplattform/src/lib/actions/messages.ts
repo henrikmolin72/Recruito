@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/actions/notifications";
 
@@ -23,10 +24,10 @@ export async function getCandidateConversation(candidateId: string) {
       )
     `)
         .eq("candidate_id", candidateId)
-        .single();
+        .maybeSingle();
 
-    if (error && error.code !== "PGRST116") { // PGRST116 = Single object not found
-        console.error("Error fetching conversation:", error);
+    if (error) {
+        console.warn("Could not fetch conversation for candidate:", candidateId, JSON.stringify(error));
         return null;
     }
 
@@ -36,52 +37,101 @@ export async function getCandidateConversation(candidateId: string) {
 export async function sendMessage(candidateId: string, jobId: string, content: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !content.trim()) return { error: "Not authenticated" };
+    const normalizedContent = content.trim();
+    if (!user || !normalizedContent) return { error: "Not authenticated" };
 
-    // 1. Kontrollera om konversation finns, annars skapa den
-    let { data: conversation } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("candidate_id", candidateId)
+    const supabaseAdmin = createAdminClient();
+    const nowIso = new Date().toISOString();
+
+    // Resolve the expected conversation participants from the candidate/job relationship.
+    const { data: candidate, error: candError } = await supabase
+        .from("candidates")
+        .select(`
+            mandate_id,
+            recruiter:recruiters(user_id),
+            job:jobs(
+                id,
+                company:companies(user_id)
+            )
+        `)
+        .eq("id", candidateId)
         .single();
 
-    let conversationData;
-    if (!conversation) {
-        const { data: candidate, error: candError } = await supabase
-            .from("candidates")
-            .select("recruiter:recruiters(user_id)")
-            .eq("id", candidateId)
-            .single();
+    if (candError || !candidate) return { error: "Candidate not found" };
 
-        if (candError || !candidate) return { error: "Candidate not found" };
+    const recruiterRecord = (candidate as any).recruiter;
+    const recruiterUserId = Array.isArray(recruiterRecord) ? recruiterRecord[0]?.user_id : recruiterRecord?.user_id;
+    const jobRecord = (candidate as any).job;
+    const resolvedJob = Array.isArray(jobRecord) ? jobRecord[0] : jobRecord;
+    const resolvedJobId = resolvedJob?.id || jobId;
+    const companyRecord = resolvedJob?.company;
+    const companyUserId = Array.isArray(companyRecord) ? companyRecord[0]?.user_id : companyRecord?.user_id;
+    const mandateId = (candidate as any).mandate_id as string | null;
 
-        const recruiterRecord = (candidate as any).recruiter;
-        const recruiterUserId = Array.isArray(recruiterRecord) ? recruiterRecord[0]?.user_id : recruiterRecord?.user_id;
+    if (!recruiterUserId || !companyUserId) {
+        return { error: "Could not determine conversation participants" };
+    }
 
-        if (!recruiterUserId) return { error: "Recruiter not found for this candidate" };
+    if (user.id !== recruiterUserId && user.id !== companyUserId) {
+        return { error: "Not allowed to message in this conversation" };
+    }
 
+    const otherUserId = user.id === recruiterUserId ? companyUserId : recruiterUserId;
+
+    // Use service role lookup so broken participant rows don't hide an existing conversation via RLS.
+    const { data: existingConversations, error: conversationLookupError } = await supabaseAdmin
+        .from("conversations")
+        .select("id, job_id, candidate_id, created_at")
+        .eq("candidate_id", candidateId)
+        .order("created_at", { ascending: true })
+        .limit(2);
+
+    if (conversationLookupError) {
+        return { error: conversationLookupError.message };
+    }
+
+    if ((existingConversations || []).length > 1) {
+        console.warn("Multiple conversations found for candidate", candidateId, (existingConversations || []).map((c: any) => c.id));
+    }
+
+    let conversationData = (existingConversations || [])[0] as any;
+
+    if (!conversationData) {
         const { data: newConv, error: convError } = await supabase
             .from("conversations")
             .insert({
                 candidate_id: candidateId,
-                job_id: jobId
+                job_id: resolvedJobId
             })
-            .select()
+            .select("id, job_id, candidate_id, created_at")
             .single();
 
         if (convError || !newConv) return { error: convError?.message || "Failed to create conversation" };
         conversationData = newConv;
+    }
 
-        await supabase.from("conversation_participants").insert([
-            { conversation_id: conversationData.id, user_id: user.id, last_read_at: new Date().toISOString() },
-            { conversation_id: conversationData.id, user_id: recruiterUserId }
-        ]);
-    } else {
-        conversationData = (conversation as any);
-        await supabase.from("conversation_participants")
-            .update({ last_read_at: new Date().toISOString() })
-            .eq("conversation_id", conversationData.id)
-            .eq("user_id", user.id);
+    // Self-heal participant membership for legacy/broken conversations.
+    const participantRows = [
+        { conversation_id: conversationData.id, user_id: recruiterUserId },
+        { conversation_id: conversationData.id, user_id: companyUserId },
+    ];
+
+    const { error: participantEnsureError } = await supabaseAdmin
+        .from("conversation_participants")
+        .upsert(participantRows, { onConflict: "conversation_id,user_id", ignoreDuplicates: true });
+
+    if (participantEnsureError) {
+        return { error: participantEnsureError.message };
+    }
+
+    const { error: readUpdateError } = await supabase
+        .from("conversation_participants")
+        .update({ last_read_at: nowIso })
+        .eq("conversation_id", conversationData.id)
+        .eq("user_id", user.id);
+
+    if (readUpdateError) {
+        return { error: readUpdateError.message };
     }
 
     const { error: msgError } = await supabase
@@ -89,31 +139,30 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
         .insert({
             conversation_id: conversationData.id,
             sender_id: user.id,
-            content: content
+            content: normalizedContent
         });
 
     if (msgError) return { error: msgError.message };
 
-    const { data: participants } = await supabase
-        .from("conversation_participants")
-        .select("user_id")
-        .eq("conversation_id", conversationData.id)
-        .neq("user_id", user.id);
+    const isCompany = user.user_metadata.role === 'company';
+    const link = isCompany ? '/recruiter/messages' : '/company/messages';
+    const senderName = user.user_metadata?.full_name || user.email || "okänd användare";
 
-    if (participants && participants.length > 0) {
-        const receiverId = participants[0].user_id;
-        const isCompany = user.user_metadata.role === 'company';
-        const link = isCompany ? '/recruiter/messages' : '/company/messages';
+    await createNotification(
+        otherUserId,
+        `Nytt meddelande från ${senderName}`,
+        normalizedContent.length > 50 ? normalizedContent.substring(0, 50) + '...' : normalizedContent,
+        link
+    );
 
-        await createNotification(
-            receiverId,
-            `Nytt meddelande från ${user.user_metadata.full_name}`,
-            content.length > 50 ? content.substring(0, 50) + '...' : content,
-            link
-        );
+    revalidatePath(`/company/jobs/${resolvedJobId}/candidates/${candidateId}`);
+    revalidatePath("/company/messages");
+    revalidatePath("/recruiter/messages");
+    if (mandateId) {
+        revalidatePath(`/recruiter/mandates/${mandateId}`);
+        revalidatePath(`/recruiter/mandates/${mandateId}/candidates/${candidateId}`);
     }
 
-    revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
     return { success: true };
 }
 
@@ -127,55 +176,184 @@ export async function getConversations() {
         .select("conversation_id")
         .eq("user_id", user.id);
 
-    if (partError) return [];
+    if (partError) {
+        console.error("Error fetching conversation participations:", {
+            message: partError.message,
+            code: (partError as any).code,
+            details: (partError as any).details,
+            hint: (partError as any).hint,
+        });
+        return [];
+    }
 
     const myConvIds = participations?.map(p => p.conversation_id) || [];
     if (myConvIds.length === 0) return [];
 
-    const { data, error } = await supabase
+    const supabaseAdmin = createAdminClient();
+
+    const { data: conversations, error } = await supabaseAdmin
         .from("conversations")
-        .select(`
-      *,
-      candidate:candidates (
-        id,
-        first_name,
-        last_name,
-        recruiter:recruiters (
-          id,
-          profile:profiles!recruiters_user_id_fkey (
-            full_name
-          )
-        ),
-        job:jobs (
-          id,
-          title,
-          company:companies (
-            id,
-            company_name
-          )
-        )
-      ),
-      messages (
-        id,
-        content,
-        created_at,
-        sender_id,
-        sender:profiles (
-          full_name
-        )
-      )
-    `)
+        .select("id, job_id, candidate_id, created_at")
         .in("id", myConvIds);
 
     if (error) {
-        console.error("Error fetching conversations:", error);
+        console.error("Error fetching conversations:", JSON.stringify(error));
         return [];
     }
 
+    const candidateIds = [...new Set((conversations || []).map(c => c.candidate_id).filter(Boolean))];
+    const jobIds = [...new Set((conversations || []).map(c => c.job_id).filter(Boolean))];
+
+    const { data: candidates, error: candidatesError } = candidateIds.length > 0
+        ? await supabaseAdmin
+            .from("candidates")
+            .select("id, first_name, last_name, job_id, recruiter_id")
+            .in("id", candidateIds as string[])
+        : { data: [], error: null as any };
+
+    if (candidatesError) {
+        console.error("Error fetching conversation candidates:", JSON.stringify(candidatesError));
+        return [];
+    }
+
+    const derivedJobIds = [...new Set((candidates || []).map((c: any) => c.job_id).filter(Boolean))];
+    const allJobIds = [...new Set([...(jobIds as string[]), ...(derivedJobIds as string[])])];
+
+    const { data: jobs, error: jobsError } = allJobIds.length > 0
+        ? await supabaseAdmin
+            .from("jobs")
+            .select("id, title, company_id")
+            .in("id", allJobIds)
+        : { data: [], error: null as any };
+
+    if (jobsError) {
+        console.error("Error fetching conversation jobs:", JSON.stringify(jobsError));
+        return [];
+    }
+
+    const companyIds = [...new Set((jobs || []).map((j: any) => j.company_id).filter(Boolean))];
+
+    const { data: companies, error: companiesError } = companyIds.length > 0
+        ? await supabaseAdmin
+            .from("companies")
+            .select("id, company_name")
+            .in("id", companyIds as string[])
+        : { data: [], error: null as any };
+
+    if (companiesError) {
+        console.error("Error fetching conversation companies:", JSON.stringify(companiesError));
+        return [];
+    }
+
+    const { data: messageRows, error: messagesError } = await supabaseAdmin
+        .from("messages")
+        .select("id, conversation_id, content, created_at, sender_id, is_system_message")
+        .in("conversation_id", myConvIds)
+        .order("created_at", { ascending: true });
+
+    if (messagesError) {
+        console.error("Error fetching conversation messages:", JSON.stringify(messagesError));
+        return [];
+    }
+
+    // Fetch all participants to resolve the other person's name reliably
+    const { data: allParticipants, error: participantsError } = await supabaseAdmin
+        .from("conversation_participants")
+        .select("conversation_id, user_id")
+        .in("conversation_id", myConvIds);
+
+    if (participantsError) {
+        console.error("Error fetching all conversation participants:", JSON.stringify(participantsError));
+        return [];
+    }
+
+    const participantOtherUserIds = [...new Set(
+        (allParticipants || [])
+            .filter(p => p.user_id !== user.id)
+            .map(p => p.user_id)
+    )];
+
+    const messageSenderIds = [...new Set((messageRows || []).map((m: any) => m.sender_id).filter(Boolean))];
+    const allProfileIds = [...new Set([...(participantOtherUserIds as string[]), ...(messageSenderIds as string[])])];
+
+    let profileMap: Record<string, string> = {};
+    let profileDetailMap: Record<string, { full_name: string; role?: string }> = {};
+    if (allProfileIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabaseAdmin
+            .from("profiles")
+            .select("id, full_name, role")
+            .in("id", allProfileIds);
+
+        if (profilesError) {
+            console.error("Error fetching conversation profiles:", JSON.stringify(profilesError));
+            return [];
+        }
+
+        (profiles || []).forEach((p: any) => {
+            const fullName = p.full_name || "";
+            profileMap[p.id] = fullName;
+            profileDetailMap[p.id] = { full_name: fullName, role: p.role || undefined };
+        });
+    }
+
+    const convOtherName: Record<string, string> = {};
+    (allParticipants || []).forEach(p => {
+        if (p.user_id !== user.id) {
+            convOtherName[p.conversation_id] = profileMap[p.user_id] || "";
+        }
+    });
+
+    const jobMap: Record<string, any> = {};
+    (jobs || []).forEach((job: any) => {
+        jobMap[job.id] = job;
+    });
+
+    const companyMap: Record<string, any> = {};
+    (companies || []).forEach((company: any) => {
+        companyMap[company.id] = company;
+    });
+
+    const candidateMap: Record<string, any> = {};
+    (candidates || []).forEach((candidate: any) => {
+        const candidateJob = candidate.job_id ? jobMap[candidate.job_id] : null;
+        const company = candidateJob?.company_id ? companyMap[candidateJob.company_id] : null;
+
+        candidateMap[candidate.id] = {
+            id: candidate.id,
+            first_name: candidate.first_name,
+            last_name: candidate.last_name,
+            job: candidateJob ? {
+                id: candidateJob.id,
+                title: candidateJob.title,
+                company: company ? {
+                    id: company.id,
+                    company_name: company.company_name,
+                } : null,
+            } : null,
+        };
+    });
+
+    const messagesByConversation: Record<string, any[]> = {};
+    (messageRows || []).forEach((msg: any) => {
+        if (!messagesByConversation[msg.conversation_id]) {
+            messagesByConversation[msg.conversation_id] = [];
+        }
+        messagesByConversation[msg.conversation_id].push({
+            id: msg.id,
+            content: msg.content,
+            created_at: msg.created_at,
+            sender_id: msg.sender_id,
+            is_system_message: !!msg.is_system_message,
+            sender: msg.sender_id ? profileDetailMap[msg.sender_id] || undefined : undefined,
+        });
+    });
+
     // Sort messages within each conversation (newest last) and sort conversations by latest message
-    const sorted = (data || []).map(conv => ({
+    const sorted = (conversations || []).map((conv: any) => ({
         ...conv,
-        messages: (conv.messages || []).sort((a: any, b: any) =>
+        candidate: conv.candidate_id ? candidateMap[conv.candidate_id] || null : null,
+        otherParticipantName: convOtherName[conv.id] || "",
+        messages: (messagesByConversation[conv.id] || []).sort((a: any, b: any) =>
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         )
     })).sort((a, b) => {

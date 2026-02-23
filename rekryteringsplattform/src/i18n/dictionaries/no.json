@@ -298,6 +298,7 @@
     "jobDetailsPipeline": "Pipeline",
     "jobDetailsDescription": "Beskrivelse",
     "jobDetailsRecruiters": "Rekrutterere",
+    "jobDetailsProcess": "Prosess",
     "jobDetailsFee": "Honorar",
     "jobDescriptionTitle": "Arbeidsbeskrivelse",
     "specificationsTitle": "Spesifikasjoner",
@@ -386,7 +387,13 @@
     "contactInfoTitle": "Kontaktopplysninger",
     "downloadCv": "Last ned CV",
     "presentedBy": "Presentert av {name}",
-    "candidateMessagesTitle": "Meldinger"
+    "candidateMessagesTitle": "Meldinger",
+    "processTitle": "Rekrutteringsprosess",
+    "processDescription": "Tilpass stegene i rekrutteringsprosessen for dette oppdraget",
+    "pipelineSaved": "Prosessen er lagret!",
+    "pipelineWarningCandidates": "Det finnes aktive kandidater i denne prosessen. Vær forsiktig ved fjerning av steg.",
+    "stepProcess": "Prosess",
+    "stepProcessDesc": "Rekrutteringsprosess"
   },
   "recruiter": {
     "dashboardTitle": "Dashboard",
@@ -514,7 +521,8 @@
     "profileOverview": "Profiloversikt",
     "currentRoleLabel": "Nåværende rolle",
     "yourMotivation": "Din motivasjon",
-    "downloadJobDescription": "Last ned jobbeskrivelse"
+    "downloadJobDescription": "Last ned jobbeskrivelse",
+    "hiringProcess": "Rekrutteringsprosess"
   },
   "admin": {
     "dashboardTitle": "Admin Dashboard",
@@ -772,6 +780,16 @@
     "downloadJobDescriptionLabel": "Arbeidsbeskrivelse",
     "recruiterJobsListJobLabel": "Jobb:",
     "recruiterJobsListRecruiterLabel": "Rekrutterer:",
-    "recruiterJobsListPresentedLabel": "Presentert:"
+    "recruiterJobsListPresentedLabel": "Presentert:",
+    "pipelineSubmitted": "Innsendt",
+    "pipelineYourStages": "Dine steg",
+    "pipelineEmpty": "Ingen",
+    "pipelineAddInterview": "Legg til intervju",
+    "pipelineAddTest": "Legg til test",
+    "pipelineAddScreening": "Legg til screening",
+    "pipelineStagesUsed": "steg brukt",
+    "pipelineInterviews": "intervjuer",
+    "pipelineTests": "tester",
+    "kanbanStatusLabel": "Status"
   }
 }

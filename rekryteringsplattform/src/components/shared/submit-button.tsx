@@ -4,12 +4,18 @@ import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/i18n/client";
 
-export function SubmitButton({ children }: { children: React.ReactNode }) {
+export function SubmitButton({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   const { pending } = useFormStatus();
   const { t } = useTranslations();
 
   return (
-    <Button type="submit" disabled={pending}>
+    <Button type="submit" disabled={pending} className={className}>
       {pending ? t("components.submitButtonSaving") : children}
     </Button>
   );

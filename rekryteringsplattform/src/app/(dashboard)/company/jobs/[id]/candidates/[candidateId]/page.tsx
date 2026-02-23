@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ArrowLeft, Download, Mail, Phone, Linkedin } from "lucide-react";
-import { CandidateStatusActions } from "@/components/dashboard/company/candidate-status-actions";
+import { CandidateNextStepRequestActions } from "@/components/dashboard/company/candidate-next-step-request-actions";
 import { CandidateChat } from "@/components/shared/candidate-chat";
+import { CandidateProcessFlowchart } from "@/components/shared/candidate-process-flowchart";
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 
@@ -33,6 +34,10 @@ async function getCandidate(candidateId: string, jobId: string) {
         .from("candidates")
         .select(`
       *,
+      job:jobs(
+        title,
+        pipeline_stages
+      ),
       recruiter:recruiters(
         headline,
         profile:profiles!recruiters_user_id_fkey(full_name)
@@ -79,7 +84,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
                     <Link href={`/company/jobs/${jobId}`}>
                         <Button variant="ghost" size="sm">
                             <ArrowLeft className="h-4 w-4" />
@@ -104,16 +109,25 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                             </Button>
                         </a>
                     )}
-                    <CandidateStatusActions
+                    <CandidateNextStepRequestActions
                         candidateId={candidateId}
                         jobId={jobId}
-                        currentStatus={candidate.status}
+                        currentRequest={candidate.company_requested_next_step}
+                        currentRequestNote={candidate.company_requested_next_step_note}
+                        currentRequestAt={candidate.company_requested_next_step_at}
                     />
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
+                    <CandidateProcessFlowchart
+                        candidate={candidate}
+                        dict={dict}
+                        eyebrow="Kandidatens process"
+                        helperText="Uppdateras av rekryteraren när kandidaten flyttas i processen."
+                    />
+
                     <Card>
                         <CardHeader>
                             <CardTitle>{c.candidateProfileTitle}</CardTitle>

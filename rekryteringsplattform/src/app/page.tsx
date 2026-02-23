@@ -55,61 +55,53 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative overflow-hidden py-16 md:py-24">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,rgba(14,165,233,0.22),transparent_38%),radial-gradient(circle_at_88%_22%,rgba(59,130,246,0.16),transparent_34%),linear-gradient(to_bottom,#f7fbff_0%,#f8fafc_70%,#ffffff_100%)]" />
-        <div className="pointer-events-none absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-200/70 to-transparent" />
-        <div className="relative mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div>
-            <span className="inline-flex items-center rounded-full border border-brand-200/80 bg-white/80 px-4 py-1.5 text-sm font-semibold text-brand-700 backdrop-blur">
+      <section className="relative overflow-hidden py-14 md:py-20">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_14%,rgba(14,165,233,0.16),transparent_34%),linear-gradient(to_bottom,#f4f9ff_0%,#f8fafc_68%,#ffffff_100%)]" />
+        <div className="relative mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[1fr_1fr] lg:items-start lg:gap-14">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center rounded-full border border-brand-200 bg-white/80 px-4 py-1.5 text-sm font-semibold text-brand-700">
               {t("landing.heroBadge")}
             </span>
 
-            <h1 className="mt-6 max-w-3xl text-[clamp(2.8rem,5vw,5.2rem)] font-black leading-[0.95] tracking-tight text-slate-950">
+            <h1 className="mt-6 text-[clamp(2.4rem,4.4vw,4.4rem)] font-black leading-[1.02] tracking-tight text-slate-950">
               {t("landing.heroTitleLine1")}
-              <span className="mt-3 block text-brand-700">{t("landing.heroTitleLine2")}</span>
+              <span className="block text-brand-700">{t("landing.heroTitleLine2")}</span>
             </h1>
 
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
+            <p className="mt-6 text-[1.15rem] leading-relaxed text-slate-600">
               {t("landing.heroDescription")}
             </p>
 
-            <ul className="mt-8 grid max-w-2xl gap-3.5">
-              {[
-                { title: t("landing.heroBullet1Title"), desc: t("landing.heroBullet1Desc") },
-                { title: t("landing.heroBullet2Title"), desc: t("landing.heroBullet2Desc") },
-                { title: t("landing.heroBullet3Title"), desc: t("landing.heroBullet3Desc") },
-                { title: t("landing.heroBullet4Title"), desc: t("landing.heroBullet4Desc") },
-                { title: t("landing.heroBullet5Title"), desc: t("landing.heroBullet5Desc") },
-              ].map((item) => (
-                <li key={item.title} className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 shadow-sm backdrop-blur-sm">
-                  <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-                    <CheckCircle className="h-4 w-4" />
-                  </span>
-                  <p className="text-[15px] leading-relaxed text-slate-600 md:text-base">
-                    <span className="font-semibold text-slate-900">{item.title}:</span> {item.desc}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-7 mx-auto w-full lg:w-[115%]">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-white/85 px-5 py-3.5 shadow-sm">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">{t("landing.navCompanies")}</p>
+                  <p className="mt-1.5 text-[1.15rem] leading-snug text-slate-800">{t("auth.companyOptionDescription")}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white/85 px-5 py-3.5 shadow-sm">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">{t("landing.navRecruiters")}</p>
+                  <p className="mt-1.5 text-[1.15rem] leading-snug text-slate-800">{t("auth.recruiterOptionDescription")}</p>
+                </div>
+              </div>
 
-            <div className="mt-9 flex flex-col sm:flex-row gap-4">
-              <Link href="/register/company">
-                <Button size="lg" className="w-full sm:w-auto gap-2 shadow-sm">
-                  <Building2 className="h-5 w-5" /> {t("landing.ctaCompanyButton")}
-                </Button>
-              </Link>
-              <Link href="/register/recruiter">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto gap-2 border-success-500 text-success-700 hover:bg-success-50">
-                  <UserCircle className="h-5 w-5" /> {t("landing.ctaRecruiterButton")}
-                </Button>
-              </Link>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+                <Link href="/register/company">
+                  <Button size="lg" className="w-full sm:w-[350px] gap-2 text-[1.12rem]">
+                    <Building2 className="h-5 w-5" /> {t("landing.ctaCompanyButton")}
+                  </Button>
+                </Link>
+                <Link href="/register/recruiter">
+                  <Button size="lg" variant="outline" className="w-full sm:w-[350px] gap-2 text-[1.12rem] border-success-500 text-success-700 hover:bg-success-50">
+                    <UserCircle className="h-5 w-5" /> {t("landing.ctaRecruiterButton")}
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
 
-          <div className="relative lg:pl-4">
-            <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-brand-300/30 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-10 -left-8 h-44 w-44 rounded-full bg-cyan-200/35 blur-3xl" />
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-white shadow-[0_28px_70px_-24px_rgba(15,23,42,0.45)]">
+          <div className="relative lg:pt-16">
+            <div className="pointer-events-none absolute -right-8 -top-8 h-44 w-44 rounded-full bg-brand-200/35 blur-3xl" />
+            <div className="relative mx-auto w-full max-w-[560px] overflow-hidden rounded-3xl border border-white/70 bg-white shadow-[0_24px_60px_-24px_rgba(15,23,42,0.4)] lg:mx-0 lg:w-[115%] lg:max-w-[644px]">
               <div className="aspect-[16/11]">
                 <Image
                   src="/images/recruito-hero-team.png"
@@ -119,15 +111,15 @@ export default function LandingPage() {
                   priority
                   className="h-full w-full object-cover object-center"
                 />
-                <div className="absolute inset-0 bg-gradient-to-tr from-slate-900/35 via-transparent to-white/35" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-slate-900/30 via-transparent to-white/30" />
               </div>
-              <div className="absolute inset-x-5 bottom-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                <div className="rounded-xl bg-white/92 px-3.5 py-2.5 backdrop-blur">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{t("landing.matchingLabel")}</p>
+              <div className="absolute inset-x-4 bottom-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="rounded-xl bg-white/94 px-3.5 py-2.5 backdrop-blur">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">{t("landing.matchingLabel")}</p>
                   <p className="text-sm font-semibold text-slate-900">{t("landing.matchingText")}</p>
                 </div>
-                <div className="rounded-xl bg-white/92 px-3.5 py-2.5 backdrop-blur">
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{t("landing.safetyLabel")}</p>
+                <div className="rounded-xl bg-white/94 px-3.5 py-2.5 backdrop-blur">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">{t("landing.safetyLabel")}</p>
                   <p className="text-sm font-semibold text-slate-900">{t("landing.safetyText")}</p>
                 </div>
               </div>
