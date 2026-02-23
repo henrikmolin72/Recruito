@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import type { PipelineStage } from "@/types/db-types";
 import { ArrowRight, GitBranch, Users, UserCheck, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { normalizeCandidateStatusForWorkflow, TERMINAL_CANDIDATE_STATUSES } from "@/lib/candidate-workflow";
 
 type CandidateItem = {
     id: string;
@@ -27,41 +28,66 @@ function sortStages(stages: PipelineStage[] | null | undefined): PipelineStage[]
 function getStepLabel(candidate: CandidateItem, pipelineStages: PipelineStage[]) {
     const stage = pipelineStages.find((s) => s.id === candidate.current_pipeline_stage);
     if (stage) return stage.title;
+    const status = normalizeCandidateStatusForWorkflow(candidate.status);
 
     const labels: Record<string, string> = {
         submitted: "Presenterad",
         reviewing: "Under granskning",
+        under_client_review: "Under kundgranskning",
+        info_requested: "Mer info begärd",
+        resubmitted: "Återinskickad",
         interview: "Intervju",
+        interview_stage_1: "Intervju steg 1",
+        interview_stage_2: "Intervju steg 2",
+        interview_stage_3: "Intervju steg 3",
+        final_interview: "Slutintervju",
         offered: "Erbjudande",
+        offer_in_progress: "Erbjudande pågår",
+        offer_accepted: "Erbjudande accepterat",
+        invoice_enabled: "Faktura aktiv",
+        guarantee_tracking: "Garantispårning",
         hired: "Anställd",
         completed: "Avslutad",
         rejected: "Avböjd",
+        duplicate_rejected: "Dublett avvisad",
+        client_already_engaged: "Kunden redan engagerad",
+        rejected_client: "Avvisad av kund",
+        rejected_interview: "Avvisad i intervju",
+        offer_declined: "Erbjudande avböjt",
+        candidate_withdrawn: "Kandidat drog sig ur",
         declined: "Avböjd",
         paused: "Pausad",
+        on_hold: "On hold",
     };
-    return labels[candidate.status] || "Pågår";
+    return labels[status] || labels[candidate.status] || "Pågår";
 }
 
 function getProgress(candidate: CandidateItem, pipelineStages: PipelineStage[]) {
     const stages = pipelineStages;
     const total = Math.max(stages.length + 3, 4); // submitted + custom + offered + decision
+    const status = normalizeCandidateStatusForWorkflow(candidate.status);
 
-    if (candidate.status === "paused") return { value: 0.4, tone: "paused" as const };
-    if (["hired", "completed", "rejected", "declined"].includes(candidate.status)) {
-        return { value: 1, tone: ["rejected", "declined"].includes(candidate.status) ? ("negative" as const) : ("positive" as const) };
+    if (status === "on_hold" || status === "paused") return { value: 0.4, tone: "paused" as const };
+    if (TERMINAL_CANDIDATE_STATUSES.has(status) || ["hired", "invoice_enabled", "guarantee_tracking"].includes(status)) {
+        return {
+            value: 1,
+            tone: ["duplicate_rejected", "client_already_engaged", "rejected_client", "rejected_interview", "offer_declined", "candidate_withdrawn", "rejected", "declined"].includes(status)
+                ? ("negative" as const)
+                : ("positive" as const)
+        };
     }
-    if (candidate.status === "offered") return { value: (stages.length + 2) / total, tone: "default" as const };
+    if (["offered", "offer_in_progress", "offer_accepted"].includes(status)) return { value: (stages.length + 2) / total, tone: "default" as const };
 
     const idx = stages.findIndex((s) => s.id === candidate.current_pipeline_stage);
     if (idx >= 0) return { value: (idx + 2) / total, tone: "default" as const };
 
-    if (candidate.status === "interview") {
+    if (["interview", "interview_stage_1", "interview_stage_2", "interview_stage_3", "final_interview"].includes(status)) {
         const interviewStageIdx = stages.findIndex((s) => s.type === "interview");
         if (interviewStageIdx >= 0) return { value: (interviewStageIdx + 2) / total, tone: "default" as const };
         return { value: 0.45, tone: "default" as const };
     }
 
-    if (candidate.status === "reviewing") return { value: 0.25, tone: "default" as const };
+    if (["reviewing", "under_client_review", "info_requested", "resubmitted"].includes(status)) return { value: 0.25, tone: "default" as const };
     return { value: 0.1, tone: "default" as const };
 }
 
@@ -77,14 +103,19 @@ export function CompanyCandidatesOverview({
     const sortedStages = sortStages(pipelineStages);
 
     const total = candidates.length;
-    const active = candidates.filter((c) => !["hired", "completed", "rejected", "declined"].includes(c.status)).length;
+    const active = candidates.filter((c) => {
+        const status = normalizeCandidateStatusForWorkflow(c.status);
+        return !(TERMINAL_CANDIDATE_STATUSES.has(status) || ["hired", "invoice_enabled", "guarantee_tracking", "completed"].includes(status));
+    }).length;
     const uniqueRecruiters = new Set(
         candidates.map((c) => c.recruiter?.profile?.full_name).filter(Boolean)
     ).size;
 
     const sortedCandidates = [...candidates].sort((a, b) => {
-        const aDone = ["hired", "completed", "rejected", "declined"].includes(a.status);
-        const bDone = ["hired", "completed", "rejected", "declined"].includes(b.status);
+        const aStatus = normalizeCandidateStatusForWorkflow(a.status);
+        const bStatus = normalizeCandidateStatusForWorkflow(b.status);
+        const aDone = TERMINAL_CANDIDATE_STATUSES.has(aStatus) || ["hired", "invoice_enabled", "guarantee_tracking", "completed"].includes(aStatus);
+        const bDone = TERMINAL_CANDIDATE_STATUSES.has(bStatus) || ["hired", "invoice_enabled", "guarantee_tracking", "completed"].includes(bStatus);
         if (aDone !== bDone) return aDone ? 1 : -1;
         return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`, "sv");
     });
@@ -200,4 +231,3 @@ export function CompanyCandidatesOverview({
         </div>
     );
 }
-

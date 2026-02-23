@@ -3,15 +3,46 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { moveCandidateToPipelineStage, updateCandidateStatus } from "@/lib/actions/candidates";
+import { getAllowedCandidateTransitions } from "@/lib/candidate-workflow";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { PipelineStage } from "@/types/db-types";
-import { ArrowRightLeft, FastForward, PauseCircle, XCircle, CheckCircle2, Award } from "lucide-react";
+import { ArrowRightLeft, FastForward } from "lucide-react";
 
 function sortStages(stages: PipelineStage[] | null | undefined) {
     return [...(stages || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
+
+const STATUS_LABELS: Record<string, string> = {
+    duplicate_rejected: "Duplicate – Rejected",
+    client_already_engaged: "Client Already Engaged",
+    under_client_review: "Under Client Review",
+    info_requested: "Info Requested",
+    resubmitted: "Resubmitted",
+    interview_stage_1: "Interview Stage 1",
+    interview_stage_2: "Interview Stage 2",
+    interview_stage_3: "Interview Stage 3",
+    final_interview: "Final Interview",
+    rejected_client: "Rejected – Client",
+    rejected_interview: "Rejected – Interview",
+    on_hold: "On Hold",
+    offer_in_progress: "Offer in Progress",
+    offer_declined: "Offer Declined",
+    offer_accepted: "Offer Accepted",
+    invoice_enabled: "Invoice Enabled",
+    guarantee_tracking: "Guarantee Tracking",
+    candidate_withdrawn: "Candidate Withdrawn",
+    hired: "Hired",
+    completed: "Completed",
+    submitted: "Submitted",
+    reviewing: "Reviewing",
+    interview: "Interview",
+    offered: "Offered",
+    paused: "Paused",
+    rejected: "Rejected",
+    declined: "Declined",
+};
 
 export function RecruiterPipelineControls({
     candidateId,
@@ -44,6 +75,11 @@ export function RecruiterPipelineControls({
 
     const nextStageId = currentIndex >= 0 ? stages[currentIndex + 1]?.id : stages[0]?.id;
     const prevStageId = currentIndex > 0 ? stages[currentIndex - 1]?.id : undefined;
+    const allowedStatusTransitions = useMemo(
+        () => getAllowedCandidateTransitions(candidateStatus),
+        [candidateStatus]
+    );
+    const [selectedStatus, setSelectedStatus] = useState<string>(allowedStatusTransitions[0] || "");
 
     const run = (action: () => Promise<any>, okMessage: string) => {
         setError(null);
@@ -160,50 +196,41 @@ export function RecruiterPipelineControls({
 
                 <div className="pt-1 border-t border-slate-100">
                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
-                        Snabba statusval
+                        Workflow nästa steg
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setStatus("offered", "erbjudande")}
-                            disabled={isPending || candidateStatus === "offered"}
-                            className="gap-1.5"
-                        >
-                            <Award className="h-4 w-4" />
-                            Erbjudande
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setStatus("hired", "anställd")}
-                            disabled={isPending || candidateStatus === "hired"}
-                            className="gap-1.5"
-                        >
-                            <CheckCircle2 className="h-4 w-4" />
-                            Anställd
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setStatus("paused", "pausad")}
-                            disabled={isPending || candidateStatus === "paused"}
-                            className="gap-1.5"
-                        >
-                            <PauseCircle className="h-4 w-4" />
-                            Pausa
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setStatus("rejected", "avböjd")}
-                            disabled={isPending || candidateStatus === "rejected"}
-                            className="gap-1.5 text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-                        >
-                            <XCircle className="h-4 w-4" />
-                            Avböj
-                        </Button>
-                    </div>
+                    {allowedStatusTransitions.length > 0 ? (
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <Select
+                                value={selectedStatus}
+                                onValueChange={setSelectedStatus}
+                                disabled={isPending}
+                            >
+                                <SelectTrigger className="sm:flex-1">
+                                    <SelectValue placeholder="Välj nästa workflow-steg" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {allowedStatusTransitions.map((status) => (
+                                        <SelectItem key={status} value={status}>
+                                            {STATUS_LABELS[status] || status}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={isPending || !selectedStatus}
+                                onClick={() => setStatus(selectedStatus, STATUS_LABELS[selectedStatus] || selectedStatus)}
+                                className="sm:min-w-[220px]"
+                            >
+                                {isPending ? "Uppdaterar..." : "Applicera workflow-status"}
+                            </Button>
+                        </div>
+                    ) : (
+                        <p className="text-xs text-slate-500">
+                            Inga fler tillåtna steg från nuvarande status.
+                        </p>
+                    )}
                 </div>
 
                 {error && <p className="text-xs text-rose-600 font-medium">{error}</p>}
@@ -212,4 +239,3 @@ export function RecruiterPipelineControls({
         </Card>
     );
 }
-

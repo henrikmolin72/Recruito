@@ -99,9 +99,9 @@ export function CompanyNextStepPanel({
         }
 
         const statusMap: Record<Exclude<CompanyCandidateNextStep, "request_tests">, string> = {
-            pause_candidate: "paused",
-            reject_candidate: "rejected",
-            proceed_to_hire: "hired",
+            pause_candidate: "on_hold",
+            reject_candidate: "rejected_client",
+            proceed_to_hire: "offer_in_progress",
         };
 
         runAction(

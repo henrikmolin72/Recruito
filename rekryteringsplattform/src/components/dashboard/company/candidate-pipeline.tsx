@@ -10,6 +10,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "@/i18n/client";
+import { normalizeCandidateStatusForWorkflow } from "@/lib/candidate-workflow";
 
 interface CandidatePipelineProps {
   candidates: any[];
@@ -114,7 +115,7 @@ function PipelineView({ candidates }: { candidates: any[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {PIPELINE_STAGES.map((stage) => {
-        const stageCandidates = candidates.filter(c => c.status === stage.key);
+        const stageCandidates = candidates.filter(c => getColumnKey(c.status) === stage.key);
 
         return (
           <div key={stage.key} className="space-y-3">
@@ -202,3 +203,13 @@ function ListView({ candidates }: { candidates: any[] }) {
     </div>
   );
 }
+  const getColumnKey = (status: string) => {
+    const normalized = normalizeCandidateStatusForWorkflow(status);
+    if (["submitted", "under_client_review", "info_requested", "resubmitted"].includes(normalized)) return "reviewing";
+    if (["interview_stage_1", "interview_stage_2", "interview_stage_3", "final_interview"].includes(normalized)) return "interview";
+    if (["offer_in_progress", "offer_accepted"].includes(normalized)) return "offered";
+    if (["on_hold"].includes(normalized)) return "paused";
+    if (["duplicate_rejected", "client_already_engaged", "rejected_client", "rejected_interview", "offer_declined", "candidate_withdrawn"].includes(normalized)) return "rejected";
+    if (["invoice_enabled", "guarantee_tracking"].includes(normalized)) return "hired";
+    return normalized;
+  };
