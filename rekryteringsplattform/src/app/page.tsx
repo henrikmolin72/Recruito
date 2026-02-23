@@ -1,14 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { AppLogo } from "@/components/shared/app-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
-import { formatCurrency, calculateFee } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 import {
   Briefcase,
@@ -22,13 +19,50 @@ import {
   ArrowRight,
   Building2,
   UserCircle,
+  PlayCircle,
 } from "lucide-react";
+
+function getYouTubeEmbedUrl(url: string | undefined) {
+  if (!url) return null;
+
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.replace(/^www\./, "");
+
+    if (host === "youtu.be") {
+      const id = parsed.pathname.split("/").filter(Boolean)[0];
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      if (parsed.pathname === "/watch") {
+        const id = parsed.searchParams.get("v");
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+
+      if (parsed.pathname.startsWith("/embed/")) {
+        const id = parsed.pathname.split("/").filter(Boolean)[1];
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+
+      if (parsed.pathname.startsWith("/shorts/")) {
+        const id = parsed.pathname.split("/").filter(Boolean)[1];
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
 
 export default function LandingPage() {
   const { t } = useTranslations();
-  const [salary, setSalary] = useState(600000);
-  const fees = calculateFee(salary);
-  const traditionalFee = salary * 0.25;
+  const demoEmbedUrl = getYouTubeEmbedUrl(process.env.NEXT_PUBLIC_LANDING_DEMO_YOUTUBE_URL);
 
   return (
     <div className="min-h-screen bg-white">
@@ -198,54 +232,126 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Calculator */}
+      {/* Demo + CTA (replaces calculator) */}
       <section id="pricing" className="py-20">
-        <div className="max-w-3xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center mb-4">{t("landing.calculatorTitle")}</h2>
-          <p className="text-center text-muted-foreground mb-10">
-            {t("landing.calculatorSubtitle")}
-          </p>
-          <Card className="p-8">
-            <label className="block text-sm font-medium mb-2">{t("landing.salaryLabel")}</label>
-            <Input
-              type="range"
-              min={300000}
-              max={1500000}
-              step={50000}
-              value={salary}
-              onChange={(e) => setSalary(Number(e.target.value))}
-              className="w-full h-2 cursor-pointer"
-            />
-            <p className="text-center text-2xl font-bold mt-2 text-brand-600">
-              {formatCurrency(salary)}
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold mb-3">{t("landing.ctaTitle")}</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              {t("landing.ctaSubtitle")}
             </p>
+          </div>
 
-            <div className="grid md:grid-cols-2 gap-6 mt-8">
-              <div className="p-4 bg-danger-50 rounded-lg text-center">
-                <p className="text-sm text-muted-foreground">{t("landing.traditionalAgency")}</p>
-                <p className="text-2xl font-bold text-danger-700 mt-1">{formatCurrency(traditionalFee)}</p>
-              </div>
-              <div className="p-4 bg-success-50 rounded-lg text-center">
-                <p className="text-sm text-muted-foreground">{t("landing.recruitoFrom12")}</p>
-                <p className="text-2xl font-bold text-success-700 mt-1">{formatCurrency(salary * 0.12)} – {formatCurrency(fees.totalFee)}</p>
-                <div className="mt-2 space-y-0.5 text-[11px] text-muted-foreground">
-                  <p>{t("landing.tier02Placements")}</p>
-                  <p>{t("landing.tier3Placements")}</p>
-                  <p>{t("landing.tier5Placements")}</p>
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_1.35fr]">
+            <Card className="p-6 lg:p-8 border-slate-200 shadow-sm">
+              <div className="space-y-5">
+                <div className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-brand-700">
+                  Demo &amp; Start
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black tracking-tight text-slate-900">
+                    Se hur Recruito fungerar i praktiken
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                    Boka en demo eller skapa konto direkt. Ni får ett tydligt arbetsflöde för företag, rekryterare och kandidater i samma plattform.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                    Följ kandidater visuellt i flowchart medan rekryteraren driver processen.
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                    Publik ansökningslänk per mandat och AI-screening på rekryterarsidan.
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                    Inbyggd chatt och tydliga nästa steg mellan företag och rekryterare.
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Link href="/register/company" className="w-full">
+                    <Button size="lg" className="w-full gap-2">
+                      <Building2 className="h-4 w-4" />
+                      {t("landing.ctaCompanyButton")}
+                    </Button>
+                  </Link>
+                  <Link href="/register/recruiter" className="w-full">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full gap-2 border-success-500 text-success-700 hover:bg-success-50"
+                    >
+                      <UserCircle className="h-4 w-4" />
+                      {t("landing.ctaRecruiterButton")}
+                    </Button>
+                  </Link>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            <div className="text-center mt-6 p-4 bg-brand-50 rounded-lg">
-              <p className="text-sm text-muted-foreground">{t("landing.companySaves")}</p>
-              <p className="text-3xl font-bold text-brand-600">
-                {formatCurrency(traditionalFee - fees.totalFee)}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {t("landing.recruiterEarns").replace("{amount}", formatCurrency(fees.recruiterFee))}
-              </p>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <Card className="overflow-hidden border-slate-200 shadow-sm">
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src="/images/recruito-hero-team.png"
+                    alt={t("landing.heroImageAlt")}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/35 via-transparent to-transparent" />
+                  <div className="absolute bottom-3 left-3 rounded-lg bg-white/95 px-3 py-2 text-xs font-semibold text-slate-900 shadow">
+                    Recruiter dashboard workflow
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="overflow-hidden border-slate-200 shadow-sm">
+                <div className="relative aspect-[4/3] bg-slate-100">
+                  <Image
+                    src="/images/hero-bg.png"
+                    alt="Recruito interface preview background"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-600/15 via-transparent to-success-500/15" />
+                  <div className="absolute inset-x-3 bottom-3 rounded-lg bg-white/95 px-3 py-2 text-xs font-semibold text-slate-900 shadow">
+                    Company overview &amp; candidate flow visibility
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="sm:col-span-2 overflow-hidden border-slate-200 shadow-sm">
+                <div className="relative aspect-video bg-[linear-gradient(135deg,#0f172a,#1e293b_45%,#0b1220)] p-5 sm:p-6">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(14,165,233,.16),transparent_40%),radial-gradient(circle_at_82%_75%,rgba(34,197,94,.16),transparent_42%)]" />
+                  {demoEmbedUrl ? (
+                    <div className="relative h-full overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl">
+                      <iframe
+                        src={demoEmbedUrl}
+                        title="Recruito demo video"
+                        className="h-full w-full"
+                        loading="lazy"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <div className="relative h-full rounded-2xl border border-white/10 bg-black/20 backdrop-blur-sm flex flex-col items-center justify-center text-center px-6">
+                      <PlayCircle className="h-14 w-14 text-white/90 mb-3" />
+                      <p className="text-white text-lg font-semibold">Demo video (YouTube)</p>
+                      <p className="mt-2 text-sm text-slate-300 max-w-xl">
+                        Hållare för produktdemo. Lägg in er YouTube-video här för att visa onboarding, kandidatarbete och kundens flowchart-vy.
+                      </p>
+                      <div className="mt-4 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-slate-200">
+                        Sätt `NEXT_PUBLIC_LANDING_DEMO_YOUTUBE_URL` i miljön
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
             </div>
-          </Card>
+          </div>
         </div>
       </section>
 
