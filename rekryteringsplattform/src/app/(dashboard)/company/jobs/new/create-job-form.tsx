@@ -11,11 +11,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { PipelineBuilder } from "@/components/dashboard/company/pipeline-builder";
+import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
+import type { PipelineStage } from "@/types/db-types";
 
 const STEPS = [
     { id: 1, title: "Grunderna", description: "Titel och plats" },
     { id: 2, title: "Rollen", description: "Beskrivning" },
-    { id: 3, title: "Villkor", description: "Lön och arvode" }
+    { id: 3, title: "Villkor", description: "Lön och arvode" },
+    { id: 4, title: "Process", description: "Rekryteringsprocess" }
 ];
 
 interface CreateJobFormProps {
@@ -27,6 +31,7 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
     const router = useRouter();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>(DEFAULT_PIPELINE_STAGES);
     const [formData, setFormData] = useState({
         title: "",
         description: "",
@@ -45,7 +50,7 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
     };
 
     const nextStep = () => {
-        if (step < 3) setStep(step + 1);
+        if (step < 4) setStep(step + 1);
     };
 
     const prevStep = () => {
@@ -56,6 +61,7 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
         setLoading(true);
         const data = new FormData();
         Object.entries(formData).forEach(([key, value]) => data.append(key, value));
+        data.append("pipeline_stages", JSON.stringify(pipelineStages));
 
         const result = await createJob(data);
         if (result?.error) {
@@ -252,6 +258,18 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                                     </div>
                                 </div>
                             )}
+
+                            {step === 4 && (
+                                <div className="space-y-4">
+                                    <p className="text-sm text-slate-500">
+                                        Dra och släpp för att ändra ordning på stegen. Lägg till intervjuer och tester efter behov.
+                                    </p>
+                                    <PipelineBuilder
+                                        stages={pipelineStages}
+                                        onChange={setPipelineStages}
+                                    />
+                                </div>
+                            )}
                         </motion.div>
                     </AnimatePresence>
 
@@ -265,7 +283,7 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                             <ChevronLeft className="h-4 w-4" /> Föregående
                         </Button>
 
-                        {step < 3 ? (
+                        {step < 4 ? (
                             <Button
                                 onClick={nextStep}
                                 className="bg-brand-600 hover:bg-brand-700 text-white gap-2 px-6 shadow-md shadow-brand-500/20"

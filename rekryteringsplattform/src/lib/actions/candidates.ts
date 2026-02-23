@@ -5,6 +5,99 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/actions/notifications";
 import { validateCandidateForm } from "@/lib/validation/forms";
+import type { PipelineStage } from "@/types/db-types";
+
+type CandidateNextStepRequest =
+    | "request_tests"
+    | "pause_candidate"
+    | "reject_candidate"
+    | "proceed_to_hire";
+
+async function getCandidateMessagingContext(supabase: Awaited<ReturnType<typeof createClient>>, candidateId: string) {
+    const { data: candidate } = await supabase
+        .from("candidates")
+        .select(`
+            id,
+            mandate_id,
+            first_name,
+            last_name,
+            recruiter:recruiters(user_id)
+        `)
+        .eq("id", candidateId)
+        .single();
+
+    const recruiterRecord = (candidate as any)?.recruiter;
+    const recruiterUserId = Array.isArray(recruiterRecord) ? recruiterRecord[0]?.user_id : recruiterRecord?.user_id;
+
+    return {
+        candidate,
+        recruiterUserId: recruiterUserId || null,
+        mandateId: (candidate as any)?.mandate_id || null,
+        candidateName: `${(candidate as any)?.first_name || ""} ${(candidate as any)?.last_name || ""}`.trim(),
+    };
+}
+
+async function getActorRoleForCandidateAction(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    userId: string,
+    candidateId: string,
+    jobId: string
+) {
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("id, title, company:companies(user_id), pipeline_stages")
+        .eq("id", jobId)
+        .single();
+
+    const { data: candidate } = await supabase
+        .from("candidates")
+        .select("id, recruiter:recruiters(user_id), mandate_id")
+        .eq("id", candidateId)
+        .single();
+
+    const companyData = job?.company;
+    const companyUserId = Array.isArray(companyData) ? companyData[0]?.user_id : (companyData as any)?.user_id;
+    const recruiterData = (candidate as any)?.recruiter;
+    const recruiterUserId = Array.isArray(recruiterData) ? recruiterData[0]?.user_id : recruiterData?.user_id;
+
+    const isCompany = companyUserId === userId;
+    const isRecruiter = recruiterUserId === userId;
+
+    return {
+        job,
+        candidate,
+        companyUserId: companyUserId || null,
+        recruiterUserId: recruiterUserId || null,
+        actorRole: isCompany ? "company" : isRecruiter ? "recruiter" : null,
+        mandateId: (candidate as any)?.mandate_id || null,
+    };
+}
+
+async function clearCompanyNextStepRequest(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    candidateId: string
+) {
+    await supabase
+        .from("candidates")
+        .update({
+            company_requested_next_step: null,
+            company_requested_next_step_note: null,
+            company_requested_next_step_at: null,
+            company_requested_next_step_by: null,
+        })
+        .eq("id", candidateId)
+        .not("company_requested_next_step", "is", null);
+}
+
+function mapCompanyNextStepLabel(nextStep: CandidateNextStepRequest) {
+    const labels: Record<CandidateNextStepRequest, string> = {
+        request_tests: "Begära tester",
+        pause_candidate: "Pausa kandidaten",
+        reject_candidate: "Avböja kandidaten",
+        proceed_to_hire: "Gå vidare till anställa",
+    };
+    return labels[nextStep];
+}
 
 export async function createCandidate(mandateId: string, formData: FormData) {
     const supabase = await createClient();
@@ -138,19 +231,12 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
         return { error: "Ogiltig kandidatstatus" };
     }
 
-    // Verify user owns the company that owns the job
-    const { data: job } = await supabase
-        .from("jobs")
-        .select("company:companies(user_id), title")
-        .eq("id", jobId)
-        .single();
-
-    // Check permissions (Company Owner OR Admin)
-    const companyData = job?.company;
-    const companyUserId = Array.isArray(companyData) ? companyData[0]?.user_id : (companyData as any)?.user_id;
-    const isOwner = companyUserId === user.id;
-    if (!isOwner) {
+    const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
+    if (!access.actorRole) {
         return { error: "Obehörig" };
+    }
+    if (access.actorRole !== "recruiter") {
+        return { error: "Endast rekryterare kan uppdatera kandidatstatus i pipeline." };
     }
 
     const { error } = await supabase
@@ -162,23 +248,173 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
         return { error: error.message };
     }
 
-    // Notify Recruiter about status change!
-    const { data: candidate } = await supabase
-        .from("candidates")
-        .select("recruiter:recruiters(user_id), first_name, last_name")
-        .eq("id", candidateId)
-        .single();
+    // Recruiter/company applying a status change should clear pending company request.
+    await clearCompanyNextStepRequest(supabase, candidateId);
 
-    if ((candidate?.recruiter as any)?.user_id) {
+    const { candidate, recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
+    const targetUserId = access.companyUserId;
+    const actorLabel = "Rekryteraren";
+
+    if (targetUserId) {
         await createNotification(
-            (candidate?.recruiter as any).user_id,
+            targetUserId,
             "Statusuppdatering på kandidat",
-            `Din kandidat ${candidate?.first_name} ${candidate?.last_name} har uppdaterats till: ${status} för uppdraget ${job?.title}.`,
-            "/recruiter/mandates"
+            `${actorLabel} uppdaterade ${candidateName || "kandidaten"} till status: ${status} för ${access.job?.title || "uppdraget"}.`,
+            `/company/jobs/${jobId}/candidates/${candidateId}`
         );
     }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
+    if (mandateId) {
+        revalidatePath(`/recruiter/mandates/${mandateId}`);
+        revalidatePath(`/recruiter/mandates/${mandateId}/candidates/${candidateId}`);
+    }
+    return { success: true };
+}
+
+export async function moveCandidateToPipelineStage(
+    candidateId: string,
+    jobId: string,
+    targetStageId: string
+) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Utloggad!" };
+
+    const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
+    if (!access.actorRole) return { error: "Obehörig" };
+    if (access.actorRole !== "recruiter") {
+        return { error: "Endast rekryterare kan flytta kandidaten i pipelinen." };
+    }
+    const job = access.job;
+
+    // Validate target stage exists in job pipeline
+    const stages = job?.pipeline_stages as PipelineStage[];
+    const targetStage = stages?.find(s => s.id === targetStageId);
+    if (!targetStage) return { error: "Ogiltigt steg" };
+
+    // Map pipeline stage type to candidate_status enum for backward compat
+    const statusMapping: Record<string, string> = {
+        screening: 'reviewing',
+        interview: 'interview',
+        test: 'reviewing',
+        assessment: 'reviewing',
+    };
+    const newStatus = statusMapping[targetStage.type] || 'reviewing';
+
+    const { error } = await supabase
+        .from("candidates")
+        .update({
+            current_pipeline_stage: targetStageId,
+            status: newStatus,
+        })
+        .eq("id", candidateId);
+
+    if (error) return { error: error.message };
+
+    await clearCompanyNextStepRequest(supabase, candidateId);
+
+    const { recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
+    const targetUserId = access.companyUserId;
+    const actorLabel = "Rekryteraren";
+
+    if (targetUserId) {
+        await createNotification(
+            targetUserId,
+            "Kandidat flyttad till nytt steg",
+            `${actorLabel} flyttade ${candidateName || "kandidaten"} till "${targetStage.title}" för ${job?.title || "uppdraget"}.`,
+            `/company/jobs/${jobId}/candidates/${candidateId}`
+        );
+    }
+
+    revalidatePath(`/company/jobs/${jobId}`);
+    revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
+    if (mandateId) {
+        revalidatePath(`/recruiter/mandates/${mandateId}`);
+        revalidatePath(`/recruiter/mandates/${mandateId}/candidates/${candidateId}`);
+    }
+    return { success: true };
+}
+
+export async function requestCandidateNextStep(
+    candidateId: string,
+    jobId: string,
+    nextStep: CandidateNextStepRequest,
+    note?: string
+) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Utloggad!" };
+
+    const allowed = new Set<CandidateNextStepRequest>([
+        "request_tests",
+        "pause_candidate",
+        "reject_candidate",
+        "proceed_to_hire",
+    ]);
+    if (!allowed.has(nextStep)) return { error: "Ogiltigt nästa steg" };
+
+    const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
+    if (access.actorRole !== "company") {
+        return { error: "Endast företag kan skicka nästa steg-begäran." };
+    }
+
+    const nowIso = new Date().toISOString();
+    const trimmedNote = note?.trim() || null;
+
+    const { error: updateError } = await supabase
+        .from("candidates")
+        .update({
+            company_requested_next_step: nextStep,
+            company_requested_next_step_note: trimmedNote,
+            company_requested_next_step_at: nowIso,
+            company_requested_next_step_by: user.id,
+        })
+        .eq("id", candidateId)
+        .eq("job_id", jobId);
+
+    if (updateError) return { error: updateError.message };
+
+    const { recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
+
+    if (recruiterUserId) {
+        const requestLabel = mapCompanyNextStepLabel(nextStep);
+        await createNotification(
+            recruiterUserId,
+            "Nytt nästa steg från beställaren",
+            `${requestLabel} för ${candidateName || "kandidaten"} (${access.job?.title || "uppdrag"}).${trimmedNote ? ` Kommentar: ${trimmedNote}` : ""}`,
+            mandateId
+                ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}`
+                : "/recruiter/mandates"
+        );
+    }
+
+    revalidatePath(`/company/jobs/${jobId}`);
+    revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
+    if (mandateId) {
+        revalidatePath(`/recruiter/mandates/${mandateId}`);
+        revalidatePath(`/recruiter/mandates/${mandateId}/candidates/${candidateId}`);
+    }
+
+    return { success: true };
+}
+
+export async function clearCandidateNextStepRequest(candidateId: string, jobId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Utloggad!" };
+
+    const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
+    if (!access.actorRole) return { error: "Obehörig" };
+
+    await clearCompanyNextStepRequest(supabase, candidateId);
+
+    revalidatePath(`/company/jobs/${jobId}`);
+    revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
+    if (access.mandateId) {
+        revalidatePath(`/recruiter/mandates/${access.mandateId}`);
+        revalidatePath(`/recruiter/mandates/${access.mandateId}/candidates/${candidateId}`);
+    }
     return { success: true };
 }

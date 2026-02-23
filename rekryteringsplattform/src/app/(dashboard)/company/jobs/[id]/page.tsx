@@ -16,12 +16,15 @@ import {
     Briefcase,
     LayoutDashboard,
     FileText,
-    Users2
+    Users2,
+    Settings2
 } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { JobActions } from "@/components/dashboard/company/job-actions";
-import { CandidateKanban } from "@/components/dashboard/company/candidate-kanban";
+import { CompanyCandidatesOverview } from "@/components/dashboard/company/company-candidates-overview";
+import { PipelineEditor } from "@/components/dashboard/company/pipeline-editor";
 import { getDictionary } from "@/i18n/server";
+import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 
 async function getJob(id: string) {
     const supabase = await createClient();
@@ -40,6 +43,7 @@ async function getJob(id: string) {
         last_name,
         current_title,
         status,
+        current_pipeline_stage,
         recruiter:recruiters(
            headline,
            user_id,
@@ -120,6 +124,9 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         <TabsTrigger value="recruiters" className="gap-2 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                             <Users2 className="h-4 w-4" /> {c.jobDetailsRecruiters}
                         </TabsTrigger>
+                        <TabsTrigger value="process" className="gap-2 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                            <Settings2 className="h-4 w-4" /> {c.jobDetailsProcess || "Process"}
+                        </TabsTrigger>
                     </TabsList>
 
                     <div className="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
@@ -131,7 +138,17 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                 </div>
 
                 <TabsContent value="pipeline" className="mt-0">
-                    <CandidateKanban candidates={job.candidates || []} jobId={job.id} />
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-slate-700">
+                            <span className="font-semibold text-brand-700">Info:</span>{" "}
+                            Rekryterarna uppdaterar kandidaternas pipeline. Företagssidan visar processen visuellt och används för uppföljning, chat och nästa steg-begäran.
+                        </div>
+                        <CompanyCandidatesOverview
+                            candidates={job.candidates || []}
+                            jobId={job.id}
+                            pipelineStages={job.pipeline_stages || DEFAULT_PIPELINE_STAGES}
+                        />
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="details" className="mt-0">
@@ -219,6 +236,14 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                             </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="process" className="mt-0">
+                    <PipelineEditor
+                        jobId={job.id}
+                        initialStages={job.pipeline_stages || DEFAULT_PIPELINE_STAGES}
+                        hasCandidates={(job.candidates?.length || 0) > 0}
+                    />
                 </TabsContent>
             </Tabs>
         </div>

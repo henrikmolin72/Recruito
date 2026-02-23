@@ -30,7 +30,9 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
     const selectedConv = initialConversations.find(c => c.id === selectedConvId);
 
     const filteredConversations = initialConversations.filter(conv => {
-        const name = `${conv.candidate?.first_name} ${conv.candidate?.last_name} (${conv.candidate?.job?.company?.company_name})`.toLowerCase();
+        const companyName = conv.candidate?.job?.company?.company_name || "";
+        const contactName = conv.otherParticipantName || "";
+        const name = `${conv.candidate?.first_name} ${conv.candidate?.last_name} ${companyName} ${contactName}`.toLowerCase();
         return name.includes(search.toLowerCase());
     });
 
@@ -64,18 +66,18 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
                                         isActive ? "bg-brand-50 border-r-2 border-r-brand-600" : "bg-white"
                                     )}
                                 >
-                                    <Avatar initials={(conv.candidate?.first_name?.[0] || "") + (conv.candidate?.last_name?.[0] || "")} />
+                                    <Avatar initials={(conv.otherParticipantName?.[0] || conv.candidate?.first_name?.[0] || "?")} />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-0.5">
                                             <p className={cn("text-sm truncate", isActive ? "font-bold text-brand-900" : "font-medium")}>
-                                                {conv.candidate?.first_name} {conv.candidate?.last_name}
+                                                {conv.otherParticipantName || conv.candidate?.job?.company?.company_name || t("common.unknown")}
                                             </p>
                                             <span className="text-[10px] text-muted-foreground">
                                                 {lastMsg ? new Date(lastMsg.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''}
                                             </span>
                                         </div>
                                         <p className="text-xs text-brand-600 font-medium truncate mb-1">
-                                            {conv.candidate?.job?.company?.company_name}
+                                            {t("components.inboxRegarding").replace("{name}", `${conv.candidate?.first_name} ${conv.candidate?.last_name}`)}
                                         </p>
                                         <p className="text-xs text-muted-foreground truncate italic">
                                             {lastMsg ? lastMsg.content : t("components.inboxNoMessages")}
@@ -94,11 +96,11 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
                     <div className="flex-1 flex flex-col h-full">
                         <div className="p-4 border-b border-border bg-white flex items-center justify-between">
                             <div>
-                                <p className="font-bold text-brand-900">{selectedConv.candidate?.first_name} {selectedConv.candidate?.last_name}</p>
-                                <p className="text-xs text-muted-foreground">{t("components.recruiterInboxApplicationFor")} <span className="font-medium text-foreground">{selectedConv.candidate?.job?.title}</span></p>
+                                <p className="font-bold text-brand-900">{selectedConv.otherParticipantName || selectedConv.candidate?.job?.company?.company_name || t("common.unknown")}</p>
+                                <p className="text-xs text-muted-foreground">{t("components.inboxCandidateLabel")} <span className="font-medium text-foreground">{selectedConv.candidate?.first_name} {selectedConv.candidate?.last_name}</span></p>
                             </div>
                             <div className="text-right">
-                                <p className="text-sm font-medium">{selectedConv.candidate?.job?.company?.company_name}</p>
+                                <p className="text-sm font-medium">{selectedConv.candidate?.job?.title}</p>
                                 <p className="text-[10px] text-muted-foreground italic">{t("components.recruiterInboxDirectContactClient")}</p>
                             </div>
                         </div>

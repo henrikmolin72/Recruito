@@ -34,6 +34,18 @@ interface CandidateChatProps {
     };
 }
 
+function formatMessageTime(createdAt: string) {
+    try {
+        return new Intl.DateTimeFormat("sv-SE", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        }).format(new Date(createdAt));
+    } catch {
+        return "";
+    }
+}
+
 export function CandidateChat({ candidateId, jobId, initialMessages, currentUserId, candidate }: CandidateChatProps) {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [content, setContent] = useState("");
@@ -174,9 +186,13 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
                                 >
                                     {msg.content}
                                 </div>
-                                <span className="text-[9px] text-slate-400 font-bold mt-1.5 px-1 tracking-wider uppercase">
-                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
+                                <time
+                                    dateTime={msg.created_at}
+                                    suppressHydrationWarning
+                                    className="text-[9px] text-slate-400 font-bold mt-1.5 px-1 tracking-wider uppercase"
+                                >
+                                    {formatMessageTime(msg.created_at)}
+                                </time>
                             </div>
                         );
                     })

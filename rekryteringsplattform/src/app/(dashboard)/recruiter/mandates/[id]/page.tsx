@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Building2, Briefcase, MapPin, Users, Plus } from "lucide-react";
+import { ArrowLeft, Building2, Briefcase, MapPin, Users, Plus, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { DownloadJobDescription } from "@/components/dashboard/recruiter/download-job-description";
-import { getRecruiterMandateById } from "@/lib/actions/recruiter";
+import { PipelineFlowchart } from "@/components/dashboard/recruiter/pipeline-flowchart";
+import { PublicApplicationLinkCard } from "@/components/dashboard/recruiter/public-application-link-card";
+import { ShortlistGenerator } from "@/components/screening/shortlist-generator";
+import { CandidateScoreCard } from "@/components/screening/candidate-score-card";
+import { getRecruiterMandateById, getRecruiterApplicationsForJob } from "@/lib/actions/recruiter";
+import { getAppUrl } from "@/lib/app-url";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getDictionary } from "@/i18n/server";
 
@@ -16,6 +22,10 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
   if (!mandate) {
     notFound();
   }
+
+  const applications = mandate.job_id ? await getRecruiterApplicationsForJob(mandate.job_id) : [];
+  const appUrl = await getAppUrl();
+  const publicApplicationLink = `${appUrl}/apply/${mandate.id}`;
 
   const dict = await getDictionary();
   const r = dict.recruiter;
@@ -39,6 +49,7 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
         </div>
 
         <div className="flex items-center gap-2">
+          {mandate.job_id ? <ShortlistGenerator jobId={mandate.job_id} /> : null}
           <DownloadJobDescription mandate={mandate} />
           <Link href={`/recruiter/mandates/${mandate.id}/candidates/new`}>
             <Button size="sm" className="bg-success-500 hover:bg-success-700 gap-1">
@@ -76,6 +87,22 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
         </CardContent>
       </Card>
 
+      {mandate.pipeline_stages && mandate.pipeline_stages.length > 0 && (
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+              <GitBranch className="h-3.5 w-3.5" /> {(r as any).hiringProcess || "Rekryteringsprocess"}
+            </p>
+            <PipelineFlowchart
+              stages={mandate.pipeline_stages}
+              candidates={mandate.candidates}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      <PublicApplicationLinkCard url={publicApplicationLink} />
+
       <Card>
         <CardContent className="p-0 overflow-x-auto">
           <div className="p-4 border-b border-border flex items-center justify-between">
@@ -109,6 +136,76 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
                 ))}
               </tbody>
             </table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">AI-screening (beta)</p>
+              <h2 className="text-lg font-semibold">Ansökningar för detta uppdrag</h2>
+              <p className="text-sm text-muted-foreground">
+                Klicka på <span className="font-medium">Analysera</span> per ansökan för att spara score och motivering.
+              </p>
+            </div>
+            <Badge variant="outline">{applications.length} ansökningar</Badge>
+          </div>
+
+          {applications.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground text-center">
+              Inga ansökningar hittades för detta mandat ännu.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {applications.map((application: any) => (
+                <div key={application.id} className="rounded-2xl border border-border bg-white p-4">
+                  <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+                    <div className="lg:w-[320px] shrink-0">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 h-full">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="font-semibold text-slate-900 leading-tight">{application.full_name || "Okänd kandidat"}</h3>
+                          <Badge variant="outline">{application.status || "new"}</Badge>
+                        </div>
+                        <div className="mt-3 space-y-2 text-sm">
+                          <p className="text-slate-600">
+                            <span className="font-medium text-slate-900">E-post:</span> {application.email || "—"}
+                          </p>
+                          <p className="text-slate-600">
+                            <span className="font-medium text-slate-900">Källa:</span> {application.source || "—"}
+                          </p>
+                          <p className="text-slate-600">
+                            <span className="font-medium text-slate-900">Skickad:</span> {formatDate(application.created_at)}
+                          </p>
+                          {application.screening?.screened_at ? (
+                            <p className="text-xs text-brand-700 font-medium">
+                              Senast screenad: {formatDate(application.screening.screened_at)}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <CandidateScoreCard
+                        applicationId={application.id}
+                        candidateName={application.full_name || undefined}
+                        initialResult={
+                          application.screening
+                            ? {
+                                score: application.screening.score || 0,
+                                reasoning: application.screening.reasoning || [],
+                                missingSkills: application.screening.missingSkills || [],
+                              }
+                            : null
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

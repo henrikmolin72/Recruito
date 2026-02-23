@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Globe, Handshake, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { AppLogo } from "@/components/shared/app-logo";
 import { registerRecruiter } from "@/lib/actions/auth";
 import { useTranslations } from "@/i18n/client";
+import { COUNTRY_OPTIONS, EXPERIENCE_BRACKET_OPTIONS } from "@/lib/recruiter-onboarding-options";
 
 export default function RegisterRecruiterPage() {
   const { t } = useTranslations();
@@ -25,58 +27,148 @@ export default function RegisterRecruiterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_20%_15%,#dcfce7,transparent_38%),radial-gradient(circle_at_85%_15%,#dbeafe,transparent_40%),linear-gradient(180deg,#f8fafc,#ffffff)] px-4 py-10">
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
             <AppLogo size="md" priority />
           </Link>
         </div>
 
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle>{t("auth.registerRecruiterTitle")}</CardTitle>
-            <CardDescription>{t("auth.registerRecruiterDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="mb-4 p-3 rounded-lg bg-danger-50 text-danger-700 text-sm">
-                {error}
+        <Card className="overflow-hidden border-slate-200 shadow-2xl shadow-slate-200/70">
+          <div className="grid lg:grid-cols-[1.05fr_1.35fr]">
+            <div className="bg-slate-900 px-8 py-10 text-white lg:px-10">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
+                <Sparkles className="h-3.5 w-3.5" />
+                Recruiter Registration
               </div>
-            )}
-            <form action={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">{t("auth.fullNameLabel")}</label>
-                <Input name="full_name" placeholder={t("auth.contactPersonPlaceholder")} required />
+
+              <h1 className="mt-4 text-3xl font-black leading-tight tracking-tight">
+                Join Recruito as a freelance recruiter
+              </h1>
+              <p className="mt-3 max-w-md text-sm leading-6 text-slate-300">
+                Submit your application to join the platform. We review every recruiter profile before approval.
+              </p>
+
+              <div className="mt-8 space-y-4">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Globe className="h-4 w-4 text-emerald-300" />
+                    Global recruiter network
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">
+                    Share your current country and experience level so we can route relevant mandates faster.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Handshake className="h-4 w-4 text-sky-300" />
+                    Transparent freelance terms
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">
+                    Commission is paid after successful placement and client guarantee completion.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <ShieldCheck className="h-4 w-4 text-amber-300" />
+                    Internal review
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-slate-300">
+                    Your application is sent internally for review automatically after submission.
+                  </p>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">{t("auth.emailLabel")}</label>
-                <Input type="email" name="email" placeholder={t("auth.emailPlaceholder")} required />
+            </div>
+
+            <div className="bg-white p-6 lg:p-8">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-slate-900">{t("auth.registerRecruiterTitle")}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t("auth.registerRecruiterDescription")}</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">{t("auth.headlineLabel")}</label>
-                <Input name="headline" placeholder={t("auth.headlinePlaceholder")} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">{t("auth.linkedinLabel")}</label>
-                <Input name="linkedin_url" placeholder="https://linkedin.com/in/..." />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">{t("auth.yearsExperienceLabel")}</label>
-                <Input type="number" name="years_experience" placeholder="5" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">{t("auth.passwordLabel")}</label>
-                <Input type="password" name="password" placeholder={t("auth.passwordMinPlaceholder")} required />
-              </div>
-              <Button className="w-full bg-success-500 hover:bg-success-700" size="lg" disabled={loading}>
-                {loading ? t("auth.sendingApplication") : t("auth.sendApplication")}
-              </Button>
-            </form>
-            <p className="text-center text-sm text-muted-foreground mt-6">
-              {t("auth.applicationReviewNotice")}
-            </p>
-          </CardContent>
+
+              {error && (
+                <div className="mb-4 rounded-lg bg-danger-50 p-3 text-sm text-danger-700">
+                  {error}
+                </div>
+              )}
+
+              <form action={handleSubmit} className="space-y-5">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className="mb-1.5 block text-sm font-medium">Full Name</label>
+                    <Input name="full_name" placeholder="Jane Doe" required />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium">Email</label>
+                    <Input type="email" name="email" placeholder="jane@example.com" required />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium">Password</label>
+                    <Input type="password" name="password" placeholder={t("auth.passwordMinPlaceholder")} required />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium">Current Country</label>
+                    <select
+                      name="current_country"
+                      required
+                      defaultValue=""
+                      className="flex h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-1"
+                    >
+                      <option value="" disabled>Select country</option>
+                      {COUNTRY_OPTIONS.map((country) => (
+                        <option key={country} value={country}>
+                          {country}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium">Years of Recruiting Experience</label>
+                    <select
+                      name="years_experience_bracket"
+                      required
+                      defaultValue=""
+                      className="flex h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-1"
+                    >
+                      <option value="" disabled>Select range</option>
+                      {EXPERIENCE_BRACKET_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-1.5 block text-sm font-medium">LinkedIn Profile</label>
+                    <Input name="linkedin_url" placeholder="https://linkedin.com/in/..." />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="mb-3 text-sm font-semibold">Agreement</p>
+                  <div className="space-y-3">
+                    <label className="flex items-start gap-3 text-sm leading-5">
+                      <input type="checkbox" name="agreement_freelance_recruiter" className="mt-1 h-4 w-4 rounded border-slate-300" required />
+                      <span>I agree to join the platform as a freelance recruiter.</span>
+                    </label>
+                    <label className="flex items-start gap-3 text-sm leading-5">
+                      <input type="checkbox" name="agreement_commission_after_guarantee" className="mt-1 h-4 w-4 rounded border-slate-300" required />
+                      <span>I understand that commission is paid only after the successful completion of the client’s guarantee period.</span>
+                    </label>
+                  </div>
+                </div>
+
+                <Button className="w-full bg-success-500 hover:bg-success-700" size="lg" disabled={loading}>
+                  {loading ? t("auth.sendingApplication") : t("auth.sendApplication")}
+                </Button>
+              </form>
+
+              <p className="mt-6 text-center text-sm text-muted-foreground">
+                {t("auth.applicationReviewNotice")}
+              </p>
+            </div>
+          </div>
         </Card>
       </div>
     </div>

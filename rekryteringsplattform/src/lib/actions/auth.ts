@@ -10,6 +10,8 @@ import {
     validateRegisterCompanyForm,
     validateRegisterRecruiterForm,
 } from "@/lib/validation/forms";
+import { mapExperienceBracketToYears } from "@/lib/recruiter-onboarding-options";
+import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
 
 export async function login(formData: FormData) {
     const supabase = await createClient();
@@ -110,9 +112,12 @@ export async function registerRecruiter(formData: FormData) {
     if (data.user) {
         const { error: recruiterError } = await supabaseAdmin.from("recruiters").insert({
             user_id: data.user.id,
-            headline: parsed.data.headline,
             linkedin_url: parsed.data.linkedin_url,
-            years_experience: parsed.data.years_experience,
+            years_experience: mapExperienceBracketToYears(parsed.data.years_experience_bracket),
+            current_country: parsed.data.current_country,
+            experience_bracket: parsed.data.years_experience_bracket,
+            agreement_freelance_recruiter: parsed.data.agreement_freelance_recruiter,
+            agreement_commission_after_guarantee: parsed.data.agreement_commission_after_guarantee,
         });
 
         if (recruiterError) {
@@ -120,9 +125,30 @@ export async function registerRecruiter(formData: FormData) {
             await supabaseAdmin.auth.admin.deleteUser(data.user.id);
             return { error: "Kunde inte skapa rekryterarprofil. Försök igen." };
         }
+
+        try {
+            await sendInternalRecruiterEmail({
+                subject: `Ny rekryteraransökan: ${parsed.data.full_name}`,
+                text: [
+                    "Ny recruiter registration form inkom.",
+                    "",
+                    `Namn: ${parsed.data.full_name}`,
+                    `E-post: ${parsed.data.email}`,
+                    `Land: ${parsed.data.current_country}`,
+                    `LinkedIn: ${parsed.data.linkedin_url || "—"}`,
+                    `Erfarenhet: ${parsed.data.years_experience_bracket}`,
+                    `Frilansavtal godkänt: ${parsed.data.agreement_freelance_recruiter ? "Ja" : "Nej"}`,
+                    `Garantiperiod/provision godkänt: ${parsed.data.agreement_commission_after_guarantee ? "Ja" : "Nej"}`,
+                    "",
+                    `User ID: ${data.user.id}`,
+                ].join("\n"),
+            });
+        } catch (mailError) {
+            console.error("Failed to send recruiter registration email:", mailError);
+        }
     }
 
-    redirect("/recruiter");
+    redirect("/recruiter/profile?onboarding=1");
 }
 
 export async function logout() {

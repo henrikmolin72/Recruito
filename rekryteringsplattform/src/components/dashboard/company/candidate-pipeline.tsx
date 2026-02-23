@@ -155,26 +155,7 @@ function PipelineView({ candidates }: { candidates: any[] }) {
                         </div>
                       </div>
 
-                      {/* Status actions */}
-                      {STATUS_TRANSITIONS[stage.key] && (
-                        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
-                          {STATUS_TRANSITIONS[stage.key].map((action) => (
-                            <Button
-                              key={action.next}
-                              variant={action.variant || "default"}
-                              size="sm"
-                              className={cn(
-                                "text-xs h-7",
-                                action.variant === "outline" ? "text-muted-foreground" : ""
-                              )}
-                              disabled={loading === candidate.id}
-                              onClick={() => handleStatusChange(candidate.id, candidate.job_id, action.next)}
-                            >
-                              {loading === candidate.id ? "..." : action.label}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
+                      {/* Company view is now request-driven from candidate detail; keep pipeline cards read-only */}
                     </CardContent>
                   </Card>
                 ))
