@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 export type PublicApplicationFormState = {
   error?: string;
@@ -11,6 +13,15 @@ export type PublicApplicationFormState = {
 const MAX_CV_TEXT_LENGTH = 40_000;
 const MAX_COVER_LETTER_LENGTH = 10_000;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_CV_EXTENSIONS = new Set(["pdf", "doc", "docx", "txt", "rtf"]);
+const ALLOWED_CV_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+  "application/rtf",
+  "text/rtf",
+]);
 
 const publicApplicationSchema = z.object({
   mandate_id: z.string().uuid("Ogiltig länk"),
@@ -99,10 +110,41 @@ function sanitizeFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
 }
 
+function getFileExtension(name: string) {
+  const ext = name.split(".").pop()?.trim().toLowerCase();
+  return ext || "";
+}
+
+function isAllowedCvFile(file: File) {
+  const ext = getFileExtension(file.name || "");
+  const mime = (file.type || "").toLowerCase();
+
+  const extensionAllowed = !!ext && ALLOWED_CV_EXTENSIONS.has(ext);
+  const mimeAllowed = !mime || ALLOWED_CV_MIME_TYPES.has(mime);
+
+  return extensionAllowed && mimeAllowed;
+}
+
+function getClientIp(headerStore: { get(name: string): string | null }) {
+  const forwardedFor = headerStore.get("x-forwarded-for");
+  if (forwardedFor) {
+    const first = forwardedFor.split(",")[0]?.trim();
+    if (first) return first;
+  }
+
+  const realIp = headerStore.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+
+  return "unknown";
+}
+
 export async function submitPublicMandateApplication(
   _prevState: PublicApplicationFormState,
   formData: FormData
 ): Promise<PublicApplicationFormState> {
+  const headerStore = await headers();
+  const clientIp = getClientIp(headerStore);
+
   const honeypot = formData.get("company_website");
   if (typeof honeypot === "string" && honeypot.trim()) {
     // Silent success for bots.
@@ -125,6 +167,17 @@ export async function submitPublicMandateApplication(
     return { error: parsed.error.issues[0]?.message || "Ogiltig ansökan" };
   }
 
+  const applyRateLimit = consumeRateLimit({
+    key: `public-apply:ip:${clientIp}`,
+    limit: 12,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!applyRateLimit.allowed) {
+    return {
+      error: `För många ansökningar från samma nätverk just nu. Försök igen om ${applyRateLimit.retryAfterSeconds} sekunder.`,
+    };
+  }
+
   const context = await getPublicMandateApplicationContext(parsed.data.mandate_id);
   if (!context || !context.isActive || context.jobStatus !== "active") {
     return { error: "Den här ansökningslänken är inte aktiv längre." };
@@ -137,6 +190,10 @@ export async function submitPublicMandateApplication(
   if (cvFile instanceof File && cvFile.size > 0) {
     if (cvFile.size > MAX_FILE_SIZE) {
       return { error: "CV-filen får max vara 10 MB." };
+    }
+
+    if (!isAllowedCvFile(cvFile)) {
+      return { error: "Tillåtna filtyper för CV är PDF, DOC, DOCX, TXT eller RTF." };
     }
 
     const safeName = sanitizeFileName(cvFile.name || "cv");
@@ -180,4 +237,3 @@ export async function submitPublicMandateApplication(
 
   redirect(`/apply/${context.mandateId}?submitted=1`);
 }
-

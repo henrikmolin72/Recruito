@@ -3,6 +3,7 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -60,7 +61,7 @@ async function getAuthenticatedRecruiterContext() {
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (profile?.role === "admin") {
-    return { admin, recruiterId: null as string | null, isAdmin: true } as const;
+    return { admin, userId: user.id, recruiterId: null as string | null, isAdmin: true } as const;
   }
 
   const { data: recruiter } = await admin.from("recruiters").select("id").eq("user_id", user.id).single();
@@ -68,7 +69,7 @@ async function getAuthenticatedRecruiterContext() {
     return { error: NextResponse.json({ error: "Recruiter profile required" }, { status: 403 }) } as const;
   }
 
-  return { admin, recruiterId: recruiter.id as string, isAdmin: false } as const;
+  return { admin, userId: user.id, recruiterId: recruiter.id as string, isAdmin: false } as const;
 }
 
 export async function POST(request: NextRequest) {
@@ -80,8 +81,28 @@ export async function POST(request: NextRequest) {
 
     const auth = await getAuthenticatedRecruiterContext();
     if ("error" in auth) return auth.error;
-    const { admin, recruiterId, isAdmin } = auth;
+    const { admin, recruiterId, isAdmin, userId } = auth;
     const { jobId } = parsedBody.data;
+
+    const rateLimit = consumeRateLimit({
+      key: `api:shortlist:user:${userId}`,
+      limit: 8,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "Rate limit exceeded for shortlist generation. Try again shortly.",
+          retryAfterSeconds: rateLimit.retryAfterSeconds,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.retryAfterSeconds),
+          },
+        }
+      );
+    }
 
     if (!isAdmin) {
       const { data: mandate } = await admin

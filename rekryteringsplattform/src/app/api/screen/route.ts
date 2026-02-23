@@ -3,6 +3,7 @@ import { z } from "zod";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -77,6 +78,27 @@ export async function POST(request: NextRequest) {
 
     const auth = await getAuthenticatedRecruiterContext();
     if ("error" in auth) return auth.error;
+
+    const rateLimit = consumeRateLimit({
+      key: `api:screen:user:${auth.userId}`,
+      // High enough for normal work, low enough to cap accidental cost spikes.
+      limit: 40,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "Rate limit exceeded for screening. Try again shortly.",
+          retryAfterSeconds: rateLimit.retryAfterSeconds,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.retryAfterSeconds),
+          },
+        }
+      );
+    }
 
     const { applicationId } = parsedBody.data;
     const { admin, recruiterId, isAdmin } = auth;
