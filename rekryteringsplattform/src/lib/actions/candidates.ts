@@ -1,11 +1,20 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/actions/notifications";
 import { validateCandidateForm } from "@/lib/validation/forms";
 import type { PipelineStage } from "@/types/db-types";
+import {
+    canTransitionCandidateStatus,
+    inferInterviewWorkflowStatus,
+    isCandidateStatusValue,
+    normalizeCandidateStatusForWorkflow,
+    statusChangeTimestampPatch,
+    TERMINAL_CANDIDATE_STATUSES,
+} from "@/lib/candidate-workflow";
 
 type CandidateNextStepRequest =
     | "request_tests"
@@ -51,7 +60,7 @@ async function getActorRoleForCandidateAction(
 
     const { data: candidate } = await supabase
         .from("candidates")
-        .select("id, recruiter:recruiters(user_id), mandate_id")
+        .select("id, status, current_pipeline_stage, recruiter:recruiters(user_id), mandate_id")
         .eq("id", candidateId)
         .single();
 
@@ -99,8 +108,27 @@ function mapCompanyNextStepLabel(nextStep: CandidateNextStepRequest) {
     return labels[nextStep];
 }
 
+function normalizeIdentity(value: string | null | undefined) {
+    return value?.trim().toLowerCase() || null;
+}
+
+function candidateMatchesIdentity(candidate: any, email: string | null, linkedinUrl: string | null) {
+    const candidateEmail = normalizeIdentity(candidate?.email);
+    const candidateLinkedIn = normalizeIdentity(candidate?.linkedin_url);
+
+    const emailMatch = !!email && candidateEmail === email;
+    const linkedInMatch = !!linkedinUrl && candidateLinkedIn === linkedinUrl;
+    return emailMatch || linkedInMatch;
+}
+
+function isClientEngagementActiveStatus(status: string | null | undefined) {
+    const normalized = normalizeCandidateStatusForWorkflow(status);
+    return !TERMINAL_CANDIDATE_STATUSES.has(normalized);
+}
+
 export async function createCandidate(mandateId: string, formData: FormData) {
     const supabase = await createClient();
+    const admin = createAdminClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -132,6 +160,59 @@ export async function createCandidate(mandateId: string, formData: FormData) {
     const parsed = validateCandidateForm(formData);
     if (!parsed.success) {
         return { error: parsed.error };
+    }
+
+    // Workflow validation before client review:
+    // submitted -> duplicate check -> duplicate_rejected / client_already_engaged / under_client_review
+    const normalizedEmail = normalizeIdentity(parsed.data.email);
+    const normalizedLinkedIn = normalizeIdentity(parsed.data.linkedin_url);
+    let initialStatus = "under_client_review";
+
+    if (normalizedEmail || normalizedLinkedIn) {
+        const { data: jobRow } = await admin
+            .from("jobs")
+            .select("id, company_id")
+            .eq("id", mandate.job_id)
+            .single();
+
+        const companyId = (jobRow as any)?.company_id as string | undefined;
+
+        const { data: sameJobCandidates } = await admin
+            .from("candidates")
+            .select("id, email, linkedin_url, status")
+            .eq("job_id", mandate.job_id);
+
+        const duplicate = (sameJobCandidates || []).some((candidate: any) =>
+            candidateMatchesIdentity(candidate, normalizedEmail, normalizedLinkedIn)
+        );
+
+        if (duplicate) {
+            initialStatus = "duplicate_rejected";
+        } else if (companyId) {
+            const { data: companyJobs } = await admin
+                .from("jobs")
+                .select("id")
+                .eq("company_id", companyId);
+
+            const companyJobIds = (companyJobs || []).map((j: any) => j.id).filter(Boolean);
+
+            if (companyJobIds.length > 0) {
+                const { data: companyCandidates } = await admin
+                    .from("candidates")
+                    .select("id, job_id, email, linkedin_url, status")
+                    .in("job_id", companyJobIds);
+
+                const clientEngaged = (companyCandidates || []).some((candidate: any) =>
+                    candidate.job_id !== mandate.job_id &&
+                    candidateMatchesIdentity(candidate, normalizedEmail, normalizedLinkedIn) &&
+                    isClientEngagementActiveStatus(candidate.status)
+                );
+
+                if (clientEngaged) {
+                    initialStatus = "client_already_engaged";
+                }
+            }
+        }
     }
 
     const cvFile = parsed.data.cv_file;
@@ -170,7 +251,8 @@ export async function createCandidate(mandateId: string, formData: FormData) {
             expected_salary: parsed.data.expected_salary,
             cover_note: parsed.data.cover_note,
             cv_file_path: cvFilePath,
-            status: 'submitted'
+            status: initialStatus,
+            status_changed_at: new Date().toISOString(),
         });
 
     if (insertError) {
@@ -190,7 +272,7 @@ export async function createCandidate(mandateId: string, formData: FormData) {
         .eq("id", mandate.job_id)
         .single();
 
-    if (jobInfo?.company) {
+    if (jobInfo?.company && initialStatus === "under_client_review") {
         const company = Array.isArray(jobInfo.company) ? jobInfo.company[0] : jobInfo.company;
         const targetUserId = company?.user_id;
 
@@ -215,19 +297,7 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
 
     if (!user) return { error: "Utloggad!" };
 
-    const allowedStatuses = new Set([
-        "submitted",
-        "reviewing",
-        "interview",
-        "offered",
-        "hired",
-        "guarantee_period",
-        "completed",
-        "rejected",
-        "declined",
-        "paused",
-    ]);
-    if (!allowedStatuses.has(status)) {
+    if (!isCandidateStatusValue(status)) {
         return { error: "Ogiltig kandidatstatus" };
     }
 
@@ -239,9 +309,25 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
         return { error: "Endast rekryterare kan uppdatera kandidatstatus i pipeline." };
     }
 
+    const currentStatus = (access.candidate as any)?.status as string | undefined;
+    if (!canTransitionCandidateStatus(currentStatus, status)) {
+        return { error: `Otillåten övergång från ${currentStatus || "okänd"} till ${status}.` };
+    }
+
+    const updatePatch: Record<string, any> = {
+        status,
+        ...statusChangeTimestampPatch(status),
+    };
+
+    // Leaving "on hold" should not keep legacy paused current stage semantics.
+    if (status === "submitted" || status === "under_client_review" || status === "info_requested" || status === "resubmitted") {
+        // Keep stage only if recruiter deliberately set stage separately.
+        // No-op here.
+    }
+
     const { error } = await supabase
         .from("candidates")
-        .update({ status })
+        .update(updatePatch)
         .eq("id", candidateId);
 
     if (error) {
@@ -295,19 +381,24 @@ export async function moveCandidateToPipelineStage(
     if (!targetStage) return { error: "Ogiltigt steg" };
 
     // Map pipeline stage type to candidate_status enum for backward compat
-    const statusMapping: Record<string, string> = {
-        screening: 'reviewing',
-        interview: 'interview',
-        test: 'reviewing',
-        assessment: 'reviewing',
-    };
-    const newStatus = statusMapping[targetStage.type] || 'reviewing';
+    const currentStatus = (access.candidate as any)?.status as string | undefined;
+    let newStatus = "under_client_review";
+    if (targetStage.type === "interview") {
+        newStatus = inferInterviewWorkflowStatus(currentStatus, targetStage.title);
+    } else if (targetStage.type === "screening" || targetStage.type === "test" || targetStage.type === "assessment") {
+        newStatus = "under_client_review";
+    }
+
+    if (!canTransitionCandidateStatus(currentStatus, newStatus)) {
+        return { error: `Otillåten övergång från ${currentStatus || "okänd"} till ${newStatus}.` };
+    }
 
     const { error } = await supabase
         .from("candidates")
         .update({
             current_pipeline_stage: targetStageId,
             status: newStatus,
+            ...statusChangeTimestampPatch(newStatus),
         })
         .eq("id", candidateId);
 

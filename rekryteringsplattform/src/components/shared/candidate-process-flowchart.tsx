@@ -2,6 +2,7 @@ import type { PipelineStage } from "@/types/db-types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { cn } from "@/lib/utils";
+import { normalizeCandidateStatusForWorkflow } from "@/lib/candidate-workflow";
 import {
     Award,
     CheckCircle2,
@@ -70,29 +71,46 @@ function buildCandidatePipelineNodes(candidate: any, dict: any): CandidatePipeli
 
 function getCandidateActivePipelineNodeId(candidate: any, nodes: CandidatePipelineNode[]): string {
     const stages = getJobPipelineStages(candidate);
+    const normalizedStatus = normalizeCandidateStatusForWorkflow(candidate.status);
 
-    if (candidate.status === "paused") return "__paused";
-    if (candidate.status === "hired" || candidate.status === "completed" || candidate.status === "rejected" || candidate.status === "declined") {
+    if (normalizedStatus === "on_hold" || candidate.status === "paused") return "__paused";
+    if (
+        [
+            "hired",
+            "completed",
+            "rejected",
+            "declined",
+            "duplicate_rejected",
+            "client_already_engaged",
+            "rejected_client",
+            "rejected_interview",
+            "offer_declined",
+            "candidate_withdrawn",
+            "invoice_enabled",
+            "guarantee_tracking",
+            "guarantee_period",
+        ].includes(normalizedStatus)
+    ) {
         return "__decision";
     }
-    if (candidate.status === "offered") return "__offered";
+    if (["offered", "offer_in_progress", "offer_accepted"].includes(normalizedStatus)) return "__offered";
     if (candidate.current_pipeline_stage && nodes.some((node) => node.id === candidate.current_pipeline_stage)) {
         return candidate.current_pipeline_stage;
     }
 
     if (stages.length === 0) {
-        if (candidate.status === "interview") return "__interview";
-        if (candidate.status === "reviewing" || candidate.status === "rejected") return "__reviewing";
+        if (["interview", "interview_stage_1", "interview_stage_2", "interview_stage_3", "final_interview"].includes(normalizedStatus)) return "__interview";
+        if (["reviewing", "under_client_review", "info_requested", "resubmitted"].includes(normalizedStatus)) return "__reviewing";
         return "__submitted";
     }
 
-    if (candidate.status === "interview") {
+    if (["interview", "interview_stage_1", "interview_stage_2", "interview_stage_3", "final_interview"].includes(normalizedStatus)) {
         const interviewStage = stages.find((stage) => stage.type === "interview");
         if (interviewStage) return interviewStage.id;
         return stages[Math.min(1, stages.length - 1)]?.id || stages[0].id;
     }
 
-    if ((candidate.status === "reviewing" || candidate.status === "rejected") && stages[0]) {
+    if ((["reviewing", "under_client_review", "info_requested", "resubmitted"].includes(normalizedStatus)) && stages[0]) {
         return stages[0].id;
     }
 
@@ -257,4 +275,3 @@ export function CandidateProcessFlowchart({
         </Card>
     );
 }
-

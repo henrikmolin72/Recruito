@@ -1,6 +1,34 @@
 export type UserRole = 'company' | 'recruiter' | 'admin';
 export type JobStatus = 'draft' | 'active' | 'paused' | 'filled' | 'closed' | 'cancelled';
-export type CandidateStatus = 'submitted' | 'reviewing' | 'interview' | 'offered' | 'hired' | 'completed' | 'rejected' | 'declined' | 'paused';
+export type CandidateStatus =
+  | 'submitted'
+  | 'reviewing'
+  | 'interview'
+  | 'offered'
+  | 'hired'
+  | 'completed'
+  | 'rejected'
+  | 'declined'
+  | 'paused'
+  | 'duplicate_rejected'
+  | 'client_already_engaged'
+  | 'under_client_review'
+  | 'info_requested'
+  | 'resubmitted'
+  | 'interview_stage_1'
+  | 'interview_stage_2'
+  | 'interview_stage_3'
+  | 'final_interview'
+  | 'rejected_client'
+  | 'rejected_interview'
+  | 'on_hold'
+  | 'offer_in_progress'
+  | 'offer_declined'
+  | 'offer_accepted'
+  | 'invoice_enabled'
+  | 'guarantee_tracking'
+  | 'candidate_withdrawn'
+  | 'guarantee_period';
 export type RecruiterApproval = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type PipelineStageType = 'screening' | 'interview' | 'test' | 'assessment';
 export type CompanyCandidateNextStep = 'request_tests' | 'pause_candidate' | 'reject_candidate' | 'proceed_to_hire';

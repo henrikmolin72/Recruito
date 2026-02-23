@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { normalizeCandidateStatusForWorkflow } from "@/lib/candidate-workflow";
 import {
     Search, MessageSquare, ClipboardCheck,
     CheckCircle2, ArrowRight, Inbox, Award, PauseCircle
@@ -59,18 +60,54 @@ function getCandidatesForNode(
     candidates: FlowchartCandidate[]
 ): FlowchartCandidate[] {
     if (nodeId === '__submitted') {
-        return candidates.filter(c => c.current_pipeline_stage === null && c.status === 'submitted');
+        return candidates.filter((c) => {
+            const status = normalizeCandidateStatusForWorkflow(c.status);
+            return c.current_pipeline_stage === null && [
+                'submitted',
+                'under_client_review',
+                'info_requested',
+                'resubmitted',
+            ].includes(status);
+        });
     }
     if (nodeId === '__offered') {
-        return candidates.filter(c => c.status === 'offered');
+        return candidates.filter((c) => {
+            const status = normalizeCandidateStatusForWorkflow(c.status);
+            return ['offer_in_progress', 'offer_accepted', 'offered', 'invoice_enabled', 'guarantee_tracking'].includes(status);
+        });
     }
     if (nodeId === '__decision') {
-        return candidates.filter(c => c.status === 'hired' || c.status === 'rejected' || c.status === 'declined' || c.status === 'completed');
+        return candidates.filter((c) => {
+            const status = normalizeCandidateStatusForWorkflow(c.status);
+            return [
+                'hired',
+                'completed',
+                'rejected',
+                'declined',
+                'duplicate_rejected',
+                'client_already_engaged',
+                'rejected_client',
+                'rejected_interview',
+                'offer_declined',
+                'candidate_withdrawn',
+            ].includes(status);
+        });
     }
     if (nodeId === '__paused') {
-        return candidates.filter(c => c.status === 'paused');
+        return candidates.filter((c) => {
+            const status = normalizeCandidateStatusForWorkflow(c.status);
+            return status === 'on_hold' || status === 'paused';
+        });
     }
-    return candidates.filter(c => c.current_pipeline_stage === nodeId);
+    return candidates.filter((c) => {
+        if (c.current_pipeline_stage === nodeId) return true;
+        // If no explicit custom stage is set, keep interview workflow statuses visible in interview columns.
+        if (!c.current_pipeline_stage && nodeType === "interview") {
+            const status = normalizeCandidateStatusForWorkflow(c.status);
+            return ["interview_stage_1", "interview_stage_2", "interview_stage_3", "final_interview"].includes(status);
+        }
+        return false;
+    });
 }
 
 export function PipelineFlowchart({ stages, candidates }: PipelineFlowchartProps) {
