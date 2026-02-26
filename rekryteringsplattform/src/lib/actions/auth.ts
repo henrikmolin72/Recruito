@@ -63,6 +63,11 @@ export async function registerCompany(formData: FormData) {
         return { error: error.message };
     }
 
+    // Check if the email is already registered (empty identities means existing account)
+    if (data.user && !data.user.identities?.length) {
+        return { error: "E-postadressen är redan registrerad. Vänligen logga in." };
+    }
+
     // Create company profile using Admin client to bypass RLS
     if (data.user) {
         const { error: companyError } = await supabaseAdmin.from("companies").insert({
@@ -106,6 +111,11 @@ export async function registerRecruiter(formData: FormData) {
 
     if (error) {
         return { error: error.message };
+    }
+
+    // Check if the email is already registered (empty identities means existing account)
+    if (data.user && !data.user.identities?.length) {
+        return { error: "E-postadressen är redan registrerad. Vänligen logga in." };
     }
 
     // Create recruiter profile using Admin client to bypass RLS

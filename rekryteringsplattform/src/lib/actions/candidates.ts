@@ -219,7 +219,7 @@ export async function createCandidate(mandateId: string, formData: FormData) {
 
     let cvFilePath = null;
 
-    if (cvFile.size > 0) {
+    if (cvFile && cvFile.size > 0) {
         const fileExt = cvFile.name.split('.').pop();
         const fileName = `${mandate.job_id}/${recruiter.id}/${Date.now()}.${fileExt}`;
 

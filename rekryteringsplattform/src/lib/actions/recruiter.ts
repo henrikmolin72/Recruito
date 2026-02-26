@@ -314,7 +314,7 @@ export async function getRecruiterDashboard() {
         .select("recruiter_fee")
         .eq("recruiter_id", recruiter.id);
 
-    const totalRevenue = placements?.reduce((sum, p) => sum + p.recruiter_fee, 0) || 0;
+    const totalRevenue = placements?.reduce((sum, p) => sum + (p.recruiter_fee || 0), 0) || 0;
 
     // 5. Get count of available jobs (active jobs not yet claimed by max recruiters)
     // This is a bit complex in one query, so we'll just get count of all active jobs for now
@@ -324,14 +324,18 @@ export async function getRecruiterDashboard() {
         .eq("status", "active");
 
     // Format mandates for easier usage
-    const formattedMandates = mandates?.map((mandate: any) => ({
-        id: mandate.id,
-        title: mandate.job?.title || "Okänt jobb",
-        company: mandate.job?.company?.company_name || "Okänt företag",
-        location: mandate.job?.location || "",
-        status: mandate.job?.status || "active",
-        candidates: 0 // Ideally we fetch count of candidates for this mandate
-    })) || [];
+    const formattedMandates = mandates?.map((mandate: any) => {
+        const job = Array.isArray(mandate.job) ? mandate.job[0] : mandate.job;
+        const company = Array.isArray(job?.company) ? job.company[0] : job?.company;
+        return {
+            id: mandate.id,
+            title: job?.title || "Okänt jobb",
+            company: company?.company_name || "Okänt företag",
+            location: job?.location || "",
+            status: job?.status || "active",
+            candidates: 0 // Ideally we fetch count of candidates for this mandate
+        };
+    }) || [];
 
     // Fetch candidates count for each mandate separately to keep it simple, or leave as 0 for initial
     // Or do a joined query above. Let's do a simple loop for now as mandates are few per recruiter usually
@@ -400,11 +404,14 @@ export async function getAvailableJobsForRecruiter() {
         return !isClaimed && !isFull;
     });
 
-    return availableJobs.map(job => ({
-        ...job,
-        company_name: job.company?.company_name || 'Okänt företag',
-        recruiters_count: job.current_recruiter_count || 0
-    }));
+    return availableJobs.map(job => {
+        const company = Array.isArray(job.company) ? job.company[0] : job.company;
+        return {
+            ...job,
+            company_name: company?.company_name || 'Okänt företag',
+            recruiters_count: job.current_recruiter_count || 0
+        };
+    });
 }
 
 export async function claimMandate(jobId: string) {
@@ -539,26 +546,30 @@ export async function getRecruiterMandates() {
         return [];
     }
 
-    return mandates.map((mandate: any) => ({
+    return mandates.map((mandate: any) => {
+        const job = Array.isArray(mandate.job) ? mandate.job[0] : mandate.job;
+        const company = Array.isArray(job?.company) ? job.company[0] : job?.company;
+        return {
         id: mandate.id,
-        job_id: mandate.job?.id,
-        title: mandate.job?.title || "Okänt jobb",
-        description: mandate.job?.description || "",
-        company: mandate.job?.company?.company_name || "Okänt företag",
-        location: mandate.job?.location || "",
-        industry: mandate.job?.industry || "",
-        employment_type: mandate.job?.employment_type || "",
-        salary_min: mandate.job?.salary_min,
-        salary_max: mandate.job?.salary_max,
-        salary_currency: mandate.job?.salary_currency || "SEK",
-        fee_percentage: mandate.job?.fee_percentage,
-        status: mandate.job?.status || "active",
+        job_id: job?.id,
+        title: job?.title || "Okänt jobb",
+        description: job?.description || "",
+        company: company?.company_name || "Okänt företag",
+        location: job?.location || "",
+        industry: job?.industry || "",
+        employment_type: job?.employment_type || "",
+        salary_min: job?.salary_min,
+        salary_max: job?.salary_max,
+        salary_currency: job?.salary_currency || "SEK",
+        fee_percentage: job?.fee_percentage,
+        status: job?.status || "active",
         candidates: mandate.candidates?.map((c: any) => ({
             id: c.id,
             name: `${c.first_name} ${c.last_name}`,
             status: c.status
         })) || []
-    }));
+    };
+    });
 }
 
 export async function getRecruiterMandateById(mandateId: string) {

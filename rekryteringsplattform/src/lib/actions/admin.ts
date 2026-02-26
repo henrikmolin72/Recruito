@@ -16,9 +16,9 @@ async function requireAdmin() {
 
 function pickFirst<T>(value: T | T[] | null | undefined): T | null {
     if (Array.isArray(value)) {
-        return value[0] || null;
+        return value[0] ?? null;
     }
-    return value || null;
+    return value ?? null;
 }
 
 export async function getAdminStats() {

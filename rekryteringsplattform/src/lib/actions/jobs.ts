@@ -191,6 +191,7 @@ export async function closeJob(jobId: string) {
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
+    return { success: true };
 }
 
 export async function pauseJob(jobId: string) {
@@ -206,6 +207,7 @@ export async function pauseJob(jobId: string) {
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
+    return { success: true };
 }
 
 export async function resumeJob(jobId: string) {
@@ -221,6 +223,7 @@ export async function resumeJob(jobId: string) {
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
+    return { success: true };
 }
 
 export async function updatePipelineStages(jobId: string, stages: PipelineStage[]) {
@@ -269,7 +272,8 @@ export async function updatePipelineStages(jobId: string, stages: PipelineStage[
 
     if (mandates) {
         for (const mandate of mandates) {
-            const userId = (mandate.recruiter as any)?.user_id;
+            const recruiterData = mandate.recruiter;
+            const userId = Array.isArray(recruiterData) ? recruiterData[0]?.user_id : (recruiterData as any)?.user_id;
             if (userId) {
                 await createNotification(
                     userId,
