@@ -15,6 +15,7 @@ import {
     statusChangeTimestampPatch,
     TERMINAL_CANDIDATE_STATUSES,
 } from "@/lib/candidate-workflow";
+import { createPlacement } from "@/lib/actions/placements";
 
 type CandidateNextStepRequest =
     | "request_tests"
@@ -336,6 +337,14 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
 
     // Recruiter/company applying a status change should clear pending company request.
     await clearCompanyNextStepRequest(supabase, candidateId);
+
+    // Auto-create placement when candidate is hired or invoice_enabled
+    if (status === "hired" || status === "invoice_enabled") {
+        const placementResult = await createPlacement(candidateId, jobId);
+        if (placementResult.error) {
+            console.error("Failed to create placement:", placementResult.error);
+        }
+    }
 
     const { candidate, recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
     const targetUserId = access.companyUserId;

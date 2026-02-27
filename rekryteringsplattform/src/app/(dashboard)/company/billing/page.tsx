@@ -5,6 +5,7 @@ import { CreditCard, Clock, CheckCircle } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/server";
+import { CheckoutButton } from "@/components/dashboard/company/checkout-button";
 
 async function getCompanyBilling() {
   const supabase = await createClient();
@@ -73,13 +74,15 @@ export default async function CompanyBillingPage() {
                     <th className="pb-3 font-medium text-muted-foreground">{c.tableAmount}</th>
                     <th className="pb-3 font-medium text-muted-foreground">{dict.common.status}</th>
                     <th className="pb-3 font-medium text-muted-foreground">{dict.common.date}</th>
+                    <th className="pb-3 font-medium text-muted-foreground"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {placements.map((p: any) => {
                     const candidate = Array.isArray(p.candidate) ? p.candidate[0] : p.candidate;
                     const job = Array.isArray(p.job) ? p.job[0] : p.job;
-                    const isPaid = p.status === "payment_received" || p.status === "payout_released";
+                    const isPaid = p.status === "payment_received" || p.status === "payout_released" || p.status === "guarantee_active";
+                    const canPay = p.status === "confirmed" || p.status === "invoice_sent";
 
                     return (
                       <tr key={p.id} className="border-b border-border last:border-0">
@@ -92,6 +95,9 @@ export default async function CompanyBillingPage() {
                           </Badge>
                         </td>
                         <td className="py-3 text-muted-foreground">{formatDate(p.created_at)}</td>
+                        <td className="py-3">
+                          {canPay && <CheckoutButton placementId={p.id} />}
+                        </td>
                       </tr>
                     );
                   })}
