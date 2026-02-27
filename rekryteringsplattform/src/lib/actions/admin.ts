@@ -48,20 +48,22 @@ export async function getAdminStats() {
     };
 }
 
-export async function getAdminRecruiters() {
+export async function getAdminRecruiters(filters?: { status?: string; search?: string }) {
     await requireAdmin();
     const supabaseAdmin = createAdminClient();
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
         .from("recruiters")
         .select(`
             id,
             user_id,
             headline,
             approval_status,
+            rejection_reason,
             rating,
             total_placements,
             years_experience,
+            created_at,
             profile:profiles!recruiters_user_id_fkey (
                 full_name,
                 email,
@@ -70,25 +72,46 @@ export async function getAdminRecruiters() {
         `)
         .order("created_at", { ascending: false });
 
+    if (filters?.status && filters.status !== "all") {
+        query = query.eq("approval_status", filters.status);
+    }
+
+    const { data, error } = await query;
+
     if (error) {
         console.error("Error fetching recruiters:", error);
         return [];
     }
 
-    return (data || []).map((r: any) => {
+    let results = (data || []).map((r: any) => {
         const profile = pickFirst(r.profile);
         return {
             id: r.id,
             user_id: r.user_id,
             name: profile?.full_name || "Okänd",
             email: profile?.email || "",
+            phone: profile?.phone || "",
             headline: r.headline || "",
             status: r.approval_status || "pending",
+            rejection_reason: r.rejection_reason || "",
             rating: r.rating || 0,
             placements: r.total_placements || 0,
             years_experience: r.years_experience || 0,
+            created_at: r.created_at,
         };
     });
+
+    // Client-side search filtering (matches name, email, headline)
+    if (filters?.search) {
+        const searchLower = filters.search.toLowerCase();
+        results = results.filter(r =>
+            r.name.toLowerCase().includes(searchLower) ||
+            r.email.toLowerCase().includes(searchLower) ||
+            r.headline.toLowerCase().includes(searchLower)
+        );
+    }
+
+    return results;
 }
 
 export async function approveRecruiter(recruiterId: string) {
@@ -114,7 +137,7 @@ export async function approveRecruiter(recruiterId: string) {
     return { success: true };
 }
 
-export async function rejectRecruiter(recruiterId: string) {
+export async function rejectRecruiter(recruiterId: string, reason?: string) {
     await requireAdmin();
     const supabaseAdmin = createAdminClient();
 
@@ -124,6 +147,7 @@ export async function rejectRecruiter(recruiterId: string) {
             approval_status: "rejected",
             approved_at: null,
             approved_by: null,
+            rejection_reason: reason || null,
         })
         .eq("id", recruiterId);
 
@@ -156,6 +180,44 @@ export async function suspendRecruiter(recruiterId: string) {
     return { success: true };
 }
 
+export async function batchUpdateRecruiters(
+    recruiterIds: string[],
+    action: "approve" | "reject" | "suspend",
+    reason?: string
+) {
+    const { user } = await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    if (recruiterIds.length === 0) return { error: "No recruiters selected" };
+
+    const updateData: Record<string, unknown> = {
+        approval_status: action === "approve" ? "approved" : action === "reject" ? "rejected" : "suspended",
+    };
+
+    if (action === "approve") {
+        updateData.approved_at = new Date().toISOString();
+        updateData.approved_by = user.id;
+        updateData.rejection_reason = null;
+    } else {
+        updateData.approved_at = null;
+        updateData.approved_by = null;
+        if (action === "reject") {
+            updateData.rejection_reason = reason || null;
+        }
+    }
+
+    const { error } = await supabaseAdmin
+        .from("recruiters")
+        .update(updateData)
+        .in("id", recruiterIds);
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/recruiters");
+    return { success: true, count: recruiterIds.length };
+}
+
 export async function getAdminCompanies() {
     await requireAdmin();
     const supabaseAdmin = createAdminClient();
@@ -167,6 +229,7 @@ export async function getAdminCompanies() {
             company_name,
             org_number,
             industry,
+            is_verified,
             profile:profiles!companies_user_id_fkey (
                 full_name,
                 email
@@ -187,11 +250,66 @@ export async function getAdminCompanies() {
             name: company.company_name || "Okänt företag",
             org_number: company.org_number || "",
             industry: company.industry || "",
+            is_verified: company.is_verified || false,
             contact: profile?.full_name || "",
             email: profile?.email || "",
             jobs: company.jobs?.[0]?.count || 0,
         };
     });
+}
+
+export async function toggleCompanyVerification(companyId: string, verified: boolean) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const { error } = await supabaseAdmin
+        .from("companies")
+        .update({ is_verified: verified })
+        .eq("id", companyId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/admin/companies");
+    revalidatePath("/company/profile");
+    return { success: true };
+}
+
+export async function verifyCompanyOrgNumber(companyId: string): Promise<{ valid: boolean; error?: string }> {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const { data: company, error } = await supabaseAdmin
+        .from("companies")
+        .select("org_number")
+        .eq("id", companyId)
+        .single();
+
+    if (error || !company) return { valid: false, error: "Company not found" };
+
+    const orgNumber = (company.org_number || "").replace(/[^0-9]/g, "");
+
+    // Swedish org number: 10 digits, first digit 1-9
+    if (orgNumber.length !== 10 || !/^[1-9]/.test(orgNumber)) {
+        return { valid: false, error: "Invalid format: must be 10 digits (NNNNNN-NNNN)" };
+    }
+
+    // Luhn algorithm check (same as used by Bolagsverket)
+    const digits = orgNumber.split("").map(Number);
+    let sum = 0;
+    for (let i = 0; i < 10; i++) {
+        let d = digits[i];
+        if (i % 2 === 0) {
+            d *= 2;
+            if (d > 9) d -= 9;
+        }
+        sum += d;
+    }
+
+    if (sum % 10 !== 0) {
+        return { valid: false, error: "Invalid org number: Luhn check failed" };
+    }
+
+    return { valid: true };
 }
 
 export async function getAdminJobs() {

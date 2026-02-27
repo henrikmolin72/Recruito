@@ -5,13 +5,15 @@ export interface PricingTier {
     feePercentage: number;
     /** Translation key for the tier name (e.g. "pricing.gold") */
     labelKey: string;
+    /** Maximum number of active job postings allowed at this tier */
+    maxActiveJobs: number;
 }
 
 /** Tiers ordered from highest threshold to lowest. First match wins. */
 export const PRICING_TIERS: PricingTier[] = [
-    { minPlacements: 5, feePercentage: 12, labelKey: "pricing.gold" },
-    { minPlacements: 3, feePercentage: 13, labelKey: "pricing.silver" },
-    { minPlacements: 0, feePercentage: 15, labelKey: "pricing.standard" },
+    { minPlacements: 5, feePercentage: 12, labelKey: "pricing.gold", maxActiveJobs: 25 },
+    { minPlacements: 3, feePercentage: 13, labelKey: "pricing.silver", maxActiveJobs: 15 },
+    { minPlacements: 0, feePercentage: 15, labelKey: "pricing.standard", maxActiveJobs: 5 },
 ];
 
 /** Rolling window in months for tier qualification */

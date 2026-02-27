@@ -615,7 +615,26 @@
     "maxMandatesPerRecruiterLabel": "Maks aktive mandater per rekrutterer",
     "emailSettingsTitle": "E-mailindstillinger",
     "senderNameLabel": "Afsendernavn",
-    "senderAddressLabel": "Afsenderadresse"
+    "senderAddressLabel": "Afsenderadresse",
+    "filterAll": "Alle",
+    "searchRecruitersPlaceholder": "Søg navn, e-mail eller titel...",
+    "batchSelectedCount": "{count} valgte",
+    "batchConfirmApprove": "Godkend {count} rekrutterere?",
+    "batchConfirmReject": "Afvis {count} rekrutterere?",
+    "batchConfirmSuspend": "Suspender {count} rekrutterere?",
+    "showingCount": "Viser {shown} af {total}",
+    "rejectionReasonRequired": "Angiv en begrundelse for afvisning",
+    "rejectionReasonPlaceholder": "Begrundelse for afvisning...",
+    "confirmReject": "Bekræft afvisning",
+    "reasonLabel": "Begrundelse",
+    "verifiedBadge": "Verificeret",
+    "unverifiedBadge": "Ikke verificeret",
+    "verifyCompany": "Verificer",
+    "unverifyCompany": "Fjern verificering",
+    "verifyOrgNumber": "Kontroller org.nr",
+    "orgNumberValid": "Org.nr er gyldigt",
+    "orgNumberInvalid": "Org.nr er ugyldigt",
+    "tableVerification": "Verificering"
   },
   "validation": {
     "invalidEmail": "Ugyldig e-mailadresse",
@@ -808,6 +827,18 @@
     "pipelineStagesUsed": "trin brugt",
     "pipelineInterviews": "samtaler",
     "pipelineTests": "tests",
-    "kanbanStatusLabel": "Status"
+    "kanbanStatusLabel": "Status",
+    "chatAttachFile": "Vedhæft fil",
+    "chatFileUploading": "Uploader...",
+    "chatFileTooLarge": "Filen må max være 10 MB",
+    "chatFileAttachment": "Vedhæftet fil",
+    "chatDownloadFile": "Download",
+    "chatReadReceipt": "Læst",
+    "chatDelivered": "Leveret",
+    "chatLoadMore": "Indlæs flere beskeder",
+    "chatLoadingMore": "Indlæser...",
+    "verifiedCompany": "Verificeret virksomhed",
+    "jobPostingLimitReached": "I har nået grænsen for antal aktive job ({limit}). Luk et eksisterende job for at oprette flere.",
+    "activeJobsCount": "{count} af {limit} aktive job"
   }
 }

@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Building2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Building2, ShieldCheck } from "lucide-react";
 import { getCompanyProfile, updateCompanyProfile } from "@/lib/actions/company";
 import { SubmitButton } from "@/components/shared/submit-button";
 import { getDictionary } from "@/i18n/server";
@@ -12,9 +13,17 @@ export default async function CompanyProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{c.profilePageTitle}</h1>
-        <p className="text-muted-foreground">{c.profilePageSubtitle}</p>
+      <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">{c.profilePageTitle}</h1>
+          <p className="text-muted-foreground">{c.profilePageSubtitle}</p>
+        </div>
+        {company?.is_verified && (
+          <Badge variant="success" className="gap-1 h-6">
+            <ShieldCheck className="h-3 w-3" />
+            {dict.components.verifiedCompany}
+          </Badge>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">

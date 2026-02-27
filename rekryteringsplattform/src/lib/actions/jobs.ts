@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { validateJobForm, validatePipelineStages } from "@/lib/validation/forms";
-import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
+import { getFeePercentage, getTierForPlacementCount, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/actions/notifications";
 import type { PipelineStage } from "@/types/db-types";
@@ -71,7 +71,20 @@ export async function createJob(formData: FormData) {
         .eq("company_id", company.id)
         .gte("created_at", twelveMonthsAgo.toISOString());
 
-    const feePercentage = getFeePercentage(recentPlacements ?? 0);
+    const placementCount = recentPlacements ?? 0;
+    const feePercentage = getFeePercentage(placementCount);
+    const tier = getTierForPlacementCount(placementCount);
+
+    // 3b. Enforce job posting limits based on tier
+    const { count: activeJobCount } = await supabase
+        .from("jobs")
+        .select("*", { count: "exact", head: true })
+        .eq("company_id", company.id)
+        .eq("status", "active");
+
+    if ((activeJobCount ?? 0) >= tier.maxActiveJobs) {
+        return { error: `Ni har nått max antal aktiva jobb (${tier.maxActiveJobs}) för er nivå. Stäng ett befintligt jobb eller gör fler placeringar för att höja er gräns.` };
+    }
 
     // 4. Parse pipeline stages (optional, defaults applied)
     let pipelineStages: PipelineStage[] = DEFAULT_PIPELINE_STAGES;
@@ -111,6 +124,45 @@ export async function createJob(formData: FormData) {
     revalidatePath("/company");
     revalidatePath("/company/jobs");
     redirect("/company/jobs");
+}
+
+export async function getCompanyJobLimitInfo() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: company } = await supabase
+        .from("companies")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!company) return null;
+
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - TIER_WINDOW_MONTHS);
+
+    const [{ count: recentPlacements }, { count: activeJobs }] = await Promise.all([
+        supabase
+            .from("placements")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", company.id)
+            .gte("created_at", twelveMonthsAgo.toISOString()),
+        supabase
+            .from("jobs")
+            .select("*", { count: "exact", head: true })
+            .eq("company_id", company.id)
+            .eq("status", "active"),
+    ]);
+
+    const tier = getTierForPlacementCount(recentPlacements ?? 0);
+
+    return {
+        activeJobs: activeJobs ?? 0,
+        maxActiveJobs: tier.maxActiveJobs,
+        tierLabelKey: tier.labelKey,
+        atLimit: (activeJobs ?? 0) >= tier.maxActiveJobs,
+    };
 }
 
 export async function getCompanyJobs() {

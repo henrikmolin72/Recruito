@@ -615,7 +615,26 @@
     "maxMandatesPerRecruiterLabel": "Maks aktive mandater per rekrutterer",
     "emailSettingsTitle": "E-postinnstillinger",
     "senderNameLabel": "Avsendernavn",
-    "senderAddressLabel": "Avsenderadresse"
+    "senderAddressLabel": "Avsenderadresse",
+    "filterAll": "Alle",
+    "searchRecruitersPlaceholder": "Søk navn, e-post eller tittel...",
+    "batchSelectedCount": "{count} valgt",
+    "batchConfirmApprove": "Godkjenn {count} rekrutterere?",
+    "batchConfirmReject": "Avvis {count} rekrutterere?",
+    "batchConfirmSuspend": "Suspender {count} rekrutterere?",
+    "showingCount": "Viser {shown} av {total}",
+    "rejectionReasonRequired": "Oppgi en grunn for avvisning",
+    "rejectionReasonPlaceholder": "Grunn for avvisning...",
+    "confirmReject": "Bekreft avvisning",
+    "reasonLabel": "Grunn",
+    "verifiedBadge": "Verifisert",
+    "unverifiedBadge": "Ikke verifisert",
+    "verifyCompany": "Verifiser",
+    "unverifyCompany": "Fjern verifisering",
+    "verifyOrgNumber": "Kontroller org.nr",
+    "orgNumberValid": "Org.nr er gyldig",
+    "orgNumberInvalid": "Org.nr er ugyldig",
+    "tableVerification": "Verifisering"
   },
   "validation": {
     "invalidEmail": "Ugyldig e-postadresse",
@@ -808,6 +827,18 @@
     "pipelineStagesUsed": "steg brukt",
     "pipelineInterviews": "intervjuer",
     "pipelineTests": "tester",
-    "kanbanStatusLabel": "Status"
+    "kanbanStatusLabel": "Status",
+    "chatAttachFile": "Legg ved fil",
+    "chatFileUploading": "Laster opp...",
+    "chatFileTooLarge": "Filen kan maks være 10 MB",
+    "chatFileAttachment": "Vedlagt fil",
+    "chatDownloadFile": "Last ned",
+    "chatReadReceipt": "Lest",
+    "chatDelivered": "Levert",
+    "chatLoadMore": "Last inn flere meldinger",
+    "chatLoadingMore": "Laster...",
+    "verifiedCompany": "Verifisert bedrift",
+    "jobPostingLimitReached": "Dere har nådd grensen for antall aktive jobber ({limit}). Lukk en eksisterende jobb for å publisere flere.",
+    "activeJobsCount": "{count} av {limit} aktive jobber"
   }
 }

@@ -5,7 +5,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/actions/notifications";
 
-export async function getCandidateConversation(candidateId: string) {
+const MESSAGES_PER_PAGE = 50;
+
+export async function getCandidateConversation(candidateId: string, options?: { before?: string; limit?: number }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
@@ -13,32 +15,56 @@ export async function getCandidateConversation(candidateId: string) {
     // Försök hitta en existerande konversation för denna kandidat
     const { data: conversation, error } = await supabase
         .from("conversations")
-        .select(`
-      *,
-      messages (
-        *,
-        sender:profiles (
-          full_name,
-          role
-        )
-      )
-    `)
+        .select("id, job_id, candidate_id, created_at")
         .eq("candidate_id", candidateId)
         .maybeSingle();
 
-    if (error) {
-        console.warn("Could not fetch conversation for candidate:", candidateId, JSON.stringify(error));
+    if (error || !conversation) {
+        if (error) console.warn("Could not fetch conversation for candidate:", candidateId, JSON.stringify(error));
         return null;
     }
 
-    return conversation;
+    // Fetch messages with pagination
+    const limit = options?.limit ?? MESSAGES_PER_PAGE;
+    let msgQuery = supabase
+        .from("messages")
+        .select(`
+            *,
+            sender:profiles (
+                full_name,
+                role
+            )
+        `)
+        .eq("conversation_id", conversation.id)
+        .order("created_at", { ascending: false })
+        .limit(limit + 1); // fetch one extra to detect if more exist
+
+    if (options?.before) {
+        msgQuery = msgQuery.lt("created_at", options.before);
+    }
+
+    const { data: messages, error: msgError } = await msgQuery;
+
+    if (msgError) {
+        console.warn("Could not fetch messages:", JSON.stringify(msgError));
+        return { ...conversation, messages: [], hasMore: false };
+    }
+
+    const hasMore = (messages || []).length > limit;
+    const pagedMessages = (messages || []).slice(0, limit).reverse(); // oldest first for display
+
+    return {
+        ...conversation,
+        messages: pagedMessages,
+        hasMore,
+    };
 }
 
-export async function sendMessage(candidateId: string, jobId: string, content: string) {
+export async function sendMessage(candidateId: string, jobId: string, content: string, attachment?: { name: string; url: string; size: number; type: string }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     const normalizedContent = content.trim();
-    if (!user || !normalizedContent) return { error: "Not authenticated" };
+    if (!user || (!normalizedContent && !attachment)) return { error: "Not authenticated" };
 
     const supabaseAdmin = createAdminClient();
     const nowIso = new Date().toISOString();
@@ -134,13 +160,22 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
         return { error: readUpdateError.message };
     }
 
+    const messagePayload: Record<string, unknown> = {
+        conversation_id: conversationData.id,
+        sender_id: user.id,
+        content: normalizedContent || (attachment ? `[${attachment.name}]` : ""),
+    };
+
+    if (attachment) {
+        messagePayload.attachment_url = attachment.url;
+        messagePayload.attachment_name = attachment.name;
+        messagePayload.attachment_size = attachment.size;
+        messagePayload.attachment_type = attachment.type;
+    }
+
     const { error: msgError } = await supabase
         .from("messages")
-        .insert({
-            conversation_id: conversationData.id,
-            sender_id: user.id,
-            content: normalizedContent
-        });
+        .insert(messagePayload);
 
     if (msgError) return { error: msgError.message };
 
@@ -410,4 +445,57 @@ export async function markConversationAsRead(conversationId: string) {
         .update({ last_read_at: new Date().toISOString() })
         .eq("conversation_id", conversationId)
         .eq("user_id", user.id);
+}
+
+export async function getConversationReadStatus(conversationId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const supabaseAdmin = createAdminClient();
+
+    const { data: participants } = await supabaseAdmin
+        .from("conversation_participants")
+        .select("user_id, last_read_at")
+        .eq("conversation_id", conversationId);
+
+    if (!participants) return null;
+
+    const otherParticipant = participants.find(p => p.user_id !== user.id);
+    return {
+        myLastRead: participants.find(p => p.user_id === user.id)?.last_read_at || null,
+        otherLastRead: otherParticipant?.last_read_at || null,
+    };
+}
+
+export async function uploadMessageAttachment(formData: FormData): Promise<{ url: string; name: string; size: number; type: string } | { error: string }> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Not authenticated" };
+
+    const file = formData.get("file") as File;
+    if (!file) return { error: "No file provided" };
+
+    const maxSize = 10 * 1024 * 1024; // 10 MB
+    if (file.size > maxSize) return { error: "File too large (max 10 MB)" };
+
+    const ext = file.name.split(".").pop() || "bin";
+    const path = `messages/${user.id}/${Date.now()}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from("attachments")
+        .upload(path, file, { contentType: file.type });
+
+    if (uploadError) return { error: uploadError.message };
+
+    const { data: urlData } = supabase.storage
+        .from("attachments")
+        .getPublicUrl(path);
+
+    return {
+        url: urlData.publicUrl,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+    };
 }

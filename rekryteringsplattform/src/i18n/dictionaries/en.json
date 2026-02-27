@@ -615,7 +615,26 @@
     "maxMandatesPerRecruiterLabel": "Max active mandates per recruiter",
     "emailSettingsTitle": "Email settings",
     "senderNameLabel": "Sender name",
-    "senderAddressLabel": "Sender address"
+    "senderAddressLabel": "Sender address",
+    "filterAll": "All",
+    "searchRecruitersPlaceholder": "Search name, email or title...",
+    "batchSelectedCount": "{count} selected",
+    "batchConfirmApprove": "Approve {count} recruiters?",
+    "batchConfirmReject": "Reject {count} recruiters?",
+    "batchConfirmSuspend": "Suspend {count} recruiters?",
+    "showingCount": "Showing {shown} of {total}",
+    "rejectionReasonRequired": "Please provide a reason for rejection",
+    "rejectionReasonPlaceholder": "Reason for rejection...",
+    "confirmReject": "Confirm rejection",
+    "reasonLabel": "Reason",
+    "verifiedBadge": "Verified",
+    "unverifiedBadge": "Not verified",
+    "verifyCompany": "Verify",
+    "unverifyCompany": "Remove verification",
+    "verifyOrgNumber": "Check org. no.",
+    "orgNumberValid": "Org. no. is valid",
+    "orgNumberInvalid": "Org. no. is invalid",
+    "tableVerification": "Verification"
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -808,6 +827,18 @@
     "pipelineStagesUsed": "stages used",
     "pipelineInterviews": "interviews",
     "pipelineTests": "tests",
-    "kanbanStatusLabel": "Status"
+    "kanbanStatusLabel": "Status",
+    "chatAttachFile": "Attach file",
+    "chatFileUploading": "Uploading...",
+    "chatFileTooLarge": "File must be at most 10 MB",
+    "chatFileAttachment": "File attachment",
+    "chatDownloadFile": "Download",
+    "chatReadReceipt": "Read",
+    "chatDelivered": "Delivered",
+    "chatLoadMore": "Load more messages",
+    "chatLoadingMore": "Loading...",
+    "verifiedCompany": "Verified company",
+    "jobPostingLimitReached": "You have reached the limit for active jobs ({limit}). Close an existing job to publish more.",
+    "activeJobsCount": "{count} of {limit} active jobs"
   }
 }

@@ -615,7 +615,26 @@
     "maxMandatesPerRecruiterLabel": "Max aktiva mandat per rekryterare",
     "emailSettingsTitle": "E-postinställningar",
     "senderNameLabel": "Avsändarnamn",
-    "senderAddressLabel": "Avsändaradress"
+    "senderAddressLabel": "Avsändaradress",
+    "filterAll": "Alla",
+    "searchRecruitersPlaceholder": "Sök namn, e-post eller titel...",
+    "batchSelectedCount": "{count} valda",
+    "batchConfirmApprove": "Godkänn {count} rekryterare?",
+    "batchConfirmReject": "Neka {count} rekryterare?",
+    "batchConfirmSuspend": "Stäng av {count} rekryterare?",
+    "showingCount": "Visar {shown} av {total}",
+    "rejectionReasonRequired": "Ange en anledning för nekandet",
+    "rejectionReasonPlaceholder": "Anledning till nekande...",
+    "confirmReject": "Bekräfta nekande",
+    "reasonLabel": "Anledning",
+    "verifiedBadge": "Verifierat",
+    "unverifiedBadge": "Ej verifierat",
+    "verifyCompany": "Verifiera",
+    "unverifyCompany": "Ta bort verifiering",
+    "verifyOrgNumber": "Kontrollera org.nr",
+    "orgNumberValid": "Org.nr är giltigt",
+    "orgNumberInvalid": "Org.nr ogiltigt",
+    "tableVerification": "Verifiering"
   },
   "validation": {
     "invalidEmail": "Ogiltig e-postadress",
@@ -808,6 +827,18 @@
     "pipelineStagesUsed": "steg använda",
     "pipelineInterviews": "intervjuer",
     "pipelineTests": "tester",
-    "kanbanStatusLabel": "Status"
+    "kanbanStatusLabel": "Status",
+    "chatAttachFile": "Bifoga fil",
+    "chatFileUploading": "Laddar upp...",
+    "chatFileTooLarge": "Filen får max vara 10 MB",
+    "chatFileAttachment": "Bifogad fil",
+    "chatDownloadFile": "Ladda ner",
+    "chatReadReceipt": "Läst",
+    "chatDelivered": "Levererat",
+    "chatLoadMore": "Ladda fler meddelanden",
+    "chatLoadingMore": "Laddar...",
+    "verifiedCompany": "Verifierat företag",
+    "jobPostingLimitReached": "Ni har nått gränsen för antal aktiva jobb ({limit}). Stäng ett befintligt jobb för att kunna publicera fler.",
+    "activeJobsCount": "{count} av {limit} aktiva jobb"
   }
 }

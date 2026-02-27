@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Clock,
   X,
+  ShieldCheck,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
@@ -163,6 +164,11 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                       <div className="flex items-center flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500 font-medium">
                         <div className="flex items-center gap-2">
                           <Building2 className="h-4 w-4 opacity-40" /> {job.company_name}
+                          {job.company_verified && (
+                            <span className="inline-flex items-center gap-0.5 text-success-600" title={t("components.verifiedCompany")}>
+                              <ShieldCheck className="h-3.5 w-3.5" />
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 opacity-40" /> {job.location}

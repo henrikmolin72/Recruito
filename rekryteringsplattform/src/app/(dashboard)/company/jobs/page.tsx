@@ -3,13 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Plus, MapPin, Users, Clock } from "lucide-react";
-import { getCompanyJobs } from "@/lib/actions/jobs";
+import { Plus, MapPin, Users, Clock, AlertTriangle } from "lucide-react";
+import { getCompanyJobs, getCompanyJobLimitInfo } from "@/lib/actions/jobs";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { getDictionary } from "@/i18n/server";
 
 export default async function CompanyJobsPage() {
-  const jobs = await getCompanyJobs();
+  const [jobs, limitInfo] = await Promise.all([
+    getCompanyJobs(),
+    getCompanyJobLimitInfo(),
+  ]);
   const dict = await getDictionary();
   const c = dict.company;
 
@@ -20,11 +23,29 @@ export default async function CompanyJobsPage() {
           <h1 className="text-2xl font-bold">{c.jobsPageTitle}</h1>
           <p className="text-muted-foreground">{c.jobsPageSubtitle}</p>
         </div>
-        <Link href="/company/jobs/new">
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" /> {c.createJob}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          {limitInfo && (
+            <span className="text-xs text-muted-foreground">
+              {dict.components.activeJobsCount
+                .replace("{count}", String(limitInfo.activeJobs))
+                .replace("{limit}", String(limitInfo.maxActiveJobs))}
+            </span>
+          )}
+          {limitInfo?.atLimit ? (
+            <div className="flex items-center gap-2">
+              <Badge variant="warning" className="gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                {dict.components.jobPostingLimitReached.replace("{limit}", String(limitInfo.maxActiveJobs))}
+              </Badge>
+            </div>
+          ) : (
+            <Link href="/company/jobs/new">
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" /> {c.createJob}
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4">

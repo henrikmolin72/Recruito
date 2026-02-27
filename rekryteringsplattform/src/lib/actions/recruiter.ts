@@ -386,7 +386,7 @@ export async function getAvailableJobsForRecruiter() {
         .from("jobs")
         .select(`
       *,
-      company:companies(company_name),
+      company:companies(company_name, is_verified),
       mandates:job_mandates(count)
     `)
         .eq("status", "active")
@@ -409,6 +409,7 @@ export async function getAvailableJobsForRecruiter() {
         return {
             ...job,
             company_name: company?.company_name || 'Okänt företag',
+            company_verified: company?.is_verified || false,
             recruiters_count: job.current_recruiter_count || 0
         };
     });

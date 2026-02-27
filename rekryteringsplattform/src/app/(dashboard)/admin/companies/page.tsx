@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2 } from "lucide-react";
 import { getAdminCompanies } from "@/lib/actions/admin";
+import { CompanyVerificationActions } from "@/components/dashboard/admin/company-verification-actions";
 import { getDictionary } from "@/i18n/server";
 
 export default async function AdminCompaniesPage() {
@@ -18,7 +19,7 @@ export default async function AdminCompaniesPage() {
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm min-w-[760px]">
+          <table className="w-full text-sm min-w-[900px]">
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="p-4 font-medium text-muted-foreground">{a.tableCompany}</th>
@@ -26,12 +27,13 @@ export default async function AdminCompaniesPage() {
                 <th className="p-4 font-medium text-muted-foreground">{a.tableContact}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableIndustry}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableActiveJobs}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tableVerification}</th>
               </tr>
             </thead>
             <tbody>
               {companies.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-muted-foreground">{a.noCompaniesRegistered}</td>
+                  <td colSpan={6} className="p-8 text-center text-muted-foreground">{a.noCompaniesRegistered}</td>
                 </tr>
               ) : (
                 companies.map((company) => (
@@ -53,6 +55,13 @@ export default async function AdminCompaniesPage() {
                       {company.industry ? <Badge variant="outline">{company.industry}</Badge> : dict.common.noDataDash}
                     </td>
                     <td className="p-4">{company.jobs}</td>
+                    <td className="p-4">
+                      <CompanyVerificationActions
+                        companyId={company.id}
+                        isVerified={company.is_verified}
+                        orgNumber={company.org_number}
+                      />
+                    </td>
                   </tr>
                 ))
               )}
