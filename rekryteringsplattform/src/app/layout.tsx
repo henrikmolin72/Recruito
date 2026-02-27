@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
-import { Inter } from "next/font/google";
 import { TopLoader } from "@/components/layout/top-loader";
 import { Suspense } from "react";
 import { getLocale, getDictionary } from "@/i18n/server";
 import { LocaleProvider } from "@/i18n/client";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
   const dict = await getDictionary();
@@ -26,7 +23,7 @@ export default async function RootLayout({
   const dictionary = await getDictionary();
 
   return (
-    <html lang={locale} className={inter.className}>
+    <html lang={locale}>
       <body className="antialiased font-sans">
         <Suspense fallback={null}>
           <TopLoader />

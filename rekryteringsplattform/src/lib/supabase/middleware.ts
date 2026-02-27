@@ -7,16 +7,35 @@ export async function updateSession(request: NextRequest) {
         request,
     });
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    // Skip Supabase auth if credentials are not configured
+    if (!supabaseUrl || !supabaseAnonKey) {
+        // Still handle locale detection
+        const localeCookie = request.cookies.get("NEXT_LOCALE");
+        if (!localeCookie) {
+            const acceptLang = request.headers.get("accept-language") || "";
+            const detected = detectLocaleFromHeader(acceptLang);
+            supabaseResponse.cookies.set("NEXT_LOCALE", detected, {
+                path: "/",
+                maxAge: 60 * 60 * 24 * 365,
+                sameSite: "lax",
+            });
+        }
+        return supabaseResponse;
+    }
+
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        supabaseUrl,
+        supabaseAnonKey,
         {
             cookies: {
                 getAll() {
                     return request.cookies.getAll();
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) =>
+                    cookiesToSet.forEach(({ name, value }) =>
                         request.cookies.set(name, value)
                     );
                     supabaseResponse = NextResponse.next({
