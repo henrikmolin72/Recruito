@@ -361,6 +361,147 @@ export async function getRecruiterDashboard() {
     };
 }
 
+export async function getRecruiterPerformance() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
+
+    const { data: recruiter } = await supabase
+        .from("recruiters")
+        .select("id, rating, total_placements, approval_status")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!recruiter) {
+        return {
+            overview: { totalCandidates: 0, activeMandates: 0, totalPlacements: 0, rating: 0, revenue: 0, successRate: 0 },
+            monthly: [],
+            statusBreakdown: {},
+            ratings: [],
+            timeToFill: { average: 0, byJob: [] },
+        };
+    }
+
+    // 1. Total candidates submitted
+    const { data: allCandidates } = await supabase
+        .from("candidates")
+        .select("id, status, submitted_at, created_at, job_id")
+        .eq("recruiter_id", recruiter.id);
+
+    const candidates = allCandidates || [];
+
+    // 2. Active mandates
+    const { count: activeMandateCount } = await supabase
+        .from("job_mandates")
+        .select("*", { count: "exact", head: true })
+        .eq("recruiter_id", recruiter.id)
+        .eq("is_active", true);
+
+    // 3. Placements & revenue
+    const { data: placements } = await supabase
+        .from("placements")
+        .select("id, job_id, recruiter_fee, created_at, job:jobs(title)")
+        .eq("recruiter_id", recruiter.id)
+        .order("created_at", { ascending: false });
+
+    const allPlacements = placements || [];
+    const totalRevenue = allPlacements.reduce((sum, p) => sum + (p.recruiter_fee || 0), 0);
+
+    // 4. Success rate (hired / total submitted)
+    const hiredStatuses = ["hired", "invoice_enabled", "guarantee_tracking", "guarantee_period", "completed"];
+    const hiredCount = candidates.filter(c => hiredStatuses.includes(c.status)).length;
+    const successRate = candidates.length > 0 ? Math.round((hiredCount / candidates.length) * 100) : 0;
+
+    // 5. Monthly activity (last 6 months)
+    const monthly: { month: string; submitted: number; hired: number; revenue: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        const monthStart = new Date(year, month, 1);
+        const monthEnd = new Date(year, month + 1, 0, 23, 59, 59);
+
+        const submitted = candidates.filter(c => {
+            const date = new Date(c.submitted_at || c.created_at);
+            return date >= monthStart && date <= monthEnd;
+        }).length;
+
+        const hired = candidates.filter(c => {
+            const date = new Date(c.submitted_at || c.created_at);
+            return hiredStatuses.includes(c.status) && date >= monthStart && date <= monthEnd;
+        }).length;
+
+        const monthRevenue = allPlacements
+            .filter(p => {
+                const date = new Date(p.created_at);
+                return date >= monthStart && date <= monthEnd;
+            })
+            .reduce((sum, p) => sum + (p.recruiter_fee || 0), 0);
+
+        const monthLabel = new Intl.DateTimeFormat("sv-SE", { month: "short" }).format(d);
+        monthly.push({ month: monthLabel, submitted, hired, revenue: monthRevenue });
+    }
+
+    // 6. Status breakdown
+    const statusBreakdown: Record<string, number> = {};
+    for (const c of candidates) {
+        statusBreakdown[c.status] = (statusBreakdown[c.status] || 0) + 1;
+    }
+
+    // 7. Candidate ratings received
+    const { data: ratings } = await supabase
+        .from("candidate_ratings")
+        .select("rating, review, updated_at, candidate:candidates(first_name, last_name)")
+        .eq("recruiter_id", recruiter.id)
+        .order("updated_at", { ascending: false })
+        .limit(10);
+
+    const formattedRatings = (ratings || []).map((r: any) => {
+        const candidate = Array.isArray(r.candidate) ? r.candidate[0] : r.candidate;
+        return {
+            rating: r.rating,
+            review: r.review,
+            date: r.updated_at,
+            candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : "Okänd",
+        };
+    });
+
+    // 8. Time-to-fill per job (from mandate claim to hired)
+    const timeToFillByJob: { jobTitle: string; days: number }[] = [];
+    for (const p of allPlacements) {
+        const job = Array.isArray(p.job) ? p.job[0] : p.job;
+        if (job) {
+            // Approximate: days from first candidate in this job to placement
+            const jobCandidates = candidates.filter(c => c.job_id === p.job_id);
+            const firstSubmit = jobCandidates.length > 0
+                ? Math.min(...jobCandidates.map(c => new Date(c.submitted_at || c.created_at).getTime()))
+                : new Date(p.created_at).getTime();
+            const diffDays = Math.max(1, Math.round((new Date(p.created_at).getTime() - firstSubmit) / (1000 * 60 * 60 * 24)));
+            timeToFillByJob.push({ jobTitle: (job as any).title || "Okänt", days: diffDays });
+        }
+    }
+
+    const avgTimeToFill = timeToFillByJob.length > 0
+        ? Math.round(timeToFillByJob.reduce((sum, t) => sum + t.days, 0) / timeToFillByJob.length)
+        : 0;
+
+    return {
+        overview: {
+            totalCandidates: candidates.length,
+            activeMandates: activeMandateCount || 0,
+            totalPlacements: allPlacements.length,
+            rating: recruiter.rating || 0,
+            revenue: totalRevenue,
+            successRate,
+        },
+        monthly,
+        statusBreakdown,
+        ratings: formattedRatings,
+        timeToFill: { average: avgTimeToFill, byJob: timeToFillByJob.slice(0, 10) },
+    };
+}
+
 export async function getAvailableJobsForRecruiter() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

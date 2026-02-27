@@ -19,6 +19,8 @@ import {
   UserCheck,
   Banknote,
   Settings,
+  BarChart3,
+  TrendingUp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -35,6 +37,7 @@ const COMPANY_NAV: NavItem[] = [
   { labelKey: "nav.jobs", href: "/company/jobs", icon: Briefcase },
   { labelKey: "nav.candidates", href: "/company/candidates", icon: Users },
   { labelKey: "nav.messages", href: "/company/messages", icon: MessageSquare, isMessages: true },
+  { labelKey: "nav.analytics", href: "/company/analytics", icon: BarChart3 },
   { labelKey: "nav.billing", href: "/company/billing", icon: CreditCard },
   { labelKey: "nav.profile", href: "/company/profile", icon: Building2 },
 ];
@@ -45,6 +48,7 @@ const RECRUITER_NAV: NavItem[] = [
   { labelKey: "nav.myMandates", href: "/recruiter/mandates", icon: FileCheck, badge: "3/5" },
   { labelKey: "nav.candidates", href: "/recruiter/candidates", icon: Users },
   { labelKey: "nav.messages", href: "/recruiter/messages", icon: MessageSquare, isMessages: true },
+  { labelKey: "nav.performance", href: "/recruiter/performance", icon: TrendingUp },
   { labelKey: "nav.earnings", href: "/recruiter/earnings", icon: Wallet },
   { labelKey: "nav.profile", href: "/recruiter/profile", icon: UserCircle },
 ];

@@ -217,3 +217,139 @@ export async function getCompanyPlacementCountRecent(): Promise<number> {
 
     return count ?? 0;
 }
+
+export async function getCompanyAnalytics() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
+
+    const { data: company } = await supabase
+        .from("companies")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!company) return null;
+
+    // 1. Get all jobs
+    const { data: jobs } = await supabase
+        .from("jobs")
+        .select("id, title, status, created_at")
+        .eq("company_id", company.id);
+
+    const jobIds = jobs?.map(j => j.id) || [];
+    if (jobIds.length === 0) {
+        return {
+            funnel: { submitted: 0, reviewing: 0, interview: 0, offered: 0, hired: 0, rejected: 0 },
+            timeToHire: { average: 0, fastest: 0, slowest: 0, byJob: [] },
+            costPerHire: { average: 0, total: 0, byJob: [] },
+            overview: { totalJobs: 0, activeJobs: 0, totalCandidates: 0, totalPlacements: 0, fillRate: 0 },
+        };
+    }
+
+    // 2. Get all candidates across jobs for funnel
+    const { data: candidates } = await supabase
+        .from("candidates")
+        .select("id, job_id, status, submitted_at, created_at")
+        .in("job_id", jobIds);
+
+    const allCandidates = candidates || [];
+
+    // Funnel stages
+    const funnelStages = {
+        submitted: 0,
+        reviewing: 0,
+        interview: 0,
+        offered: 0,
+        hired: 0,
+        rejected: 0,
+    };
+
+    const interviewStatuses = ["interview", "interview_stage_1", "interview_stage_2", "interview_stage_3", "final_interview"];
+    const rejectStatuses = ["rejected", "rejected_client", "rejected_interview", "declined", "offer_declined", "candidate_withdrawn"];
+    const offerStatuses = ["offered", "offer_in_progress", "offer_accepted"];
+    const hiredStatuses = ["hired", "invoice_enabled", "guarantee_tracking", "guarantee_period", "completed"];
+
+    for (const c of allCandidates) {
+        if (hiredStatuses.includes(c.status)) {
+            funnelStages.hired++;
+        } else if (offerStatuses.includes(c.status)) {
+            funnelStages.offered++;
+        } else if (interviewStatuses.includes(c.status)) {
+            funnelStages.interview++;
+        } else if (rejectStatuses.includes(c.status)) {
+            funnelStages.rejected++;
+        } else if (["reviewing", "under_client_review", "info_requested", "resubmitted"].includes(c.status)) {
+            funnelStages.reviewing++;
+        } else {
+            funnelStages.submitted++;
+        }
+    }
+
+    // 3. Time-to-hire: from job creation to candidate hired
+    const { data: placements } = await supabase
+        .from("placements")
+        .select("id, job_id, created_at, total_fee, platform_fee, recruiter_fee")
+        .eq("company_id", company.id);
+
+    const allPlacements = placements || [];
+
+    const jobMap = new Map((jobs || []).map(j => [j.id, j]));
+    const timeToHireByJob: { jobTitle: string; days: number }[] = [];
+
+    for (const p of allPlacements) {
+        const job = jobMap.get(p.job_id);
+        if (job) {
+            const jobCreated = new Date(job.created_at);
+            const placementCreated = new Date(p.created_at);
+            const diffMs = placementCreated.getTime() - jobCreated.getTime();
+            const diffDays = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+            timeToHireByJob.push({ jobTitle: job.title, days: diffDays });
+        }
+    }
+
+    const tthDays = timeToHireByJob.map(t => t.days);
+    const avgTimeToHire = tthDays.length > 0 ? Math.round(tthDays.reduce((a, b) => a + b, 0) / tthDays.length) : 0;
+    const fastestHire = tthDays.length > 0 ? Math.min(...tthDays) : 0;
+    const slowestHire = tthDays.length > 0 ? Math.max(...tthDays) : 0;
+
+    // 4. Cost-per-hire
+    const costByJob: { jobTitle: string; cost: number }[] = [];
+    for (const p of allPlacements) {
+        const job = jobMap.get(p.job_id);
+        if (job) {
+            costByJob.push({ jobTitle: job.title, cost: p.total_fee || 0 });
+        }
+    }
+
+    const totalCost = costByJob.reduce((sum, c) => sum + c.cost, 0);
+    const avgCostPerHire = costByJob.length > 0 ? Math.round(totalCost / costByJob.length) : 0;
+
+    // 5. Overview
+    const activeJobs = (jobs || []).filter(j => j.status === "active").length;
+    const fillRate = (jobs || []).length > 0
+        ? Math.round((allPlacements.length / (jobs || []).length) * 100)
+        : 0;
+
+    return {
+        funnel: funnelStages,
+        timeToHire: {
+            average: avgTimeToHire,
+            fastest: fastestHire,
+            slowest: slowestHire,
+            byJob: timeToHireByJob.slice(0, 10),
+        },
+        costPerHire: {
+            average: avgCostPerHire,
+            total: totalCost,
+            byJob: costByJob.slice(0, 10),
+        },
+        overview: {
+            totalJobs: (jobs || []).length,
+            activeJobs,
+            totalCandidates: allCandidates.length,
+            totalPlacements: allPlacements.length,
+            fillRate,
+        },
+    };
+}

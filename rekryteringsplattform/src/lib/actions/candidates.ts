@@ -518,3 +518,139 @@ export async function clearCandidateNextStepRequest(candidateId: string, jobId: 
     }
     return { success: true };
 }
+
+// ─── Candidate Ratings & Reviews ────────────────────────────
+
+export async function rateCandidatePlacement(
+    candidateId: string,
+    rating: number,
+    review?: string
+) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Not authenticated" };
+
+    if (rating < 1 || rating > 5) return { error: "Rating must be 1-5" };
+
+    // Verify the user is the company that owns this candidate's job
+    const { data: candidate } = await supabase
+        .from("candidates")
+        .select("id, job_id, recruiter_id, status")
+        .eq("id", candidateId)
+        .single();
+
+    if (!candidate) return { error: "Candidate not found" };
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("company_id")
+        .eq("id", candidate.job_id)
+        .single();
+
+    if (!job) return { error: "Job not found" };
+
+    const { data: company } = await supabase
+        .from("companies")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!company || company.id !== job.company_id) {
+        return { error: "Only the hiring company can rate candidates" };
+    }
+
+    const supabaseAdmin = createAdminClient();
+
+    // Upsert rating
+    const { error } = await supabaseAdmin
+        .from("candidate_ratings")
+        .upsert({
+            candidate_id: candidateId,
+            company_id: company.id,
+            recruiter_id: candidate.recruiter_id,
+            rating,
+            review: review?.trim() || null,
+            updated_at: new Date().toISOString(),
+        }, { onConflict: "candidate_id,company_id" });
+
+    if (error) return { error: error.message };
+
+    // Update recruiter's aggregate rating
+    const { data: allRatings } = await supabaseAdmin
+        .from("candidate_ratings")
+        .select("rating")
+        .eq("recruiter_id", candidate.recruiter_id);
+
+    if (allRatings && allRatings.length > 0) {
+        const avgRating = Math.round(
+            (allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length) * 10
+        ) / 10;
+
+        await supabaseAdmin
+            .from("recruiters")
+            .update({ rating: avgRating })
+            .eq("id", candidate.recruiter_id);
+    }
+
+    revalidatePath("/company/candidates");
+    revalidatePath("/recruiter/performance");
+    return { success: true };
+}
+
+export async function getCandidateRatings(candidateId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data } = await supabase
+        .from("candidate_ratings")
+        .select("rating, review, updated_at")
+        .eq("candidate_id", candidateId)
+        .maybeSingle();
+
+    return data;
+}
+
+export async function getCompanyCandidateRatings() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data: company } = await supabase
+        .from("companies")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+    if (!company) return [];
+
+    const { data } = await supabase
+        .from("candidate_ratings")
+        .select(`
+            id,
+            rating,
+            review,
+            updated_at,
+            candidate:candidates (
+                first_name,
+                last_name,
+                job:jobs (title)
+            )
+        `)
+        .eq("company_id", company.id)
+        .order("updated_at", { ascending: false });
+
+    return (data || []).map((r: any) => {
+        const candidate = Array.isArray(r.candidate) ? r.candidate[0] : r.candidate;
+        const job = candidate?.job;
+        const jobData = Array.isArray(job) ? job[0] : job;
+        return {
+            id: r.id,
+            rating: r.rating,
+            review: r.review,
+            updatedAt: r.updated_at,
+            candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : "Okänd",
+            jobTitle: jobData?.title || "Okänt jobb",
+        };
+    });
+}
