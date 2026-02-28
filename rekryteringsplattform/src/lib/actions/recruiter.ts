@@ -7,6 +7,7 @@ import { Recruiter } from "@/types/db-types";
 import { createNotification } from "@/lib/actions/notifications";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
+import { createTranslator } from "@/i18n/server";
 
 function handleError(error: any) {
     const normalized = {
@@ -26,7 +27,7 @@ function handleError(error: any) {
     if (error?.message === "JWT_EXPIRED") {
         redirect("/login");
     }
-    throw new Error("Kunde inte hämta data");
+    throw new Error("Could not fetch data");
 }
 
 export async function getRecruiterProfile() {
@@ -43,7 +44,10 @@ export async function getRecruiterProfile() {
 export async function updateRecruiterProfile(formData: FormData) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad" };
+    if (!user) {
+        const t = await createTranslator();
+        return { error: t("serverErrors.notLoggedIn") };
+    }
 
     const parsed = validateRecruiterProfileForm(formData);
     if (!parsed.success) {
@@ -80,7 +84,10 @@ export async function updateRecruiterProfile(formData: FormData) {
 export async function completeRecruiterOnboarding(formData: FormData) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad" };
+    if (!user) {
+        const t = await createTranslator();
+        return { error: t("serverErrors.notLoggedIn") };
+    }
 
     const { data: recruiter } = await supabase
         .from("recruiters")
@@ -89,7 +96,8 @@ export async function completeRecruiterOnboarding(formData: FormData) {
         .single();
 
     if (!recruiter) {
-        return { error: "Rekryterarprofil saknas" };
+        const t = await createTranslator();
+        return { error: t("serverErrors.recruiterProfileMissing") };
     }
 
     const parsed = validateRecruiterOnboardingProfileForm(formData);
@@ -108,7 +116,8 @@ export async function completeRecruiterOnboarding(formData: FormData) {
 
         if (uploadError) {
             console.error("Recruiter photo upload error:", uploadError);
-            return { error: "Kunde inte ladda upp profilfoto." };
+            const t = await createTranslator();
+            return { error: t("serverErrors.photoUploadFailed") };
         }
 
         avatarUrl = uploadData?.path || null;
@@ -329,8 +338,8 @@ export async function getRecruiterDashboard() {
         const company = Array.isArray(job?.company) ? job.company[0] : job?.company;
         return {
             id: mandate.id,
-            title: job?.title || "Okänt jobb",
-            company: company?.company_name || "Okänt företag",
+            title: job?.title || "Unknown job",
+            company: company?.company_name || "Unknown company",
             location: job?.location || "",
             status: job?.status || "active",
             candidates: 0 // Ideally we fetch count of candidates for this mandate
@@ -463,7 +472,7 @@ export async function getRecruiterPerformance() {
             rating: r.rating,
             review: r.review,
             date: r.updated_at,
-            candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : "Okänd",
+            candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : "Unknown",
         };
     });
 
@@ -478,7 +487,7 @@ export async function getRecruiterPerformance() {
                 ? Math.min(...jobCandidates.map(c => new Date(c.submitted_at || c.created_at).getTime()))
                 : new Date(p.created_at).getTime();
             const diffDays = Math.max(1, Math.round((new Date(p.created_at).getTime() - firstSubmit) / (1000 * 60 * 60 * 24)));
-            timeToFillByJob.push({ jobTitle: (job as any).title || "Okänt", days: diffDays });
+            timeToFillByJob.push({ jobTitle: (job as any).title || "Unknown", days: diffDays });
         }
     }
 
@@ -570,12 +579,14 @@ export async function claimMandate(jobId: string) {
         .eq("user_id", user.id)
         .single();
 
+    const t = await createTranslator();
+
     if (!recruiter) {
-        return { error: "Ingen rekryterarprofil hittades" };
+        return { error: t("serverErrors.recruiterNotFound") };
     }
 
     if (recruiter.approval_status !== "approved") {
-        return { error: "Din profil måste vara godkänd av admin innan du kan ta mandat" };
+        return { error: t("serverErrors.profileMustBeApproved") };
     }
 
     const { data: job } = await supabase
@@ -585,11 +596,11 @@ export async function claimMandate(jobId: string) {
         .single();
 
     if (!job || job.status !== 'active') {
-        return { error: "Jobbet är inte tillgängligt" };
+        return { error: t("serverErrors.jobNotAvailable") };
     }
 
     if ((job.current_recruiter_count || 0) >= job.max_recruiters) {
-        return { error: "Uppdraget är redan fullsatt" };
+        return { error: t("serverErrors.mandateFull") };
     }
 
     const { error: mandateError } = await supabase
@@ -602,7 +613,7 @@ export async function claimMandate(jobId: string) {
 
     if (mandateError) {
         if (mandateError.code === '23505') {
-            return { error: "Du har redan tagit detta uppdrag" };
+            return { error: t("serverErrors.mandateAlreadyClaimed") };
         }
         console.error("Error claiming mandate:", mandateError);
         return { error: mandateError.message };
@@ -694,9 +705,9 @@ export async function getRecruiterMandates() {
         return {
         id: mandate.id,
         job_id: job?.id,
-        title: job?.title || "Okänt jobb",
+        title: job?.title || "Unknown job",
         description: job?.description || "",
-        company: company?.company_name || "Okänt företag",
+        company: company?.company_name || "Unknown company",
         location: job?.location || "",
         industry: job?.industry || "",
         employment_type: job?.employment_type || "",
@@ -787,9 +798,9 @@ export async function getRecruiterMandateById(mandateId: string) {
         claimed_at: mandate.claimed_at,
         is_active: mandate.is_active,
         job_id: job?.id,
-        title: job?.title || "Okänt jobb",
+        title: job?.title || "Unknown job",
         description: job?.description || "",
-        company: company?.company_name || "Okänt företag",
+        company: company?.company_name || "Unknown company",
         location: job?.location || "",
         industry: job?.industry || "",
         employment_type: job?.employment_type || "",

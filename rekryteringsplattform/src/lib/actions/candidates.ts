@@ -16,6 +16,7 @@ import {
     TERMINAL_CANDIDATE_STATUSES,
 } from "@/lib/candidate-workflow";
 import { createPlacement } from "@/lib/actions/placements";
+import { createTranslator } from "@/i18n/server";
 
 type CandidateNextStepRequest =
     | "request_tests"
@@ -144,7 +145,8 @@ export async function createCandidate(mandateId: string, formData: FormData) {
         .single();
 
     if (!mandate) {
-        return { error: "Mandat kunde inte hittas." };
+        const t = await createTranslator();
+        return { error: t("serverErrors.mandateNotFound") };
     }
 
     // Verify user is the recruiter owning this mandate
@@ -155,7 +157,8 @@ export async function createCandidate(mandateId: string, formData: FormData) {
         .single();
 
     if (!recruiter || recruiter.id !== mandate.recruiter_id) {
-        return { error: "Obehörig åtgärd." };
+        const t = await createTranslator();
+        return { error: t("serverErrors.unauthorizedAction") };
     }
 
     const parsed = validateCandidateForm(formData);
@@ -230,7 +233,8 @@ export async function createCandidate(mandateId: string, formData: FormData) {
 
         if (uploadError) {
             console.error("CV Upload Error:", uploadError);
-            return { error: "Kunde inte ladda upp CV." };
+            const t = await createTranslator();
+            return { error: t("serverErrors.cvUploadFailed") };
         }
         cvFilePath = data.path;
     }
@@ -296,23 +300,28 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return { error: "Utloggad!" };
+    if (!user) {
+        const t = await createTranslator();
+        return { error: t("serverErrors.loggedOut") };
+    }
+
+    const t = await createTranslator();
 
     if (!isCandidateStatusValue(status)) {
-        return { error: "Ogiltig kandidatstatus" };
+        return { error: t("serverErrors.invalidCandidateStatus") };
     }
 
     const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
     if (!access.actorRole) {
-        return { error: "Obehörig" };
+        return { error: t("serverErrors.unauthorized") };
     }
     if (access.actorRole !== "recruiter") {
-        return { error: "Endast rekryterare kan uppdatera kandidatstatus i pipeline." };
+        return { error: t("serverErrors.onlyRecruitersCanUpdateStatus") };
     }
 
     const currentStatus = (access.candidate as any)?.status as string | undefined;
     if (!canTransitionCandidateStatus(currentStatus, status)) {
-        return { error: `Otillåten övergång från ${currentStatus || "okänd"} till ${status}.` };
+        return { error: t("serverErrors.invalidStatusTransition").replace("{from}", currentStatus || "unknown").replace("{to}", status) };
     }
 
     const updatePatch: Record<string, any> = {
@@ -375,19 +384,23 @@ export async function moveCandidateToPipelineStage(
 ) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Utloggad!" };
+    if (!user) {
+        const t = await createTranslator();
+        return { error: t("serverErrors.loggedOut") };
+    }
 
+    const t = await createTranslator();
     const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
-    if (!access.actorRole) return { error: "Obehörig" };
+    if (!access.actorRole) return { error: t("serverErrors.unauthorized") };
     if (access.actorRole !== "recruiter") {
-        return { error: "Endast rekryterare kan flytta kandidaten i pipelinen." };
+        return { error: t("serverErrors.onlyRecruitersCanMovePipeline") };
     }
     const job = access.job;
 
     // Validate target stage exists in job pipeline
     const stages = job?.pipeline_stages as PipelineStage[];
     const targetStage = stages?.find(s => s.id === targetStageId);
-    if (!targetStage) return { error: "Ogiltigt steg" };
+    if (!targetStage) return { error: t("serverErrors.invalidPipelineStep") };
 
     // Map pipeline stage type to candidate_status enum for backward compat
     const currentStatus = (access.candidate as any)?.status as string | undefined;
@@ -399,7 +412,7 @@ export async function moveCandidateToPipelineStage(
     }
 
     if (!canTransitionCandidateStatus(currentStatus, newStatus)) {
-        return { error: `Otillåten övergång från ${currentStatus || "okänd"} till ${newStatus}.` };
+        return { error: t("serverErrors.invalidStatusTransition").replace("{from}", currentStatus || "unknown").replace("{to}", newStatus) };
     }
 
     const { error } = await supabase
@@ -445,19 +458,23 @@ export async function requestCandidateNextStep(
 ) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Utloggad!" };
+    if (!user) {
+        const t = await createTranslator();
+        return { error: t("serverErrors.loggedOut") };
+    }
 
+    const t = await createTranslator();
     const allowed = new Set<CandidateNextStepRequest>([
         "request_tests",
         "pause_candidate",
         "reject_candidate",
         "proceed_to_hire",
     ]);
-    if (!allowed.has(nextStep)) return { error: "Ogiltigt nästa steg" };
+    if (!allowed.has(nextStep)) return { error: t("serverErrors.invalidNextStep") };
 
     const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
     if (access.actorRole !== "company") {
-        return { error: "Endast företag kan skicka nästa steg-begäran." };
+        return { error: t("serverErrors.onlyCompaniesCanRequestNextStep") };
     }
 
     const nowIso = new Date().toISOString();
@@ -503,10 +520,16 @@ export async function requestCandidateNextStep(
 export async function clearCandidateNextStepRequest(candidateId: string, jobId: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Utloggad!" };
+    if (!user) {
+        const t = await createTranslator();
+        return { error: t("serverErrors.loggedOut") };
+    }
 
     const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
-    if (!access.actorRole) return { error: "Obehörig" };
+    if (!access.actorRole) {
+        const t = await createTranslator();
+        return { error: t("serverErrors.unauthorized") };
+    }
 
     await clearCompanyNextStepRequest(supabase, candidateId);
 
@@ -649,8 +672,8 @@ export async function getCompanyCandidateRatings() {
             rating: r.rating,
             review: r.review,
             updatedAt: r.updated_at,
-            candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : "Okänd",
-            jobTitle: jobData?.title || "Okänt jobb",
+            candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : "Unknown",
+            jobTitle: jobData?.title || "Unknown job",
         };
     });
 }

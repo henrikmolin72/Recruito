@@ -8,11 +8,13 @@ import { getFeePercentage, getTierForPlacementCount, TIER_WINDOW_MONTHS } from "
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/actions/notifications";
 import type { PipelineStage } from "@/types/db-types";
+import { createTranslator } from "@/i18n/server";
 
 async function verifyJobOwnership(jobId: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad", supabase, user: null };
+    const t = await createTranslator();
+    if (!user) return { error: t("serverErrors.notLoggedIn"), supabase, user: null };
 
     const { data: company } = await supabase
         .from("companies")
@@ -20,7 +22,7 @@ async function verifyJobOwnership(jobId: string) {
         .eq("user_id", user.id)
         .single();
 
-    if (!company) return { error: "Ingen företagsprofil hittades", supabase, user };
+    if (!company) return { error: t("serverErrors.noCompanyProfileFound"), supabase, user };
 
     const { data: job } = await supabase
         .from("jobs")
@@ -29,7 +31,7 @@ async function verifyJobOwnership(jobId: string) {
         .eq("company_id", company.id)
         .single();
 
-    if (!job) return { error: "Jobbet hittades inte eller tillhör inte ditt företag", supabase, user };
+    if (!job) return { error: t("serverErrors.jobNotFoundOrNotOwned"), supabase, user };
 
     return { error: null, supabase, user };
 }
@@ -58,7 +60,8 @@ export async function createJob(formData: FormData) {
 
     if (companyError || !company) {
         console.error("Company not found:", companyError);
-        return { error: "Kunde inte hitta företagsprofilen" };
+        const t = await createTranslator();
+        return { error: t("serverErrors.companyProfileNotFound") };
     }
 
     // 3. Calculate fee from volume tier
@@ -83,7 +86,8 @@ export async function createJob(formData: FormData) {
         .eq("status", "active");
 
     if ((activeJobCount ?? 0) >= tier.maxActiveJobs) {
-        return { error: `Ni har nått max antal aktiva jobb (${tier.maxActiveJobs}) för er nivå. Stäng ett befintligt jobb eller gör fler placeringar för att höja er gräns.` };
+        const t = await createTranslator();
+        return { error: t("serverErrors.jobPostingLimitReached").replace("{max}", String(tier.maxActiveJobs)) };
     }
 
     // 4. Parse pipeline stages (optional, defaults applied)
@@ -299,7 +303,8 @@ export async function updatePipelineStages(jobId: string, stages: PipelineStage[
     );
 
     if (orphaned && orphaned.length > 0) {
-        return { error: "Det finns aktiva kandidater i steg som du försöker ta bort. Flytta dem först." };
+        const t = await createTranslator();
+        return { error: t("serverErrors.activeCandidatesInRemovedStages") };
     }
 
     const { error } = await supabase

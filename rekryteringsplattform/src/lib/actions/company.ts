@@ -7,6 +7,7 @@ import { Job, Company } from "@/types/db-types";
 import { revalidatePath } from "next/cache";
 import { validateCompanyProfileForm } from "@/lib/validation/forms";
 import { TIER_WINDOW_MONTHS } from "@/lib/pricing";
+import { createTranslator } from "@/i18n/server";
 
 // Helper to handle errors or redirect
 function handleError(error: any) {
@@ -28,7 +29,8 @@ function handleError(error: any) {
     if (error?.message === "JWT_EXPIRED") {
         redirect("/login");
     }
-    throw new Error("Kunde inte hämta data");
+    // handleError throws synchronously; use the default locale fallback
+    throw new Error("Could not fetch data");
 }
 
 export async function getCompanyProfile() {
@@ -45,7 +47,10 @@ export async function getCompanyProfile() {
 export async function updateCompanyProfile(formData: FormData) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad" };
+    if (!user) {
+        const t = await createTranslator();
+        return { error: t("serverErrors.notLoggedIn") };
+    }
 
     const parsed = validateCompanyProfileForm(formData);
     if (!parsed.success) {

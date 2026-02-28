@@ -12,6 +12,7 @@ import {
 } from "@/lib/validation/forms";
 import { mapExperienceBracketToYears } from "@/lib/recruiter-onboarding-options";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
+import { createTranslator } from "@/i18n/server";
 
 export async function login(formData: FormData) {
     const supabase = await createClient();
@@ -65,7 +66,8 @@ export async function registerCompany(formData: FormData) {
 
     // Check if the email is already registered (empty identities means existing account)
     if (data.user && !data.user.identities?.length) {
-        return { error: "E-postadressen är redan registrerad. Vänligen logga in." };
+        const t = await createTranslator();
+        return { error: t("serverErrors.emailAlreadyRegistered") };
     }
 
     // Create company profile using Admin client to bypass RLS
@@ -80,7 +82,8 @@ export async function registerCompany(formData: FormData) {
         if (companyError) {
             console.error("Company creation failed:", companyError);
             await supabaseAdmin.auth.admin.deleteUser(data.user.id);
-            return { error: "Kunde inte skapa företagsprofil. Försök igen." };
+            const t = await createTranslator();
+            return { error: t("serverErrors.companyCreationFailed") };
         }
     }
 
@@ -115,7 +118,8 @@ export async function registerRecruiter(formData: FormData) {
 
     // Check if the email is already registered (empty identities means existing account)
     if (data.user && !data.user.identities?.length) {
-        return { error: "E-postadressen är redan registrerad. Vänligen logga in." };
+        const t = await createTranslator();
+        return { error: t("serverErrors.emailAlreadyRegistered") };
     }
 
     // Create recruiter profile using Admin client to bypass RLS
@@ -133,7 +137,8 @@ export async function registerRecruiter(formData: FormData) {
         if (recruiterError) {
             console.error("Recruiter creation failed:", recruiterError);
             await supabaseAdmin.auth.admin.deleteUser(data.user.id);
-            return { error: "Kunde inte skapa rekryterarprofil. Försök igen." };
+            const t = await createTranslator();
+            return { error: t("serverErrors.recruiterCreationFailed") };
         }
 
         try {
@@ -182,7 +187,8 @@ export async function requestPasswordReset(formData: FormData) {
 
     if (error) {
         console.error("Password reset request failed:", error);
-        return { error: "Kunde inte skicka återställningslänk just nu" };
+        const t = await createTranslator();
+        return { error: t("serverErrors.resetLinkFailed") };
     }
 
     return { success: true };
