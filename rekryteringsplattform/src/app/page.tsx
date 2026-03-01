@@ -20,7 +20,14 @@ import {
   Building2,
   UserCircle,
   PlayCircle,
+  ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 function getYouTubeEmbedUrl(url: string | undefined) {
   if (!url) return null;
@@ -78,9 +85,28 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher variant="dropdown" compact />
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="hidden sm:inline-flex">{t("common.logIn")}</Button>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="hidden sm:inline-flex gap-1">
+                  {t("common.logIn")}
+                  <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem asChild>
+                  <Link href="/login?role=company" className="flex items-center gap-2 cursor-pointer">
+                    <Building2 className="h-4 w-4 text-brand-600" />
+                    {t("landing.loginCompany")}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/login?role=recruiter" className="flex items-center gap-2 cursor-pointer">
+                    <UserCircle className="h-4 w-4 text-success-600" />
+                    {t("landing.loginRecruiter")}
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link href="/register">
               <Button size="sm">{t("common.getStarted")}</Button>
             </Link>
