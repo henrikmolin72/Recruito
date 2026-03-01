@@ -246,6 +246,15 @@ export async function getAdminPlacements() {
             platform_fee,
             recruiter_fee,
             status,
+            start_date,
+            guarantee_end_date,
+            invoice_sent_at,
+            payment_received_at,
+            payout_released_at,
+            guarantee_failed_at,
+            guarantee_failed_reason,
+            refund_amount,
+            completed_at,
             created_at,
             candidate:candidates (first_name, last_name),
             job:jobs (title),
@@ -280,6 +289,9 @@ export async function getAdminPlacements() {
             recruiterFee: placement.recruiter_fee ?? Math.max(totalFee - (placement.platform_fee || 0), 0),
             status: placement.status,
             date: placement.created_at,
+            guaranteeEndDate: placement.guarantee_end_date,
+            invoiceSentAt: placement.invoice_sent_at,
+            paymentReceivedAt: placement.payment_received_at,
         };
     });
 }

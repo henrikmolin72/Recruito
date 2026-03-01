@@ -5,10 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Briefcase, Users, Wallet, FileCheck } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getRecruiterDashboard } from "@/lib/actions/recruiter";
+import { getRecruiterPerformanceMetrics } from "@/lib/actions/placements";
+import { PerformanceMetrics } from "@/components/dashboard/recruiter/performance-metrics";
 import { getDictionary } from "@/i18n/server";
 
 export default async function RecruiterDashboard() {
-  const { recruiter, userName, mandates, stats, recentActivity } = await getRecruiterDashboard();
+  const [dashboardData, metrics] = await Promise.all([
+    getRecruiterDashboard(),
+    getRecruiterPerformanceMetrics(),
+  ]);
+  const { recruiter, userName, mandates, stats, recentActivity } = dashboardData;
   const dict = await getDictionary();
   const r = dict.recruiter;
 
@@ -25,6 +31,8 @@ export default async function RecruiterDashboard() {
         <StatsCard title={r.availableJobs} value={stats.availableJobs || 0} icon={Briefcase} />
         <StatsCard title={r.revenueTitle} value={formatCurrency(stats.revenue || 0)} icon={Wallet} description={r.totalEarned} />
       </div>
+
+      {metrics && <PerformanceMetrics metrics={metrics} />}
 
       <Card>
         <CardHeader>

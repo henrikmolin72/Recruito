@@ -2,17 +2,35 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AppLogo } from "@/components/shared/app-logo";
+import { Building2, UserCircle } from "lucide-react";
 import { login } from "@/lib/actions/auth";
 import { useTranslations } from "@/i18n/client";
 
 export default function LoginPage() {
   const { t } = useTranslations();
+  const searchParams = useSearchParams();
+  const role = searchParams.get("role");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const titleKey = role === "company"
+    ? "auth.loginCompanyTitle"
+    : role === "recruiter"
+      ? "auth.loginRecruiterTitle"
+      : "auth.loginTitle";
+
+  const descriptionKey = role === "company"
+    ? "auth.loginCompanyDescription"
+    : role === "recruiter"
+      ? "auth.loginRecruiterDescription"
+      : "auth.loginDescription";
+
+  const RoleIcon = role === "company" ? Building2 : role === "recruiter" ? UserCircle : null;
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -35,8 +53,11 @@ export default function LoginPage() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>{t("auth.loginTitle")}</CardTitle>
-            <CardDescription>{t("auth.loginDescription")}</CardDescription>
+            <div className="flex items-center justify-center gap-2">
+              {RoleIcon && <RoleIcon className={`h-5 w-5 ${role === "company" ? "text-brand-600" : "text-success-600"}`} />}
+              <CardTitle>{t(titleKey)}</CardTitle>
+            </div>
+            <CardDescription>{t(descriptionKey)}</CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
@@ -64,6 +85,17 @@ export default function LoginPage() {
                 {loading ? t("auth.loggingIn") : t("auth.loginButton")}
               </Button>
             </form>
+
+            {role && (
+              <div className="mt-4 text-center">
+                <Link
+                  href={`/login?role=${role === "company" ? "recruiter" : "company"}`}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {role === "company" ? t("landing.loginRecruiter") : t("landing.loginCompany")}
+                </Link>
+              </div>
+            )}
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
               {t("auth.noAccountPrompt")}{" "}
