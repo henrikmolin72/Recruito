@@ -65,6 +65,7 @@ export const NAV_MAP: Record<string, NavItem[]> = {
 };
 
 import { useState, useEffect } from "react";
+import { RecruitmentCalculator } from "@/components/layout/recruitment-calculator";
 
 export function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
@@ -144,6 +145,8 @@ export function Sidebar({ role }: { role: string }) {
           );
         })}
       </nav>
+
+      {role === "company" && <RecruitmentCalculator />}
 
       <div className={cn(
         "p-4 border-t",
