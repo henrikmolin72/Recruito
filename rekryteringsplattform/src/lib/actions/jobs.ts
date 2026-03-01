@@ -86,19 +86,72 @@ export async function createJob(formData: FormData) {
         } catch { /* use default */ }
     }
 
-    // 5. Insert job
+    // 5. Insert job with all fields
+    const d = parsed.data;
     const { error: jobError } = await supabase.from("jobs").insert({
         company_id: company.id,
-        title: parsed.data.title,
-        description: parsed.data.description,
-        location: parsed.data.location,
-        industry: parsed.data.industry,
-        employment_type: parsed.data.employment_type,
-        salary_min: parsed.data.salary_min,
-        salary_max: parsed.data.salary_max,
-        salary_currency: parsed.data.salary_currency,
+        // Basics
+        title: d.title,
+        description: d.description,
+        location: d.location,
+        industry: d.industry,
+        country: d.country,
+        city: d.city,
+        location_code: d.location_code,
+        is_confidential: d.is_confidential ?? false,
+        // Employment
+        employment_type: d.employment_type,
+        contract_duration: d.contract_duration,
+        work_type: d.work_type,
+        remote_type: d.remote_type,
+        work_permit_accepted: d.work_permit_accepted,
+        visa_sponsorship: d.visa_sponsorship,
+        // Description structured
+        team_structure: d.team_structure,
+        tools_technologies: d.tools_technologies,
+        position_type: d.position_type,
+        open_positions: d.open_positions,
+        // Requirements
+        min_years_experience: d.min_years_experience,
+        required_degree: d.required_degree,
+        required_certifications: d.required_certifications,
+        required_technical_skills: d.required_technical_skills,
+        required_industry_experience: d.required_industry_experience,
+        required_language: d.required_language,
+        required_language_level: d.required_language_level,
+        // Salary
+        salary_min: d.salary_min,
+        salary_max: d.salary_max,
+        salary_currency: d.salary_currency,
+        salary_gross_net: d.salary_gross_net,
+        salary_period: d.salary_period,
+        bonus_structure: d.bonus_structure,
+        benefits: d.benefits,
+        benefits_other: d.benefits_other,
+        // Recruitment details
         fee_percentage: feePercentage,
-        max_recruiters: parsed.data.max_recruiters,
+        max_recruiters: d.max_recruiters,
+        application_deadline: d.application_deadline || null,
+        guarantee_period_months: d.guarantee_period_months,
+        recruiter_fee_manual: d.recruiter_fee_manual,
+        // Screening & hiring
+        screening_questions: d.screening_questions,
+        interview_type: d.interview_type,
+        technical_test_required: d.technical_test_required,
+        assessment_type: d.assessment_type,
+        // Working conditions
+        working_hours: d.working_hours,
+        flexible_hours: d.flexible_hours,
+        shift_work: d.shift_work,
+        shift_timings: d.shift_timings,
+        overtime_policy: d.overtime_policy,
+        // Timeline
+        desired_start_date: d.desired_start_date || null,
+        urgency_level: d.urgency_level,
+        // Other
+        travel_required: d.travel_required,
+        background_check_required: d.background_check_required,
+        // Pipeline & status
         pipeline_stages: pipelineStages,
         status: "active",
     });
@@ -153,18 +206,60 @@ export async function updateJob(jobId: string, formData: FormData) {
         return { error: parsed.error };
     }
 
+    const d = parsed.data;
     const { error } = await supabase
         .from("jobs")
         .update({
-            title: parsed.data.title,
-            description: parsed.data.description,
-            location: parsed.data.location,
-            industry: parsed.data.industry,
-            employment_type: parsed.data.employment_type,
-            salary_min: parsed.data.salary_min,
-            salary_max: parsed.data.salary_max,
-            salary_currency: parsed.data.salary_currency,
-            max_recruiters: parsed.data.max_recruiters,
+            title: d.title,
+            description: d.description,
+            location: d.location,
+            industry: d.industry,
+            country: d.country,
+            city: d.city,
+            location_code: d.location_code,
+            is_confidential: d.is_confidential ?? false,
+            employment_type: d.employment_type,
+            contract_duration: d.contract_duration,
+            work_type: d.work_type,
+            remote_type: d.remote_type,
+            work_permit_accepted: d.work_permit_accepted,
+            visa_sponsorship: d.visa_sponsorship,
+            team_structure: d.team_structure,
+            tools_technologies: d.tools_technologies,
+            position_type: d.position_type,
+            open_positions: d.open_positions,
+            min_years_experience: d.min_years_experience,
+            required_degree: d.required_degree,
+            required_certifications: d.required_certifications,
+            required_technical_skills: d.required_technical_skills,
+            required_industry_experience: d.required_industry_experience,
+            required_language: d.required_language,
+            required_language_level: d.required_language_level,
+            salary_min: d.salary_min,
+            salary_max: d.salary_max,
+            salary_currency: d.salary_currency,
+            salary_gross_net: d.salary_gross_net,
+            salary_period: d.salary_period,
+            bonus_structure: d.bonus_structure,
+            benefits: d.benefits,
+            benefits_other: d.benefits_other,
+            max_recruiters: d.max_recruiters,
+            application_deadline: d.application_deadline || null,
+            guarantee_period_months: d.guarantee_period_months,
+            recruiter_fee_manual: d.recruiter_fee_manual,
+            screening_questions: d.screening_questions,
+            interview_type: d.interview_type,
+            technical_test_required: d.technical_test_required,
+            assessment_type: d.assessment_type,
+            working_hours: d.working_hours,
+            flexible_hours: d.flexible_hours,
+            shift_work: d.shift_work,
+            shift_timings: d.shift_timings,
+            overtime_policy: d.overtime_policy,
+            desired_start_date: d.desired_start_date || null,
+            urgency_level: d.urgency_level,
+            travel_required: d.travel_required,
+            background_check_required: d.background_check_required,
         })
         .eq("id", jobId);
 

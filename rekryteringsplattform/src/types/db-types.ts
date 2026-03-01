@@ -91,8 +91,66 @@ export interface Job {
     requirements: string | null;
     location: string;
     employment_type: string;
+    contract_duration: string | null;
+    // Structured location
+    country: string | null;
+    city: string | null;
+    location_code: string | null;
+    // Work type
+    work_type: string | null;
+    remote_type: string | null;
+    // Work authorization
+    work_permit_accepted: boolean | null;
+    visa_sponsorship: boolean | null;
+    // Salary
     salary_min: number | null;
     salary_max: number | null;
+    salary_currency: string | null;
+    salary_gross_net: string | null;
+    salary_period: string | null;
+    bonus_structure: string | null;
+    // Benefits
+    benefits: string[] | null;
+    benefits_other: string | null;
+    // Recruitment details
+    application_deadline: string | null;
+    guarantee_period_months: number | null;
+    recruiter_fee_manual: number | null;
+    is_confidential: boolean;
+    // Position
+    position_type: string | null;
+    open_positions: number | null;
+    // Requirements
+    min_years_experience: number | null;
+    required_degree: string | null;
+    required_certifications: string | null;
+    required_technical_skills: string | null;
+    required_industry_experience: string | null;
+    // Language
+    required_language: string | null;
+    required_language_level: string | null;
+    // Structured description
+    team_structure: string | null;
+    tools_technologies: string | null;
+    // Screening
+    screening_questions: string[];
+    // Hiring process
+    interview_type: string | null;
+    technical_test_required: boolean | null;
+    assessment_type: string | null;
+    // Working conditions
+    working_hours: string | null;
+    flexible_hours: boolean | null;
+    shift_work: string | null;
+    shift_timings: string | null;
+    overtime_policy: string | null;
+    // Timeline
+    desired_start_date: string | null;
+    urgency_level: number | null;
+    // Other
+    travel_required: boolean | null;
+    background_check_required: boolean | null;
+    // Core
     fee_percentage: number;
     max_recruiters: number;
     current_recruiter_count: number;
