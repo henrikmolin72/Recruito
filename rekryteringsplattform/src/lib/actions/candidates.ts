@@ -15,6 +15,11 @@ import {
     statusChangeTimestampPatch,
     TERMINAL_CANDIDATE_STATUSES,
 } from "@/lib/candidate-workflow";
+import {
+    getPlacementByCandidateId,
+    sendPlacementInvoice,
+    recalculateRecruiterMetrics,
+} from "@/lib/actions/placements";
 
 type CandidateNextStepRequest =
     | "request_tests"
@@ -336,6 +341,35 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
 
     // Recruiter/company applying a status change should clear pending company request.
     await clearCompanyNextStepRequest(supabase, candidateId);
+
+    // ── Placement automation hooks ──
+    // When candidate moves to 'invoice_enabled', auto-send invoice
+    if (status === "invoice_enabled") {
+        try {
+            const placement = await getPlacementByCandidateId(candidateId);
+            if (placement) {
+                await sendPlacementInvoice(placement.id);
+            }
+        } catch (e) {
+            console.error("Auto-invoice failed for candidate:", candidateId, e);
+        }
+    }
+
+    // Recalculate recruiter metrics on meaningful status changes
+    if (["hired", "invoice_enabled", "guarantee_tracking", "completed"].includes(status)) {
+        try {
+            const { data: candidateRow } = await supabase
+                .from("candidates")
+                .select("recruiter_id")
+                .eq("id", candidateId)
+                .single();
+            if (candidateRow?.recruiter_id) {
+                await recalculateRecruiterMetrics(candidateRow.recruiter_id);
+            }
+        } catch (e) {
+            console.error("Metrics recalculation failed:", e);
+        }
+    }
 
     const { candidate, recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
     const targetUserId = access.companyUserId;
