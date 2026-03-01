@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number | null | undefined, currency: string = "SEK"): string {
+export function formatCurrency(amount: number | null | undefined, currency: string = "EUR"): string {
   if (amount == null || isNaN(amount)) return "—";
   return new Intl.NumberFormat("sv-SE", {
     style: "currency",
