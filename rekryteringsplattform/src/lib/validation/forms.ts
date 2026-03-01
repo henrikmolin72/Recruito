@@ -207,31 +207,80 @@ export function validateRegisterRecruiterForm(formData: FormData) {
   return { success: true as const, data: parsed.data };
 }
 
+const optionalBoolean = z
+  .boolean()
+  .nullable()
+  .optional()
+  .transform((v) => v ?? null);
+
 const jobSchema = z
   .object({
+    // Step 1 — Basics
     title: requiredText("Titel", 3, 150),
-    description: requiredText("Beskrivning", 20, 10000),
+    country: optionalText(80),
+    city: optionalText(120),
+    location_code: optionalText(40),
     location: requiredText("Plats", 2, 120),
     industry: requiredText("Bransch", 2, 80),
+    is_confidential: optionalBoolean,
+
+    // Step 2 — Employment & work type
     employment_type: requiredText("Anställningsform", 2, 40),
+    contract_duration: optionalText(80),
+    work_type: z.enum(["onsite", "hybrid", "remote"]).nullable().optional(),
+    remote_type: z.enum(["local", "international"]).nullable().optional(),
+    work_permit_accepted: optionalBoolean,
+    visa_sponsorship: optionalBoolean,
+
+    // Step 3 — Description & requirements
+    description: requiredText("Beskrivning", 20, 10000),
+    team_structure: optionalText(2000),
+    tools_technologies: optionalText(2000),
+    position_type: z.enum(["new", "replacement"]).nullable().optional(),
+    open_positions: optionalInteger(1, 100),
+    min_years_experience: optionalInteger(0, 50),
+    required_degree: optionalText(200),
+    required_certifications: optionalText(500),
+    required_technical_skills: optionalText(2000),
+    required_industry_experience: optionalText(500),
+    required_language: optionalText(80),
+    required_language_level: z.enum(["basic", "intermediate", "advanced", "fluent", "native"]).nullable().optional(),
+
+    // Step 4 — Salary & benefits
     salary_min: optionalInteger(0, 10_000_000),
     salary_max: optionalInteger(0, 10_000_000),
-    salary_currency: z
-      .string()
-      .trim()
-      .min(3, "Valuta krävs")
-      .max(5, "Ogiltig valuta"),
-    fee_percentage: z
-      .number()
-      .min(1, "Arvode måste vara minst 1%")
-      .max(50, "Arvode får max vara 50%")
-      .optional()
-      .default(15),
-    max_recruiters: z
-      .number()
-      .int()
-      .min(1, "Minst 1 rekryterare")
-      .max(10, "Max 10 rekryterare"),
+    salary_currency: z.string().trim().min(3, "Valuta krävs").max(5, "Ogiltig valuta"),
+    salary_gross_net: z.enum(["gross", "net"]).nullable().optional(),
+    salary_period: z.enum(["monthly", "yearly", "hourly"]).nullable().optional(),
+    bonus_structure: optionalText(500),
+    benefits: z.array(z.string().min(1)).max(20).optional().default([]),
+    benefits_other: optionalText(500),
+
+    // Step 5 — Recruitment details
+    fee_percentage: z.number().min(1).max(50).optional().default(15),
+    max_recruiters: z.number().int().min(1, "Minst 1 rekryterare").max(10, "Max 10 rekryterare"),
+    application_deadline: optionalText(20),
+    guarantee_period_months: optionalInteger(0, 2),
+    recruiter_fee_manual: optionalInteger(2000, 10_000_000),
+
+    // Step 6 — Screening & hiring process
+    screening_questions: z.array(z.string().trim().max(500)).max(4).optional().default([]),
+    interview_type: z.enum(["online", "onsite", "both"]).nullable().optional(),
+    technical_test_required: optionalBoolean,
+    assessment_type: optionalText(200),
+
+    // Step 7 — Working conditions & timeline
+    working_hours: optionalText(80),
+    flexible_hours: optionalBoolean,
+    shift_work: z.enum(["no", "yes", "rotating"]).nullable().optional(),
+    shift_timings: optionalText(200),
+    overtime_policy: optionalText(500),
+    desired_start_date: optionalText(20),
+    urgency_level: optionalInteger(1, 3),
+
+    // Step 8 — Other
+    travel_required: optionalBoolean,
+    background_check_required: optionalBoolean,
   })
   .refine(
     (data) =>
@@ -246,16 +295,65 @@ const jobSchema = z
 
 export function validateJobForm(formData: FormData) {
   const parsed = jobSchema.safeParse({
+    // Step 1
     title: toString(formData.get("title")),
-    description: toString(formData.get("description")),
+    country: toString(formData.get("country")),
+    city: toString(formData.get("city")),
+    location_code: toString(formData.get("location_code")),
     location: toString(formData.get("location")),
     industry: toString(formData.get("industry")),
+    is_confidential: toCheckboxBoolean(formData.get("is_confidential")),
+    // Step 2
     employment_type: toString(formData.get("employment_type")),
+    contract_duration: toString(formData.get("contract_duration")),
+    work_type: toString(formData.get("work_type")) || null,
+    remote_type: toString(formData.get("remote_type")) || null,
+    work_permit_accepted: toCheckboxBoolean(formData.get("work_permit_accepted")),
+    visa_sponsorship: toCheckboxBoolean(formData.get("visa_sponsorship")),
+    // Step 3
+    description: toString(formData.get("description")),
+    team_structure: toString(formData.get("team_structure")),
+    tools_technologies: toString(formData.get("tools_technologies")),
+    position_type: toString(formData.get("position_type")) || null,
+    open_positions: toOptionalInt(formData.get("open_positions")),
+    min_years_experience: toOptionalInt(formData.get("min_years_experience")),
+    required_degree: toString(formData.get("required_degree")),
+    required_certifications: toString(formData.get("required_certifications")),
+    required_technical_skills: toString(formData.get("required_technical_skills")),
+    required_industry_experience: toString(formData.get("required_industry_experience")),
+    required_language: toString(formData.get("required_language")),
+    required_language_level: toString(formData.get("required_language_level")) || null,
+    // Step 4
     salary_min: toOptionalInt(formData.get("salary_min")),
     salary_max: toOptionalInt(formData.get("salary_max")),
     salary_currency: toString(formData.get("salary_currency")) || "SEK",
+    salary_gross_net: toString(formData.get("salary_gross_net")) || null,
+    salary_period: toString(formData.get("salary_period")) || null,
+    bonus_structure: toString(formData.get("bonus_structure")),
+    benefits: toStringArray(formData.getAll("benefits")),
+    benefits_other: toString(formData.get("benefits_other")),
+    // Step 5
     fee_percentage: toOptionalFloat(formData.get("fee_percentage")) ?? undefined,
     max_recruiters: toOptionalInt(formData.get("max_recruiters")) ?? Number.NaN,
+    application_deadline: toString(formData.get("application_deadline")),
+    guarantee_period_months: toOptionalInt(formData.get("guarantee_period_months")),
+    recruiter_fee_manual: toOptionalInt(formData.get("recruiter_fee_manual")),
+    // Step 6
+    screening_questions: JSON.parse(toString(formData.get("screening_questions")) || "[]"),
+    interview_type: toString(formData.get("interview_type")) || null,
+    technical_test_required: toCheckboxBoolean(formData.get("technical_test_required")),
+    assessment_type: toString(formData.get("assessment_type")),
+    // Step 7
+    working_hours: toString(formData.get("working_hours")),
+    flexible_hours: toCheckboxBoolean(formData.get("flexible_hours")),
+    shift_work: toString(formData.get("shift_work")) || null,
+    shift_timings: toString(formData.get("shift_timings")),
+    overtime_policy: toString(formData.get("overtime_policy")),
+    desired_start_date: toString(formData.get("desired_start_date")),
+    urgency_level: toOptionalInt(formData.get("urgency_level")),
+    // Step 8
+    travel_required: toCheckboxBoolean(formData.get("travel_required")),
+    background_check_required: toCheckboxBoolean(formData.get("background_check_required")),
   });
 
   if (!parsed.success) {
