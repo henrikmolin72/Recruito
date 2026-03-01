@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Calculator, ChevronDown, ChevronUp, TrendingDown } from "lucide-react";
+import { TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ── Commission Table: base commission % by monthly salary ──
@@ -155,7 +155,6 @@ function fmt(n: number, decimals = 0): string {
 }
 
 export function RecruitmentCalculator() {
-    const [isOpen, setIsOpen] = useState(false);
     const [salary, setSalary] = useState(35_000);
     const [levelIdx, setLevelIdx] = useState(2); // Assistant
     const [functionIdx, setFunctionIdx] = useState(1); // Business Dev
@@ -168,22 +167,8 @@ export function RecruitmentCalculator() {
     );
 
     return (
-        <div className="mx-3 mb-3">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={cn(
-                    "w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                    "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    isOpen && "bg-brand-50 text-brand-600",
-                )}
-            >
-                <Calculator className="h-5 w-5" />
-                <span className="flex-1 text-left">Avgiftsberäkning</span>
-                {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </button>
-
-            {isOpen && (
-                <div className="mt-2 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/80 shadow-lg shadow-brand-500/5 overflow-hidden">
+        <div className="mx-0 mt-1 mb-1">
+                <div className="rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/80 shadow-lg shadow-brand-500/5 overflow-hidden">
                     {/* ── Inputs ── */}
                     <div className="p-3.5 space-y-3">
                         {/* Annual salary */}
@@ -397,7 +382,6 @@ export function RecruitmentCalculator() {
                         </div>
                     </div>
                 </div>
-            )}
         </div>
     );
 }
