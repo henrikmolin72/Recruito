@@ -91,51 +91,51 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="relative overflow-hidden py-14 md:py-20">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_14%,rgba(14,165,233,0.16),transparent_34%),linear-gradient(to_bottom,#f4f9ff_0%,#f8fafc_68%,#ffffff_100%)]" />
-        <div className="relative mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[1fr_1fr] lg:items-start lg:gap-14">
-          <div className="max-w-2xl">
+        <div className="relative mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[5fr_7fr] lg:items-center lg:gap-10">
+          <div className="max-w-xl">
             <span className="inline-flex items-center rounded-full border border-brand-200 bg-white/80 px-4 py-1.5 text-sm font-semibold text-brand-700">
               {t("landing.heroBadge")}
             </span>
 
-            <h1 className="mt-6 text-[clamp(2.4rem,4.4vw,4.4rem)] font-black leading-[1.02] tracking-tight text-slate-950">
+            <h1 className="mt-6 text-[clamp(2rem,3.6vw,3.4rem)] font-black leading-[1.06] tracking-tight text-slate-950">
               {t("landing.heroTitleLine1")}
               <span className="block text-brand-700">{t("landing.heroTitleLine2")}</span>
             </h1>
 
-            <p className="mt-6 text-[1.15rem] leading-relaxed text-slate-600">
+            <p className="mt-5 text-base leading-relaxed text-slate-600">
               {t("landing.heroDescription")}
             </p>
 
-            <div className="mt-7 mx-auto w-full lg:w-[115%]">
+            <div className="mt-7 mx-auto w-full">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-white/85 px-5 py-3.5 shadow-sm">
-                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">{t("landing.navCompanies")}</p>
-                  <p className="mt-1.5 text-[1.15rem] leading-snug text-slate-800">{t("auth.companyOptionDescription")}</p>
+                <div className="rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">{t("landing.navCompanies")}</p>
+                  <p className="mt-1 text-sm leading-snug text-slate-800">{t("auth.companyOptionDescription")}</p>
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-white/85 px-5 py-3.5 shadow-sm">
-                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-slate-500">{t("landing.navRecruiters")}</p>
-                  <p className="mt-1.5 text-[1.15rem] leading-snug text-slate-800">{t("auth.recruiterOptionDescription")}</p>
+                <div className="rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 shadow-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">{t("landing.navRecruiters")}</p>
+                  <p className="mt-1 text-sm leading-snug text-slate-800">{t("auth.recruiterOptionDescription")}</p>
                 </div>
               </div>
 
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link href="/register/company">
-                  <Button size="lg" className="w-full sm:w-[350px] gap-2 text-[1.12rem]">
-                    <Building2 className="h-5 w-5" /> {t("landing.ctaCompanyButton")}
+                  <Button size="default" className="w-full sm:w-auto gap-2">
+                    <Building2 className="h-4 w-4" /> {t("landing.ctaCompanyButton")}
                   </Button>
                 </Link>
                 <Link href="/register/recruiter">
-                  <Button size="lg" variant="outline" className="w-full sm:w-[350px] gap-2 text-[1.12rem] border-success-500 text-success-700 hover:bg-success-50">
-                    <UserCircle className="h-5 w-5" /> {t("landing.ctaRecruiterButton")}
+                  <Button size="default" variant="outline" className="w-full sm:w-auto gap-2 border-success-500 text-success-700 hover:bg-success-50">
+                    <UserCircle className="h-4 w-4" /> {t("landing.ctaRecruiterButton")}
                   </Button>
                 </Link>
               </div>
             </div>
           </div>
 
-          <div className="relative lg:pt-16">
+          <div className="relative lg:pt-4">
             <div className="pointer-events-none absolute -right-8 -top-8 h-44 w-44 rounded-full bg-brand-200/35 blur-3xl" />
-            <div className="relative mx-auto w-full max-w-[560px] overflow-hidden rounded-3xl border border-white/70 bg-white shadow-[0_24px_60px_-24px_rgba(15,23,42,0.4)] lg:mx-0 lg:w-[115%] lg:max-w-[644px]">
+            <div className="relative mx-auto w-full overflow-hidden rounded-3xl border border-white/70 bg-white shadow-[0_24px_60px_-24px_rgba(15,23,42,0.4)] lg:mx-0 lg:w-[110%] lg:max-w-none">
               <div className="aspect-[16/11]">
                 <Image
                   src="/images/recruito-hero-team.png"
