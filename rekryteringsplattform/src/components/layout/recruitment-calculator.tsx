@@ -178,7 +178,7 @@ export function RecruitmentCalculator() {
                                     Årslön
                                 </label>
                                 <span className="text-xs font-bold text-slate-700 tabular-nums">
-                                    {fmt(salary)} kr
+                                    €{fmt(salary)}
                                 </span>
                             </div>
                             <input
@@ -320,11 +320,11 @@ export function RecruitmentCalculator() {
                                 Rekryteringsavgift{hires > 1 ? ` (per st)` : ""}
                             </div>
                             <div className="text-lg font-black text-brand-700 leading-tight tabular-nums">
-                                {fmt(r.feePerHire)} <span className="text-xs font-bold">SEK</span>
+                                €{fmt(r.feePerHire)} <span className="text-xs font-bold">EUR</span>
                             </div>
                             {r.minFeeApplied && (
                                 <div className="text-[9px] text-brand-500 mt-0.5">
-                                    Minimiavgift 3 500 kr tillämpas
+                                    Minimiavgift €3 500 tillämpas
                                 </div>
                             )}
                         </div>
@@ -336,7 +336,7 @@ export function RecruitmentCalculator() {
                                     Total ({hires} st)
                                 </span>
                                 <span className="text-sm font-bold text-slate-700 tabular-nums">
-                                    {fmt(r.totalFee)} kr
+                                    €{fmt(r.totalFee)}
                                 </span>
                             </div>
                         )}
@@ -351,8 +351,8 @@ export function RecruitmentCalculator() {
                                     </span>
                                 </div>
                                 <div className="text-base font-black text-emerald-700 leading-tight tabular-nums">
-                                    {fmt(r.savings)}{" "}
-                                    <span className="text-xs font-bold">SEK</span>
+                                    €{fmt(r.savings)}{" "}
+                                    <span className="text-xs font-bold">EUR</span>
                                     <span className="text-[10px] font-semibold text-emerald-500 ml-1.5">
                                         ({Math.round(r.savingsPercent)}% lägre)
                                     </span>
@@ -376,8 +376,8 @@ export function RecruitmentCalculator() {
                                 <div className="flex-1 bg-slate-200 rounded-full" />
                             </div>
                             <div className="flex justify-between text-[9px] tabular-nums text-slate-500">
-                                <span>{fmt(r.totalFee)} kr</span>
-                                <span>{fmt(r.traditionalFee)} kr</span>
+                                <span>€{fmt(r.totalFee)}</span>
+                                <span>€{fmt(r.traditionalFee)}</span>
                             </div>
                         </div>
                     </div>
