@@ -146,12 +146,12 @@ export default function LandingPage() {
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link href="/register/company">
-                  <Button size="default" className="w-full sm:w-auto gap-2">
+                  <Button className="w-full sm:w-auto gap-2">
                     <Building2 className="h-4 w-4" /> {t("landing.ctaCompanyButton")}
                   </Button>
                 </Link>
                 <Link href="/register/recruiter">
-                  <Button size="default" variant="outline" className="w-full sm:w-auto gap-2 border-success-500 text-success-700 hover:bg-success-50">
+                  <Button variant="outline" className="w-full sm:w-auto gap-2 border-success-500 text-success-700 hover:bg-success-50">
                     <UserCircle className="h-4 w-4" /> {t("landing.ctaRecruiterButton")}
                   </Button>
                 </Link>
