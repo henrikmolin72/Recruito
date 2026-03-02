@@ -109,9 +109,14 @@ export async function createJob(formData: FormData) {
         // Description structured
         team_structure: d.team_structure,
         tools_technologies: d.tools_technologies,
+        management_required: d.management_required ?? false,
+        team_size: d.team_size,
+        reporting_to: d.reporting_to,
+        key_requirements: d.key_requirements,
+        language_requirements: d.language_requirements,
         position_type: d.position_type,
         open_positions: d.open_positions,
-        // Requirements
+        // Legacy requirement fields
         min_years_experience: d.min_years_experience,
         required_degree: d.required_degree,
         required_certifications: d.required_certifications,
@@ -137,6 +142,8 @@ export async function createJob(formData: FormData) {
         // Screening & hiring
         screening_questions: d.screening_questions,
         interview_type: d.interview_type,
+        num_interviews: d.num_interviews,
+        interview_conductors: d.interview_conductors,
         technical_test_required: d.technical_test_required,
         assessment_type: d.assessment_type,
         // Working conditions
@@ -226,6 +233,11 @@ export async function updateJob(jobId: string, formData: FormData) {
             visa_sponsorship: d.visa_sponsorship,
             team_structure: d.team_structure,
             tools_technologies: d.tools_technologies,
+            management_required: d.management_required ?? false,
+            team_size: d.team_size,
+            reporting_to: d.reporting_to,
+            key_requirements: d.key_requirements,
+            language_requirements: d.language_requirements,
             position_type: d.position_type,
             open_positions: d.open_positions,
             min_years_experience: d.min_years_experience,
@@ -249,6 +261,8 @@ export async function updateJob(jobId: string, formData: FormData) {
             recruiter_fee_manual: d.recruiter_fee_manual,
             screening_questions: d.screening_questions,
             interview_type: d.interview_type,
+            num_interviews: d.num_interviews,
+            interview_conductors: d.interview_conductors,
             technical_test_required: d.technical_test_required,
             assessment_type: d.assessment_type,
             working_hours: d.working_hours,

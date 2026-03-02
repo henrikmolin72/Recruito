@@ -70,6 +70,32 @@ export const INTERVIEW_TYPE_OPTIONS = [
   "both",
 ] as const;
 
+export const EUROPEAN_LANGUAGE_OPTIONS = [
+  "English",
+  "Swedish",
+  "Norwegian",
+  "Danish",
+  "Finnish",
+  "German",
+  "French",
+  "Spanish",
+  "Italian",
+  "Dutch",
+  "Polish",
+  "Portuguese",
+  "Czech",
+  "Romanian",
+  "Hungarian",
+  "Greek",
+  "Bulgarian",
+  "Croatian",
+  "Slovak",
+  "Slovenian",
+  "Lithuanian",
+  "Latvian",
+  "Estonian",
+] as const;
+
 export const SHIFT_WORK_OPTIONS = [
   "no",
   "yes",

@@ -233,11 +233,20 @@ const jobSchema = z
     visa_sponsorship: optionalBoolean,
 
     // Step 3 — Description & requirements
+    key_requirements: z.array(z.string().trim().max(500)).min(0).max(5).optional().default([]),
     description: requiredText("Beskrivning", 20, 10000),
     team_structure: optionalText(2000),
-    tools_technologies: optionalText(2000),
+    management_required: optionalBoolean,
+    team_size: optionalInteger(1, 1000),
+    reporting_to: optionalText(200),
     position_type: z.enum(["new", "replacement"]).nullable().optional(),
     open_positions: optionalInteger(1, 100),
+    language_requirements: z.array(z.object({
+      language: z.string().trim().min(1).max(80),
+      level: z.enum(["basic", "intermediate", "advanced", "fluent", "native"]),
+    })).max(3).optional().default([]),
+    // Legacy fields — kept for backwards compatibility (no longer shown in form)
+    tools_technologies: optionalText(2000),
     min_years_experience: optionalInteger(0, 50),
     required_degree: optionalText(200),
     required_certifications: optionalText(500),
@@ -260,12 +269,14 @@ const jobSchema = z
     fee_percentage: z.number().min(1).max(50).optional().default(15),
     max_recruiters: z.number().int().min(1, "Minst 1 rekryterare").max(10, "Max 10 rekryterare"),
     application_deadline: optionalText(20),
-    guarantee_period_months: optionalInteger(0, 2),
+    guarantee_period_months: optionalInteger(0, 3),
     recruiter_fee_manual: optionalInteger(2000, 10_000_000),
 
     // Step 6 — Screening & hiring process
     screening_questions: z.array(z.string().trim().max(500)).max(4).optional().default([]),
     interview_type: z.enum(["online", "onsite", "both"]).nullable().optional(),
+    num_interviews: optionalInteger(1, 4),
+    interview_conductors: optionalText(500),
     technical_test_required: optionalBoolean,
     assessment_type: optionalText(200),
 
@@ -311,11 +322,17 @@ export function validateJobForm(formData: FormData) {
     work_permit_accepted: toCheckboxBoolean(formData.get("work_permit_accepted")),
     visa_sponsorship: toCheckboxBoolean(formData.get("visa_sponsorship")),
     // Step 3
+    key_requirements: JSON.parse(toString(formData.get("key_requirements")) || "[]"),
     description: toString(formData.get("description")),
     team_structure: toString(formData.get("team_structure")),
-    tools_technologies: toString(formData.get("tools_technologies")),
+    management_required: toCheckboxBoolean(formData.get("management_required")),
+    team_size: toOptionalInt(formData.get("team_size")),
+    reporting_to: toString(formData.get("reporting_to")),
     position_type: toString(formData.get("position_type")) || null,
     open_positions: toOptionalInt(formData.get("open_positions")),
+    language_requirements: JSON.parse(toString(formData.get("language_requirements")) || "[]"),
+    // Legacy fields (no longer in form, send empty)
+    tools_technologies: toString(formData.get("tools_technologies")),
     min_years_experience: toOptionalInt(formData.get("min_years_experience")),
     required_degree: toString(formData.get("required_degree")),
     required_certifications: toString(formData.get("required_certifications")),
@@ -341,6 +358,8 @@ export function validateJobForm(formData: FormData) {
     // Step 6
     screening_questions: JSON.parse(toString(formData.get("screening_questions")) || "[]"),
     interview_type: toString(formData.get("interview_type")) || null,
+    num_interviews: toOptionalInt(formData.get("num_interviews")),
+    interview_conductors: toString(formData.get("interview_conductors")),
     technical_test_required: toCheckboxBoolean(formData.get("technical_test_required")),
     assessment_type: toString(formData.get("assessment_type")),
     // Step 7
