@@ -132,10 +132,20 @@ export interface Job {
     // Structured description
     team_structure: string | null;
     tools_technologies: string | null;
+    // Management structure
+    management_required: boolean | null;
+    team_size: number | null;
+    reporting_to: string | null;
+    // Key requirements
+    key_requirements: string[];
+    // Language requirements (multi)
+    language_requirements: { language: string; level: string }[] | null;
     // Screening
     screening_questions: string[];
     // Hiring process
     interview_type: string | null;
+    num_interviews: number | null;
+    interview_conductors: string | null;
     technical_test_required: boolean | null;
     assessment_type: string | null;
     // Working conditions

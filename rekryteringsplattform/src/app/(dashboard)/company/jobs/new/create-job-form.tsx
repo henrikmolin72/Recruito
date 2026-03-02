@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { PipelineBuilder } from "@/components/dashboard/company/pipeline-builder";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import type { PipelineStage } from "@/types/db-types";
+import { useTranslations } from "@/i18n/client";
 import {
     EMPLOYMENT_TYPE_OPTIONS,
     WORK_TYPE_OPTIONS,
@@ -24,69 +25,11 @@ import {
     BENEFITS_OPTIONS,
     POSITION_TYPE_OPTIONS,
     LANGUAGE_LEVEL_OPTIONS,
-    INTERVIEW_TYPE_OPTIONS,
     SHIFT_WORK_OPTIONS,
     URGENCY_LEVEL_OPTIONS,
     COUNTRY_OPTIONS,
+    EUROPEAN_LANGUAGE_OPTIONS,
 } from "@/lib/job-form-options";
-
-const STEPS = [
-    { id: 1, title: "Grunderna", description: "Titel, plats och företagsinfo" },
-    { id: 2, title: "Anställning", description: "Typ, arbetsform och tillstånd" },
-    { id: 3, title: "Rollen", description: "Beskrivning och krav" },
-    { id: 4, title: "Lön & Förmåner", description: "Ersättning och förmåner" },
-    { id: 5, title: "Rekrytering", description: "Arvode och process" },
-    { id: 6, title: "Screening", description: "Frågor och intervjutyp" },
-    { id: 7, title: "Villkor", description: "Arbetstider och tidplan" },
-    { id: 8, title: "Övrigt", description: "Resa, bakgrund och pipeline" },
-];
-
-const BENEFIT_LABELS: Record<string, string> = {
-    bonus: "Bonus",
-    meal_vouchers: "Friskvårdsbidrag",
-    health_insurance: "Sjukförsäkring",
-    pension: "Pension",
-    profit_sharing: "Vinstdelning",
-    stock_options: "Aktieoptioner",
-    relocation_package: "Relokationspaket",
-};
-
-const WORK_TYPE_LABELS: Record<string, string> = {
-    onsite: "På plats",
-    hybrid: "Hybrid",
-    remote: "Remote",
-};
-
-const REMOTE_TYPE_LABELS: Record<string, string> = {
-    local: "Lokalt (samma land)",
-    international: "Internationellt",
-};
-
-const SALARY_PERIOD_LABELS: Record<string, string> = {
-    monthly: "Månad",
-    yearly: "År",
-    hourly: "Timme",
-};
-
-const LANGUAGE_LEVEL_LABELS: Record<string, string> = {
-    basic: "Grundläggande",
-    intermediate: "Mellan",
-    advanced: "Avancerad",
-    fluent: "Flytande",
-    native: "Modersmål",
-};
-
-const INTERVIEW_TYPE_LABELS: Record<string, string> = {
-    online: "Online",
-    onsite: "På plats",
-    both: "Båda",
-};
-
-const SHIFT_WORK_LABELS: Record<string, string> = {
-    no: "Nej",
-    yes: "Ja",
-    rotating: "Roterande",
-};
 
 const selectClass = "flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-all font-medium";
 const labelClass = "text-sm font-semibold text-slate-700";
@@ -98,12 +41,73 @@ interface CreateJobFormProps {
     tierLabel: string;
 }
 
-export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) {
+interface LanguageRequirement {
+    language: string;
+    level: string;
+}
+
+export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     const router = useRouter();
+    const { t } = useTranslations();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>(DEFAULT_PIPELINE_STAGES);
     const [screeningQuestions, setScreeningQuestions] = useState<string[]>([""]);
+    const [keyRequirements, setKeyRequirements] = useState<string[]>([""]);
+    const [languageRequirements, setLanguageRequirements] = useState<LanguageRequirement[]>([]);
+
+    const STEPS = [
+        { id: 1, title: t("jobForm.step1Title"), description: t("jobForm.step1Desc") },
+        { id: 2, title: t("jobForm.step2Title"), description: t("jobForm.step2Desc") },
+        { id: 3, title: t("jobForm.step3Title"), description: t("jobForm.step3Desc") },
+        { id: 4, title: t("jobForm.step4Title"), description: t("jobForm.step4Desc") },
+        { id: 5, title: t("jobForm.step5Title"), description: t("jobForm.step5Desc") },
+        { id: 6, title: t("jobForm.step6Title"), description: t("jobForm.step6Desc") },
+        { id: 7, title: t("jobForm.step7Title"), description: t("jobForm.step7Desc") },
+        { id: 8, title: t("jobForm.step8Title"), description: t("jobForm.step8Desc") },
+    ];
+
+    const BENEFIT_LABELS: Record<string, string> = {
+        bonus: t("jobForm.benefitBonus"),
+        meal_vouchers: t("jobForm.benefitMealVouchers"),
+        health_insurance: t("jobForm.benefitHealthInsurance"),
+        pension: t("jobForm.benefitPension"),
+        profit_sharing: t("jobForm.benefitProfitSharing"),
+        stock_options: t("jobForm.benefitStockOptions"),
+        relocation_package: t("jobForm.benefitRelocation"),
+    };
+
+    const WORK_TYPE_LABELS: Record<string, string> = {
+        onsite: t("jobForm.workTypeOnsite"),
+        hybrid: t("jobForm.workTypeHybrid"),
+        remote: t("jobForm.workTypeRemote"),
+    };
+
+    const REMOTE_TYPE_LABELS: Record<string, string> = {
+        local: t("jobForm.remoteLocal"),
+        international: t("jobForm.remoteInternational"),
+    };
+
+    const SALARY_PERIOD_LABELS: Record<string, string> = {
+        monthly: t("jobForm.periodMonthly"),
+        yearly: t("jobForm.periodYearly"),
+        hourly: t("jobForm.periodHourly"),
+    };
+
+    const LANGUAGE_LEVEL_LABELS: Record<string, string> = {
+        basic: t("jobForm.levelBasic"),
+        intermediate: t("jobForm.levelIntermediate"),
+        advanced: t("jobForm.levelAdvanced"),
+        fluent: t("jobForm.levelFluent"),
+        native: t("jobForm.levelNative"),
+    };
+
+    const SHIFT_WORK_LABELS: Record<string, string> = {
+        no: t("jobForm.shiftNo"),
+        yes: t("jobForm.shiftYes"),
+        rotating: t("jobForm.shiftRotating"),
+    };
+
     const [formData, setFormData] = useState({
         // Step 1
         title: "",
@@ -122,17 +126,11 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
         visa_sponsorship: false,
         // Step 3
         description: "",
-        team_structure: "",
-        tools_technologies: "",
+        management_required: false,
+        team_size: "",
+        reporting_to: "",
         position_type: "",
         open_positions: "1",
-        min_years_experience: "",
-        required_degree: "",
-        required_certifications: "",
-        required_technical_skills: "",
-        required_industry_experience: "",
-        required_language: "",
-        required_language_level: "",
         // Step 4
         salary_min: "",
         salary_max: "",
@@ -143,12 +141,11 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
         benefits: [] as string[],
         benefits_other: "",
         // Step 5
-        max_recruiters: "5",
         application_deadline: "",
         guarantee_period_months: "",
-        recruiter_fee_manual: "",
         // Step 6
-        interview_type: "",
+        num_interviews: "",
+        interview_conductors: "",
         technical_test_required: false,
         assessment_type: "",
         // Step 7
@@ -183,18 +180,47 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
         }));
     };
 
+    // Screening questions
     const addScreeningQuestion = () => {
         if (screeningQuestions.length < 4) {
             setScreeningQuestions(prev => [...prev, ""]);
         }
     };
-
     const removeScreeningQuestion = (index: number) => {
         setScreeningQuestions(prev => prev.filter((_, i) => i !== index));
     };
-
     const updateScreeningQuestion = (index: number, value: string) => {
         setScreeningQuestions(prev => prev.map((q, i) => i === index ? value : q));
+    };
+
+    // Key requirements
+    const addKeyRequirement = () => {
+        if (keyRequirements.length < 5) {
+            setKeyRequirements(prev => [...prev, ""]);
+        }
+    };
+    const removeKeyRequirement = (index: number) => {
+        setKeyRequirements(prev => prev.filter((_, i) => i !== index));
+    };
+    const updateKeyRequirement = (index: number, value: string) => {
+        setKeyRequirements(prev => prev.map((r, i) => i === index ? value : r));
+    };
+
+    // Language requirements
+    const addLanguageRequirement = () => {
+        if (languageRequirements.length < 3) {
+            setLanguageRequirements(prev => [...prev, { language: "", level: "" }]);
+        }
+    };
+    const removeLanguageRequirement = (index: number) => {
+        setLanguageRequirements(prev => prev.filter((_, i) => i !== index));
+    };
+    const updateLanguageRequirement = (index: number, field: keyof LanguageRequirement, value: string) => {
+        setLanguageRequirements(prev => prev.map((lr, i) => i === index ? { ...lr, [field]: value } : lr));
+    };
+
+    const goToStep = (targetStep: number) => {
+        setStep(targetStep);
     };
 
     const nextStep = () => {
@@ -211,13 +237,17 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
 
         // Append all text/number fields
         for (const [key, value] of Object.entries(formData)) {
-            if (key === "benefits") continue; // handled separately
+            if (key === "benefits") continue;
             if (typeof value === "boolean") {
                 if (value) data.append(key, "on");
             } else {
                 data.append(key, String(value));
             }
         }
+
+        // Hidden defaults for internal fields not shown in form
+        data.append("fee_percentage", String(feePercentage));
+        data.append("max_recruiters", "5");
 
         // Append benefits array
         for (const b of formData.benefits) {
@@ -228,6 +258,14 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
         const filteredQuestions = screeningQuestions.filter(q => q.trim());
         data.append("screening_questions", JSON.stringify(filteredQuestions));
 
+        // Append key requirements
+        const filteredRequirements = keyRequirements.filter(r => r.trim());
+        data.append("key_requirements", JSON.stringify(filteredRequirements));
+
+        // Append language requirements
+        const filteredLanguages = languageRequirements.filter(lr => lr.language && lr.level);
+        data.append("language_requirements", JSON.stringify(filteredLanguages));
+
         // Append pipeline stages
         data.append("pipeline_stages", JSON.stringify(pipelineStages));
 
@@ -236,7 +274,7 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
             toast.error(result.error);
             setLoading(false);
         } else {
-            toast.success("Jobbet har publicerats!");
+            toast.success(t("jobForm.jobPublished"));
             router.push("/company/jobs");
         }
     }
@@ -252,19 +290,23 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Skapa nytt uppdrag</h1>
-                        <p className="text-sm text-muted-foreground">Följ stegen för att publicera din rekrytering</p>
+                        <h1 className="text-2xl font-bold tracking-tight">{t("jobForm.createTitle")}</h1>
+                        <p className="text-sm text-muted-foreground">{t("jobForm.createSubtitle")}</p>
                     </div>
                 </div>
             </div>
 
-            {/* Step Indicator — compact for 8 steps */}
+            {/* Step Indicator — clickable for navigation */}
             <div className="flex items-center justify-between px-1">
                 {STEPS.map((s, i) => (
                     <div key={s.id} className="flex items-center flex-1 last:flex-none">
-                        <div className="flex flex-col items-center gap-1.5">
+                        <button
+                            type="button"
+                            onClick={() => goToStep(s.id)}
+                            className="flex flex-col items-center gap-1.5 cursor-pointer group"
+                        >
                             <div className={cn(
-                                "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all shadow-sm",
+                                "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all shadow-sm group-hover:ring-2 group-hover:ring-brand-300",
                                 step >= s.id ? "bg-brand-600 text-white" : "bg-muted text-muted-foreground"
                             )}>
                                 {step > s.id ? <Check className="h-3.5 w-3.5" /> : s.id}
@@ -275,7 +317,7 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                             )}>
                                 {s.title}
                             </span>
-                        </div>
+                        </button>
                         {i < STEPS.length - 1 && (
                             <div className={cn(
                                 "h-[2px] flex-1 mx-2 rounded-full transition-all",
@@ -305,40 +347,40 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                             {step === 1 && (
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className={labelClass}>Jobbtitel *</label>
+                                        <label className={labelClass}>{t("jobForm.jobTitle")} *</label>
                                         <Input name="title" value={formData.title} onChange={handleInputChange}
-                                            placeholder="t.ex. Senior Fullstack Developer"
+                                            placeholder={t("jobForm.jobTitlePlaceholder")}
                                             className="h-12 border-slate-200 focus:border-brand-500 transition-all font-medium" required />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Land</label>
+                                            <label className={labelClass}>{t("jobForm.country")}</label>
                                             <select name="country" value={formData.country} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">Välj land</option>
+                                                <option value="">{t("jobForm.selectCountry")}</option>
                                                 {COUNTRY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Stad</label>
-                                            <Input name="city" value={formData.city} onChange={handleInputChange} placeholder="t.ex. Stockholm" />
+                                            <label className={labelClass}>{t("jobForm.city")}</label>
+                                            <Input name="city" value={formData.city} onChange={handleInputChange} placeholder={t("jobForm.cityPlaceholder")} />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Plats (fritext) *</label>
+                                            <label className={labelClass}>{t("jobForm.locationFreeText")} *</label>
                                             <Input name="location" value={formData.location} onChange={handleInputChange}
-                                                placeholder="t.ex. Stockholm / Remote" required />
+                                                placeholder={t("jobForm.locationPlaceholder")} required />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Bransch *</label>
+                                            <label className={labelClass}>{t("jobForm.industry")} *</label>
                                             <Input name="industry" value={formData.industry} onChange={handleInputChange}
-                                                placeholder="t.ex. IT & SaaS" required />
+                                                placeholder={t("jobForm.industryPlaceholder")} required />
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 pt-1">
                                         <input type="checkbox" name="is_confidential" id="is_confidential"
                                             checked={formData.is_confidential} onChange={handleInputChange} className={checkboxClass} />
-                                        <label htmlFor="is_confidential" className="text-sm text-slate-600">Konfidentiellt företag (dölj företagsnamn för rekryterare)</label>
+                                        <label htmlFor="is_confidential" className="text-sm text-slate-600">{t("jobForm.confidential")}</label>
                                     </div>
                                 </div>
                             )}
@@ -348,48 +390,48 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Anställningsform *</label>
+                                            <label className={labelClass}>{t("jobForm.employmentType")} *</label>
                                             <select name="employment_type" value={formData.employment_type} onChange={handleInputChange} className={selectClass}>
                                                 {EMPLOYMENT_TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                                             </select>
                                         </div>
                                         {(formData.employment_type === "Konsult") && (
                                             <div className="space-y-2">
-                                                <label className={labelClass}>Kontraktslängd</label>
+                                                <label className={labelClass}>{t("jobForm.contractDuration")}</label>
                                                 <Input name="contract_duration" value={formData.contract_duration} onChange={handleInputChange}
-                                                    placeholder="t.ex. 6 månader" />
+                                                    placeholder={t("jobForm.contractPlaceholder")} />
                                             </div>
                                         )}
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Arbetstyp</label>
+                                            <label className={labelClass}>{t("jobForm.workType")}</label>
                                             <select name="work_type" value={formData.work_type} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">Välj arbetstyp</option>
+                                                <option value="">{t("jobForm.selectWorkType")}</option>
                                                 {WORK_TYPE_OPTIONS.map(w => <option key={w} value={w}>{WORK_TYPE_LABELS[w]}</option>)}
                                             </select>
                                         </div>
                                         {formData.work_type === "remote" && (
                                             <div className="space-y-2">
-                                                <label className={labelClass}>Remote-typ</label>
+                                                <label className={labelClass}>{t("jobForm.remoteType")}</label>
                                                 <select name="remote_type" value={formData.remote_type} onChange={handleInputChange} className={selectClass}>
-                                                    <option value="">Välj</option>
+                                                    <option value="">{t("jobForm.selectRemoteType")}</option>
                                                     {REMOTE_TYPE_OPTIONS.map(r => <option key={r} value={r}>{REMOTE_TYPE_LABELS[r]}</option>)}
                                                 </select>
                                             </div>
                                         )}
                                     </div>
                                     <div className="space-y-3 pt-2">
-                                        <p className={labelClass}>Arbetstillstånd</p>
+                                        <p className={labelClass}>{t("jobForm.workPermits")}</p>
                                         <div className="flex items-center gap-3">
                                             <input type="checkbox" name="work_permit_accepted" id="work_permit_accepted"
                                                 checked={formData.work_permit_accepted} onChange={handleInputChange} className={checkboxClass} />
-                                            <label htmlFor="work_permit_accepted" className="text-sm text-slate-600">Accepterar kandidater som behöver arbetstillstånd</label>
+                                            <label htmlFor="work_permit_accepted" className="text-sm text-slate-600">{t("jobForm.acceptWorkPermit")}</label>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <input type="checkbox" name="visa_sponsorship" id="visa_sponsorship"
                                                 checked={formData.visa_sponsorship} onChange={handleInputChange} className={checkboxClass} />
-                                            <label htmlFor="visa_sponsorship" className="text-sm text-slate-600">Visumsponsorskap erbjuds</label>
+                                            <label htmlFor="visa_sponsorship" className="text-sm text-slate-600">{t("jobForm.visaSponsorship")}</label>
                                         </div>
                                     </div>
                                 </div>
@@ -398,84 +440,134 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                             {/* ===== STEP 3: DESCRIPTION & REQUIREMENTS ===== */}
                             {step === 3 && (
                                 <div className="space-y-4">
+                                    {/* Key Requirements — shown first */}
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className={labelClass}>{t("jobForm.keyRequirements")}</label>
+                                            <p className="text-xs text-muted-foreground mt-0.5">{t("jobForm.keyRequirementsHelp")}</p>
+                                        </div>
+                                        {keyRequirements.map((r, i) => (
+                                            <div key={i} className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-slate-400 w-5">{i + 1}.</span>
+                                                <Input value={r} onChange={(e) => updateKeyRequirement(i, e.target.value)}
+                                                    placeholder={`${t("jobForm.keyRequirementPlaceholder")} ${i + 1}`} className="flex-1" />
+                                                {keyRequirements.length > 1 && (
+                                                    <button type="button" onClick={() => removeKeyRequirement(i)}
+                                                        className="text-slate-400 hover:text-danger-500 transition-colors p-1">
+                                                        <X className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {keyRequirements.length < 5 && (
+                                            <button type="button" onClick={addKeyRequirement}
+                                                className="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors">
+                                                <Plus className="h-3.5 w-3.5" /> {t("jobForm.addRequirement")}
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Role description */}
                                     <div className="space-y-2">
-                                        <label className={labelClass}>Beskrivning av rollen *</label>
+                                        <label className={labelClass}>{t("jobForm.roleDescription")} *</label>
                                         <textarea name="description" value={formData.description} onChange={handleInputChange}
                                             className={cn(textareaClass, "min-h-[160px]")}
-                                            placeholder="Berätta om arbetsuppgifter, krav och vad ni erbjuder..." required />
+                                            placeholder={t("jobForm.roleDescPlaceholder")} required />
                                     </div>
+
+                                    {/* Management responsibility */}
+                                    <div className="space-y-3">
+                                        <label className={labelClass}>{t("jobForm.managementRequired")}</label>
+                                        <div className="flex gap-3">
+                                            <label className={cn(
+                                                "flex items-center gap-2 rounded-lg border px-4 py-2.5 cursor-pointer transition-all text-sm font-medium",
+                                                formData.management_required
+                                                    ? "border-brand-500 bg-brand-50 text-brand-700"
+                                                    : "border-slate-200 hover:bg-slate-50"
+                                            )}>
+                                                <input type="radio" name="mgmt_toggle" checked={formData.management_required}
+                                                    onChange={() => setFormData(prev => ({ ...prev, management_required: true }))}
+                                                    className="sr-only" />
+                                                {t("jobForm.managementYes")}
+                                            </label>
+                                            <label className={cn(
+                                                "flex items-center gap-2 rounded-lg border px-4 py-2.5 cursor-pointer transition-all text-sm font-medium",
+                                                !formData.management_required
+                                                    ? "border-brand-500 bg-brand-50 text-brand-700"
+                                                    : "border-slate-200 hover:bg-slate-50"
+                                            )}>
+                                                <input type="radio" name="mgmt_toggle" checked={!formData.management_required}
+                                                    onChange={() => setFormData(prev => ({ ...prev, management_required: false }))}
+                                                    className="sr-only" />
+                                                {t("jobForm.managementNo")}
+                                            </label>
+                                        </div>
+                                        {formData.management_required && (
+                                            <div className="grid grid-cols-2 gap-4 pl-1">
+                                                <div className="space-y-2">
+                                                    <label className={labelClass}>{t("jobForm.teamSize")}</label>
+                                                    <Input type="number" name="team_size" value={formData.team_size} onChange={handleInputChange}
+                                                        min="1" placeholder="e.g. 5" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className={labelClass}>{t("jobForm.reportingTo")}</label>
+                                                    <Input name="reporting_to" value={formData.reporting_to} onChange={handleInputChange}
+                                                        placeholder={t("jobForm.reportingToPlaceholder")} />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Position type & count */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Teamstruktur</label>
-                                            <textarea name="team_structure" value={formData.team_structure} onChange={handleInputChange}
-                                                className={cn(textareaClass, "min-h-[80px]")}
-                                                placeholder="Rapporterar till, teamstorlek..." />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>Verktyg / Teknologier</label>
-                                            <textarea name="tools_technologies" value={formData.tools_technologies} onChange={handleInputChange}
-                                                className={cn(textareaClass, "min-h-[80px]")}
-                                                placeholder="t.ex. React, Node.js, AWS..." />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>Typ av position</label>
+                                            <label className={labelClass}>{t("jobForm.positionType")}</label>
                                             <select name="position_type" value={formData.position_type} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">Välj</option>
-                                                {POSITION_TYPE_OPTIONS.map(p => (
-                                                    <option key={p} value={p}>{p === "new" ? "Ny tjänst" : "Ersättning"}</option>
-                                                ))}
+                                                <option value="">{t("jobForm.selectPositionType")}</option>
+                                                <option value="new">{t("jobForm.newPosition")}</option>
+                                                <option value="replacement">{t("jobForm.replacement")}</option>
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Antal öppna tjänster</label>
+                                            <label className={labelClass}>{t("jobForm.openPositions")}</label>
                                             <Input type="number" name="open_positions" value={formData.open_positions} onChange={handleInputChange}
                                                 min="1" max="100" />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>Min. erfarenhet (år)</label>
-                                            <Input type="number" name="min_years_experience" value={formData.min_years_experience} onChange={handleInputChange}
-                                                min="0" max="50" placeholder="t.ex. 3" />
-                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>Krav på utbildning</label>
-                                            <Input name="required_degree" value={formData.required_degree} onChange={handleInputChange}
-                                                placeholder="t.ex. Civilingenjör" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>Obligatoriska certifieringar</label>
-                                            <Input name="required_certifications" value={formData.required_certifications} onChange={handleInputChange}
-                                                placeholder="t.ex. AWS Certified, PMP" />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className={labelClass}>Tekniska krav</label>
-                                        <textarea name="required_technical_skills" value={formData.required_technical_skills} onChange={handleInputChange}
-                                            className={cn(textareaClass, "min-h-[60px]")}
-                                            placeholder="Lista de viktigaste tekniska kraven..." />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>Branscherfarenhet</label>
-                                            <Input name="required_industry_experience" value={formData.required_industry_experience} onChange={handleInputChange}
-                                                placeholder="t.ex. Fintech, SaaS" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>Språkkrav</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <Input name="required_language" value={formData.required_language} onChange={handleInputChange}
-                                                    placeholder="t.ex. Svenska" />
-                                                <select name="required_language_level" value={formData.required_language_level} onChange={handleInputChange} className={selectClass}>
-                                                    <option value="">Nivå</option>
+
+                                    {/* Language requirements — multi */}
+                                    <div className="space-y-3">
+                                        <label className={labelClass}>{t("jobForm.languageRequirements")}</label>
+                                        {languageRequirements.map((lr, i) => (
+                                            <div key={i} className="flex items-center gap-2">
+                                                <select value={lr.language}
+                                                    onChange={(e) => updateLanguageRequirement(i, "language", e.target.value)}
+                                                    className={cn(selectClass, "flex-1")}>
+                                                    <option value="">{t("jobForm.selectLanguage")}</option>
+                                                    {EUROPEAN_LANGUAGE_OPTIONS.map(lang => (
+                                                        <option key={lang} value={lang}>{lang}</option>
+                                                    ))}
+                                                </select>
+                                                <select value={lr.level}
+                                                    onChange={(e) => updateLanguageRequirement(i, "level", e.target.value)}
+                                                    className={cn(selectClass, "w-36")}>
+                                                    <option value="">{t("jobForm.selectLevel")}</option>
                                                     {LANGUAGE_LEVEL_OPTIONS.map(l => (
                                                         <option key={l} value={l}>{LANGUAGE_LEVEL_LABELS[l]}</option>
                                                     ))}
                                                 </select>
+                                                <button type="button" onClick={() => removeLanguageRequirement(i)}
+                                                    className="text-slate-400 hover:text-danger-500 transition-colors p-1">
+                                                    <X className="h-4 w-4" />
+                                                </button>
                                             </div>
-                                        </div>
+                                        ))}
+                                        {languageRequirements.length < 3 && (
+                                            <button type="button" onClick={addLanguageRequirement}
+                                                className="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors">
+                                                <Plus className="h-3.5 w-3.5" /> {t("jobForm.addLanguage")}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -484,37 +576,37 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                             {step === 4 && (
                                 <div className="space-y-5">
                                     <div className="space-y-2">
-                                        <label className={labelClass}>Lön (intervall)</label>
+                                        <label className={labelClass}>{t("jobForm.salaryRange")}</label>
                                         <div className="grid grid-cols-4 gap-2">
-                                            <Input type="number" name="salary_min" value={formData.salary_min} onChange={handleInputChange} placeholder="Från" />
-                                            <Input type="number" name="salary_max" value={formData.salary_max} onChange={handleInputChange} placeholder="Till" />
+                                            <Input type="number" name="salary_min" value={formData.salary_min} onChange={handleInputChange} placeholder={t("jobForm.salaryFrom")} />
+                                            <Input type="number" name="salary_max" value={formData.salary_max} onChange={handleInputChange} placeholder={t("jobForm.salaryTo")} />
                                             <select name="salary_currency" value={formData.salary_currency} onChange={handleInputChange} className={selectClass}>
                                                 {SALARY_CURRENCY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                             <select name="salary_gross_net" value={formData.salary_gross_net} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">Brutto/Netto</option>
-                                                <option value="gross">Brutto</option>
-                                                <option value="net">Netto</option>
+                                                <option value="">{t("jobForm.grossNet")}</option>
+                                                <option value="gross">{t("jobForm.gross")}</option>
+                                                <option value="net">{t("jobForm.net")}</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className={labelClass}>Löneperiod</label>
+                                        <label className={labelClass}>{t("jobForm.salaryPeriod")}</label>
                                         <select name="salary_period" value={formData.salary_period} onChange={handleInputChange} className={selectClass}>
-                                            <option value="">Välj period</option>
+                                            <option value="">{t("jobForm.selectPeriod")}</option>
                                             {SALARY_PERIOD_OPTIONS.map(p => (
                                                 <option key={p} value={p}>{SALARY_PERIOD_LABELS[p]}</option>
                                             ))}
                                         </select>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className={labelClass}>Bonusstruktur</label>
+                                        <label className={labelClass}>{t("jobForm.bonusStructure")}</label>
                                         <textarea name="bonus_structure" value={formData.bonus_structure} onChange={handleInputChange}
                                             className={cn(textareaClass, "min-h-[60px]")}
-                                            placeholder="Beskriv eventuell bonusstruktur..." />
+                                            placeholder={t("jobForm.bonusPlaceholder")} />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className={labelClass}>Förmåner</label>
+                                        <label className={labelClass}>{t("jobForm.benefits")}</label>
                                         <div className="grid grid-cols-2 gap-2">
                                             {BENEFITS_OPTIONS.map(b => (
                                                 <label key={b} className={cn(
@@ -531,51 +623,32 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className={labelClass}>Övriga förmåner</label>
+                                        <label className={labelClass}>{t("jobForm.otherBenefits")}</label>
                                         <Input name="benefits_other" value={formData.benefits_other} onChange={handleInputChange}
-                                            placeholder="t.ex. Tjänstebil, extra semester..." />
+                                            placeholder={t("jobForm.otherBenefitsPlaceholder")} />
                                     </div>
                                 </div>
                             )}
 
                             {/* ===== STEP 5: RECRUITMENT DETAILS ===== */}
+                            {/* Only show: Application deadline + Warranty period */}
                             {step === 5 && (
                                 <div className="space-y-5">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Max antal rekryterare *</label>
-                                            <Input type="number" name="max_recruiters" value={formData.max_recruiters} onChange={handleInputChange}
-                                                min="1" max="10" />
-                                            <p className="text-[10px] text-muted-foreground italic">Standard är 5 rekryterare per uppdrag</p>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>Arvode</label>
-                                            <div className="flex items-center h-11 px-4 rounded-xl border border-slate-200 bg-slate-50">
-                                                <span className="text-sm font-bold text-brand-600">{feePercentage}%</span>
-                                                <span className="ml-2 text-xs text-muted-foreground">({tierLabel})</span>
-                                            </div>
-                                            <p className="text-[10px] text-muted-foreground italic">Baseras på ert antal placeringar senaste 12 månader</p>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>Ansökningsdeadline</label>
+                                            <label className={labelClass}>{t("jobForm.applicationDeadline")}</label>
                                             <Input type="date" name="application_deadline" value={formData.application_deadline} onChange={handleInputChange} />
+                                            <p className="text-[10px] text-muted-foreground italic">{t("jobForm.deadlineHelp")}</p>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Garantiperiod (max 2 mån)</label>
+                                            <label className={labelClass}>{t("jobForm.warrantyPeriod")}</label>
                                             <select name="guarantee_period_months" value={formData.guarantee_period_months} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">Välj</option>
-                                                <option value="1">1 månad</option>
-                                                <option value="2">2 månader</option>
+                                                <option value="">{t("jobForm.selectWarranty")}</option>
+                                                <option value="1">{t("jobForm.month1")}</option>
+                                                <option value="2">{t("jobForm.months2")}</option>
+                                                <option value="3">{t("jobForm.months3")}</option>
                                             </select>
                                         </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className={labelClass}>Manuellt arvode (EUR, min 2 000)</label>
-                                        <Input type="number" name="recruiter_fee_manual" value={formData.recruiter_fee_manual} onChange={handleInputChange}
-                                            placeholder="Lämna tomt för automatisk beräkning" min="2000" />
-                                        <p className="text-[10px] text-muted-foreground italic">Hanteras av Recruito. Lämna tomt om standardarvode ska gälla.</p>
                                     </div>
                                 </div>
                             )}
@@ -584,12 +657,12 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                             {step === 6 && (
                                 <div className="space-y-5">
                                     <div className="space-y-3">
-                                        <label className={labelClass}>Screeningfrågor (max 4)</label>
+                                        <label className={labelClass}>{t("jobForm.screeningQuestions")}</label>
                                         {screeningQuestions.map((q, i) => (
                                             <div key={i} className="flex items-center gap-2">
                                                 <span className="text-xs font-bold text-slate-400 w-5">{i + 1}.</span>
                                                 <Input value={q} onChange={(e) => updateScreeningQuestion(i, e.target.value)}
-                                                    placeholder={`Fråga ${i + 1}`} className="flex-1" />
+                                                    placeholder={`${t("jobForm.questionPlaceholder")} ${i + 1}`} className="flex-1" />
                                                 {screeningQuestions.length > 1 && (
                                                     <button type="button" onClick={() => removeScreeningQuestion(i)}
                                                         className="text-slate-400 hover:text-danger-500 transition-colors p-1">
@@ -601,30 +674,38 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                                         {screeningQuestions.length < 4 && (
                                             <button type="button" onClick={addScreeningQuestion}
                                                 className="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors">
-                                                <Plus className="h-3.5 w-3.5" /> Lägg till fråga
+                                                <Plus className="h-3.5 w-3.5" /> {t("jobForm.addQuestion")}
                                             </button>
                                         )}
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Intervjutyp</label>
-                                            <select name="interview_type" value={formData.interview_type} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">Välj</option>
-                                                {INTERVIEW_TYPE_OPTIONS.map(t => (
-                                                    <option key={t} value={t}>{INTERVIEW_TYPE_LABELS[t]}</option>
-                                                ))}
+                                            <label className={labelClass}>{t("jobForm.numInterviews")}</label>
+                                            <select name="num_interviews" value={formData.num_interviews} onChange={handleInputChange} className={selectClass}>
+                                                <option value="">{t("jobForm.selectNumInterviews")}</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Bedömningstyp</label>
+                                            <label className={labelClass}>{t("jobForm.interviewConductor")}</label>
+                                            <Input name="interview_conductors" value={formData.interview_conductors} onChange={handleInputChange}
+                                                placeholder={t("jobForm.interviewConductorPlaceholder")} />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className={labelClass}>{t("jobForm.assessmentType")}</label>
                                             <Input name="assessment_type" value={formData.assessment_type} onChange={handleInputChange}
-                                                placeholder="t.ex. Case-studie, kodtest" />
+                                                placeholder={t("jobForm.assessmentPlaceholder")} />
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <input type="checkbox" name="technical_test_required" id="technical_test_required"
                                             checked={formData.technical_test_required} onChange={handleInputChange} className={checkboxClass} />
-                                        <label htmlFor="technical_test_required" className="text-sm text-slate-600">Tekniskt test krävs</label>
+                                        <label htmlFor="technical_test_required" className="text-sm text-slate-600">{t("jobForm.technicalTestRequired")}</label>
                                     </div>
                                 </div>
                             )}
@@ -634,14 +715,14 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Arbetstider</label>
+                                            <label className={labelClass}>{t("jobForm.workingHours")}</label>
                                             <Input name="working_hours" value={formData.working_hours} onChange={handleInputChange}
-                                                placeholder="t.ex. 09:00–18:00" />
+                                                placeholder={t("jobForm.workingHoursPlaceholder")} />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Skiftarbete</label>
+                                            <label className={labelClass}>{t("jobForm.shiftWork")}</label>
                                             <select name="shift_work" value={formData.shift_work} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">Välj</option>
+                                                <option value="">{t("jobForm.selectShiftWork")}</option>
                                                 {SHIFT_WORK_OPTIONS.map(s => (
                                                     <option key={s} value={s}>{SHIFT_WORK_LABELS[s]}</option>
                                                 ))}
@@ -650,33 +731,33 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                                     </div>
                                     {(formData.shift_work === "yes" || formData.shift_work === "rotating") && (
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Skifttider</label>
+                                            <label className={labelClass}>{t("jobForm.shiftTimings")}</label>
                                             <Input name="shift_timings" value={formData.shift_timings} onChange={handleInputChange}
-                                                placeholder="t.ex. Dag 06–14, Kväll 14–22" />
+                                                placeholder={t("jobForm.shiftTimingsPlaceholder")} />
                                         </div>
                                     )}
                                     <div className="flex items-center gap-3">
                                         <input type="checkbox" name="flexible_hours" id="flexible_hours"
                                             checked={formData.flexible_hours} onChange={handleInputChange} className={checkboxClass} />
-                                        <label htmlFor="flexible_hours" className="text-sm text-slate-600">Flexibla arbetstider</label>
+                                        <label htmlFor="flexible_hours" className="text-sm text-slate-600">{t("jobForm.flexibleHours")}</label>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className={labelClass}>Övertidspolicy</label>
+                                        <label className={labelClass}>{t("jobForm.overtimePolicy")}</label>
                                         <Input name="overtime_policy" value={formData.overtime_policy} onChange={handleInputChange}
-                                            placeholder="t.ex. Övertid kompenseras med flextid" />
+                                            placeholder={t("jobForm.overtimePlaceholder")} />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4 pt-2">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Önskat startdatum</label>
+                                            <label className={labelClass}>{t("jobForm.desiredStartDate")}</label>
                                             <Input type="date" name="desired_start_date" value={formData.desired_start_date} onChange={handleInputChange} />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className={labelClass}>Prioritetsnivå</label>
+                                            <label className={labelClass}>{t("jobForm.priorityLevel")}</label>
                                             <select name="urgency_level" value={formData.urgency_level} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">Välj</option>
-                                                {URGENCY_LEVEL_OPTIONS.map(u => (
-                                                    <option key={u.value} value={u.value}>{u.label}</option>
-                                                ))}
+                                                <option value="">{t("jobForm.selectPriority")}</option>
+                                                <option value="1">{t("jobForm.priority1")}</option>
+                                                <option value="2">{t("jobForm.priority2")}</option>
+                                                <option value="3">{t("jobForm.priority3")}</option>
                                             </select>
                                         </div>
                                     </div>
@@ -687,23 +768,21 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                             {step === 8 && (
                                 <div className="space-y-5">
                                     <div className="space-y-3">
-                                        <p className={labelClass}>Övrig information</p>
+                                        <p className={labelClass}>{t("jobForm.otherInfo")}</p>
                                         <div className="flex items-center gap-3">
                                             <input type="checkbox" name="travel_required" id="travel_required"
                                                 checked={formData.travel_required} onChange={handleInputChange} className={checkboxClass} />
-                                            <label htmlFor="travel_required" className="text-sm text-slate-600">Resor krävs i tjänsten</label>
+                                            <label htmlFor="travel_required" className="text-sm text-slate-600">{t("jobForm.travelRequired")}</label>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <input type="checkbox" name="background_check_required" id="background_check_required"
                                                 checked={formData.background_check_required} onChange={handleInputChange} className={checkboxClass} />
-                                            <label htmlFor="background_check_required" className="text-sm text-slate-600">Bakgrundskontroll krävs</label>
+                                            <label htmlFor="background_check_required" className="text-sm text-slate-600">{t("jobForm.backgroundCheck")}</label>
                                         </div>
                                     </div>
                                     <div className="space-y-3 pt-2 border-t border-slate-100">
-                                        <label className={labelClass}>Rekryteringsprocess (Pipeline)</label>
-                                        <p className="text-sm text-slate-500">
-                                            Dra och släpp för att ändra ordning. Lägg till intervjuer och tester efter behov.
-                                        </p>
+                                        <label className={labelClass}>{t("jobForm.pipeline")}</label>
+                                        <p className="text-sm text-slate-500">{t("jobForm.pipelineHelp")}</p>
                                         <PipelineBuilder stages={pipelineStages} onChange={setPipelineStages} />
                                     </div>
                                 </div>
@@ -711,25 +790,29 @@ export function CreateJobForm({ feePercentage, tierLabel }: CreateJobFormProps) 
                         </motion.div>
                     </AnimatePresence>
 
-                    {/* Navigation */}
+                    {/* Navigation — always shows Publish button */}
                     <div className="flex justify-between items-center pt-8 mt-6 border-t border-slate-100">
                         <Button variant="ghost" onClick={prevStep} disabled={step === 1} className="gap-2">
-                            <ChevronLeft className="h-4 w-4" /> Föregående
+                            <ChevronLeft className="h-4 w-4" /> {t("jobForm.previous")}
                         </Button>
 
-                        {step < 8 ? (
-                            <Button onClick={nextStep}
-                                className="bg-brand-600 hover:bg-brand-700 text-white gap-2 px-6 shadow-md shadow-brand-500/20"
-                                disabled={step === 1 && !formData.title}>
-                                Nästa steg <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        ) : (
+                        <div className="flex items-center gap-3">
+                            {step < 8 && (
+                                <Button onClick={nextStep}
+                                    className="bg-brand-600 hover:bg-brand-700 text-white gap-2 px-6 shadow-md shadow-brand-500/20"
+                                    disabled={step === 1 && !formData.title}>
+                                    {t("jobForm.nextStep")} <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            )}
                             <Button onClick={handleSubmit} disabled={loading}
-                                className="bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20">
-                                {loading ? "Publicerar..." : "Slutför och publicera"}
+                                className={cn(
+                                    "bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20",
+                                    step < 8 && "bg-success-600/80"
+                                )}>
+                                {loading ? t("jobForm.publishing") : t("jobForm.completeAndPublish")}
                                 <Sparkles className="h-4 w-4 fill-current" />
                             </Button>
-                        )}
+                        </div>
                     </div>
                 </CardContent>
             </Card>
