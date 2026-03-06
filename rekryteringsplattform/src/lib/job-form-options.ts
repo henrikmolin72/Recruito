@@ -3,11 +3,11 @@
 // =============================================
 
 export const EMPLOYMENT_TYPE_OPTIONS = [
-  "Heltid",
-  "Deltid",
-  "Konsult",
-  "Frilans",
-  "Praktik",
+  "Full-time",
+  "Part-time",
+  "Consultant",
+  "Freelance",
+  "Internship",
 ] as const;
 
 export const WORK_TYPE_OPTIONS = [
@@ -103,31 +103,57 @@ export const SHIFT_WORK_OPTIONS = [
 ] as const;
 
 export const URGENCY_LEVEL_OPTIONS = [
-  { value: 1, label: "Nivå 1 – Flexibel" },
-  { value: 2, label: "Nivå 2 – Prioriterad" },
-  { value: 3, label: "Nivå 3 – Kritisk" },
+  { value: 1, label: "Level 1 – Flexible" },
+  { value: 2, label: "Level 2 – Prioritized" },
+  { value: 3, label: "Level 3 – Critical" },
 ] as const;
 
 export const COUNTRY_OPTIONS = [
-  "Sverige",
-  "Norge",
-  "Danmark",
+  "Sweden",
+  "Norway",
+  "Denmark",
   "Finland",
-  "Tyskland",
-  "Nederländerna",
-  "Storbritannien",
-  "Irland",
-  "Frankrike",
-  "Spanien",
-  "Italien",
-  "Polen",
+  "Germany",
+  "Netherlands",
+  "United Kingdom",
+  "Ireland",
+  "France",
+  "Spain",
+  "Italy",
+  "Poland",
   "USA",
-  "Kanada",
-  "Förenade Arabemiraten",
-  "Saudiarabien",
-  "Indien",
+  "Canada",
+  "United Arab Emirates",
+  "Saudi Arabia",
+  "India",
   "Singapore",
-  "Australien",
-  "Sydafrika",
-  "Övrigt",
+  "Australia",
+  "South Africa",
+  "Other",
+] as const;
+
+export const INDUSTRY_OPTIONS = [
+  "IT & Software",
+  "Finance & Banking",
+  "Healthcare & Life Sciences",
+  "Manufacturing",
+  "Retail & E-commerce",
+  "Energy & Utilities",
+  "Telecommunications",
+  "Construction & Real Estate",
+  "Education",
+  "Consulting & Professional Services",
+  "Logistics & Transportation",
+  "Media & Entertainment",
+  "Government & Public Sector",
+  "Automotive",
+  "Hospitality & Tourism",
+  "Legal",
+  "Agriculture & Food",
+  "Other",
+] as const;
+
+export const JOB_POST_TYPE_OPTIONS = [
+  { value: "exclusive", label: "Exclusive – on Recruito only", discount: 10 },
+  { value: "standard", label: "Standard – posting on multiple sites", discount: 0 },
 ] as const;

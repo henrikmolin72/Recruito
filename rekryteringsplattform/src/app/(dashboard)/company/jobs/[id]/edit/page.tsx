@@ -381,10 +381,6 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                                 <input type="checkbox" name="travel_required" id="edit_travel" defaultChecked={job.travel_required ?? false} />
                                 <label htmlFor="edit_travel" className="text-sm">Resor krävs</label>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <input type="checkbox" name="background_check_required" id="edit_bg" defaultChecked={job.background_check_required ?? false} />
-                                <label htmlFor="edit_bg" className="text-sm">Bakgrundskontroll krävs</label>
-                            </div>
                         </div>
 
                         <div className="flex justify-end gap-3 pt-4">
