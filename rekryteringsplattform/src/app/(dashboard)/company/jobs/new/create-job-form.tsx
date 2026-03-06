@@ -828,11 +828,6 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                                     <label htmlFor="travel_required" className="text-sm text-slate-600">{t("jobForm.travelRequired")}</label>
                                                 </div>
                                             </div>
-                                            <div className="space-y-3 pt-2 border-t border-slate-100">
-                                                <label className={labelClass}>{t("jobForm.pipeline")}</label>
-                                                <p className="text-sm text-slate-500">{t("jobForm.pipelineHelp")}</p>
-                                                <PipelineBuilder stages={pipelineStages} onChange={setPipelineStages} />
-                                            </div>
                                         </div>
                                     )}
                                 </motion.div>
@@ -872,14 +867,16 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                             {t("jobForm.nextStep")} <ChevronRight className="h-4 w-4" />
                                         </Button>
                                     )}
-                                    <Button onClick={handleSubmit} disabled={loading || !feeConfirmed}
-                                        className={cn(
-                                            "bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20",
-                                            step < 9 && "bg-success-600/80"
-                                        )}>
-                                        {loading ? t("jobForm.publishing") : t("jobForm.completeAndPublish")}
-                                        <Sparkles className="h-4 w-4 fill-current" />
-                                    </Button>
+                                    <div className={cn("group", step < 9 && "relative")}>
+                                        <Button onClick={handleSubmit} disabled={loading || !feeConfirmed}
+                                            className={cn(
+                                                "bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20 transition-opacity duration-200",
+                                                step < 9 && "opacity-0 group-hover:opacity-100"
+                                            )}>
+                                            {loading ? t("jobForm.publishing") : t("jobForm.completeAndPublish")}
+                                            <Sparkles className="h-4 w-4 fill-current" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
