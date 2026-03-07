@@ -1004,6 +1004,7 @@
     "applicationDeadline": "Ansökningsdeadline",
     "deadlineHelp": "1 månad rekommenderas från publiceringsdatum",
     "warrantyPeriod": "Garantiperiod",
+    "warrantyAutoSelected": "Automatiskt vald från avgiftskalkylatorn",
     "selectWarranty": "Välj",
     "month1": "1 månad",
     "months2": "2 månader",

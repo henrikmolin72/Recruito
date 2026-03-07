@@ -1004,6 +1004,7 @@
     "applicationDeadline": "Søknadsfrist",
     "deadlineHelp": "1 måned anbefales fra publiseringsdato",
     "warrantyPeriod": "Garantiperiode",
+    "warrantyAutoSelected": "Automatisk valgt fra gebyrkalkulatoren",
     "selectWarranty": "Velg",
     "month1": "1 måned",
     "months2": "2 måneder",

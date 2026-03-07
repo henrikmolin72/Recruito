@@ -8,6 +8,7 @@ export const EMPLOYMENT_TYPE_OPTIONS = [
   "Consultant",
   "Freelance",
   "Internship",
+  "Fix Term Contract",
 ] as const;
 
 export const WORK_TYPE_OPTIONS = [

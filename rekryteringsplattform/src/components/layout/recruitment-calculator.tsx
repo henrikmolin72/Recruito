@@ -188,9 +188,11 @@ interface RecruitmentCalculatorProps {
     embedded?: boolean;
     /** Callback to parent with current estimated fee */
     onFeeChange?: (fee: number) => void;
+    /** Callback to parent with selected guarantee months */
+    onGuaranteeChange?: (months: number) => void;
 }
 
-export function RecruitmentCalculator({ embedded = false, onFeeChange }: RecruitmentCalculatorProps) {
+export function RecruitmentCalculator({ embedded = false, onFeeChange, onGuaranteeChange }: RecruitmentCalculatorProps) {
     const [salary, setSalary] = useState(400_000);
     const [levelIdx, setLevelIdx] = useState(2); // Assistant
     const [functionIdx, setFunctionIdx] = useState(1); // Business Dev
@@ -201,8 +203,9 @@ export function RecruitmentCalculator({ embedded = false, onFeeChange }: Recruit
     const r = useMemo(() => {
         const result = calculate(salary, levelIdx, functionIdx, industryIdx, guaranteeIdx, isExclusive);
         onFeeChange?.(result.feePerHire);
+        onGuaranteeChange?.(GUARANTEE_OPTIONS[guaranteeIdx].months);
         return result;
-    }, [salary, levelIdx, functionIdx, industryIdx, guaranteeIdx, isExclusive, onFeeChange]);
+    }, [salary, levelIdx, functionIdx, industryIdx, guaranteeIdx, isExclusive, onFeeChange, onGuaranteeChange]);
 
     const inputLabel = "text-[10px] font-bold uppercase tracking-wider text-slate-500";
     const selectStyle = "w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-500";

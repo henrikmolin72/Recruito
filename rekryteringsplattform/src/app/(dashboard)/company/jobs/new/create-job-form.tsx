@@ -67,6 +67,10 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         setEstimatedFee(fee);
     }, []);
 
+    const handleGuaranteeChange = useCallback((months: number) => {
+        setFormData(prev => ({ ...prev, guarantee_period_months: months === 0 ? "" : String(months) }));
+    }, []);
+
     const STEPS = [
         { id: 1, title: t("jobForm.calcTitle"), icon: "calc" },
         { id: 2, title: t("jobForm.step1Title"), icon: "1" },
@@ -393,7 +397,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                 >
                                     {/* ===== STEP 1: RECRUITMENT FEE CALCULATOR ===== */}
                                     {step === 1 && (
-                                        <RecruitmentCalculator embedded onFeeChange={handleFeeChange} />
+                                        <RecruitmentCalculator embedded onFeeChange={handleFeeChange} onGuaranteeChange={handleGuaranteeChange} />
                                     )}
 
                                     {/* ===== STEP 2: BASICS ===== */}
@@ -694,11 +698,12 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className={labelClass}>{t("jobForm.warrantyPeriod")}</label>
-                                                    <select name="guarantee_period_months" value={formData.guarantee_period_months} onChange={handleInputChange} className={selectClass}>
+                                                    <select name="guarantee_period_months" value={formData.guarantee_period_months} disabled className={cn(selectClass, "bg-slate-50 text-slate-500 cursor-not-allowed")}>
                                                         <option value="">{t("jobForm.selectWarranty")}</option>
                                                         <option value="1">{t("jobForm.month1")}</option>
                                                         <option value="2">{t("jobForm.months2")}</option>
                                                     </select>
+                                                    <p className="text-[10px] text-muted-foreground italic">{t("jobForm.warrantyAutoSelected")}</p>
                                                 </div>
                                             </div>
                                         </div>

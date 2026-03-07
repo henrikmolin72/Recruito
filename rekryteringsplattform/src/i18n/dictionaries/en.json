@@ -1004,6 +1004,7 @@
     "applicationDeadline": "Application deadline",
     "deadlineHelp": "1 month recommended from publishing date",
     "warrantyPeriod": "Warranty period",
+    "warrantyAutoSelected": "Auto-selected from Fee Calculator",
     "selectWarranty": "Select",
     "month1": "1 month",
     "months2": "2 months",
