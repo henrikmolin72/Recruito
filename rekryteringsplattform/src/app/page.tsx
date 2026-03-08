@@ -425,9 +425,8 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold mb-3">{t("landing.footerLegal")}</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/anvandarvillkor" className="hover:text-foreground">{t("landing.footerTerms")}</Link></li>
-                <li><Link href="/integritetspolicy" className="hover:text-foreground">{t("landing.footerPrivacy")}</Link></li>
-                <li><Link href="/gdpr" className="hover:text-foreground">{t("landing.footerGdpr")}</Link></li>
+                <li><Link href="/policy-pack" className="hover:text-foreground">{t("landing.footerPolicyPack")}</Link></li>
+                <li><Link href="/privacy-policy" className="hover:text-foreground">{t("landing.footerPrivacyCookie")}</Link></li>
               </ul>
             </div>
           </div>

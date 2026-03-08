@@ -287,7 +287,9 @@
     "footerLegal": "Juridik",
     "footerTerms": "Användarvillkor",
     "footerPrivacy": "Integritetspolicy",
-    "footerGdpr": "GDPR"
+    "footerGdpr": "GDPR",
+    "footerPolicyPack": "Policy Pack",
+    "footerPrivacyCookie": "Privacy & Cookie Policy"
   },
   "company": {
     "dashboardTitle": "Dashboard",

@@ -287,7 +287,9 @@
     "footerLegal": "Legal",
     "footerTerms": "Terms of Service",
     "footerPrivacy": "Privacy Policy",
-    "footerGdpr": "GDPR"
+    "footerGdpr": "GDPR",
+    "footerPolicyPack": "Policy Pack",
+    "footerPrivacyCookie": "Privacy & Cookie Policy"
   },
   "company": {
     "dashboardTitle": "Dashboard",
