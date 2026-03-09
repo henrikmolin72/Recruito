@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { createNotification } from "@/lib/actions/notifications";
 
 async function requireAdmin() {
     const supabase = await createClient();
@@ -95,6 +96,12 @@ export async function approveRecruiter(recruiterId: string) {
     const { user } = await requireAdmin();
     const supabaseAdmin = createAdminClient();
 
+    const { data: recruiter } = await supabaseAdmin
+        .from("recruiters")
+        .select("user_id")
+        .eq("id", recruiterId)
+        .single();
+
     const { error } = await supabaseAdmin
         .from("recruiters")
         .update({
@@ -105,6 +112,15 @@ export async function approveRecruiter(recruiterId: string) {
         .eq("id", recruiterId);
 
     if (error) return { error: error.message };
+
+    if (recruiter?.user_id) {
+        await createNotification(
+            recruiter.user_id,
+            "Din profil har godkänts!",
+            "Grattis! Din rekryterarprofil har godkänts. Du kan nu ta uppdrag och presentera kandidater.",
+            "/recruiter/jobs"
+        );
+    }
 
     revalidatePath("/admin");
     revalidatePath("/admin/recruiters");
@@ -118,6 +134,12 @@ export async function rejectRecruiter(recruiterId: string) {
     await requireAdmin();
     const supabaseAdmin = createAdminClient();
 
+    const { data: recruiter } = await supabaseAdmin
+        .from("recruiters")
+        .select("user_id")
+        .eq("id", recruiterId)
+        .single();
+
     const { error } = await supabaseAdmin
         .from("recruiters")
         .update({
@@ -129,6 +151,15 @@ export async function rejectRecruiter(recruiterId: string) {
 
     if (error) return { error: error.message };
 
+    if (recruiter?.user_id) {
+        await createNotification(
+            recruiter.user_id,
+            "Din ansökan har avslagits",
+            "Tyvärr har din rekryterarprofil avslagits. Kontakta oss om du har frågor.",
+            "/recruiter/profile"
+        );
+    }
+
     revalidatePath("/admin");
     revalidatePath("/admin/recruiters");
     revalidatePath("/recruiter/profile");
@@ -138,6 +169,12 @@ export async function rejectRecruiter(recruiterId: string) {
 export async function suspendRecruiter(recruiterId: string) {
     await requireAdmin();
     const supabaseAdmin = createAdminClient();
+
+    const { data: recruiter } = await supabaseAdmin
+        .from("recruiters")
+        .select("user_id")
+        .eq("id", recruiterId)
+        .single();
 
     const { error } = await supabaseAdmin
         .from("recruiters")
@@ -149,6 +186,15 @@ export async function suspendRecruiter(recruiterId: string) {
         .eq("id", recruiterId);
 
     if (error) return { error: error.message };
+
+    if (recruiter?.user_id) {
+        await createNotification(
+            recruiter.user_id,
+            "Ditt konto har suspenderats",
+            "Ditt rekryterarkonto har suspenderats. Kontakta oss för mer information.",
+            "/recruiter/profile"
+        );
+    }
 
     revalidatePath("/admin/recruiters");
     revalidatePath("/recruiter/profile");

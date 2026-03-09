@@ -246,13 +246,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         if (step > 1) setStep(step - 1);
     };
 
-    async function handleSubmit() {
-        if (!feeConfirmed) {
-            toast.error("Please confirm the fee review checkbox before publishing.");
-            return;
-        }
-
-        setLoading(true);
+    function buildFormData(asDraft: boolean) {
         const data = new FormData();
 
         // Append all text/number fields
@@ -289,12 +283,47 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         // Append pipeline stages
         data.append("pipeline_stages", JSON.stringify(pipelineStages));
 
+        if (asDraft) {
+            data.append("_save_as_draft", "true");
+        }
+
+        return data;
+    }
+
+    async function handleSubmit() {
+        if (!feeConfirmed) {
+            toast.error("Please confirm the fee review checkbox before publishing.");
+            return;
+        }
+
+        setLoading(true);
+        const data = buildFormData(false);
+
         const result = await createJob(data);
         if (result?.error) {
             toast.error(result.error);
             setLoading(false);
         } else {
             toast.success(t("jobForm.jobPublished"));
+            router.push("/company/jobs");
+        }
+    }
+
+    async function handleSaveDraft() {
+        if (!formData.title?.trim()) {
+            toast.error(t("jobForm.titleRequired") || "Titel krävs för att spara utkast");
+            return;
+        }
+
+        setLoading(true);
+        const data = buildFormData(true);
+
+        const result = await createJob(data);
+        if (result?.error) {
+            toast.error(result.error);
+            setLoading(false);
+        } else {
+            toast.success(t("jobForm.draftSaved") || "Utkast sparat");
             router.push("/company/jobs");
         }
     }
@@ -865,6 +894,10 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                 </Button>
 
                                 <div className="flex items-center gap-3">
+                                    <Button variant="outline" onClick={handleSaveDraft} disabled={loading || !formData.title?.trim()}
+                                        className="gap-2 px-5 text-slate-600 border-slate-300 hover:bg-slate-50">
+                                        {loading ? (t("jobForm.saving") || "Sparar...") : (t("jobForm.saveDraft") || "Spara utkast")}
+                                    </Button>
                                     {step < 9 && (
                                         <Button onClick={nextStep}
                                             className="bg-brand-600 hover:bg-brand-700 text-white gap-2 px-6 shadow-md shadow-brand-500/20"

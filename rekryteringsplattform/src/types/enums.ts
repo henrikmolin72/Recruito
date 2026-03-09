@@ -88,3 +88,24 @@ export const DEFAULT_PIPELINE_STAGES = [
     { id: 'screening', type: 'screening' as const, title: 'Screening', order: 0 },
     { id: 'interview-1', type: 'interview' as const, title: 'Intervju 1', order: 1 },
 ];
+
+// ── Job status transition map ──
+// Defines which status transitions are valid for jobs
+export const JOB_STATUS_TRANSITIONS: Record<string, string[]> = {
+    draft: ["active", "cancelled"],
+    active: ["paused", "filled", "closed", "cancelled"],
+    paused: ["active", "closed", "cancelled"],
+    filled: ["closed"],
+    closed: [],
+    cancelled: [],
+};
+
+export function canTransitionJobStatus(currentStatus: string, nextStatus: string): boolean {
+    const allowed = JOB_STATUS_TRANSITIONS[currentStatus];
+    if (!allowed) return false;
+    return allowed.includes(nextStatus);
+}
+
+export function getAllowedJobTransitions(currentStatus: string): string[] {
+    return JOB_STATUS_TRANSITIONS[currentStatus] || [];
+}
