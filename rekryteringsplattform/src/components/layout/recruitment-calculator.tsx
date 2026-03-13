@@ -356,34 +356,34 @@ export function RecruitmentCalculator({ embedded = false, onFeeChange, onGuarant
                             Calculation
                         </span>
                         <div className="rounded-lg bg-slate-50 border border-slate-100 p-2 space-y-0.5 text-[10px] tabular-nums">
-                            <div className="flex justify-between text-slate-500">
-                                <span>Base commission</span>
-                                <span className="font-semibold">{fmt(r.baseCommission, 2)}%</span>
+                            <div className="flex justify-between gap-2 text-slate-500">
+                                <span className="truncate">Base commission</span>
+                                <span className="font-semibold shrink-0">{fmt(r.baseCommission, 2)}%</span>
                             </div>
-                            <div className="flex justify-between text-slate-500">
-                                <span>Level ({LEVELS[levelIdx].label})</span>
-                                <span className="font-semibold">+{r.levelAdj}%</span>
+                            <div className="flex justify-between gap-2 text-slate-500">
+                                <span className="truncate">Level ({LEVELS[levelIdx].label})</span>
+                                <span className="font-semibold shrink-0">+{r.levelAdj}%</span>
                             </div>
-                            <div className="flex justify-between text-slate-500">
-                                <span>Function ({JOB_FUNCTIONS[functionIdx].label})</span>
-                                <span className="font-semibold">+{r.functionAdj}%</span>
+                            <div className="flex justify-between gap-2 text-slate-500">
+                                <span className="truncate">Function ({JOB_FUNCTIONS[functionIdx].label})</span>
+                                <span className="font-semibold shrink-0">+{r.functionAdj}%</span>
                             </div>
-                            <div className="flex justify-between text-slate-500">
-                                <span>Industry ({INDUSTRIES[industryIdx].label})</span>
-                                <span className="font-semibold">+{r.industryAdj}%</span>
+                            <div className="flex justify-between gap-2 text-slate-500">
+                                <span className="truncate">Industry ({INDUSTRIES[industryIdx].label})</span>
+                                <span className="font-semibold shrink-0">+{r.industryAdj}%</span>
                             </div>
-                            <div className="flex justify-between text-slate-500">
-                                <span>Guarantee ({GUARANTEE_OPTIONS[guaranteeIdx].months} mo)</span>
-                                <span className="font-semibold">+{r.guaranteeAdj}%</span>
+                            <div className="flex justify-between gap-2 text-slate-500">
+                                <span className="truncate">Guarantee ({GUARANTEE_OPTIONS[guaranteeIdx].months} mo)</span>
+                                <span className="font-semibold shrink-0">+{r.guaranteeAdj}%</span>
                             </div>
                             {isExclusive && (
-                                <div className="flex justify-between text-emerald-600">
-                                    <span>Exclusive discount</span>
-                                    <span className="font-semibold">–{fmt(r.exclusiveDiscount, 2)}%</span>
+                                <div className="flex justify-between gap-2 text-emerald-600">
+                                    <span className="truncate">Exclusive discount</span>
+                                    <span className="font-semibold shrink-0">–{fmt(r.exclusiveDiscount, 2)}%</span>
                                 </div>
                             )}
                             <div className="h-px bg-slate-200 my-1" />
-                            <div className="flex justify-between font-bold text-slate-700 text-[11px]">
+                            <div className="flex justify-between gap-2 font-bold text-slate-700 text-[11px]">
                                 <span>Total fee</span>
                                 <span>{fmt(r.finalFeePercent, 2)}%</span>
                             </div>

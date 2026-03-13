@@ -1049,6 +1049,9 @@
     "pipelineHelp": "Træk og slip for at ændre rækkefølge. Tilføj samtaler og tests efter behov.",
     "previous": "Forrige",
     "nextStep": "Næste trin",
+    "termsAcceptText": "Jeg accepterer",
+    "termsAndConditions": "Vilkår og betingelser",
+    "saveDraft": "Gem udkast",
     "publishing": "Publicerer...",
     "completeAndPublish": "Fuldfør og publicer",
     "jobPublished": "Jobbet er blevet publiceret!"

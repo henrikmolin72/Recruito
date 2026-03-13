@@ -62,6 +62,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     const [languageRequirements, setLanguageRequirements] = useState<LanguageRequirement[]>([]);
     const [estimatedFee, setEstimatedFee] = useState(0);
     const [feeConfirmed, setFeeConfirmed] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     const handleFeeChange = useCallback((fee: number) => {
         setEstimatedFee(fee);
@@ -451,18 +452,6 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                                     <Input name="city" value={formData.city} onChange={handleInputChange} placeholder={t("jobForm.cityPlaceholder")} />
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className={labelClass}>{t("jobForm.locationFreeText")} *</label>
-                                                    <Input name="location" value={formData.location} onChange={handleInputChange}
-                                                        placeholder={t("jobForm.locationPlaceholder")} required />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className={labelClass}>{t("jobForm.industry")} *</label>
-                                                    <Input name="industry" value={formData.industry} onChange={handleInputChange}
-                                                        placeholder={t("jobForm.industryPlaceholder")} required />
-                                                </div>
-                                            </div>
                                             <div className="flex items-center gap-3 pt-1">
                                                 <input type="checkbox" name="is_confidential" id="is_confidential"
                                                     checked={formData.is_confidential} onChange={handleInputChange} className={checkboxClass} />
@@ -719,21 +708,10 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                     {/* ===== STEP 6: RECRUITMENT DETAILS ===== */}
                                     {step === 6 && (
                                         <div className="space-y-5">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className={labelClass}>{t("jobForm.applicationDeadline")}</label>
-                                                    <Input type="date" name="application_deadline" value={formData.application_deadline} onChange={handleInputChange} />
-                                                    <p className="text-[10px] text-muted-foreground italic">{t("jobForm.deadlineHelp")}</p>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className={labelClass}>{t("jobForm.warrantyPeriod")}</label>
-                                                    <select name="guarantee_period_months" value={formData.guarantee_period_months} disabled className={cn(selectClass, "bg-slate-50 text-slate-500 cursor-not-allowed")}>
-                                                        <option value="">{t("jobForm.selectWarranty")}</option>
-                                                        <option value="1">{t("jobForm.month1")}</option>
-                                                        <option value="2">{t("jobForm.months2")}</option>
-                                                    </select>
-                                                    <p className="text-[10px] text-muted-foreground italic">{t("jobForm.warrantyAutoSelected")}</p>
-                                                </div>
+                                            <div className="space-y-2">
+                                                <label className={labelClass}>{t("jobForm.applicationDeadline")}</label>
+                                                <Input type="date" name="application_deadline" value={formData.application_deadline} onChange={handleInputChange} />
+                                                <p className="text-[10px] text-muted-foreground italic">{t("jobForm.deadlineHelp")}</p>
                                             </div>
                                         </div>
                                     )}
@@ -862,6 +840,16 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                                     <label htmlFor="travel_required" className="text-sm text-slate-600">{t("jobForm.travelRequired")}</label>
                                                 </div>
                                             </div>
+                                            <div className="flex items-start gap-3 pt-2">
+                                                <input type="checkbox" id="terms_accepted"
+                                                    checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className={cn(checkboxClass, "mt-0.5")} />
+                                                <label htmlFor="terms_accepted" className="text-sm text-slate-600">
+                                                    {t("jobForm.termsAcceptText")}{" "}
+                                                    <a href="/policy-pack" target="_blank" rel="noopener noreferrer" className="text-brand-600 underline hover:text-brand-700">
+                                                        {t("jobForm.termsAndConditions")}
+                                                    </a>
+                                                </label>
+                                            </div>
                                         </div>
                                     )}
                                 </motion.div>
@@ -906,7 +894,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                         </Button>
                                     )}
                                     <div className={cn("group", step < 9 && "relative")}>
-                                        <Button onClick={handleSubmit} disabled={loading || !feeConfirmed}
+                                        <Button onClick={handleSubmit} disabled={loading || !feeConfirmed || !termsAccepted}
                                             className={cn(
                                                 "bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20 transition-opacity duration-200",
                                                 step < 9 && "opacity-0 group-hover:opacity-100"

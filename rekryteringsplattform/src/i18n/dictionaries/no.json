@@ -1049,6 +1049,9 @@
     "pipelineHelp": "Dra og slipp for å endre rekkefølge. Legg til intervjuer og tester etter behov.",
     "previous": "Forrige",
     "nextStep": "Neste steg",
+    "termsAcceptText": "Jeg godtar",
+    "termsAndConditions": "Vilkår og betingelser",
+    "saveDraft": "Lagre utkast",
     "publishing": "Publiserer...",
     "completeAndPublish": "Fullfør og publiser",
     "jobPublished": "Jobben er publisert!"
