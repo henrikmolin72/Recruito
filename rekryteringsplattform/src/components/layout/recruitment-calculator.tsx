@@ -4,87 +4,134 @@ import { useState, useMemo } from "react";
 import { TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ── Commission Table: base commission % by annual salary (SEK) ──
+// ── Commission Table: base commission % by annual salary (EUR) ──
 const COMMISSION_TABLE: [number, number][] = [
-    [250_000, 11.00],
-    [300_000, 10.75],
-    [350_000, 10.50],
-    [400_000, 10.25],
-    [450_000, 10.00],
-    [500_000, 9.75],
-    [550_000, 9.50],
-    [600_000, 9.25],
-    [700_000, 9.00],
-    [750_000, 8.75],
-    [800_000, 8.50],
-    [850_000, 8.25],
-    [900_000, 8.00],
-    [950_000, 7.75],
-    [1_000_000, 7.50],
-    [1_050_000, 7.25],
-    [1_100_000, 7.00],
-    [1_200_000, 6.75],
-    [1_300_000, 6.50],
-    [1_400_000, 6.25],
+    [20_000, 11.00],
+    [25_000, 10.75],
+    [30_000, 10.50],
+    [35_000, 10.25],
+    [40_000, 10.00],
+    [45_000, 9.75],
+    [50_000, 9.50],
+    [55_000, 9.25],
+    [60_000, 9.00],
+    [65_000, 8.75],
+    [70_000, 8.50],
+    [75_000, 8.25],
+    [80_000, 8.00],
+    [85_000, 7.75],
+    [90_000, 7.50],
+    [95_000, 7.25],
+    [100_000, 7.00],
+    [105_000, 6.75],
+    [110_000, 6.50],
+    [120_000, 6.25],
 ];
 
 // ── Industry adjustments ──
 const INDUSTRIES: { label: string; adj: number }[] = [
-    { label: "IT & Software", adj: 3 },
-    { label: "Finance & Banking", adj: 3 },
-    { label: "Healthcare & Life Sciences", adj: 4 },
-    { label: "Manufacturing", adj: 2 },
-    { label: "Retail & E-commerce", adj: 1 },
-    { label: "Energy & Utilities", adj: 3 },
-    { label: "Telecommunications", adj: 3 },
+    { label: "Automotive", adj: 2 },
+    { label: "Aviation & Aerospace", adj: 4 },
     { label: "Construction & Real Estate", adj: 2 },
+    { label: "Construction Materials & Infrastructure", adj: 2 },
     { label: "Education", adj: 1 },
-    { label: "Consulting & Professional Services", adj: 3 },
-    { label: "Logistics & Transportation", adj: 2 },
-    { label: "Media & Entertainment", adj: 2 },
-    { label: "Government & Public Sector", adj: 1 },
-    { label: "Automotive", adj: 3 },
+    { label: "Energy & Utilities", adj: 3 },
+    { label: "Financial Services", adj: 3 },
+    { label: "FMCG", adj: 2 },
+    { label: "Government & Public Sector", adj: 3 },
+    { label: "Healthcare", adj: 4 },
     { label: "Hospitality & Tourism", adj: 1 },
-    { label: "Legal", adj: 4 },
-    { label: "Agriculture & Food", adj: 1 },
-    { label: "Other", adj: 2 },
+    { label: "Insurance", adj: 2 },
+    { label: "IT - Artificial Intelligence", adj: 4 },
+    { label: "IT - SaaS / Software", adj: 3 },
+    { label: "IT Services", adj: 2 },
+    { label: "Legal Services", adj: 3 },
+    { label: "Logistics & Transportation", adj: 2 },
+    { label: "Manufacturing", adj: 2 },
+    { label: "Medical Devices", adj: 4 },
+    { label: "Oil & Gas", adj: 4 },
+    { label: "Pharmaceutical", adj: 3 },
+    { label: "Professional Services", adj: 2 },
+    { label: "Retail & E-commerce", adj: 1 },
+    { label: "Telecommunications", adj: 2 },
+    { label: "Textile & Apparel", adj: 1 },
 ];
 
-// ── Job Function adjustments ──
-const JOB_FUNCTIONS: { label: string; adj: number }[] = [
-    { label: "Accounting", adj: 3 },
-    { label: "Business Development", adj: 3 },
-    { label: "Construction", adj: 4 },
-    { label: "Customer Support", adj: 1 },
-    { label: "Education", adj: 2 },
-    { label: "Engineering", adj: 5 },
-    { label: "Finance", adj: 4 },
-    { label: "Healthcare Provider", adj: 5 },
-    { label: "Human Resources", adj: 2 },
-    { label: "Information Technology", adj: 6 },
-    { label: "IT — Cybersecurity", adj: 7 },
-    { label: "IT — Data & AI", adj: 7 },
-    { label: "Legal", adj: 5 },
-    { label: "Logistics", adj: 2 },
-    { label: "Management", adj: 4 },
-    { label: "Manufacturing", adj: 3 },
-    { label: "Marketing", adj: 3 },
-    { label: "Operations", adj: 2 },
-    { label: "Procurement", adj: 2 },
-    { label: "Product Management", adj: 5 },
-    { label: "Quality Assurance", adj: 3 },
-    { label: "Research & Development", adj: 6 },
-    { label: "Sales", adj: 2 },
-    { label: "Supply Chain", adj: 3 },
-    { label: "UX/UI Design", adj: 4 },
+// ── Job Function adjustments (grouped by category) ──
+interface JobFunctionGroup {
+    category: string;
+    functions: { label: string; adj: number }[];
+}
+
+const JOB_FUNCTION_GROUPS: JobFunctionGroup[] = [
+    {
+        category: "Finance & Governance",
+        functions: [
+            { label: "Accounting", adj: 1 },
+            { label: "Finance", adj: 2 },
+            { label: "Audit & Tax", adj: 2 },
+            { label: "Human Resources", adj: 1 },
+            { label: "Legal", adj: 3 },
+            { label: "Compliance & Risk", adj: 3 },
+        ],
+    },
+    {
+        category: "Commercial & Growth",
+        functions: [
+            { label: "Sales", adj: 1 },
+            { label: "Business Development", adj: 2 },
+            { label: "Marketing", adj: 1 },
+            { label: "Digital Marketing", adj: 2 },
+            { label: "Customer Success", adj: 1 },
+            { label: "Customer Support", adj: 0 },
+        ],
+    },
+    {
+        category: "Technology & Product",
+        functions: [
+            { label: "Engineering (Mech, Elec, Civil)", adj: 3 },
+            { label: "Software Engineering", adj: 4 },
+            { label: "IT – Infrastructure & Cloud", adj: 4 },
+            { label: "IT – Cybersecurity", adj: 5 },
+            { label: "Data Engineering & Analytics", adj: 5 },
+            { label: "AI & Machine Learning", adj: 6 },
+            { label: "Product Management", adj: 4 },
+            { label: "UX/UI Design", adj: 2 },
+        ],
+    },
+    {
+        category: "Operations & Supply Chain",
+        functions: [
+            { label: "Business Operations", adj: 2 },
+            { label: "Manufacturing Operations", adj: 2 },
+            { label: "Supply Chain", adj: 2 },
+            { label: "Procurement", adj: 1 },
+            { label: "Logistics", adj: 1 },
+            { label: "Quality Assurance", adj: 1 },
+        ],
+    },
+    {
+        category: "Specialized & Professional",
+        functions: [
+            { label: "Research & Development", adj: 4 },
+            { label: "Clinical & Medical", adj: 5 },
+            { label: "Learning & Development (L&D)", adj: 1 },
+            { label: "Administration & Office Support", adj: 0 },
+        ],
+    },
 ];
+
+// Flat list for calculation lookup
+const JOB_FUNCTIONS: { label: string; adj: number }[] = JOB_FUNCTION_GROUPS.flatMap(
+    (g) => g.functions,
+);
 
 // ── Level / experience adjustments ──
 const LEVELS: { label: string; adj: number; years: string }[] = [
     { label: "Entry", adj: 0, years: "0–1" },
     { label: "Junior", adj: 0, years: "1–3" },
-    { label: "Assistant", adj: 0, years: "3–5" },
-    { label: "Manager", adj: 1, years: "4–7" },
+    { label: "Assistant", adj: 1, years: "3–5" },
+    { label: "Manager", adj: 1.5, years: "4–7" },
     { label: "Senior Manager", adj: 2, years: "8–10" },
     { label: "GM", adj: 2, years: "12–18" },
     { label: "Director", adj: 3, years: "15–20" },
@@ -98,9 +145,9 @@ const GUARANTEE_OPTIONS: { months: number; adj: number }[] = [
     { months: 2, adj: 2 },
 ];
 
-const MIN_FEE = 40_000; // SEK (≈ 3,500 EUR)
+const MIN_FEE = 3_500; // EUR
 const TRADITIONAL_FEE_PCT = 25;
-const EXCLUSIVE_DISCOUNT_PCT = 10; // 10% discount for exclusive postings
+const EXCLUSIVE_DISCOUNT_PCT = 10; // 10% discount on final fee for exclusive postings
 
 /** Interpolate base commission % from the commission table */
 function getBaseCommission(salary: number): number {
@@ -150,11 +197,13 @@ function calculate(
     const guaranteeAdj = GUARANTEE_OPTIONS[guaranteeIdx].adj;
 
     const totalFeePercent = baseCommission + levelAdj + functionAdj + industryAdj + guaranteeAdj;
-    const exclusiveDiscount = isExclusive ? totalFeePercent * (EXCLUSIVE_DISCOUNT_PCT / 100) : 0;
-    const finalFeePercent = totalFeePercent - exclusiveDiscount;
-    const rawFee = annualSalary * (finalFeePercent / 100);
-    const minFeeApplied = rawFee < MIN_FEE;
-    const feePerHire = Math.max(rawFee, MIN_FEE);
+    const rawFee = annualSalary * (totalFeePercent / 100);
+    // Exclusive discount is 10% off the final fee amount
+    const exclusiveDiscount = isExclusive ? rawFee * (EXCLUSIVE_DISCOUNT_PCT / 100) : 0;
+    const discountedFee = rawFee - exclusiveDiscount;
+    const minFeeApplied = discountedFee < MIN_FEE;
+    const feePerHire = Math.max(discountedFee, MIN_FEE);
+    const finalFeePercent = isExclusive ? totalFeePercent * (1 - EXCLUSIVE_DISCOUNT_PCT / 100) : totalFeePercent;
     const traditionalFee = annualSalary * (TRADITIONAL_FEE_PCT / 100);
     const savings = traditionalFee - feePerHire;
     const savingsPercent = traditionalFee > 0 ? (savings / traditionalFee) * 100 : 0;
@@ -166,7 +215,7 @@ function calculate(
         industryAdj,
         guaranteeAdj,
         totalFeePercent,
-        exclusiveDiscount,
+        exclusiveDiscount: isExclusive ? totalFeePercent * (EXCLUSIVE_DISCOUNT_PCT / 100) : 0,
         finalFeePercent,
         feePerHire,
         traditionalFee,
@@ -193,10 +242,10 @@ interface RecruitmentCalculatorProps {
 }
 
 export function RecruitmentCalculator({ embedded = false, onFeeChange, onGuaranteeChange }: RecruitmentCalculatorProps) {
-    const [salary, setSalary] = useState(400_000);
+    const [salary, setSalary] = useState(50_000);
     const [levelIdx, setLevelIdx] = useState(2); // Assistant
-    const [functionIdx, setFunctionIdx] = useState(1); // Business Dev
-    const [industryIdx, setIndustryIdx] = useState(0); // IT & Software
+    const [functionIdx, setFunctionIdx] = useState(1); // Finance
+    const [industryIdx, setIndustryIdx] = useState(6); // Financial Services
     const [guaranteeIdx, setGuaranteeIdx] = useState(1); // 1 month
     const [isExclusive, setIsExclusive] = useState(true); // Default to exclusive
 
@@ -273,21 +322,21 @@ export function RecruitmentCalculator({ embedded = false, onFeeChange, onGuarant
                         <div className="flex justify-between items-baseline">
                             <label className={inputLabel}>Annual Salary</label>
                             <span className="text-xs font-bold text-slate-700 tabular-nums">
-                                {fmt(salary)} kr
+                                €{fmt(salary)}
                             </span>
                         </div>
                         <input
                             type="range"
-                            min={250_000}
-                            max={1_500_000}
-                            step={25_000}
+                            min={20_000}
+                            max={120_000}
+                            step={5_000}
                             value={salary}
                             onChange={(e) => setSalary(Number(e.target.value))}
                             className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-200 accent-brand-600"
                         />
                         <div className="flex justify-between text-[9px] text-slate-400">
-                            <span>250 000</span>
-                            <span>1 500 000</span>
+                            <span>€20 000</span>
+                            <span>€120 000</span>
                         </div>
                     </div>
 
@@ -307,7 +356,7 @@ export function RecruitmentCalculator({ embedded = false, onFeeChange, onGuarant
                         </select>
                     </div>
 
-                    {/* Job function */}
+                    {/* Job function (grouped) */}
                     <div className="space-y-1">
                         <label className={inputLabel}>Job Function</label>
                         <select
@@ -315,11 +364,21 @@ export function RecruitmentCalculator({ embedded = false, onFeeChange, onGuarant
                             onChange={(e) => setFunctionIdx(Number(e.target.value))}
                             className={selectStyle}
                         >
-                            {JOB_FUNCTIONS.map((f, i) => (
-                                <option key={f.label} value={i}>
-                                    {f.label} +{f.adj}%
-                                </option>
-                            ))}
+                            {(() => {
+                                let idx = 0;
+                                return JOB_FUNCTION_GROUPS.map((group) => (
+                                    <optgroup key={group.category} label={group.category}>
+                                        {group.functions.map((f) => {
+                                            const currentIdx = idx++;
+                                            return (
+                                                <option key={f.label} value={currentIdx}>
+                                                    {f.label} +{f.adj}%
+                                                </option>
+                                            );
+                                        })}
+                                    </optgroup>
+                                ));
+                            })()}
                         </select>
                     </div>
 
@@ -396,11 +455,11 @@ export function RecruitmentCalculator({ embedded = false, onFeeChange, onGuarant
                             Recruitment Fee
                         </div>
                         <div className="text-lg font-black text-brand-700 leading-tight tabular-nums">
-                            {fmt(r.feePerHire)} <span className="text-xs font-bold">SEK</span>
+                            €{fmt(r.feePerHire)} <span className="text-xs font-bold">EUR</span>
                         </div>
                         {r.minFeeApplied && (
                             <div className="text-[9px] text-brand-500 mt-0.5">
-                                Minimum fee of 40 000 kr applies
+                                Minimum fee of €3 500 applies
                             </div>
                         )}
                     </div>
@@ -420,8 +479,8 @@ export function RecruitmentCalculator({ embedded = false, onFeeChange, onGuarant
                                 </span>
                             </div>
                             <div className="text-base font-black text-emerald-700 leading-tight tabular-nums">
-                                {fmt(r.savings)}{" "}
-                                <span className="text-xs font-bold">SEK</span>
+                                €{fmt(r.savings)}{" "}
+                                <span className="text-xs font-bold">EUR</span>
                                 <span className="text-[10px] font-semibold text-emerald-500 ml-1.5">
                                     ({Math.round(r.savingsPercent)}% lower)
                                 </span>
@@ -445,8 +504,8 @@ export function RecruitmentCalculator({ embedded = false, onFeeChange, onGuarant
                             <div className="flex-1 bg-slate-200 rounded-full" />
                         </div>
                         <div className="flex justify-between text-[9px] tabular-nums text-slate-500">
-                            <span>{fmt(r.feePerHire)} kr</span>
-                            <span>{fmt(r.traditionalFee)} kr</span>
+                            <span>€{fmt(r.feePerHire)}</span>
+                            <span>€{fmt(r.traditionalFee)}</span>
                         </div>
                     </div>
                 </div>

@@ -151,7 +151,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         // Step 5 (Salary)
         salary_min: "",
         salary_max: "",
-        salary_currency: "SEK",
+        salary_currency: "EUR",
         salary_gross_net: "",
         salary_period: "",
         bonus_structure: "",
@@ -383,7 +383,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                 Estimated Fee
                             </div>
                             <div className="text-2xl font-black text-brand-700 tabular-nums leading-tight">
-                                {fmt(estimatedFee)} <span className="text-sm font-bold">SEK</span>
+                                €{fmt(estimatedFee)} <span className="text-sm font-bold">EUR</span>
                             </div>
                         </div>
                     </div>
