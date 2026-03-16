@@ -15,6 +15,7 @@ export enum JobStatus {
 
 export enum CandidateStatus {
   SUBMITTED = "submitted",
+  PAUSED = "paused",
   DUPLICATE_REJECTED = "duplicate_rejected",
   CLIENT_ALREADY_ENGAGED = "client_already_engaged",
   UNDER_CLIENT_REVIEW = "under_client_review",

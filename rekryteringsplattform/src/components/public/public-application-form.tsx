@@ -13,11 +13,12 @@ type PublicApplicationFormProps = {
     prevState: PublicApplicationFormState,
     formData: FormData
   ) => Promise<PublicApplicationFormState>;
+  screeningQuestions?: string[];
 };
 
 const INITIAL_STATE: PublicApplicationFormState = {};
 
-export function PublicApplicationForm({ mandateId, action }: PublicApplicationFormProps) {
+export function PublicApplicationForm({ mandateId, action, screeningQuestions = [] }: PublicApplicationFormProps) {
   const [state, formAction, isPending] = useActionState(action, INITIAL_STATE);
 
   return (
@@ -80,16 +81,50 @@ export function PublicApplicationForm({ mandateId, action }: PublicApplicationFo
           <input
             type="file"
             name="cv_file"
-            accept=".pdf,.doc,.docx,.txt"
+            accept=".pdf,.doc,.docx,.txt,.rtf"
             className="block w-full text-sm file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-brand-700 hover:file:bg-brand-100"
           />
-          <p className="mt-1 text-xs text-muted-foreground">Max 10 MB. PDF, DOC, DOCX or TXT.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Max 10 MB. PDF, DOC, DOCX, TXT or RTF.</p>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
-        By submitting this form, your application is sent to the recruiter handling this role. Recruito may store your
-        submitted information for recruitment processing.
+      {/* Screening questions */}
+      {screeningQuestions.length > 0 ? (
+        <div className="space-y-4 rounded-2xl border border-brand-100 bg-brand-50/40 p-4">
+          <p className="text-sm font-semibold text-slate-900">Screening Questions</p>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Please answer the following questions from the hiring team.
+          </p>
+          {screeningQuestions.map((question, idx) => (
+            <div key={idx}>
+              <label className="mb-1.5 block text-sm font-medium text-slate-800">
+                {idx + 1}. {question}
+              </label>
+              <Textarea
+                name={`screening_${idx}`}
+                className="min-h-[80px]"
+                placeholder="Your answer..."
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Consent / Declaration */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            name="consent_given"
+            required
+            className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+          />
+          <span className="text-xs leading-5 text-slate-700">
+            I consent to my personal data and application being shared with the recruiter and the hiring company for
+            the purpose of evaluating my candidacy for this role. My data will be processed in accordance with
+            applicable data protection regulations. I understand I can request deletion of my data at any time.
+          </span>
+        </label>
       </div>
 
       <Button type="submit" size="lg" disabled={isPending} className="w-full gap-2 bg-brand-600 hover:bg-brand-700">
@@ -99,4 +134,3 @@ export function PublicApplicationForm({ mandateId, action }: PublicApplicationFo
     </form>
   );
 }
-

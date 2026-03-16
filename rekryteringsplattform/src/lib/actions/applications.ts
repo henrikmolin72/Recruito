@@ -56,6 +56,9 @@ type PublicMandateContext = {
   jobDescription: string | null;
   location: string | null;
   companyName: string | null;
+  companyLogoUrl: string | null;
+  companyWebsite: string | null;
+  screeningQuestions: string[];
 };
 
 function normalizeMandateRow(row: any): PublicMandateContext | null {
@@ -73,8 +76,11 @@ function normalizeMandateRow(row: any): PublicMandateContext | null {
     jobStatus: job.status ?? null,
     jobTitle: job.title || "Untitled role",
     jobDescription: job.description ?? null,
-    location: job.location ?? null,
+    location: [job.city, job.country].filter(Boolean).join(", ") || null,
     companyName: company?.company_name ?? null,
+    companyLogoUrl: company?.logo_url ?? null,
+    companyWebsite: company?.website ?? null,
+    screeningQuestions: Array.isArray(job.screening_questions) ? job.screening_questions : [],
   };
 }
 
@@ -90,9 +96,11 @@ export async function getPublicMandateApplicationContext(mandateId: string) {
         id,
         title,
         description,
-        location,
+        city,
+        country,
         status,
-        company:companies (company_name)
+        screening_questions,
+        company:companies (company_name, logo_url, website)
       )
     `)
     .eq("id", mandateId)
@@ -178,12 +186,56 @@ export async function submitPublicMandateApplication(
     };
   }
 
+  const consentGiven = formData.get("consent_given") === "on" || formData.get("consent_given") === "true";
+  if (!consentGiven) {
+    return { error: "Du måste godkänna att dina uppgifter delas med rekryteraren och uppdragsgivaren." };
+  }
+
   const context = await getPublicMandateApplicationContext(parsed.data.mandate_id);
   if (!context || !context.isActive || context.jobStatus !== "active") {
     return { error: "Den här ansökningslänken är inte aktiv längre." };
   }
 
+  // Parse screening answers from form — constrained to valid question indices only
+  const screeningAnswers: Record<string, string> = {};
+  const maxScreeningIdx = context.screeningQuestions.length;
+  for (let i = 0; i < maxScreeningIdx; i++) {
+    const raw = formData.get(`screening_${i}`);
+    if (typeof raw === "string" && raw.trim()) {
+      screeningAnswers[String(i)] = raw.trim().slice(0, 5000);
+    }
+  }
+
   const admin = createAdminClient();
+
+  // Duplicate detection: check by email or LinkedIn for same job
+  // Uses lowercased values to match the unique indexes (lower(email), lower(linkedin_url))
+  const normalizedEmail = parsed.data.email?.toLowerCase() ?? null;
+  const normalizedLinkedin = parsed.data.linkedin_url?.toLowerCase() ?? null;
+
+  if (normalizedEmail) {
+    const { data: existing } = await admin
+      .from("applications")
+      .select("id")
+      .eq("job_id", context.jobId)
+      .eq("email", normalizedEmail)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return { error: "En ansökan med denna e-postadress finns redan för denna tjänst." };
+    }
+  }
+
+  if (normalizedLinkedin) {
+    const { data: existing } = await admin
+      .from("applications")
+      .select("id")
+      .eq("job_id", context.jobId)
+      .eq("linkedin_url", normalizedLinkedin)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      return { error: "En ansökan med denna LinkedIn-profil finns redan för denna tjänst." };
+    }
+  }
 
   let cvFilePath: string | null = null;
   const cvFile = formData.get("cv_file");
@@ -220,20 +272,85 @@ export async function submitPublicMandateApplication(
     job_id: context.jobId,
     recruiter_id: context.recruiterId,
     full_name: parsed.data.full_name,
-    email: parsed.data.email,
+    email: normalizedEmail,
     phone: parsed.data.phone,
-    linkedin_url: parsed.data.linkedin_url,
+    linkedin_url: normalizedLinkedin,
     cv_text: parsed.data.cv_text,
     cover_letter_text: parsed.data.cover_letter_text,
+    screening_answers: Object.keys(screeningAnswers).length > 0 ? screeningAnswers : null,
+    consent_given: true,
+    cv_file_path: cvFilePath,
     source: "public_apply_link",
     status: "new",
     metadata,
   });
 
   if (insertError) {
+    // Handle unique constraint violation (race condition on duplicate)
+    if (insertError.code === "23505") {
+      return { error: "En ansökan med dessa uppgifter finns redan för denna tjänst." };
+    }
     console.error("Public application insert error:", insertError);
     return { error: "Kunde inte skicka ansökan just nu. Försök igen." };
   }
 
   redirect(`/apply/${context.mandateId}?submitted=1`);
+}
+
+// ─── Recruiter review actions ───────────────────────────────────────────────
+
+const MAX_SUBMISSIONS_PER_MANDATE = 7;
+
+export async function reviewApplication(
+  applicationId: string,
+  action: "approve" | "reject",
+  recruiterId: string
+): Promise<{ success: boolean; error?: string }> {
+  const admin = createAdminClient();
+
+  if (action === "approve") {
+    // Use atomic Postgres function to prevent race condition on max-7 limit
+    const { data, error: rpcError } = await admin.rpc("approve_application", {
+      p_application_id: applicationId,
+      p_recruiter_id: recruiterId,
+      p_max_submissions: MAX_SUBMISSIONS_PER_MANDATE,
+    });
+
+    if (rpcError) {
+      console.error("Error calling approve_application RPC:", rpcError);
+      return { success: false, error: "Kunde inte godkänna ansökan." };
+    }
+
+    const result = data as { ok: boolean; error?: string };
+    if (!result?.ok) {
+      const errorMessages: Record<string, string> = {
+        not_found: "Ansökan hittades inte eller tillhör inte dig.",
+        already_reviewed: "Ansökan har redan granskats.",
+        limit_reached: `Du kan max skicka ${MAX_SUBMISSIONS_PER_MANDATE} kandidater till kunden. Avslå några innan du skickar fler.`,
+      };
+      return { success: false, error: errorMessages[result?.error ?? ""] || "Kunde inte godkänna ansökan." };
+    }
+  } else {
+    // Use atomic Postgres function for rejection too
+    const { data, error: rpcError } = await admin.rpc("reject_application", {
+      p_application_id: applicationId,
+      p_recruiter_id: recruiterId,
+    });
+
+    if (rpcError) {
+      console.error("Error calling reject_application RPC:", rpcError);
+      return { success: false, error: "Kunde inte avslå ansökan." };
+    }
+
+    const result = data as { ok: boolean; error?: string };
+    if (!result?.ok) {
+      const errorMessages: Record<string, string> = {
+        not_found: "Ansökan hittades inte eller tillhör inte dig.",
+        already_reviewed: "Ansökan har redan granskats.",
+      };
+      return { success: false, error: errorMessages[result?.error ?? ""] || "Kunde inte avslå ansökan." };
+    }
+  }
+
+  return { success: true };
 }

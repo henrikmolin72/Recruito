@@ -141,10 +141,17 @@ export function CandidateScoreCard({
                   ? "AI-analysen är sparad och kan användas i shortlist senare."
                   : "Kör en snabb screening mot jobbannonsen och spara resultatet i databasen."}
               </p>
-              <Button onClick={handleAnalyze} disabled={loading} className="mt-3 gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {loading ? "Analyserar..." : "Analysera"}
-              </Button>
+              {result ? (
+                <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={loading} className="mt-3 gap-2">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {loading ? "Analyserar..." : "Re-analysera"}
+                </Button>
+              ) : (
+                <Button onClick={handleAnalyze} disabled={loading} className="mt-3 gap-2">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {loading ? "Analyserar..." : "Analysera"}
+                </Button>
+              )}
               {error ? <p className="mt-2 text-xs font-medium text-danger-600">{error}</p> : null}
             </div>
           </div>

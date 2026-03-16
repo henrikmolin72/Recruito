@@ -634,6 +634,7 @@ export async function getRecruiterMandateById(mandateId: string) {
         claimed_at: mandate.claimed_at,
         is_active: mandate.is_active,
         job_id: job?.id,
+        recruiter_id: recruiter.id,
         title: job?.title || "Okänt jobb",
         description: job?.description || "",
         company: company?.company_name || "Okänt företag",
@@ -675,7 +676,7 @@ export async function getRecruiterApplicationsForJob(jobId: string) {
 
     const { data: applications, error: applicationsError } = await supabase
         .from("applications")
-        .select("id, job_id, recruiter_id, full_name, email, status, source, created_at")
+        .select("id, job_id, recruiter_id, full_name, email, phone, linkedin_url, status, source, screening_answers, consent_given, created_at")
         .eq("job_id", jobId)
         .eq("recruiter_id", recruiter.id)
         .order("created_at", { ascending: false });
