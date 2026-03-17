@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { updateJob } from "@/lib/actions/jobs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getDictionary } from "@/i18n/server";
+import { getDictionary, getLocale } from "@/i18n/server";
 import {
     EMPLOYMENT_TYPE_OPTIONS,
     WORK_TYPE_OPTIONS,
@@ -56,6 +56,9 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
     if (!job) notFound();
 
     const dict = await getDictionary();
+    const locale = await getLocale();
+    const localeCurrencyCode: Record<string, string> = { en: "EUR", sv: "SEK", da: "DKK", no: "NOK" };
+    const defaultCurrency = localeCurrencyCode[locale] ?? "EUR";
     const c = dict.company;
 
     const benefits = (job.benefits as string[] | null) ?? [];
@@ -230,7 +233,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                             <div className="grid grid-cols-4 gap-2">
                                 <Input type="number" name="salary_min" defaultValue={job.salary_min ?? ""} placeholder="Från" />
                                 <Input type="number" name="salary_max" defaultValue={job.salary_max ?? ""} placeholder="Till" />
-                                <select name="salary_currency" defaultValue={job.salary_currency ?? "EUR"} className={selectClass}>
+                                <select name="salary_currency" defaultValue={job.salary_currency ?? defaultCurrency} className={selectClass}>
                                     {SALARY_CURRENCY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                                 <select name="salary_gross_net" defaultValue={job.salary_gross_net ?? ""} className={selectClass}>

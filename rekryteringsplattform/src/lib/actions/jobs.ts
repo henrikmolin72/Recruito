@@ -8,6 +8,9 @@ import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { DEFAULT_PIPELINE_STAGES, canTransitionJobStatus } from "@/types/enums";
 import { createNotification } from "@/lib/actions/notifications";
 import type { PipelineStage } from "@/types/db-types";
+import { getLocale } from "@/i18n/server";
+
+const LOCALE_CURRENCY: Record<string, string> = { en: "EUR", sv: "SEK", da: "DKK", no: "NOK" };
 
 async function verifyJobOwnership(jobId: string) {
     const supabase = await createClient();
@@ -155,7 +158,7 @@ export async function createJob(formData: FormData) {
         // Salary
         salary_min: d?.salary_min ?? getInt("salary_min"),
         salary_max: d?.salary_max ?? getInt("salary_max"),
-        salary_currency: d?.salary_currency ?? get("salary_currency") ?? "EUR",
+        salary_currency: d?.salary_currency ?? get("salary_currency") ?? LOCALE_CURRENCY[await getLocale()] ?? "EUR",
         salary_gross_net: d?.salary_gross_net ?? get("salary_gross_net"),
         salary_period: d?.salary_period ?? get("salary_period"),
         bonus_structure: d?.bonus_structure ?? get("bonus_structure"),

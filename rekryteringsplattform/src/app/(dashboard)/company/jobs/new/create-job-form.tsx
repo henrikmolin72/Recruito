@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { PipelineBuilder } from "@/components/dashboard/company/pipeline-builder";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import type { PipelineStage } from "@/types/db-types";
-import { useTranslations } from "@/i18n/client";
+import { useTranslations, useLocale } from "@/i18n/client";
 import { RecruitmentCalculator } from "@/components/layout/recruitment-calculator";
 import {
     EMPLOYMENT_TYPE_OPTIONS,
@@ -51,9 +51,18 @@ function fmt(n: number): string {
     return new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(n);
 }
 
+const LOCALE_CURRENCY: Record<string, { code: string; symbol: string; prefix: boolean; numberLocale: string }> = {
+    en: { code: "EUR", symbol: "€", prefix: true, numberLocale: "de-DE" },
+    sv: { code: "SEK", symbol: "kr", prefix: false, numberLocale: "sv-SE" },
+    da: { code: "DKK", symbol: "kr", prefix: false, numberLocale: "da-DK" },
+    no: { code: "NOK", symbol: "kr", prefix: false, numberLocale: "nb-NO" },
+};
+
 export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     const router = useRouter();
     const { t } = useTranslations();
+    const locale = useLocale();
+    const localeCurrency = LOCALE_CURRENCY[locale] ?? LOCALE_CURRENCY.en;
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>(DEFAULT_PIPELINE_STAGES);
@@ -61,6 +70,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     const [keyRequirements, setKeyRequirements] = useState<string[]>([""]);
     const [languageRequirements, setLanguageRequirements] = useState<LanguageRequirement[]>([]);
     const [estimatedFee, setEstimatedFee] = useState(0);
+    const [feeCurrencyCode, setFeeCurrencyCode] = useState(localeCurrency.code);
     const [feeConfirmed, setFeeConfirmed] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -70,6 +80,11 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
 
     const handleGuaranteeChange = useCallback((months: number) => {
         setFormData(prev => ({ ...prev, guarantee_period_months: months === 0 ? "" : String(months) }));
+    }, []);
+
+    const handleCurrencyChange = useCallback((currencyCode: string) => {
+        setFeeCurrencyCode(currencyCode);
+        setFormData(prev => ({ ...prev, salary_currency: currencyCode }));
     }, []);
 
     const STEPS = [
@@ -151,7 +166,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         // Step 5 (Salary)
         salary_min: "",
         salary_max: "",
-        salary_currency: "EUR",
+        salary_currency: localeCurrency.code,
         salary_gross_net: "",
         salary_period: "",
         bonus_structure: "",
@@ -383,7 +398,8 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                 Estimated Fee
                             </div>
                             <div className="text-2xl font-black text-brand-700 tabular-nums leading-tight">
-                                €{fmt(estimatedFee)} <span className="text-sm font-bold">EUR</span>
+                                {localeCurrency.prefix ? `${localeCurrency.symbol}${fmt(estimatedFee)}` : `${fmt(estimatedFee)} ${localeCurrency.symbol}`}{" "}
+                                <span className="text-sm font-bold">{feeCurrencyCode}</span>
                             </div>
                         </div>
                     </div>
@@ -427,7 +443,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                 >
                                     {/* ===== STEP 1: RECRUITMENT FEE CALCULATOR ===== */}
                                     {step === 1 && (
-                                        <RecruitmentCalculator embedded onFeeChange={handleFeeChange} onGuaranteeChange={handleGuaranteeChange} />
+                                        <RecruitmentCalculator embedded onFeeChange={handleFeeChange} onGuaranteeChange={handleGuaranteeChange} onCurrencyChange={handleCurrencyChange} />
                                     )}
 
                                     {/* ===== STEP 2: BASICS ===== */}
