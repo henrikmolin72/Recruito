@@ -230,7 +230,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                             <div className="grid grid-cols-4 gap-2">
                                 <Input type="number" name="salary_min" defaultValue={job.salary_min ?? ""} placeholder="Från" />
                                 <Input type="number" name="salary_max" defaultValue={job.salary_max ?? ""} placeholder="Till" />
-                                <select name="salary_currency" defaultValue={job.salary_currency ?? "SEK"} className={selectClass}>
+                                <select name="salary_currency" defaultValue={job.salary_currency ?? "EUR"} className={selectClass}>
                                     {SALARY_CURRENCY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                                 <select name="salary_gross_net" defaultValue={job.salary_gross_net ?? ""} className={selectClass}>

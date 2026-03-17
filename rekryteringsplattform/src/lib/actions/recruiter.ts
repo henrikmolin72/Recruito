@@ -550,7 +550,7 @@ export async function getRecruiterMandates() {
         employment_type: mandate.job?.employment_type || "",
         salary_min: mandate.job?.salary_min,
         salary_max: mandate.job?.salary_max,
-        salary_currency: mandate.job?.salary_currency || "SEK",
+        salary_currency: mandate.job?.salary_currency || "EUR",
         fee_percentage: mandate.job?.fee_percentage,
         status: mandate.job?.status || "active",
         candidates: mandate.candidates?.map((c: any) => ({
@@ -642,7 +642,7 @@ export async function getRecruiterMandateById(mandateId: string) {
         employment_type: job?.employment_type || "",
         salary_min: job?.salary_min,
         salary_max: job?.salary_max,
-        salary_currency: job?.salary_currency || "SEK",
+        salary_currency: job?.salary_currency || "EUR",
         fee_percentage: job?.fee_percentage,
         status: job?.status || "active",
         pipeline_stages: (job as any)?.pipeline_stages || [],

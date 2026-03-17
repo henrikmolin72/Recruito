@@ -343,7 +343,7 @@ export function validateJobForm(formData: FormData) {
     // Step 4
     salary_min: toOptionalInt(formData.get("salary_min")),
     salary_max: toOptionalInt(formData.get("salary_max")),
-    salary_currency: toString(formData.get("salary_currency")) || "SEK",
+    salary_currency: toString(formData.get("salary_currency")) || "EUR",
     salary_gross_net: toString(formData.get("salary_gross_net")) || null,
     salary_period: toString(formData.get("salary_period")) || null,
     bonus_structure: toString(formData.get("bonus_structure")),

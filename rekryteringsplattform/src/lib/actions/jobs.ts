@@ -155,7 +155,7 @@ export async function createJob(formData: FormData) {
         // Salary
         salary_min: d?.salary_min ?? getInt("salary_min"),
         salary_max: d?.salary_max ?? getInt("salary_max"),
-        salary_currency: d?.salary_currency ?? get("salary_currency") ?? "SEK",
+        salary_currency: d?.salary_currency ?? get("salary_currency") ?? "EUR",
         salary_gross_net: d?.salary_gross_net ?? get("salary_gross_net"),
         salary_period: d?.salary_period ?? get("salary_period"),
         bonus_structure: d?.bonus_structure ?? get("bonus_structure"),

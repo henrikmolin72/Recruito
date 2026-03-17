@@ -34,8 +34,8 @@ export const SALARY_PERIOD_OPTIONS = [
 ] as const;
 
 export const SALARY_CURRENCY_OPTIONS = [
-  "SEK",
   "EUR",
+  "SEK",
   "USD",
   "NOK",
   "DKK",
