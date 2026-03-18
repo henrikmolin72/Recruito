@@ -36,9 +36,10 @@ async function verifyJobOwnership(jobId: string) {
 
 export async function createJob(formData: FormData) {
     const supabase = await createClient();
+    const isDraft = formData.get("status") === "draft";
 
     const parsed = validateJobForm(formData);
-    if (!parsed.success) {
+    if (!parsed.success && !isDraft) {
         return { error: parsed.error };
     }
 
@@ -49,16 +50,37 @@ export async function createJob(formData: FormData) {
         redirect("/login");
     }
 
-    // 2. Get company profile to link job to company
-    const { data: company, error: companyError } = await supabase
+    // 2. Get company profile to link job to company (auto-create if missing)
+    let { data: company } = await supabase
         .from("companies")
         .select("id")
         .eq("user_id", user.id)
         .single();
 
-    if (companyError || !company) {
-        console.error("Company not found:", companyError);
-        return { error: "Kunde inte hitta företagsprofilen" };
+    if (!company) {
+        // Only auto-create for company-role users, not recruiters
+        const role = user.app_metadata?.role || user.user_metadata?.role;
+        if (role === "recruiter") {
+            return { error: "Rekryterare kan inte skapa uppdrag. Logga in som företag." };
+        }
+
+        // Auto-create a company profile for this user
+        const companyName = (user.user_metadata?.company_name || "").slice(0, 200)
+            || user.email?.split("@")[0] || "Mitt företag";
+        const { data: newCompany, error: createError } = await supabase
+            .from("companies")
+            .insert({
+                user_id: user.id,
+                name: companyName,
+            })
+            .select("id")
+            .single();
+
+        if (createError || !newCompany) {
+            console.error("Could not create company profile:", createError);
+            return { error: "Kunde inte skapa företagsprofil. Kontakta support." };
+        }
+        company = newCompany;
     }
 
     // 3. Calculate fee from volume tier
@@ -87,14 +109,16 @@ export async function createJob(formData: FormData) {
     }
 
     // 5. Insert job with all fields
-    const d = parsed.data;
+    // For drafts, parsed.data may be undefined if validation failed — use raw form values as fallback
+    const d = parsed.data ?? {} as Record<string, unknown>;
+    const raw = (key: string) => formData.get(key)?.toString() || "";
     const { error: jobError } = await supabase.from("jobs").insert({
         company_id: company.id,
         // Basics
-        title: d.title,
-        description: d.description,
-        location: d.location,
-        industry: d.industry,
+        title: d.title || raw("title") || "Untitled Draft",
+        description: d.description || raw("description") || null,
+        location: d.location || raw("location") || raw("city") || null,
+        industry: d.industry || raw("industry") || null,
         country: d.country,
         city: d.city,
         location_code: d.location_code,
@@ -160,7 +184,7 @@ export async function createJob(formData: FormData) {
         background_check_required: d.background_check_required,
         // Pipeline & status
         pipeline_stages: pipelineStages,
-        status: "active",
+        status: isDraft ? "draft" : "active",
     });
 
     if (jobError) {
@@ -170,6 +194,11 @@ export async function createJob(formData: FormData) {
 
     revalidatePath("/company");
     revalidatePath("/company/jobs");
+
+    if (isDraft) {
+        return { success: true };
+    }
+
     redirect("/company/jobs");
 }
 
