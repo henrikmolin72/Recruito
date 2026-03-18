@@ -14,6 +14,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `Recruito — ${dict.landing.heroTitleLine2}`,
     description: dict.landing.heroDescription,
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "Recruito",
+    },
+    other: {
+      "mobile-web-app-capable": "yes",
+    },
   };
 }
 
@@ -27,6 +36,10 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className={inter.className}>
+      <head>
+        <meta name="theme-color" content="#1e40af" />
+        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+      </head>
       <body className="antialiased font-sans">
         <Suspense fallback={null}>
           <TopLoader />
