@@ -231,12 +231,19 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         if (step > 1) setStep(step - 1);
     };
 
-    async function handleSubmit() {
-        setLoading(true);
+    function buildFormData(isDraft = false) {
+        // Auto-populate location from city + country if empty
+        const finalData = { ...formData };
+        if (!finalData.location.trim() && finalData.city.trim()) {
+            finalData.location = finalData.country
+                ? `${finalData.city}, ${finalData.country}`
+                : finalData.city;
+        }
+
         const data = new FormData();
 
         // Append all text/number fields
-        for (const [key, value] of Object.entries(formData)) {
+        for (const [key, value] of Object.entries(finalData)) {
             if (key === "benefits") continue;
             if (typeof value === "boolean") {
                 if (value) data.append(key, "on");
@@ -244,6 +251,40 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                 data.append(key, String(value));
             }
         }
+        if (isDraft) {
+            data.append("status", "draft");
+        }
+        return data;
+    }
+
+    async function handleSaveDraft() {
+        setLoading(true);
+        const data = buildFormData(true);
+
+        // Append arrays
+        for (const b of formData.benefits) {
+            data.append("benefits", b);
+        }
+        data.append("screening_questions", JSON.stringify(screeningQuestions.filter(q => q.trim())));
+        data.append("key_requirements", JSON.stringify(keyRequirements.filter(r => r.trim())));
+        data.append("language_requirements", JSON.stringify(languageRequirements.filter(lr => lr.language && lr.level)));
+        data.append("pipeline_stages", JSON.stringify(pipelineStages));
+        data.append("fee_percentage", String(feePercentage));
+        data.append("max_recruiters", "5");
+
+        const result = await createJob(data);
+        if (result?.error) {
+            toast.error(typeof result.error === "string" ? result.error : "Kunde inte spara utkast");
+            setLoading(false);
+        } else {
+            toast.success(t("jobForm.draftSaved") || "Utkast sparat!");
+            router.push("/company/jobs");
+        }
+    }
+
+    async function handleSubmit() {
+        setLoading(true);
+        const data = buildFormData();
 
         // Hidden defaults for internal fields not shown in form
         data.append("fee_percentage", String(feePercentage));
@@ -797,6 +838,10 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                         </Button>
 
                         <div className="flex items-center gap-3">
+                            <Button variant="outline" onClick={handleSaveDraft} disabled={loading || !formData.title}
+                                className="gap-2 px-4">
+                                {loading ? "Sparar..." : (t("jobForm.saveDraft") || "Save Draft")}
+                            </Button>
                             {step < 8 && (
                                 <Button onClick={nextStep}
                                     className="bg-brand-600 hover:bg-brand-700 text-white gap-2 px-6 shadow-md shadow-brand-500/20"

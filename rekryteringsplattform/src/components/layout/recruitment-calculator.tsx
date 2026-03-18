@@ -4,29 +4,29 @@ import { useState, useMemo } from "react";
 import { TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ── Commission Table: base commission % by annual salary (SEK) ──
-// Converted from EUR to SEK (×11.5 rounded to nearest 50k)
+// ── Commission Table: base commission % by annual salary (EUR) ──
 const COMMISSION_TABLE: [number, number][] = [
-    [250_000, 11.00],
-    [300_000, 10.75],
-    [350_000, 10.50],
-    [400_000, 10.25],
-    [450_000, 10.00],
-    [500_000, 9.75],
-    [550_000, 9.50],
-    [600_000, 9.25],
-    [700_000, 9.00],
-    [750_000, 8.75],
-    [800_000, 8.50],
-    [850_000, 8.25],
-    [900_000, 8.00],
-    [950_000, 7.75],
-    [1_000_000, 7.50],
-    [1_050_000, 7.25],
-    [1_100_000, 7.00],
-    [1_200_000, 6.75],
-    [1_300_000, 6.50],
-    [1_400_000, 6.25],
+    [20_000, 11.00],
+    [25_000, 10.75],
+    [30_000, 10.50],
+    [35_000, 10.25],
+    [40_000, 10.00],
+    [45_000, 9.75],
+    [50_000, 9.50],
+    [55_000, 9.25],
+    [60_000, 9.00],
+    [65_000, 8.75],
+    [70_000, 8.50],
+    [75_000, 8.25],
+    [80_000, 8.00],
+    [85_000, 7.75],
+    [90_000, 7.50],
+    [95_000, 7.25],
+    [100_000, 7.00],
+    [105_000, 6.75],
+    [110_000, 6.50],
+    [115_000, 6.25],
+    [120_000, 6.00],
 ];
 
 // ── Job Function adjustments ──
@@ -77,7 +77,7 @@ const GUARANTEE_OPTIONS: { months: number; adj: number }[] = [
     { months: 2, adj: 2 },
 ];
 
-const MIN_FEE = 40_000; // SEK (≈ 3,500 EUR)
+const MIN_FEE = 3_500; // EUR
 const TRADITIONAL_FEE_PCT = 25;
 
 /** Interpolate base commission % from the commission table */
@@ -155,7 +155,7 @@ function fmt(n: number, decimals = 0): string {
 }
 
 export function RecruitmentCalculator() {
-    const [salary, setSalary] = useState(400_000);
+    const [salary, setSalary] = useState(50_000);
     const [levelIdx, setLevelIdx] = useState(2); // Assistant
     const [functionIdx, setFunctionIdx] = useState(1); // Business Dev
     const [guaranteeIdx, setGuaranteeIdx] = useState(1); // 1 month
@@ -178,21 +178,21 @@ export function RecruitmentCalculator() {
                                     Årslön
                                 </label>
                                 <span className="text-xs font-bold text-slate-700 tabular-nums">
-                                    {fmt(salary)} kr
+                                    €{fmt(salary)}
                                 </span>
                             </div>
                             <input
                                 type="range"
-                                min={250_000}
-                                max={1_500_000}
-                                step={25_000}
+                                min={20_000}
+                                max={120_000}
+                                step={500}
                                 value={salary}
                                 onChange={(e) => setSalary(Number(e.target.value))}
                                 className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-200 accent-brand-600"
                             />
                             <div className="flex justify-between text-[9px] text-slate-400">
-                                <span>250 000</span>
-                                <span>1 500 000</span>
+                                <span>€20 000</span>
+                                <span>€120 000</span>
                             </div>
                         </div>
 
@@ -320,11 +320,11 @@ export function RecruitmentCalculator() {
                                 Rekryteringsavgift{hires > 1 ? ` (per st)` : ""}
                             </div>
                             <div className="text-lg font-black text-brand-700 leading-tight tabular-nums">
-                                {fmt(r.feePerHire)} <span className="text-xs font-bold">SEK</span>
+                                €{fmt(r.feePerHire)} <span className="text-xs font-bold">EUR</span>{/* keep EUR label for clarity */}
                             </div>
                             {r.minFeeApplied && (
                                 <div className="text-[9px] text-brand-500 mt-0.5">
-                                    Minimiavgift 40 000 kr tillämpas
+                                    Minimiavgift €3 500 tillämpas
                                 </div>
                             )}
                         </div>
@@ -336,7 +336,7 @@ export function RecruitmentCalculator() {
                                     Total ({hires} st)
                                 </span>
                                 <span className="text-sm font-bold text-slate-700 tabular-nums">
-                                    {fmt(r.totalFee)} kr
+                                    €{fmt(r.totalFee)}
                                 </span>
                             </div>
                         )}
@@ -351,8 +351,7 @@ export function RecruitmentCalculator() {
                                     </span>
                                 </div>
                                 <div className="text-base font-black text-emerald-700 leading-tight tabular-nums">
-                                    {fmt(r.savings)}{" "}
-                                    <span className="text-xs font-bold">SEK</span>
+                                    €{fmt(r.savings)}
                                     <span className="text-[10px] font-semibold text-emerald-500 ml-1.5">
                                         ({Math.round(r.savingsPercent)}% lägre)
                                     </span>
@@ -376,8 +375,8 @@ export function RecruitmentCalculator() {
                                 <div className="flex-1 bg-slate-200 rounded-full" />
                             </div>
                             <div className="flex justify-between text-[9px] tabular-nums text-slate-500">
-                                <span>{fmt(r.totalFee)} kr</span>
-                                <span>{fmt(r.traditionalFee)} kr</span>
+                                <span>€{fmt(r.totalFee)}</span>
+                                <span>€{fmt(r.traditionalFee)}</span>
                             </div>
                         </div>
                     </div>
