@@ -60,6 +60,14 @@ const toOptionalFloat = (value: FormDataEntryValue | null) => {
   return Number.isNaN(parsed) ? Number.NaN : parsed;
 };
 
+function safeJsonParse<T>(value: string, fallback: T): T {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function firstError(error: z.ZodError): string {
   const issue = error.issues[0];
   return issue?.message || "Ogiltig inmatning";
@@ -322,7 +330,7 @@ export function validateJobForm(formData: FormData) {
     work_permit_accepted: toCheckboxBoolean(formData.get("work_permit_accepted")),
     visa_sponsorship: toCheckboxBoolean(formData.get("visa_sponsorship")),
     // Step 3
-    key_requirements: JSON.parse(toString(formData.get("key_requirements")) || "[]"),
+    key_requirements: safeJsonParse(toString(formData.get("key_requirements")), []),
     description: toString(formData.get("description")),
     team_structure: toString(formData.get("team_structure")),
     management_required: toCheckboxBoolean(formData.get("management_required")),
@@ -330,7 +338,7 @@ export function validateJobForm(formData: FormData) {
     reporting_to: toString(formData.get("reporting_to")),
     position_type: toString(formData.get("position_type")) || null,
     open_positions: toOptionalInt(formData.get("open_positions")),
-    language_requirements: JSON.parse(toString(formData.get("language_requirements")) || "[]"),
+    language_requirements: safeJsonParse(toString(formData.get("language_requirements")), []),
     // Legacy fields (no longer in form, send empty)
     tools_technologies: toString(formData.get("tools_technologies")),
     min_years_experience: toOptionalInt(formData.get("min_years_experience")),
@@ -356,7 +364,7 @@ export function validateJobForm(formData: FormData) {
     guarantee_period_months: toOptionalInt(formData.get("guarantee_period_months")),
     recruiter_fee_manual: toOptionalInt(formData.get("recruiter_fee_manual")),
     // Step 6
-    screening_questions: JSON.parse(toString(formData.get("screening_questions")) || "[]"),
+    screening_questions: safeJsonParse(toString(formData.get("screening_questions")), []),
     interview_type: toString(formData.get("interview_type")) || null,
     num_interviews: toOptionalInt(formData.get("num_interviews")),
     interview_conductors: toString(formData.get("interview_conductors")),

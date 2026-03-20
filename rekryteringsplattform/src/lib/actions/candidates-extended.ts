@@ -121,12 +121,32 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
     }
 
     // --- CV Upload ---
+    const ALLOWED_CV_EXTENSIONS = new Set(["pdf", "doc", "docx", "txt", "rtf"]);
+    const ALLOWED_CV_MIME_TYPES = new Set([
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+        "application/rtf",
+        "text/rtf",
+    ]);
+
     let cvFilePath = null;
     const cvFile = formData.get("cv_file");
     if (cvFile instanceof File && cvFile.size > 0) {
         if (cvFile.size > 5 * 1024 * 1024) return { error: "CV file must be at most 5 MB." };
-        const fileExt = cvFile.name.split(".").pop();
-        const fileName = `${mandate.job_id}/${recruiter.id}/${Date.now()}.${fileExt}`;
+
+        const fileExt = (cvFile.name.split(".").pop() || "").toLowerCase();
+        const mimeType = (cvFile.type || "").toLowerCase();
+        if (!fileExt || !ALLOWED_CV_EXTENSIONS.has(fileExt)) {
+            return { error: "Allowed file types: PDF, DOC, DOCX, TXT, RTF." };
+        }
+        if (mimeType && !ALLOWED_CV_MIME_TYPES.has(mimeType)) {
+            return { error: "Allowed file types: PDF, DOC, DOCX, TXT, RTF." };
+        }
+
+        const safeName = cvFile.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
+        const fileName = `${mandate.job_id}/${recruiter.id}/${Date.now()}-${safeName}`;
         const { error: uploadError, data } = await supabase.storage.from("cvs").upload(fileName, cvFile);
         if (uploadError) {
             console.error("CV Upload Error:", uploadError);
