@@ -1040,6 +1040,8 @@
     "pipelineHelp": "Træk og slip for at ændre rækkefølge. Tilføj samtaler og tests efter behov.",
     "previous": "Forrige",
     "nextStep": "Næste trin",
+    "saveDraft": "Gem kladde",
+    "draftSaved": "Kladde gemt!",
     "publishing": "Publicerer...",
     "completeAndPublish": "Fuldfør og publicer",
     "jobPublished": "Jobbet er blevet publiceret!"

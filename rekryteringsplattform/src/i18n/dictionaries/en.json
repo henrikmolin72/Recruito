@@ -1040,6 +1040,8 @@
     "pipelineHelp": "Drag and drop to reorder. Add interviews and tests as needed.",
     "previous": "Previous",
     "nextStep": "Next step",
+    "saveDraft": "Save Draft",
+    "draftSaved": "Draft saved!",
     "publishing": "Publishing...",
     "completeAndPublish": "Complete & Publish",
     "jobPublished": "The job has been published!"

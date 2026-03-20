@@ -1040,6 +1040,8 @@
     "pipelineHelp": "Dra og slipp for å endre rekkefølge. Legg til intervjuer og tester etter behov.",
     "previous": "Forrige",
     "nextStep": "Neste steg",
+    "saveDraft": "Lagre utkast",
+    "draftSaved": "Utkast lagret!",
     "publishing": "Publiserer...",
     "completeAndPublish": "Fullfør og publiser",
     "jobPublished": "Jobben er publisert!"

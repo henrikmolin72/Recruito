@@ -1040,6 +1040,8 @@
     "pipelineHelp": "Dra och släpp för att ändra ordning. Lägg till intervjuer och tester efter behov.",
     "previous": "Föregående",
     "nextStep": "Nästa steg",
+    "saveDraft": "Spara utkast",
+    "draftSaved": "Utkast sparat!",
     "publishing": "Publicerar...",
     "completeAndPublish": "Slutför och publicera",
     "jobPublished": "Jobbet har publicerats!"

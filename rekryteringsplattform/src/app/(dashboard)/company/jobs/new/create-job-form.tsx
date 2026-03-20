@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { PipelineBuilder } from "@/components/dashboard/company/pipeline-builder";
+import { RecruitmentCalculator } from "@/components/layout/recruitment-calculator";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import type { PipelineStage } from "@/types/db-types";
 import { useTranslations } from "@/i18n/client";
@@ -422,6 +423,11 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                         <input type="checkbox" name="is_confidential" id="is_confidential"
                                             checked={formData.is_confidential} onChange={handleInputChange} className={checkboxClass} />
                                         <label htmlFor="is_confidential" className="text-sm text-slate-600">{t("jobForm.confidential")}</label>
+                                    </div>
+
+                                    {/* Recruitment Fee Calculator */}
+                                    <div className="pt-4 mt-4 border-t border-slate-100">
+                                        <RecruitmentCalculator />
                                     </div>
                                 </div>
                             )}
