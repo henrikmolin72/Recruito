@@ -81,23 +81,24 @@ export default function ComingSoonPage() {
         className="relative z-10 flex flex-col items-center text-center px-6"
         style={{ animation: "fadeUp 1.2s ease-out forwards" }}
       >
-        {/* Logo image with glow pulse */}
+        {/* Hero image */}
         <div
           style={{
             animation: "glowPulse 3s ease-in-out infinite",
-            filter: "drop-shadow(0 0 30px rgba(0, 140, 180, 0.25))",
             marginBottom: "2rem",
           }}
         >
           <Image
             src="/images/coming-soon.png"
             alt="Recruito — Coming Soon"
-            width={420}
-            height={420}
+            width={600}
+            height={600}
             priority
             style={{
-              maxWidth: "min(420px, 85vw)",
+              maxWidth: "min(600px, 90vw)",
               height: "auto",
+              borderRadius: "20px",
+              boxShadow: "0 8px 40px rgba(0, 80, 120, 0.15)",
             }}
           />
         </div>
