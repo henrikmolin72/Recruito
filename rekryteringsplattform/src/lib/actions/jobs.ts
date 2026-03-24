@@ -71,16 +71,34 @@ export async function createJob(formData: FormData) {
             .from("companies")
             .insert({
                 user_id: user.id,
-                name: companyName,
+                company_name: companyName,
             })
             .select("id")
             .single();
 
-        if (createError || !newCompany) {
-            console.error("Could not create company profile:", createError);
+        if (createError) {
+            // If unique constraint — company was created in a parallel request, re-fetch
+            if (createError.code === "23505") {
+                const { data: refetched } = await supabase
+                    .from("companies")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .single();
+                if (refetched) {
+                    company = refetched;
+                } else {
+                    console.error("Could not create company profile:", createError);
+                    return { error: "Kunde inte skapa företagsprofil. Kontakta support." };
+                }
+            } else {
+                console.error("Could not create company profile:", createError);
+                return { error: "Kunde inte skapa företagsprofil. Kontakta support." };
+            }
+        } else if (!newCompany) {
             return { error: "Kunde inte skapa företagsprofil. Kontakta support." };
+        } else {
+            company = newCompany;
         }
-        company = newCompany;
     }
 
     // 3. Calculate fee from volume tier
