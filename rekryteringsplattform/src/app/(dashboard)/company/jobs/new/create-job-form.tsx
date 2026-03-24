@@ -52,6 +52,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     const { t } = useTranslations();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
     const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>(DEFAULT_PIPELINE_STAGES);
     const [screeningQuestions, setScreeningQuestions] = useState<string[]>([""]);
     const [keyRequirements, setKeyRequirements] = useState<string[]>([""]);
@@ -65,7 +66,6 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         { id: 5, title: t("jobForm.step5Title"), description: t("jobForm.step5Desc") },
         { id: 6, title: t("jobForm.step6Title"), description: t("jobForm.step6Desc") },
         { id: 7, title: t("jobForm.step7Title"), description: t("jobForm.step7Desc") },
-        { id: 8, title: t("jobForm.step8Title"), description: t("jobForm.step8Desc") },
     ];
 
     const BENEFIT_LABELS: Record<string, string> = {
@@ -225,7 +225,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     };
 
     const nextStep = () => {
-        if (step < 8) setStep(step + 1);
+        if (step < 7) setStep(step + 1);
     };
 
     const prevStep = () => {
@@ -284,6 +284,10 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     }
 
     async function handleSubmit() {
+        if (!declarationConfirmed) {
+            toast.error(t("jobForm.declarationRequired") || "You must confirm the declaration to submit.");
+            return;
+        }
         setLoading(true);
         const data = buildFormData();
 
@@ -427,6 +431,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
 
                                     {/* Recruitment Fee Calculator */}
                                     <div className="pt-4 mt-4 border-t border-slate-100">
+                                        <h3 className="text-sm font-bold text-slate-700 mb-3">{t("jobForm.calculatorTitle") || "Calculator"}</h3>
                                         <RecruitmentCalculator />
                                     </div>
                                 </div>
@@ -677,33 +682,15 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                 </div>
                             )}
 
-                            {/* ===== STEP 5: RECRUITMENT DETAILS ===== */}
-                            {/* Only show: Application deadline + Warranty period */}
+                            {/* ===== STEP 5: RECRUITMENT & SCREENING ===== */}
                             {step === 5 && (
                                 <div className="space-y-5">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>{t("jobForm.applicationDeadline")}</label>
-                                            <Input type="date" name="application_deadline" value={formData.application_deadline} onChange={handleInputChange} />
-                                            <p className="text-[10px] text-muted-foreground italic">{t("jobForm.deadlineHelp")}</p>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>{t("jobForm.warrantyPeriod")}</label>
-                                            <select name="guarantee_period_months" value={formData.guarantee_period_months} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">{t("jobForm.selectWarranty")}</option>
-                                                <option value="1">{t("jobForm.month1")}</option>
-                                                <option value="2">{t("jobForm.months2")}</option>
-                                                <option value="3">{t("jobForm.months3")}</option>
-                                            </select>
-                                        </div>
+                                    <div className="space-y-2">
+                                        <label className={labelClass}>{t("jobForm.applicationDeadline")}</label>
+                                        <Input type="date" name="application_deadline" value={formData.application_deadline} onChange={handleInputChange} className="max-w-xs" />
+                                        <p className="text-[10px] text-muted-foreground italic">{t("jobForm.deadlineHelp")}</p>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* ===== STEP 6: SCREENING & HIRING PROCESS ===== */}
-                            {step === 6 && (
-                                <div className="space-y-5">
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 pt-2 border-t border-slate-100">
                                         <label className={labelClass}>{t("jobForm.screeningQuestions")}</label>
                                         {screeningQuestions.map((q, i) => (
                                             <div key={i} className="flex items-center gap-2">
@@ -725,7 +712,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                             </button>
                                         )}
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.numInterviews")}</label>
                                             <select name="num_interviews" value={formData.num_interviews} onChange={handleInputChange} className={selectClass}>
@@ -757,8 +744,8 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                 </div>
                             )}
 
-                            {/* ===== STEP 7: WORKING CONDITIONS & TIMELINE ===== */}
-                            {step === 7 && (
+                            {/* ===== STEP 6: CONDITIONS & OTHER ===== */}
+                            {step === 6 && (
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
@@ -808,13 +795,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                             </select>
                                         </div>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* ===== STEP 8: OTHER + PIPELINE ===== */}
-                            {step === 8 && (
-                                <div className="space-y-5">
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 pt-2 border-t border-slate-100">
                                         <p className={labelClass}>{t("jobForm.otherInfo")}</p>
                                         <div className="flex items-center gap-3">
                                             <input type="checkbox" name="travel_required" id="travel_required"
@@ -834,6 +815,54 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                     </div>
                                 </div>
                             )}
+
+                            {/* ===== STEP 7: DECLARATION ===== */}
+                            {step === 7 && (
+                                <div className="space-y-5">
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+                                        <h3 className="text-base font-bold text-slate-800">{t("jobForm.employerDeclarationTitle") || "Employer Declaration"}</h3>
+                                        <p className="text-sm text-slate-600">{t("jobForm.employerDeclarationIntro") || "By submitting this job, the Employer confirms:"}</p>
+                                        <ul className="space-y-2 text-sm text-slate-600 list-none">
+                                            {[
+                                                t("jobForm.employerDecl1") || "All job details (role, salary, requirements) are accurate and genuine",
+                                                t("jobForm.employerDecl2") || "There is a real and active hiring need",
+                                                t("jobForm.employerDecl3") || "Candidates will be reviewed and managed in a timely and professional manner",
+                                                t("jobForm.employerDecl4") || "The Employer will make reasonable efforts to complete candidate review, interviews, and hiring decisions within 6 weeks of candidate submission",
+                                                t("jobForm.employerDecl5") || "Candidate data will be handled in accordance with applicable data privacy regulations",
+                                                t("jobForm.employerDecl6") || "The Employer will not bypass the platform to engage candidates directly",
+                                                t("jobForm.employerDecl7") || "All applicable fees, terms, and guarantee conditions are accepted",
+                                                t("jobForm.employerDecl8") || "The hiring process complies with local laws and regulations",
+                                                t("jobForm.employerDecl9") || "The Employer agrees to pay €100 to the recruiter if a submitted candidate reaches and attends the final interview stage (decision stage)",
+                                            ].map((item, i) => (
+                                                <li key={i} className="flex gap-2">
+                                                    <span className="text-slate-400 mt-0.5">•</span>
+                                                    <span>{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <div className="pt-2 border-t border-slate-200">
+                                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t("jobForm.referencePolicies") || "Reference Policies"}</p>
+                                            <ul className="space-y-1 text-sm text-slate-600 list-none">
+                                                <li className="flex gap-2"><span className="text-slate-400">•</span><span>{t("jobForm.termsOfService") || "Terms of Service"}</span></li>
+                                                <li className="flex gap-2"><span className="text-slate-400">•</span><span>{t("jobForm.privacyPolicy") || "Privacy Policy"}</span></li>
+                                                <li className="flex gap-2"><span className="text-slate-400">•</span><span>GDPR</span></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-3 pt-1">
+                                        <input
+                                            type="checkbox"
+                                            id="declaration_confirmed"
+                                            checked={declarationConfirmed}
+                                            onChange={(e) => setDeclarationConfirmed(e.target.checked)}
+                                            className={checkboxClass}
+                                        />
+                                        <label htmlFor="declaration_confirmed" className="text-sm font-medium text-slate-700 cursor-pointer">
+                                            {t("jobForm.declarationConfirmText") || "I confirm that I have read and agree to the above declaration and all applicable policies."}
+                                        </label>
+                                    </div>
+                                </div>
+                            )}
                         </motion.div>
                     </AnimatePresence>
 
@@ -848,7 +877,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                 className="gap-2 px-4">
                                 {loading ? "Sparar..." : (t("jobForm.saveDraft") || "Save Draft")}
                             </Button>
-                            {step < 8 && (
+                            {step < 7 && (
                                 <Button onClick={nextStep}
                                     className="bg-brand-600 hover:bg-brand-700 text-white gap-2 px-6 shadow-md shadow-brand-500/20"
                                     disabled={step === 1 && !formData.title}>
@@ -858,7 +887,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                             <Button onClick={handleSubmit} disabled={loading}
                                 className={cn(
                                     "bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20",
-                                    step < 8 && "bg-success-600/80"
+                                    step < 7 && "bg-success-600/80"
                                 )}>
                                 {loading ? t("jobForm.publishing") : t("jobForm.completeAndPublish")}
                                 <Sparkles className="h-4 w-4 fill-current" />

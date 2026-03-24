@@ -19,7 +19,6 @@ import {
   UserCheck,
   Banknote,
   Settings,
-  Calculator,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -29,7 +28,6 @@ interface NavItem {
   icon: LucideIcon;
   badge?: string;
   isMessages?: boolean;
-  isCalculator?: boolean;
 }
 
 const COMPANY_NAV: NavItem[] = [
@@ -37,7 +35,6 @@ const COMPANY_NAV: NavItem[] = [
   { labelKey: "nav.jobs", href: "/company/jobs", icon: Briefcase },
   { labelKey: "nav.candidates", href: "/company/candidates", icon: Users },
   { labelKey: "nav.messages", href: "/company/messages", icon: MessageSquare, isMessages: true },
-  { labelKey: "nav.calculator", href: "#calculator", icon: Calculator, isCalculator: true },
   { labelKey: "nav.billing", href: "/company/billing", icon: CreditCard },
   { labelKey: "nav.profile", href: "/company/profile", icon: Building2 },
 ];
@@ -68,7 +65,6 @@ export const NAV_MAP: Record<string, NavItem[]> = {
 };
 
 import { useState, useEffect } from "react";
-import { RecruitmentCalculator } from "@/components/layout/recruitment-calculator";
 
 export function Sidebar({ role }: { role: string }) {
   const pathname = usePathname();
@@ -76,7 +72,6 @@ export function Sidebar({ role }: { role: string }) {
   const navItems = NAV_MAP[role] || COMPANY_NAV;
   const [userData, setUserData] = useState<{ fullName: string, initials: string } | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [calcOpen, setCalcOpen] = useState(true);
 
   useEffect(() => {
     import("@/lib/actions/user").then(({ getSidebarData }) => {
@@ -116,31 +111,8 @@ export function Sidebar({ role }: { role: string }) {
 
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = !item.isCalculator && (pathname === item.href || (item.href !== `/${role}` && pathname.startsWith(item.href)));
+          const isActive = pathname === item.href || (item.href !== `/${role}` && pathname.startsWith(item.href));
           const badge = item.isMessages && unreadMessages > 0 ? unreadMessages.toString() : item.badge;
-
-          if (item.isCalculator) {
-            return (
-              <div key={item.href}>
-                <button
-                  onClick={() => setCalcOpen(!calcOpen)}
-                  className={cn(
-                    "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all group",
-                    calcOpen
-                      ? "bg-brand-50 text-brand-600"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <item.icon className={cn(
-                    "h-5 w-5 transition-colors",
-                    calcOpen ? "" : "text-muted-foreground"
-                  )} />
-                  {t(item.labelKey)}
-                </button>
-                {calcOpen && <RecruitmentCalculator />}
-              </div>
-            );
-          }
 
           return (
             <Link

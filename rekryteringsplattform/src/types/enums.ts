@@ -86,6 +86,5 @@ export const MAX_INTERVIEW_STAGES = 4;
 export const MAX_TEST_STAGES = 4;
 
 export const DEFAULT_PIPELINE_STAGES = [
-    { id: 'screening', type: 'screening' as const, title: 'Screening', order: 0 },
-    { id: 'interview-1', type: 'interview' as const, title: 'Intervju 1', order: 1 },
+    { id: 'interview-1', type: 'interview' as const, title: 'Intervju 1', order: 0 },
 ];

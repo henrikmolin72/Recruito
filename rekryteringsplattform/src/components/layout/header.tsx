@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogOut, User, Settings, Calculator } from "lucide-react";
+import { Menu, X, LogOut, User, Settings } from "lucide-react";
 import { logout } from "@/lib/actions/auth";
 import { NotificationsDropdown } from "@/components/layout/notifications-dropdown";
 import { QuickActions } from "@/components/layout/quick-actions";
@@ -13,7 +13,6 @@ import { useTranslations } from "@/i18n/client";
 import { cn } from "@/lib/utils";
 
 import { useState, useEffect } from "react";
-import { RecruitmentCalculator } from "@/components/layout/recruitment-calculator";
 
 export function Header({ role }: { role: string }) {
   const pathname = usePathname();
@@ -21,7 +20,6 @@ export function Header({ role }: { role: string }) {
   const [initials, setInitials] = useState("U");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [mobileCalcOpen, setMobileCalcOpen] = useState(true);
   const isRecruiter = role === "recruiter";
   const navItems = NAV_MAP[role] || NAV_MAP.company;
 
@@ -166,30 +164,7 @@ export function Header({ role }: { role: string }) {
             {/* Nav items */}
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
               {navItems.map((item) => {
-                const isActive = !item.isCalculator && (pathname === item.href || (item.href !== `/${role}` && pathname.startsWith(item.href)));
-
-                if (item.isCalculator) {
-                  return (
-                    <div key={item.href}>
-                      <button
-                        onClick={() => setMobileCalcOpen(!mobileCalcOpen)}
-                        className={cn(
-                          "w-full flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-all",
-                          mobileCalcOpen
-                            ? (isRecruiter ? "bg-brand-500 text-white shadow-md shadow-brand-500/20" : "bg-brand-50 text-brand-600")
-                            : (isRecruiter ? "text-slate-400 hover:bg-slate-800/50 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground")
-                        )}
-                      >
-                        <Calculator className={cn(
-                          "h-5 w-5",
-                          mobileCalcOpen ? "" : (isRecruiter ? "text-slate-500" : "text-muted-foreground")
-                        )} />
-                        {t(item.labelKey)}
-                      </button>
-                      {mobileCalcOpen && <RecruitmentCalculator />}
-                    </div>
-                  );
-                }
+                const isActive = pathname === item.href || (item.href !== `/${role}` && pathname.startsWith(item.href));
 
                 return (
                   <Link
