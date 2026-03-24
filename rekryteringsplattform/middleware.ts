@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const COMING_SOON_ENABLED = true;
+const PREVIEW_TOKEN = process.env.PREVIEW_TOKEN || "recruito2026launch";
 const COOKIE_NAME = "recruito_preview";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 dagar
 
 // Paths that are always accessible (even in coming soon mode)
 const PUBLIC_PATHS = [
@@ -14,10 +16,25 @@ const PUBLIC_PATHS = [
 ];
 
 export async function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl;
+    const { pathname, searchParams } = request.nextUrl;
 
     // --- Coming Soon gate ---
     if (COMING_SOON_ENABLED) {
+        // Check for ?preview=TOKEN bypass — set cookie and redirect clean URL
+        const previewParam = searchParams.get("preview");
+        if (previewParam === PREVIEW_TOKEN) {
+            const cleanUrl = new URL(pathname, request.url);
+            const response = NextResponse.redirect(cleanUrl);
+            response.cookies.set(COOKIE_NAME, "true", {
+                httpOnly: true,
+                secure: true,
+                sameSite: "lax",
+                maxAge: COOKIE_MAX_AGE,
+                path: "/",
+            });
+            return response;
+        }
+
         const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
         if (!isPublicPath) {
