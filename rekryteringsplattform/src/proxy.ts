@@ -14,7 +14,7 @@ const PUBLIC_PATHS = [
   "/api",
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
   // Tillåt alltid publika paths
