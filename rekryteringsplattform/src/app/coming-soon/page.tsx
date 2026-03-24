@@ -98,9 +98,6 @@ export default function ComingSoonPage() {
             style={{
               maxWidth: "min(420px, 85vw)",
               height: "auto",
-              background: "white",
-              borderRadius: "24px",
-              padding: "12px",
             }}
           />
         </div>
