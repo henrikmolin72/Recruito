@@ -89,26 +89,20 @@ export default function ComingSoonPage() {
             marginBottom: "2rem",
           }}
         >
-          <div
+          <Image
+            src="/images/coming-soon.png"
+            alt="Recruito — Coming Soon"
+            width={420}
+            height={420}
+            priority
             style={{
-              background: "linear-gradient(135deg, #e8f4f8, #dceef5)",
+              maxWidth: "min(420px, 85vw)",
+              height: "auto",
+              background: "white",
               borderRadius: "24px",
-              padding: "8px",
+              padding: "12px",
             }}
-          >
-            <Image
-              src="/images/coming-soon.png"
-              alt="Recruito — Coming Soon"
-              width={420}
-              height={420}
-              priority
-              style={{
-                maxWidth: "min(420px, 85vw)",
-                height: "auto",
-                mixBlendMode: "multiply",
-              }}
-            />
-          </div>
+          />
         </div>
 
         {/* Animated divider line */}
