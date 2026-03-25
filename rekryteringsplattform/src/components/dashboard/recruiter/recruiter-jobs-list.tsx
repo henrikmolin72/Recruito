@@ -19,6 +19,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
+import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 
 interface RecruiterJobsListProps {
   jobs: any[];
@@ -152,7 +153,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                           {job.industry}
                         </Badge>
                         <Badge variant="outline" className="rounded-full bg-blue-50 text-blue-600 border-blue-100 py-1 px-3">
-                          {job.employment_type || t("employment.fullTime")}
+                          {t(`employment.${EMPLOYMENT_TYPE_DICT_KEY[job.employment_type] || "fullTime"}`)}
                         </Badge>
                       </div>
 

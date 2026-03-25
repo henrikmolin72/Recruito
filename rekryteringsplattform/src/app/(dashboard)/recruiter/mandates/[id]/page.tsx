@@ -15,6 +15,7 @@ import { getRecruiterMandateById, getRecruiterApplicationsForJob } from "@/lib/a
 import { getAppUrl } from "@/lib/app-url";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getDictionary } from "@/i18n/server";
+import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 
 const MAX_SUBMISSIONS = 7;
 
@@ -52,7 +53,7 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
           <div className="flex items-center flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1"><Building2 className="h-3.5 w-3.5" /> {mandate.company}</span>
             <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {mandate.location || dict.common.notSpecified}</span>
-            <span className="inline-flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" /> {mandate.employment_type || dict.common.notSpecified}</span>
+            <span className="inline-flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" /> {mandate.employment_type ? (dict.employment as any)[EMPLOYMENT_TYPE_DICT_KEY[mandate.employment_type]] || mandate.employment_type : dict.common.notSpecified}</span>
           </div>
         </div>
 

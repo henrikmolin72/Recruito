@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
+import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 
 interface DownloadJobDescriptionProps {
     mandate: {
@@ -35,7 +36,7 @@ export function DownloadJobDescription({ mandate }: DownloadJobDescriptionProps)
             `${t("components.downloadJobCompanyLabel")} ${mandate.company}`,
             `${t("components.downloadJobLocationLabel")} ${mandate.location}`,
             `${t("components.downloadJobIndustryLabel")} ${mandate.industry}`,
-            `${t("components.downloadJobEmploymentTypeLabel")} ${mandate.employment_type}`,
+            `${t("components.downloadJobEmploymentTypeLabel")} ${t(`employment.${EMPLOYMENT_TYPE_DICT_KEY[mandate.employment_type] || "fullTime"}`)}`,
             `${t("components.downloadJobSalaryLabel")} ${salary}`,
             "",
             t("components.downloadJobDescriptionLabel"),

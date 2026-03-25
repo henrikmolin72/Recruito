@@ -309,6 +309,7 @@
     "tableCompleted": "Genomförd",
     "tableRecruiters": "Rekryterare",
     "tableCandidates": "Kandidater",
+    "tableRecruitmentFee": "Rekryteringsavgift",
     "recentActivity": "Senaste aktiviteten",
     "noActivityYet": "Ingen aktivitet att visa än.",
     "jobsPageTitle": "Jobb",
@@ -745,12 +746,28 @@
     "partTime": "Deltid",
     "consultant": "Konsult",
     "consultantB2B": "Konsult (B2B)",
-    "freelance": "Frilans"
+    "freelance": "Frilans",
+    "internship": "Praktik"
   },
   "pricing": {
     "gold": "Guld",
     "silver": "Silver",
     "standard": "Standard"
+  },
+  "validation": {
+    "fieldMinLength": "{field} måste vara minst {min} tecken",
+    "fieldMaxLength": "{field} får max vara {max} tecken",
+    "invalidInput": "Ogiltig inmatning",
+    "currencyRequired": "Valuta krävs",
+    "invalidCurrency": "Ogiltig valuta",
+    "minOneRecruiter": "Minst 1 rekryterare",
+    "maxTenRecruiters": "Max 10 rekryterare",
+    "maxSalaryMustBeHigher": "Maxlön måste vara större än eller lika med minlön",
+    "fieldTitle": "Titel",
+    "fieldLocation": "Plats",
+    "fieldIndustry": "Bransch",
+    "fieldEmploymentType": "Anställningsform",
+    "fieldDescription": "Beskrivning"
   },
   "legal": {
     "termsTitle": "Användarvillkor",
@@ -947,6 +964,11 @@
     "workTypeOnsite": "På plats",
     "workTypeHybrid": "Hybrid",
     "workTypeRemote": "Remote",
+    "empFullTime": "Heltid",
+    "empPartTime": "Deltid",
+    "empConsultant": "Konsult",
+    "empFreelance": "Frilans",
+    "empInternship": "Praktik",
     "remoteLocal": "Lokalt (samma land)",
     "remoteInternational": "Internationellt",
     "keyRequirements": "Nyckelkrav",

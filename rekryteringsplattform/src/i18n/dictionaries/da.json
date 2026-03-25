@@ -309,6 +309,7 @@
     "tableCompleted": "Gennemført",
     "tableRecruiters": "Rekrutterere",
     "tableCandidates": "Kandidater",
+    "tableRecruitmentFee": "Rekrutteringshonorar",
     "recentActivity": "Seneste aktivitet",
     "noActivityYet": "Ingen aktivitet at vise endnu.",
     "jobsPageTitle": "Jobs",
@@ -745,12 +746,28 @@
     "partTime": "Deltid",
     "consultant": "Konsulent",
     "consultantB2B": "Konsulent (B2B)",
-    "freelance": "Freelance"
+    "freelance": "Freelance",
+    "internship": "Praktik"
   },
   "pricing": {
     "gold": "Guld",
     "silver": "Sølv",
     "standard": "Standard"
+  },
+  "validation": {
+    "fieldMinLength": "{field} skal være mindst {min} tegn",
+    "fieldMaxLength": "{field} må maks være {max} tegn",
+    "invalidInput": "Ugyldig input",
+    "currencyRequired": "Valuta er påkrævet",
+    "invalidCurrency": "Ugyldig valuta",
+    "minOneRecruiter": "Mindst 1 rekrutterer",
+    "maxTenRecruiters": "Maks 10 rekrutterere",
+    "maxSalaryMustBeHigher": "Maks løn skal være større end eller lig med min løn",
+    "fieldTitle": "Titel",
+    "fieldLocation": "Sted",
+    "fieldIndustry": "Branche",
+    "fieldEmploymentType": "Ansættelsesform",
+    "fieldDescription": "Beskrivelse"
   },
   "legal": {
     "termsTitle": "Brugervilkår",
@@ -947,6 +964,11 @@
     "workTypeOnsite": "På stedet",
     "workTypeHybrid": "Hybrid",
     "workTypeRemote": "Remote",
+    "empFullTime": "Fuldtid",
+    "empPartTime": "Deltid",
+    "empConsultant": "Konsulent",
+    "empFreelance": "Freelance",
+    "empInternship": "Praktik",
     "remoteLocal": "Lokalt (samme land)",
     "remoteInternational": "Internationalt",
     "keyRequirements": "Nøglekrav",

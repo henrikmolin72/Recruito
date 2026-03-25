@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { updateJob } from "@/lib/actions/jobs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getDictionary } from "@/i18n/server";
+import { getDictionary, createTranslator } from "@/i18n/server";
 import {
     EMPLOYMENT_TYPE_OPTIONS,
     WORK_TYPE_OPTIONS,
@@ -56,7 +56,16 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
     if (!job) notFound();
 
     const dict = await getDictionary();
+    const t = await createTranslator();
     const c = dict.company;
+
+    const EMPLOYMENT_TYPE_LABELS: Record<string, string> = {
+        full_time: t("jobForm.empFullTime"),
+        part_time: t("jobForm.empPartTime"),
+        consultant: t("jobForm.empConsultant"),
+        freelance: t("jobForm.empFreelance"),
+        internship: t("jobForm.empInternship"),
+    };
 
     const benefits = (job.benefits as string[] | null) ?? [];
     const screeningQs = (job.screening_questions as string[] | null) ?? [];
@@ -124,7 +133,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">{c.employmentTypeSelectLabel}</label>
                                 <select name="employment_type" defaultValue={job.employment_type} className={selectClass}>
-                                    {EMPLOYMENT_TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                                    {EMPLOYMENT_TYPE_OPTIONS.map(et => <option key={et} value={et}>{EMPLOYMENT_TYPE_LABELS[et]}</option>)}
                                 </select>
                             </div>
                             <div className="space-y-2">

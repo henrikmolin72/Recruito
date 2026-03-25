@@ -309,6 +309,7 @@
     "tableCompleted": "Completed",
     "tableRecruiters": "Recruiters",
     "tableCandidates": "Candidates",
+    "tableRecruitmentFee": "Recruitment Fee",
     "recentActivity": "Recent activity",
     "noActivityYet": "No activity to show yet.",
     "jobsPageTitle": "Jobs",
@@ -745,12 +746,28 @@
     "partTime": "Part-time",
     "consultant": "Consultant",
     "consultantB2B": "Consultant (B2B)",
-    "freelance": "Freelance"
+    "freelance": "Freelance",
+    "internship": "Internship"
   },
   "pricing": {
     "gold": "Gold",
     "silver": "Silver",
     "standard": "Standard"
+  },
+  "validation": {
+    "fieldMinLength": "{field} must be at least {min} characters",
+    "fieldMaxLength": "{field} must be at most {max} characters",
+    "invalidInput": "Invalid input",
+    "currencyRequired": "Currency is required",
+    "invalidCurrency": "Invalid currency",
+    "minOneRecruiter": "Minimum 1 recruiter",
+    "maxTenRecruiters": "Maximum 10 recruiters",
+    "maxSalaryMustBeHigher": "Max salary must be greater than or equal to min salary",
+    "fieldTitle": "Title",
+    "fieldLocation": "Location",
+    "fieldIndustry": "Industry",
+    "fieldEmploymentType": "Employment type",
+    "fieldDescription": "Description"
   },
   "legal": {
     "termsTitle": "Terms of Service",
@@ -947,6 +964,11 @@
     "workTypeOnsite": "Onsite",
     "workTypeHybrid": "Hybrid",
     "workTypeRemote": "Remote",
+    "empFullTime": "Full-time",
+    "empPartTime": "Part-time",
+    "empConsultant": "Consultant",
+    "empFreelance": "Freelance",
+    "empInternship": "Internship",
     "remoteLocal": "Local (same country)",
     "remoteInternational": "International",
     "keyRequirements": "Key Requirements",

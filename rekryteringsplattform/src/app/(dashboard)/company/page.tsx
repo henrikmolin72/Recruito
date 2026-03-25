@@ -2,16 +2,13 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Briefcase, Users, Clock, CheckCircle, TrendingDown } from "lucide-react";
+import { Briefcase, Users, Clock, CheckCircle } from "lucide-react";
 import { getCompanyDashboard } from "@/lib/actions/company";
 import { formatDate } from "@/lib/utils";
-import { getTierForPlacementCount, placementsUntilNextTier, PRICING_TIERS } from "@/lib/pricing";
 import { getDictionary, createTranslator } from "@/i18n/server";
 
 export default async function CompanyDashboard() {
   const { company, jobs, stats, recentActivity } = await getCompanyDashboard();
-  const currentTier = getTierForPlacementCount(stats.recentPlacements);
-  const nextTierInfo = placementsUntilNextTier(stats.recentPlacements);
   const dict = await getDictionary();
   const t = await createTranslator();
   const c = dict.company;
@@ -29,35 +26,6 @@ export default async function CompanyDashboard() {
         <StatsCard title={c.ongoingInterviews} value={stats.interviews} icon={Clock} />
         <StatsCard title={c.successfulPlacements} value={stats.placements} icon={CheckCircle} description={c.totalCount} />
       </div>
-
-      <Card className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{c.pricingAgreement}</p>
-            <p className="text-2xl font-bold mt-1">{currentTier.feePercentage}%</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t(currentTier.labelKey)} ({stats.recentPlacements} {c.placementsLabel})
-            </p>
-            {nextTierInfo && (
-              <p className="text-xs text-brand-600 mt-1">
-                {nextTierInfo.needed} {c.placementsLabel} → {t(nextTierInfo.nextTier.labelKey)} ({nextTierInfo.nextTier.feePercentage}%)
-              </p>
-            )}
-          </div>
-          <div className="h-12 w-12 rounded-lg bg-brand-50 flex items-center justify-center">
-            <TrendingDown className="h-6 w-6 text-brand-600" />
-          </div>
-        </div>
-        <div className="flex gap-4 mt-4 pt-4 border-t border-border">
-          {PRICING_TIERS.slice().reverse().map((tier) => (
-            <div key={tier.labelKey} className={`flex-1 text-center p-2 rounded-lg ${tier.labelKey === currentTier.labelKey ? "bg-brand-50 ring-1 ring-brand-200" : "bg-muted"}`}>
-              <p className="text-xs text-muted-foreground">{t(tier.labelKey)}</p>
-              <p className="text-sm font-bold">{tier.feePercentage}%</p>
-              <p className="text-[10px] text-muted-foreground">{tier.minPlacements}+ {c.placementsLabel}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -79,6 +47,7 @@ export default async function CompanyDashboard() {
                     <th className="pb-3 font-medium text-muted-foreground">{c.tableCompleted}</th>
                     <th className="pb-3 font-medium text-muted-foreground">{c.tableRecruiters}</th>
                     <th className="pb-3 font-medium text-muted-foreground">{c.tableCandidates}</th>
+                    <th className="pb-3 font-medium text-muted-foreground">{c.tableRecruitmentFee}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -88,8 +57,9 @@ export default async function CompanyDashboard() {
                       <td className="py-3 text-muted-foreground">{job.location}</td>
                       <td className="py-3"><StatusBadge status={job.status} /></td>
                       <td className="py-3 text-muted-foreground">{formatDate(job.created_at)}</td>
-                      <td className="py-3"><Badge variant="outline">{job.recruiters_count}/{job.max_recruiters}</Badge></td>
+                      <td className="py-3"><Badge variant="outline">{job.recruiters_count}</Badge></td>
                       <td className="py-3">{job.candidates_count}</td>
+                      <td className="py-3">{job.fee_percentage}%</td>
                     </tr>
                   ))}
                 </tbody>

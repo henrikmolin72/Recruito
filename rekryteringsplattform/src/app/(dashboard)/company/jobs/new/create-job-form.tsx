@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { createJob } from "@/lib/actions/jobs";
-import { ArrowLeft, Check, ChevronRight, ChevronLeft, Sparkles, Plus, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, ChevronLeft, Sparkles, Plus, X, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { PipelineBuilder } from "@/components/dashboard/company/pipeline-builder";
 import { RecruitmentCalculator } from "@/components/layout/recruitment-calculator";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import type { PipelineStage } from "@/types/db-types";
@@ -53,7 +52,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
-    const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>(DEFAULT_PIPELINE_STAGES);
+    const pipelineStages = DEFAULT_PIPELINE_STAGES;
     const [screeningQuestions, setScreeningQuestions] = useState<string[]>([""]);
     const [keyRequirements, setKeyRequirements] = useState<string[]>([""]);
     const [languageRequirements, setLanguageRequirements] = useState<LanguageRequirement[]>([]);
@@ -76,6 +75,14 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         profit_sharing: t("jobForm.benefitProfitSharing"),
         stock_options: t("jobForm.benefitStockOptions"),
         relocation_package: t("jobForm.benefitRelocation"),
+    };
+
+    const EMPLOYMENT_TYPE_LABELS: Record<string, string> = {
+        full_time: t("jobForm.empFullTime"),
+        part_time: t("jobForm.empPartTime"),
+        consultant: t("jobForm.empConsultant"),
+        freelance: t("jobForm.empFreelance"),
+        internship: t("jobForm.empInternship"),
     };
 
     const WORK_TYPE_LABELS: Record<string, string> = {
@@ -119,7 +126,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         industry: "",
         is_confidential: false,
         // Step 2
-        employment_type: "Heltid",
+        employment_type: "full_time",
         contract_duration: "",
         work_type: "",
         remote_type: "",
@@ -444,10 +451,10 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.employmentType")} *</label>
                                             <select name="employment_type" value={formData.employment_type} onChange={handleInputChange} className={selectClass}>
-                                                {EMPLOYMENT_TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                                                {EMPLOYMENT_TYPE_OPTIONS.map(et => <option key={et} value={et}>{EMPLOYMENT_TYPE_LABELS[et]}</option>)}
                                             </select>
                                         </div>
-                                        {(formData.employment_type === "Konsult") && (
+                                        {(formData.employment_type === "consultant") && (
                                             <div className="space-y-2">
                                                 <label className={labelClass}>{t("jobForm.contractDuration")}</label>
                                                 <Input name="contract_duration" value={formData.contract_duration} onChange={handleInputChange}
@@ -808,11 +815,6 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                             <label htmlFor="background_check_required" className="text-sm text-slate-600">{t("jobForm.backgroundCheck")}</label>
                                         </div>
                                     </div>
-                                    <div className="space-y-3 pt-2 border-t border-slate-100">
-                                        <label className={labelClass}>{t("jobForm.pipeline")}</label>
-                                        <p className="text-sm text-slate-500">{t("jobForm.pipelineHelp")}</p>
-                                        <PipelineBuilder stages={pipelineStages} onChange={setPipelineStages} />
-                                    </div>
                                 </div>
                             )}
 
@@ -842,11 +844,20 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                         </ul>
                                         <div className="pt-2 border-t border-slate-200">
                                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t("jobForm.referencePolicies") || "Reference Policies"}</p>
-                                            <ul className="space-y-1 text-sm text-slate-600 list-none">
-                                                <li className="flex gap-2"><span className="text-slate-400">•</span><span>{t("jobForm.termsOfService") || "Terms of Service"}</span></li>
-                                                <li className="flex gap-2"><span className="text-slate-400">•</span><span>{t("jobForm.privacyPolicy") || "Privacy Policy"}</span></li>
-                                                <li className="flex gap-2"><span className="text-slate-400">•</span><span>GDPR</span></li>
-                                            </ul>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Link href="/anvandarvillkor" target="_blank" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors">
+                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                    {t("jobForm.termsOfService") || "Terms of Service"}
+                                                </Link>
+                                                <Link href="/integritetspolicy" target="_blank" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors">
+                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                    {t("jobForm.privacyPolicy") || "Privacy Policy"}
+                                                </Link>
+                                                <Link href="/gdpr" target="_blank" className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors">
+                                                    <ExternalLink className="h-3.5 w-3.5" />
+                                                    GDPR
+                                                </Link>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3 pt-1">

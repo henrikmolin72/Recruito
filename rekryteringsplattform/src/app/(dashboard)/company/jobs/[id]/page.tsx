@@ -24,6 +24,7 @@ import { JobActions } from "@/components/dashboard/company/job-actions";
 import { CompanyCandidatesOverview } from "@/components/dashboard/company/company-candidates-overview";
 import { PipelineEditor } from "@/components/dashboard/company/pipeline-editor";
 import { getDictionary } from "@/i18n/server";
+import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 
 async function getJob(id: string) {
@@ -176,7 +177,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                                         </div>
                                         <div>
                                             <span className="text-xs font-bold text-slate-400 uppercase">{c.employmentTypeLabel}</span>
-                                            <p className="font-bold text-slate-700">{job.employment_type}</p>
+                                            <p className="font-bold text-slate-700">{dict.employment[EMPLOYMENT_TYPE_DICT_KEY[job.employment_type] as keyof typeof dict.employment] || job.employment_type}</p>
                                         </div>
                                         <div>
                                             <span className="text-xs font-bold text-slate-400 uppercase">{c.indicativeSalary}</span>

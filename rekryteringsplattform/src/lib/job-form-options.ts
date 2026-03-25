@@ -3,12 +3,21 @@
 // =============================================
 
 export const EMPLOYMENT_TYPE_OPTIONS = [
-  "Heltid",
-  "Deltid",
-  "Konsult",
-  "Frilans",
-  "Praktik",
+  "full_time",
+  "part_time",
+  "consultant",
+  "freelance",
+  "internship",
 ] as const;
+
+// Maps employment_type DB key to the employment dict key
+export const EMPLOYMENT_TYPE_DICT_KEY: Record<string, string> = {
+  full_time: "fullTime",
+  part_time: "partTime",
+  consultant: "consultant",
+  freelance: "freelance",
+  internship: "internship",
+};
 
 export const WORK_TYPE_OPTIONS = [
   "onsite",

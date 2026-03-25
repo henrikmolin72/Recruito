@@ -5,6 +5,7 @@ import {
   EXPERIENCE_BRACKET_OPTIONS,
   LANGUAGE_PROFICIENCY_OPTIONS,
 } from "@/lib/recruiter-onboarding-options";
+import { createTranslator } from "@/i18n/server";
 
 const EMAIL_MAX_LENGTH = 254;
 const PASSWORD_MIN_LENGTH = 8;
@@ -24,6 +25,15 @@ const requiredText = (label: string, min: number, max: number) =>
     .trim()
     .min(min, `${label} måste vara minst ${min} tecken`)
     .max(max, `${label} får max vara ${max} tecken`);
+
+type TranslatorFn = (key: string, params?: Record<string, string | number>) => string;
+
+const i18nRequiredText = (t: TranslatorFn, labelKey: string, min: number, max: number) =>
+  z
+    .string()
+    .trim()
+    .min(min, t("validation.fieldMinLength", { field: t(labelKey), min }))
+    .max(max, t("validation.fieldMaxLength", { field: t(labelKey), max }));
 
 const optionalEmail = z
   .union([z.string().trim().email("Ogiltig e-postadress"), z.literal("")])
@@ -68,9 +78,9 @@ function safeJsonParse<T>(value: string, fallback: T): T {
   }
 }
 
-function firstError(error: z.ZodError): string {
+function firstError(error: z.ZodError, fallback = "Ogiltig inmatning"): string {
   const issue = error.issues[0];
-  return issue?.message || "Ogiltig inmatning";
+  return issue?.message || fallback;
 }
 
 // Pipeline stage validation
@@ -221,98 +231,102 @@ const optionalBoolean = z
   .optional()
   .transform((v) => v ?? null);
 
-const jobSchema = z
-  .object({
-    // Step 1 — Basics
-    title: requiredText("Titel", 3, 150),
-    country: optionalText(80),
-    city: optionalText(120),
-    location_code: optionalText(40),
-    location: requiredText("Plats", 2, 120),
-    industry: requiredText("Bransch", 2, 80),
-    is_confidential: optionalBoolean,
+function createJobSchema(t: TranslatorFn) {
+  return z
+    .object({
+      // Step 1 — Basics
+      title: i18nRequiredText(t, "validation.fieldTitle", 3, 150),
+      country: optionalText(80),
+      city: optionalText(120),
+      location_code: optionalText(40),
+      location: i18nRequiredText(t, "validation.fieldLocation", 2, 120),
+      industry: i18nRequiredText(t, "validation.fieldIndustry", 2, 80),
+      is_confidential: optionalBoolean,
 
-    // Step 2 — Employment & work type
-    employment_type: requiredText("Anställningsform", 2, 40),
-    contract_duration: optionalText(80),
-    work_type: z.enum(["onsite", "hybrid", "remote"]).nullable().optional(),
-    remote_type: z.enum(["local", "international"]).nullable().optional(),
-    work_permit_accepted: optionalBoolean,
-    visa_sponsorship: optionalBoolean,
+      // Step 2 — Employment & work type
+      employment_type: i18nRequiredText(t, "validation.fieldEmploymentType", 2, 40),
+      contract_duration: optionalText(80),
+      work_type: z.enum(["onsite", "hybrid", "remote"]).nullable().optional(),
+      remote_type: z.enum(["local", "international"]).nullable().optional(),
+      work_permit_accepted: optionalBoolean,
+      visa_sponsorship: optionalBoolean,
 
-    // Step 3 — Description & requirements
-    key_requirements: z.array(z.string().trim().max(500)).min(0).max(5).optional().default([]),
-    description: requiredText("Beskrivning", 20, 10000),
-    team_structure: optionalText(2000),
-    management_required: optionalBoolean,
-    team_size: optionalInteger(1, 1000),
-    reporting_to: optionalText(200),
-    position_type: z.enum(["new", "replacement"]).nullable().optional(),
-    open_positions: optionalInteger(1, 100),
-    language_requirements: z.array(z.object({
-      language: z.string().trim().min(1).max(80),
-      level: z.enum(["basic", "intermediate", "advanced", "fluent", "native"]),
-    })).max(3).optional().default([]),
-    // Legacy fields — kept for backwards compatibility (no longer shown in form)
-    tools_technologies: optionalText(2000),
-    min_years_experience: optionalInteger(0, 50),
-    required_degree: optionalText(200),
-    required_certifications: optionalText(500),
-    required_technical_skills: optionalText(2000),
-    required_industry_experience: optionalText(500),
-    required_language: optionalText(80),
-    required_language_level: z.enum(["basic", "intermediate", "advanced", "fluent", "native"]).nullable().optional(),
+      // Step 3 — Description & requirements
+      key_requirements: z.array(z.string().trim().max(500)).min(0).max(5).optional().default([]),
+      description: i18nRequiredText(t, "validation.fieldDescription", 20, 10000),
+      team_structure: optionalText(2000),
+      management_required: optionalBoolean,
+      team_size: optionalInteger(1, 1000),
+      reporting_to: optionalText(200),
+      position_type: z.enum(["new", "replacement"]).nullable().optional(),
+      open_positions: optionalInteger(1, 100),
+      language_requirements: z.array(z.object({
+        language: z.string().trim().min(1).max(80),
+        level: z.enum(["basic", "intermediate", "advanced", "fluent", "native"]),
+      })).max(3).optional().default([]),
+      // Legacy fields — kept for backwards compatibility (no longer shown in form)
+      tools_technologies: optionalText(2000),
+      min_years_experience: optionalInteger(0, 50),
+      required_degree: optionalText(200),
+      required_certifications: optionalText(500),
+      required_technical_skills: optionalText(2000),
+      required_industry_experience: optionalText(500),
+      required_language: optionalText(80),
+      required_language_level: z.enum(["basic", "intermediate", "advanced", "fluent", "native"]).nullable().optional(),
 
-    // Step 4 — Salary & benefits
-    salary_min: optionalInteger(0, 10_000_000),
-    salary_max: optionalInteger(0, 10_000_000),
-    salary_currency: z.string().trim().min(3, "Valuta krävs").max(5, "Ogiltig valuta"),
-    salary_gross_net: z.enum(["gross", "net"]).nullable().optional(),
-    salary_period: z.enum(["monthly", "yearly", "hourly"]).nullable().optional(),
-    bonus_structure: optionalText(500),
-    benefits: z.array(z.string().min(1)).max(20).optional().default([]),
-    benefits_other: optionalText(500),
+      // Step 4 — Salary & benefits
+      salary_min: optionalInteger(0, 10_000_000),
+      salary_max: optionalInteger(0, 10_000_000),
+      salary_currency: z.string().trim().min(3, t("validation.currencyRequired")).max(5, t("validation.invalidCurrency")),
+      salary_gross_net: z.enum(["gross", "net"]).nullable().optional(),
+      salary_period: z.enum(["monthly", "yearly", "hourly"]).nullable().optional(),
+      bonus_structure: optionalText(500),
+      benefits: z.array(z.string().min(1)).max(20).optional().default([]),
+      benefits_other: optionalText(500),
 
-    // Step 5 — Recruitment details
-    fee_percentage: z.number().min(1).max(50).optional().default(15),
-    max_recruiters: z.number().int().min(1, "Minst 1 rekryterare").max(10, "Max 10 rekryterare"),
-    application_deadline: optionalText(20),
-    guarantee_period_months: optionalInteger(0, 3),
-    recruiter_fee_manual: optionalInteger(2000, 10_000_000),
+      // Step 5 — Recruitment details
+      fee_percentage: z.number().min(1).max(50).optional().default(15),
+      max_recruiters: z.number().int().min(1, t("validation.minOneRecruiter")).max(10, t("validation.maxTenRecruiters")),
+      application_deadline: optionalText(20),
+      guarantee_period_months: optionalInteger(0, 3),
+      recruiter_fee_manual: optionalInteger(2000, 10_000_000),
 
-    // Step 6 — Screening & hiring process
-    screening_questions: z.array(z.string().trim().max(500)).max(4).optional().default([]),
-    interview_type: z.enum(["online", "onsite", "both"]).nullable().optional(),
-    num_interviews: optionalInteger(1, 4),
-    interview_conductors: optionalText(500),
-    technical_test_required: optionalBoolean,
-    assessment_type: optionalText(200),
+      // Step 6 — Screening & hiring process
+      screening_questions: z.array(z.string().trim().max(500)).max(4).optional().default([]),
+      interview_type: z.enum(["online", "onsite", "both"]).nullable().optional(),
+      num_interviews: optionalInteger(1, 4),
+      interview_conductors: optionalText(500),
+      technical_test_required: optionalBoolean,
+      assessment_type: optionalText(200),
 
-    // Step 7 — Working conditions & timeline
-    working_hours: optionalText(80),
-    flexible_hours: optionalBoolean,
-    shift_work: z.enum(["no", "yes", "rotating"]).nullable().optional(),
-    shift_timings: optionalText(200),
-    overtime_policy: optionalText(500),
-    desired_start_date: optionalText(20),
-    urgency_level: optionalInteger(1, 3),
+      // Step 7 — Working conditions & timeline
+      working_hours: optionalText(80),
+      flexible_hours: optionalBoolean,
+      shift_work: z.enum(["no", "yes", "rotating"]).nullable().optional(),
+      shift_timings: optionalText(200),
+      overtime_policy: optionalText(500),
+      desired_start_date: optionalText(20),
+      urgency_level: optionalInteger(1, 3),
 
-    // Step 8 — Other
-    travel_required: optionalBoolean,
-    background_check_required: optionalBoolean,
-  })
-  .refine(
-    (data) =>
-      data.salary_min === null ||
-      data.salary_max === null ||
-      data.salary_max >= data.salary_min,
-    {
-      message: "Maxlön måste vara större än eller lika med minlön",
-      path: ["salary_max"],
-    }
-  );
+      // Step 8 — Other
+      travel_required: optionalBoolean,
+      background_check_required: optionalBoolean,
+    })
+    .refine(
+      (data) =>
+        data.salary_min === null ||
+        data.salary_max === null ||
+        data.salary_max >= data.salary_min,
+      {
+        message: t("validation.maxSalaryMustBeHigher"),
+        path: ["salary_max"],
+      }
+    );
+}
 
-export function validateJobForm(formData: FormData) {
+export async function validateJobForm(formData: FormData) {
+  const t = await createTranslator();
+  const jobSchema = createJobSchema(t);
   const parsed = jobSchema.safeParse({
     // Step 1
     title: toString(formData.get("title")),
@@ -384,7 +398,7 @@ export function validateJobForm(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { success: false as const, error: firstError(parsed.error) };
+    return { success: false as const, error: firstError(parsed.error, t("validation.invalidInput")) };
   }
 
   return { success: true as const, data: parsed.data };

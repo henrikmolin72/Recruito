@@ -36,13 +36,19 @@ export async function createTranslator() {
     const locale = await getLocale();
     const dict = dictionaries[locale];
 
-    return function t(key: string): string {
+    return function t(key: string, params?: Record<string, string | number>): string {
         const parts = key.split(".");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let value: any = dict;
         for (const part of parts) {
             value = value?.[part];
         }
-        return typeof value === "string" ? value : key;
+        let result = typeof value === "string" ? value : key;
+        if (params) {
+            for (const [k, v] of Object.entries(params)) {
+                result = result.replace(`{${k}}`, String(v));
+            }
+        }
+        return result;
     };
 }

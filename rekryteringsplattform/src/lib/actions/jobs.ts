@@ -38,7 +38,7 @@ export async function createJob(formData: FormData) {
     const supabase = await createClient();
     const isDraft = formData.get("status") === "draft";
 
-    const parsed = validateJobForm(formData);
+    const parsed = await validateJobForm(formData);
     if (!parsed.success && !isDraft) {
         return { error: parsed.error };
     }
@@ -136,13 +136,13 @@ export async function createJob(formData: FormData) {
         title: d.title || raw("title") || "Untitled Draft",
         description: d.description || raw("description") || null,
         location: d.location || raw("location") || raw("city") || null,
-        industry: d.industry || raw("industry") || null,
-        country: d.country,
-        city: d.city,
-        location_code: d.location_code,
+        industry: d.industry ?? raw("industry") ?? "",
+        country: d.country ?? raw("country") ?? null,
+        city: d.city ?? raw("city") ?? null,
+        location_code: d.location_code ?? raw("location_code") ?? null,
         is_confidential: d.is_confidential ?? false,
         // Employment
-        employment_type: d.employment_type,
+        employment_type: d.employment_type || raw("employment_type") || "full_time",
         contract_duration: d.contract_duration,
         work_type: d.work_type,
         remote_type: d.remote_type,
@@ -255,7 +255,7 @@ export async function updateJob(jobId: string, formData: FormData) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
 
-    const parsed = validateJobForm(formData);
+    const parsed = await validateJobForm(formData);
     if (!parsed.success) {
         return { error: parsed.error };
     }
