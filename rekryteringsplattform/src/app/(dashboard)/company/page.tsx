@@ -1,10 +1,8 @@
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/shared/status-badge";
 import { Briefcase, Users, Clock, CheckCircle } from "lucide-react";
 import { getCompanyDashboard } from "@/lib/actions/company";
-import { formatDate } from "@/lib/utils";
+import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { getDictionary, createTranslator } from "@/i18n/server";
 
 export default async function CompanyDashboard() {
@@ -40,28 +38,49 @@ export default async function CompanyDashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left">
-                    <th className="pb-3 font-medium text-muted-foreground">{c.tableTitle}</th>
-                    <th className="pb-3 font-medium text-muted-foreground">{c.tableLocation}</th>
-                    <th className="pb-3 font-medium text-muted-foreground">{c.tableStatus}</th>
-                    <th className="pb-3 font-medium text-muted-foreground">{c.tableCompleted}</th>
-                    <th className="pb-3 font-medium text-muted-foreground">{c.tableRecruiters}</th>
-                    <th className="pb-3 font-medium text-muted-foreground">{c.tableCandidates}</th>
-                    <th className="pb-3 font-medium text-muted-foreground">{c.tableRecruitmentFee}</th>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="px-4 py-3 text-left font-semibold text-foreground">{c.tableTitle}</th>
+                    <th className="px-4 py-3 text-left font-semibold text-foreground">{c.tableCity || "City"}</th>
+                    <th className="px-4 py-3 text-left font-semibold text-foreground">{c.tableSalary || "Salary"}</th>
+                    <th className="px-4 py-3 text-center font-semibold text-foreground">{c.tableCandidates}</th>
+                    <th className="px-4 py-3 text-right font-semibold text-foreground">{c.tableFee || "Fee"}</th>
+                    <th className="px-4 py-3 text-center font-semibold text-foreground">{c.tableGuarantee || "Guarantee"}</th>
+                    <th className="px-4 py-3 text-center font-semibold text-foreground">{c.tableRecruiters}</th>
+                    <th className="px-4 py-3 text-center font-semibold text-foreground">{c.tableStatus}</th>
+                    <th className="px-4 py-3 text-left font-semibold text-foreground">{c.tablePublished || "Published"}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {jobs.map((job: any) => (
-                    <tr key={job.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                      <td className="py-3 font-medium">{job.title}</td>
-                      <td className="py-3 text-muted-foreground">{job.location}</td>
-                      <td className="py-3"><StatusBadge status={job.status} /></td>
-                      <td className="py-3 text-muted-foreground">{formatDate(job.created_at)}</td>
-                      <td className="py-3"><Badge variant="outline">{job.recruiters_count}</Badge></td>
-                      <td className="py-3">{job.candidates_count}</td>
-                      <td className="py-3">{job.fee_percentage}%</td>
-                    </tr>
-                  ))}
+                  {jobs.map((job: any) => {
+                    const isLive = job.status === "active";
+                    const isPaused = job.status === "paused";
+                    const statusLabel = isLive ? (c.statusLive || "Live") : isPaused ? (c.statusPaused || "Paused") : job.status;
+                    const statusColor = isLive ? "text-success-500" : isPaused ? "text-danger-500" : "text-muted-foreground";
+                    const salaryRange = job.salary_min
+                      ? `${formatCurrency(job.salary_min, job.salary_currency || "EUR")}${job.salary_max ? ` - ${formatCurrency(job.salary_max, job.salary_currency || "EUR")}` : ""}`
+                      : "—";
+                    const fee = (job.salary_min && job.fee_percentage)
+                      ? formatCurrency(Math.round((job.salary_max ? (job.salary_min + job.salary_max) / 2 : job.salary_min) * (job.fee_percentage / 100)), job.salary_currency || "EUR")
+                      : "—";
+                    const guarantee = job.guarantee_period_months
+                      ? (job.guarantee_period_months === 1
+                        ? (c.guaranteeMonths || "{count} month").replace("{count}", String(job.guarantee_period_months))
+                        : (c.guaranteeMonthsPlural || "{count} months").replace("{count}", String(job.guarantee_period_months)))
+                      : "—";
+                    return (
+                      <tr key={job.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3 font-medium">{job.title}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{job.city || job.location || "—"}</td>
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{salaryRange}</td>
+                        <td className="px-4 py-3 text-center">{job.candidates_count}</td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">{fee}</td>
+                        <td className="px-4 py-3 text-center text-muted-foreground">{guarantee}</td>
+                        <td className="px-4 py-3 text-center">{job.recruiters_count}</td>
+                        <td className="px-4 py-3 text-center"><span className={`font-semibold ${statusColor}`}>{statusLabel}</span></td>
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatDateShort(job.created_at)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

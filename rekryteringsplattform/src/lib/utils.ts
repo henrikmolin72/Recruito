@@ -26,6 +26,17 @@ export function formatDate(date: string | Date | null | undefined): string {
   }).format(d);
 }
 
+export function formatDateShort(date: string | Date | null | undefined): string {
+  if (!date) return "—";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(d);
+}
+
 export function calculateFee(annualSalary: number, feePercentage: number = 15) {
   const totalFee = annualSalary * (feePercentage / 100);
   const platformFee = totalFee * 0.25;
