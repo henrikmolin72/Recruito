@@ -283,11 +283,10 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         const result = await createJob(data);
         if (result?.error) {
             toast.error(typeof result.error === "string" ? result.error : "Kunde inte spara utkast");
-            setLoading(false);
         } else {
             toast.success(t("jobForm.draftSaved") || "Utkast sparat!");
-            router.push("/company/jobs");
         }
+        setLoading(false);
     }
 
     async function handleSubmit() {
@@ -888,21 +887,19 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                 className="gap-2 px-4">
                                 {loading ? "Sparar..." : (t("jobForm.saveDraft") || "Save Draft")}
                             </Button>
-                            {step < 7 && (
+                            {step < 7 ? (
                                 <Button onClick={nextStep}
                                     className="bg-brand-600 hover:bg-brand-700 text-white gap-2 px-6 shadow-md shadow-brand-500/20"
                                     disabled={step === 1 && !formData.title}>
                                     {t("jobForm.nextStep")} <ChevronRight className="h-4 w-4" />
                                 </Button>
+                            ) : (
+                                <Button onClick={handleSubmit} disabled={loading}
+                                    className="bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20">
+                                    {loading ? t("jobForm.publishing") : t("jobForm.completeAndPublish")}
+                                    <Sparkles className="h-4 w-4 fill-current" />
+                                </Button>
                             )}
-                            <Button onClick={handleSubmit} disabled={loading}
-                                className={cn(
-                                    "bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20",
-                                    step < 7 && "bg-success-600/80"
-                                )}>
-                                {loading ? t("jobForm.publishing") : t("jobForm.completeAndPublish")}
-                                <Sparkles className="h-4 w-4 fill-current" />
-                            </Button>
                         </div>
                     </div>
                 </CardContent>
