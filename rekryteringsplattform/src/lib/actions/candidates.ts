@@ -65,9 +65,13 @@ async function getActorRoleForCandidateAction(
 
     const { data: candidate } = await supabase
         .from("candidates")
-        .select("id, status, current_pipeline_stage, recruiter:recruiters(user_id), mandate_id")
+        .select("id, status, current_pipeline_stage, job_id, recruiter:recruiters(user_id), mandate_id")
         .eq("id", candidateId)
         .single();
+
+    if (candidate && (candidate as any).job_id !== jobId) {
+        return { job: null, candidate: null, companyUserId: null, recruiterUserId: null, actorRole: null, mandateId: null };
+    }
 
     const companyData = job?.company;
     const companyUserId = Array.isArray(companyData) ? companyData[0]?.user_id : (companyData as any)?.user_id;

@@ -46,7 +46,9 @@ async function getJob(id: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    const { data: job } = await supabase.from("jobs").select("*").eq("id", id).single();
+    const { data: company } = await supabase.from("companies").select("id").eq("user_id", user.id).single();
+    if (!company) return null;
+    const { data: job } = await supabase.from("jobs").select("*").eq("id", id).eq("company_id", company.id).single();
     return job;
 }
 

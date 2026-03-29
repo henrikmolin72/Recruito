@@ -47,12 +47,22 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
-    // Admin routes require admin role
-    if (user && request.nextUrl.pathname.startsWith("/admin")) {
+    // Role-based route enforcement
+    if (user) {
         const role = user.user_metadata?.role;
-        if (role !== "admin") {
+        if (request.nextUrl.pathname.startsWith("/admin") && role !== "admin") {
             const url = request.nextUrl.clone();
             url.pathname = `/${role || "company"}`;
+            return NextResponse.redirect(url);
+        }
+        if (request.nextUrl.pathname.startsWith("/company") && role === "recruiter") {
+            const url = request.nextUrl.clone();
+            url.pathname = "/recruiter";
+            return NextResponse.redirect(url);
+        }
+        if (request.nextUrl.pathname.startsWith("/recruiter") && role === "company") {
+            const url = request.nextUrl.clone();
+            url.pathname = "/company";
             return NextResponse.redirect(url);
         }
     }

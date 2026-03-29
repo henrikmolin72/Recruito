@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const COMING_SOON_ENABLED = true;
-const PREVIEW_TOKEN = process.env.PREVIEW_TOKEN || "recruito2026launch";
+const PREVIEW_TOKEN = process.env.PREVIEW_TOKEN;
 const COOKIE_NAME = "recruito_preview";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 dagar
 
@@ -12,7 +12,7 @@ const PUBLIC_PATHS = [
     "/_next",
     "/favicon.ico",
     "/images",
-    "/api",
+    "/api/preview",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
     if (COMING_SOON_ENABLED) {
         // Check for ?preview=TOKEN bypass — set cookie and redirect clean URL
         const previewParam = searchParams.get("preview");
-        if (previewParam === PREVIEW_TOKEN) {
+        if (PREVIEW_TOKEN && previewParam === PREVIEW_TOKEN) {
             const cleanUrl = new URL(pathname, request.url);
             const response = NextResponse.redirect(cleanUrl);
             response.cookies.set(COOKIE_NAME, "true", {

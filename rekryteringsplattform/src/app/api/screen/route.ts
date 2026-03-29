@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "ANTHROPIC_API_KEY is not configured" }, { status: 500 });
+      return NextResponse.json({ error: "AI service is not configured" }, { status: 500 });
     }
 
     const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250514";

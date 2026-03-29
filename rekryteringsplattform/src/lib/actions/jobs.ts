@@ -338,6 +338,11 @@ export async function closeJob(jobId: string) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
 
+    const { data: job } = await supabase.from("jobs").select("status").eq("id", jobId).single();
+    if (!job || (job.status !== "active" && job.status !== "paused")) {
+        return { error: "Jobbet kan inte stängas från dess nuvarande status." };
+    }
+
     const { error } = await supabase
         .from("jobs")
         .update({ status: 'closed' })
@@ -353,6 +358,11 @@ export async function pauseJob(jobId: string) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
 
+    const { data: job } = await supabase.from("jobs").select("status").eq("id", jobId).single();
+    if (!job || job.status !== "active") {
+        return { error: "Endast aktiva jobb kan pausas." };
+    }
+
     const { error } = await supabase
         .from("jobs")
         .update({ status: 'paused' })
@@ -367,6 +377,11 @@ export async function pauseJob(jobId: string) {
 export async function resumeJob(jobId: string) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
+
+    const { data: job } = await supabase.from("jobs").select("status").eq("id", jobId).single();
+    if (!job || job.status !== "paused") {
+        return { error: "Endast pausade jobb kan återupptas." };
+    }
 
     const { error } = await supabase
         .from("jobs")

@@ -324,11 +324,11 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         const result = await createJob(data);
         if (result?.error) {
             toast.error(result.error);
-            setLoading(false);
         } else {
             toast.success(t("jobForm.jobPublished"));
             router.push("/company/jobs");
         }
+        setLoading(false);
     }
 
     return (

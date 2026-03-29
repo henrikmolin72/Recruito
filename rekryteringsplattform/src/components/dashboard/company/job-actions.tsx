@@ -16,23 +16,38 @@ export function JobActions({ jobId, status }: { jobId: string, status: string })
     const handleClose = async () => {
         if (!confirm(t("components.jobActionsCloseConfirm"))) return;
         setLoading("close");
-        await closeJob(jobId);
-        router.refresh();
-        setLoading(null);
+        try {
+            await closeJob(jobId);
+            router.refresh();
+        } catch {
+            // Server action failed silently
+        } finally {
+            setLoading(null);
+        }
     };
 
     const handlePause = async () => {
         setLoading("pause");
-        await pauseJob(jobId);
-        router.refresh();
-        setLoading(null);
+        try {
+            await pauseJob(jobId);
+            router.refresh();
+        } catch {
+            // Server action failed silently
+        } finally {
+            setLoading(null);
+        }
     };
 
     const handleResume = async () => {
         setLoading("resume");
-        await resumeJob(jobId);
-        router.refresh();
-        setLoading(null);
+        try {
+            await resumeJob(jobId);
+            router.refresh();
+        } catch {
+            // Server action failed silently
+        } finally {
+            setLoading(null);
+        }
     };
 
     return (

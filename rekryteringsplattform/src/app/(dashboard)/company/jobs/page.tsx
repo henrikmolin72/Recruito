@@ -37,11 +37,11 @@ export default async function CompanyJobsPage() {
   }
 
   function getStatusDisplay(status: string) {
-    const isLive = status === "active";
-    const isPaused = status === "paused";
-    const label = isLive ? (c.statusLive || "Live") : isPaused ? (c.statusPaused || "Paused") : status;
-    const color = isLive ? "text-success-500" : isPaused ? "text-danger-500" : "text-muted-foreground";
-    return { label, color };
+    if (status === "active") return { label: c.statusLive || "Live", color: "text-success-500" };
+    if (status === "paused") return { label: c.statusPaused || "Paused", color: "text-danger-500" };
+    if (status === "draft") return { label: "Draft", color: "text-amber-500" };
+    if (status === "closed") return { label: "Closed", color: "text-muted-foreground" };
+    return { label: status, color: "text-muted-foreground" };
   }
 
   return (

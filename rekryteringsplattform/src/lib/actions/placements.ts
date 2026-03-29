@@ -38,6 +38,9 @@ export async function sendPlacementInvoice(placementId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Ej inloggad" };
 
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
+
     const admin = createAdminClient();
 
     const { data: placement } = await admin
@@ -114,6 +117,9 @@ export async function recordPlacementPayment(placementId: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Ej inloggad" };
+
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
 
     const admin = createAdminClient();
 
@@ -204,6 +210,9 @@ export async function processGuaranteeExpirations() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Ej inloggad" };
+
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
 
     const admin = createAdminClient();
 
@@ -301,6 +310,9 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Ej inloggad" };
+
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
 
     const admin = createAdminClient();
 
@@ -415,6 +427,9 @@ export async function recalculateAllRecruiterMetrics() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Ej inloggad" };
+
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
 
     const admin = createAdminClient();
 
