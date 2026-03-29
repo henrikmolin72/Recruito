@@ -210,13 +210,12 @@ export async function createJob(formData: FormData) {
         return { error: jobError.message };
     }
 
-    revalidatePath("/company");
-    revalidatePath("/company/jobs");
-
     if (isDraft) {
         return { success: true };
     }
 
+    revalidatePath("/company");
+    revalidatePath("/company/jobs");
     redirect("/company/jobs");
 }
 
