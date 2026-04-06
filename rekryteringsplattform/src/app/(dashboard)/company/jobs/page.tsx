@@ -106,9 +106,15 @@ export default async function CompanyJobsPage() {
                         </td>
                         <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatDateShort(job.created_at)}</td>
                         <td className="px-4 py-3 text-center">
-                          <Link href={`/company/jobs/${job.id}/edit`}>
-                            <Button variant="outline" size="sm">{c.tableEdit || "Edit"}</Button>
-                          </Link>
+                          {job.status === 'draft' ? (
+                            <Link href={`/company/jobs/${job.id}/edit`}>
+                              <Button variant="outline" size="sm">{c.tableEdit || "Edit"}</Button>
+                            </Link>
+                          ) : (
+                            <Link href={`/company/jobs/${job.id}`}>
+                              <Button variant="outline" size="sm">{c.tableView || "View"}</Button>
+                            </Link>
+                          )}
                         </td>
                       </tr>
                     );

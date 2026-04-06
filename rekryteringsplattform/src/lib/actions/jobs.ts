@@ -7,6 +7,8 @@ import { validateJobForm, validatePipelineStages } from "@/lib/validation/forms"
 import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/actions/notifications";
+import { sendUserEmail } from "@/lib/email/internal-notifications";
+import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import type { PipelineStage } from "@/types/db-types";
 
 async function verifyJobOwnership(jobId: string) {
@@ -130,80 +132,93 @@ export async function createJob(formData: FormData) {
     // For drafts, parsed.data may be undefined if validation failed — use raw form values as fallback
     const d = parsed.data ?? {} as Record<string, unknown>;
     const raw = (key: string) => formData.get(key)?.toString() || "";
-    const { error: jobError } = await supabase.from("jobs").insert({
+    const rawOrNull = (key: string) => formData.get(key)?.toString() || null;
+    const rawInt = (key: string) => { const v = formData.get(key)?.toString(); return v ? parseInt(v, 10) || null : null; };
+    const rawFloat = (key: string) => { const v = formData.get(key)?.toString(); return v ? parseFloat(v) || null : null; };
+    const rawBool = (key: string) => formData.get(key) === "on" || formData.get(key) === "true";
+    const rawJson = (key: string) => { try { const v = formData.get(key)?.toString(); return v ? JSON.parse(v) : null; } catch { return null; } };
+
+    // If updating an existing draft, use upsert with the provided ID
+    const existingDraftId = formData.get("draft_id")?.toString();
+    const jobPayload = {
+        ...(existingDraftId ? { id: existingDraftId } : {}),
         company_id: company.id,
         // Basics
         title: d.title || raw("title") || "Untitled Draft",
-        description: d.description || raw("description") || null,
+        description: d.description ?? rawOrNull("description"),
         location: d.location || raw("location") || raw("city") || null,
         industry: d.industry ?? raw("industry") ?? "",
-        country: d.country ?? raw("country") ?? null,
-        city: d.city ?? raw("city") ?? null,
-        location_code: d.location_code ?? raw("location_code") ?? null,
-        is_confidential: d.is_confidential ?? false,
+        country: d.country ?? rawOrNull("country"),
+        city: d.city ?? rawOrNull("city"),
+        location_code: d.location_code ?? rawOrNull("location_code"),
+        is_confidential: d.is_confidential ?? rawBool("is_confidential"),
         // Employment
         employment_type: d.employment_type || raw("employment_type") || "full_time",
-        contract_duration: d.contract_duration,
-        work_type: d.work_type,
-        remote_type: d.remote_type,
-        work_permit_accepted: d.work_permit_accepted,
-        visa_sponsorship: d.visa_sponsorship,
+        contract_duration: d.contract_duration ?? rawOrNull("contract_duration"),
+        work_type: d.work_type ?? rawOrNull("work_type"),
+        remote_type: d.remote_type ?? rawOrNull("remote_type"),
+        work_permit_accepted: d.work_permit_accepted ?? rawBool("work_permit_accepted"),
+        visa_sponsorship: d.visa_sponsorship ?? rawBool("visa_sponsorship"),
         // Description structured
-        team_structure: d.team_structure,
-        tools_technologies: d.tools_technologies,
-        management_required: d.management_required ?? false,
-        team_size: d.team_size,
-        reporting_to: d.reporting_to,
-        key_requirements: d.key_requirements,
-        language_requirements: d.language_requirements,
-        position_type: d.position_type,
-        open_positions: d.open_positions,
+        team_structure: d.team_structure ?? rawOrNull("team_structure"),
+        tools_technologies: d.tools_technologies ?? rawOrNull("tools_technologies"),
+        management_required: d.management_required ?? rawBool("management_required"),
+        team_size: d.team_size ?? rawInt("team_size"),
+        reporting_to: d.reporting_to ?? rawOrNull("reporting_to"),
+        key_requirements: d.key_requirements ?? rawJson("key_requirements"),
+        language_requirements: d.language_requirements ?? rawJson("language_requirements"),
+        position_type: d.position_type ?? rawOrNull("position_type"),
+        open_positions: d.open_positions ?? rawInt("open_positions"),
         // Legacy requirement fields
-        min_years_experience: d.min_years_experience,
-        required_degree: d.required_degree,
-        required_certifications: d.required_certifications,
-        required_technical_skills: d.required_technical_skills,
-        required_industry_experience: d.required_industry_experience,
-        required_language: d.required_language,
-        required_language_level: d.required_language_level,
+        min_years_experience: d.min_years_experience ?? rawInt("min_years_experience"),
+        required_degree: d.required_degree ?? rawOrNull("required_degree"),
+        required_certifications: d.required_certifications ?? rawOrNull("required_certifications"),
+        required_technical_skills: d.required_technical_skills ?? rawOrNull("required_technical_skills"),
+        required_industry_experience: d.required_industry_experience ?? rawOrNull("required_industry_experience"),
+        required_language: d.required_language ?? rawOrNull("required_language"),
+        required_language_level: d.required_language_level ?? rawOrNull("required_language_level"),
         // Salary
-        salary_min: d.salary_min,
-        salary_max: d.salary_max,
-        salary_currency: d.salary_currency,
-        salary_gross_net: d.salary_gross_net,
-        salary_period: d.salary_period,
-        bonus_structure: d.bonus_structure,
-        benefits: d.benefits,
-        benefits_other: d.benefits_other,
+        salary_min: d.salary_min ?? rawInt("salary_min"),
+        salary_max: d.salary_max ?? rawInt("salary_max"),
+        salary_currency: d.salary_currency ?? (raw("salary_currency") || "SEK"),
+        salary_gross_net: d.salary_gross_net ?? rawOrNull("salary_gross_net"),
+        salary_period: d.salary_period ?? rawOrNull("salary_period"),
+        bonus_structure: d.bonus_structure ?? rawOrNull("bonus_structure"),
+        benefits: d.benefits ?? formData.getAll("benefits").map(String).filter(Boolean),
+        benefits_other: d.benefits_other ?? rawOrNull("benefits_other"),
         // Recruitment details
         fee_percentage: feePercentage,
-        max_recruiters: d.max_recruiters,
-        application_deadline: d.application_deadline || null,
-        guarantee_period_months: d.guarantee_period_months,
-        recruiter_fee_manual: d.recruiter_fee_manual,
+        max_recruiters: d.max_recruiters ?? rawInt("max_recruiters"),
+        application_deadline: d.application_deadline || rawOrNull("application_deadline"),
+        guarantee_period_months: d.guarantee_period_months ?? rawInt("guarantee_period_months"),
+        recruiter_fee_manual: d.recruiter_fee_manual ?? rawFloat("recruiter_fee_manual"),
         // Screening & hiring
-        screening_questions: d.screening_questions,
-        interview_type: d.interview_type,
-        num_interviews: d.num_interviews,
-        interview_conductors: d.interview_conductors,
-        technical_test_required: d.technical_test_required,
-        assessment_type: d.assessment_type,
+        screening_questions: d.screening_questions ?? rawJson("screening_questions"),
+        interview_type: d.interview_type ?? rawOrNull("interview_type"),
+        num_interviews: d.num_interviews ?? rawInt("num_interviews"),
+        interview_conductors: d.interview_conductors ?? rawOrNull("interview_conductors"),
+        technical_test_required: d.technical_test_required ?? rawBool("technical_test_required"),
+        assessment_type: d.assessment_type ?? rawOrNull("assessment_type"),
         // Working conditions
-        working_hours: d.working_hours,
-        flexible_hours: d.flexible_hours,
-        shift_work: d.shift_work,
-        shift_timings: d.shift_timings,
-        overtime_policy: d.overtime_policy,
+        working_hours: d.working_hours ?? rawOrNull("working_hours"),
+        flexible_hours: d.flexible_hours ?? rawBool("flexible_hours"),
+        shift_work: d.shift_work ?? rawOrNull("shift_work"),
+        shift_timings: d.shift_timings ?? rawOrNull("shift_timings"),
+        overtime_policy: d.overtime_policy ?? rawOrNull("overtime_policy"),
         // Timeline
-        desired_start_date: d.desired_start_date || null,
-        urgency_level: d.urgency_level,
+        desired_start_date: d.desired_start_date || rawOrNull("desired_start_date"),
+        urgency_level: d.urgency_level ?? rawOrNull("urgency_level"),
         // Other
-        travel_required: d.travel_required,
-        background_check_required: d.background_check_required,
+        travel_required: d.travel_required ?? rawOrNull("travel_required"),
+        background_check_required: d.background_check_required ?? rawBool("background_check_required"),
         // Pipeline & status
         pipeline_stages: pipelineStages,
         status: isDraft ? "draft" : "active",
-    });
+    };
+
+    const { data: jobData, error: jobError } = existingDraftId
+        ? await supabase.from("jobs").update(jobPayload).eq("id", existingDraftId).eq("status", "draft").select("id").single()
+        : await supabase.from("jobs").insert(jobPayload).select("id").single();
 
     if (jobError) {
         console.error("Error creating job:", jobError);
@@ -211,7 +226,93 @@ export async function createJob(formData: FormData) {
     }
 
     if (isDraft) {
-        return { success: true };
+        return { success: true, jobId: jobData?.id };
+    }
+
+    // Notify matching recruiters about the new job listing
+    if (jobData?.id) {
+        try {
+            const jobId = jobData.id;
+
+            // Fetch full job details for notification content
+            const { data: job } = await supabase
+                .from("jobs")
+                .select("title, industry, location, country, fee_percentage")
+                .eq("id", jobId)
+                .single();
+
+            if (job) {
+                // Query all approved recruiters and filter by matching criteria:
+                // - Industry matches (primary_industries OR specializations overlap with job.industry)
+                // - OR location matches (locations OR countries_experience overlap with job.country)
+                const { data: allApprovedRecruiters } = await supabase
+                    .from("recruiters")
+                    .select(`
+                        id,
+                        user_id,
+                        primary_industries,
+                        specializations,
+                        locations,
+                        countries_experience,
+                        profiles:user_id (
+                            email,
+                            full_name
+                        )
+                    `)
+                    .eq("approval_status", "approved");
+
+                // Filter recruiters that match job criteria
+                const matchingRecruiters = (allApprovedRecruiters || []).filter((recruiter) => {
+                    const industryMatch =
+                        (recruiter.primary_industries?.includes(job.industry)) ||
+                        (recruiter.specializations?.includes(job.industry));
+                    const locationMatch =
+                        (recruiter.locations?.includes(job.country)) ||
+                        (recruiter.countries_experience?.includes(job.country));
+                    return industryMatch || locationMatch;
+                });
+
+                if (matchingRecruiters && matchingRecruiters.length > 0) {
+                    for (const recruiter of matchingRecruiters) {
+                        const profile = Array.isArray(recruiter.profiles)
+                            ? recruiter.profiles[0]
+                            : recruiter.profiles as any;
+
+                        if (!profile?.email) continue;
+
+                        const recruiterName = profile.full_name || "Recruiter";
+                        const jobUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/recruiter/jobs/${jobId}`;
+
+                        // Create in-app notification
+                        await createNotification({
+                            userId: recruiter.user_id,
+                            title: `New job: ${job.title}`,
+                            body: `${job.title} at ${company?.company_name || "a company"}`,
+                            link: `/recruiter/jobs/${jobId}`,
+                        });
+
+                        // Send email notification
+                        const emailHtml = newJobNotificationEmail({
+                            recruiterName,
+                            jobTitle: job.title,
+                            companyName: company?.company_name || "Partner Company",
+                            location: job.location || "Not specified",
+                            feePercentage: job.fee_percentage || 0,
+                            jobUrl,
+                        });
+
+                        await sendUserEmail({
+                            to: profile.email,
+                            subject: `New job: ${job.title}`,
+                            html: emailHtml,
+                        });
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error notifying recruiters about new job:", error);
+            // Don't fail the job creation if notification fails
+        }
     }
 
     revalidatePath("/company");

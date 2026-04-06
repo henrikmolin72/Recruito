@@ -66,11 +66,53 @@ function fmt(n: number, decimals = 0): string {
     }).format(n);
 }
 
-export function RecruitmentCalculator() {
-    const [salary, setSalary] = useState(44_000);
-    const [guaranteeMonths, setGuaranteeMonths] = useState<0 | 1 | 2>(0);
-    const [isExclusive, setIsExclusive] = useState(false);
-    const [hires, setHires] = useState(1);
+export interface CalculatorState {
+    salary: number;
+    guaranteeMonths: 0 | 1 | 2;
+    isExclusive: boolean;
+    hires: number;
+}
+
+export const CALCULATOR_DEFAULTS: CalculatorState = {
+    salary: 44_000,
+    guaranteeMonths: 0,
+    isExclusive: false,
+    hires: 1,
+};
+
+interface RecruitmentCalculatorProps {
+    state?: CalculatorState;
+    onStateChange?: (state: CalculatorState) => void;
+}
+
+export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalculatorProps) {
+    const [localSalary, setLocalSalary] = useState(CALCULATOR_DEFAULTS.salary);
+    const [localGuaranteeMonths, setLocalGuaranteeMonths] = useState<0 | 1 | 2>(CALCULATOR_DEFAULTS.guaranteeMonths);
+    const [localIsExclusive, setLocalIsExclusive] = useState(CALCULATOR_DEFAULTS.isExclusive);
+    const [localHires, setLocalHires] = useState(CALCULATOR_DEFAULTS.hires);
+
+    // Use controlled state if provided, otherwise local state
+    const salary = state?.salary ?? localSalary;
+    const guaranteeMonths = state?.guaranteeMonths ?? localGuaranteeMonths;
+    const isExclusive = state?.isExclusive ?? localIsExclusive;
+    const hires = state?.hires ?? localHires;
+
+    const setSalary = (v: number) => {
+        if (onStateChange && state) onStateChange({ ...state, salary: v });
+        else setLocalSalary(v);
+    };
+    const setGuaranteeMonths = (v: 0 | 1 | 2) => {
+        if (onStateChange && state) onStateChange({ ...state, guaranteeMonths: v });
+        else setLocalGuaranteeMonths(v);
+    };
+    const setIsExclusive = (v: boolean) => {
+        if (onStateChange && state) onStateChange({ ...state, isExclusive: v });
+        else setLocalIsExclusive(v);
+    };
+    const setHires = (v: number) => {
+        if (onStateChange && state) onStateChange({ ...state, hires: v });
+        else setLocalHires(v);
+    };
 
     const r = useMemo(
         () => calculate(salary, guaranteeMonths, isExclusive, hires),

@@ -53,3 +53,39 @@ export async function sendInternalRecruiterEmail(params: SendInternalRecruiterEm
 
   return { sent: true as const };
 }
+
+type SendUserEmailParams = {
+  to: string;
+  subject: string;
+  html: string;
+};
+
+export async function sendUserEmail(params: SendUserEmailParams) {
+  const config = getSmtpConfig();
+
+  if (!config) {
+    console.warn("SMTP not configured, skipping user email to:", params.to);
+    return { skipped: true as const };
+  }
+
+  try {
+    const transporter = createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: config.auth,
+    });
+
+    await transporter.sendMail({
+      from: config.from,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+    });
+
+    return { sent: true as const };
+  } catch (error) {
+    console.error("Failed to send email to:", params.to, error);
+    return { error: true as const };
+  }
+}

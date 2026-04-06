@@ -14,12 +14,25 @@ import {
   TrendingUp,
   Clock,
   X,
+  ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
+
+const SALARY_RANGES = [
+  { label: "Any", value: "all", min: 0, max: Infinity },
+  { label: "< €30 000", value: "0-30000", min: 0, max: 30000 },
+  { label: "€30 000 – €50 000", value: "30000-50000", min: 30000, max: 50000 },
+  { label: "€50 000 – €80 000", value: "50000-80000", min: 50000, max: 80000 },
+  { label: "€80 000 – €120 000", value: "80000-120000", min: 80000, max: 120000 },
+  { label: "> €120 000", value: "120000+", min: 120000, max: Infinity },
+] as const;
+
+type SortOption = "newest" | "oldest" | "salary_high" | "salary_low" | "fee_high";
 
 interface RecruiterJobsListProps {
   jobs: any[];
@@ -29,9 +42,17 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
   const [search, setSearch] = useState("");
   const [industry, setIndustry] = useState("all");
   const [location, setLocation] = useState("all");
+  const [employmentType, setEmploymentType] = useState("all");
+  const [workType, setWorkType] = useState("all");
+  const [salaryRange, setSalaryRange] = useState("all");
+  const [country, setCountry] = useState("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const { t } = useTranslations();
 
-  // Extract unique industries and locations from actual data
+  const selectClass = "h-10 rounded-xl border-none bg-slate-50 px-4 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-brand-500/20 outline-none cursor-pointer";
+
+  // Extract unique values from actual data
   const industries = useMemo(() => {
     const set = new Set(jobs.map((j: any) => j.industry).filter(Boolean));
     return Array.from(set).sort();
@@ -42,22 +63,78 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
     return Array.from(set).sort();
   }, [jobs]);
 
+  const countries = useMemo(() => {
+    const set = new Set(jobs.map((j: any) => j.country).filter(Boolean));
+    return Array.from(set).sort();
+  }, [jobs]);
+
+  const employmentTypes = useMemo(() => {
+    const set = new Set(jobs.map((j: any) => j.employment_type).filter(Boolean));
+    return Array.from(set).sort();
+  }, [jobs]);
+
+  const workTypes = useMemo(() => {
+    const set = new Set(jobs.map((j: any) => j.work_type).filter(Boolean));
+    return Array.from(set).sort();
+  }, [jobs]);
+
   const filteredJobs = useMemo(() => {
-    return jobs.filter((job: any) => {
+    const filtered = jobs.filter((job: any) => {
       const searchStr = `${job.title} ${job.company_name} ${job.industry} ${job.location} ${job.description || ""}`.toLowerCase();
       const matchesSearch = !search || searchStr.includes(search.toLowerCase());
       const matchesIndustry = industry === "all" || job.industry === industry;
       const matchesLocation = location === "all" || job.location === location;
-      return matchesSearch && matchesIndustry && matchesLocation;
-    });
-  }, [jobs, search, industry, location]);
+      const matchesEmployment = employmentType === "all" || job.employment_type === employmentType;
+      const matchesWorkType = workType === "all" || job.work_type === workType;
+      const matchesCountry = country === "all" || job.country === country;
 
-  const hasActiveFilters = search || industry !== "all" || location !== "all";
+      let matchesSalary = true;
+      if (salaryRange !== "all") {
+        const range = SALARY_RANGES.find((r) => r.value === salaryRange);
+        if (range) {
+          const salary = job.salary_max || job.salary_min || 0;
+          matchesSalary = salary >= range.min && salary < range.max;
+        }
+      }
+
+      return matchesSearch && matchesIndustry && matchesLocation && matchesEmployment && matchesWorkType && matchesSalary && matchesCountry;
+    });
+
+    // Sort
+    filtered.sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "oldest":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "salary_high":
+          return (b.salary_max || b.salary_min || 0) - (a.salary_max || a.salary_min || 0);
+        case "salary_low":
+          return (a.salary_min || a.salary_max || 0) - (b.salary_min || b.salary_max || 0);
+        case "fee_high": {
+          const feeA = (a.salary_max || a.salary_min || 0) * (a.fee_percentage / 100);
+          const feeB = (b.salary_max || b.salary_min || 0) * (b.fee_percentage / 100);
+          return feeB - feeA;
+        }
+        case "newest":
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return filtered;
+  }, [jobs, search, industry, location, employmentType, workType, salaryRange, country, sortBy]);
+
+  const hasActiveFilters = search || industry !== "all" || location !== "all" || employmentType !== "all" || workType !== "all" || salaryRange !== "all" || country !== "all";
+  const activeFilterCount = [industry !== "all", location !== "all", employmentType !== "all", workType !== "all", salaryRange !== "all", country !== "all"].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearch("");
     setIndustry("all");
     setLocation("all");
+    setEmploymentType("all");
+    setWorkType("all");
+    setSalaryRange("all");
+    setCountry("all");
+    setSortBy("newest");
   };
 
   return (
@@ -77,44 +154,100 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
       </div>
 
       {/* Filter Bar */}
-      <div className="group bg-white p-2 rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col md:flex-row gap-2 transition-all focus-within:ring-2 focus-within:ring-brand-500/20">
-        <div className="relative flex-1 group/search">
-          <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within/search:text-brand-500 transition-colors" />
-          <Input
-            placeholder={t("recruiter.searchPlaceholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-14 pl-14 border-none bg-transparent focus-visible:ring-0 text-slate-700 font-medium placeholder:text-slate-400"
-          />
+      <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden transition-all focus-within:ring-2 focus-within:ring-brand-500/20">
+        {/* Search + primary filters row */}
+        <div className="p-2 flex flex-col md:flex-row gap-2">
+          <div className="relative flex-1 group/search">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within/search:text-brand-500 transition-colors" />
+            <Input
+              placeholder={t("recruiter.searchPlaceholder")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-14 pl-14 border-none bg-transparent focus-visible:ring-0 text-slate-700 font-medium placeholder:text-slate-400"
+            />
+          </div>
+          <div className="h-14 w-[1px] bg-slate-100 hidden md:block" />
+          <div className="flex items-center px-4 gap-3 flex-wrap pb-2 md:pb-0">
+            <select value={industry} onChange={(e) => setIndustry(e.target.value)} className={selectClass}>
+              <option value="all">{t("recruiter.allIndustries")}</option>
+              {industries.map((ind) => (
+                <option key={ind} value={ind}>{ind}</option>
+              ))}
+            </select>
+            <select value={location} onChange={(e) => setLocation(e.target.value)} className={selectClass}>
+              <option value="all">{t("recruiter.allLocations")}</option>
+              {locations.map((loc) => (
+                <option key={loc} value={loc}>{loc}</option>
+              ))}
+            </select>
+            <select value={employmentType} onChange={(e) => setEmploymentType(e.target.value)} className={selectClass}>
+              <option value="all">{t("recruiter.allEmploymentTypes") || "All types"}</option>
+              {employmentTypes.map((et) => (
+                <option key={et} value={et}>
+                  {t(`employment.${EMPLOYMENT_TYPE_DICT_KEY[et] || "fullTime"}`)}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowMoreFilters(!showMoreFilters)}
+              className={cn(
+                "h-10 rounded-xl px-4 text-xs font-bold flex items-center gap-2 transition-all",
+                showMoreFilters || activeFilterCount > 0
+                  ? "bg-brand-50 text-brand-600 border border-brand-100"
+                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+              )}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              {t("recruiter.moreFilters") || "More filters"}
+              {activeFilterCount > 0 && (
+                <span className="h-5 w-5 rounded-full bg-brand-600 text-white text-[10px] font-black flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="rounded-xl h-10 border border-slate-100 bg-white gap-2">
+                <X className="h-3.5 w-3.5" /> {t("common.clear")}
+              </Button>
+            )}
+          </div>
         </div>
-        <div className="h-14 w-[1px] bg-slate-100 hidden md:block" />
-        <div className="flex items-center px-4 gap-4 flex-wrap pb-2 md:pb-0">
-          <select
-            value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
-            className="h-10 rounded-xl border-none bg-slate-50 px-4 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-brand-500/20 outline-none cursor-pointer"
-          >
-            <option value="all">{t("recruiter.allIndustries")}</option>
-            {industries.map((ind) => (
-              <option key={ind} value={ind}>{ind}</option>
-            ))}
-          </select>
-          <select
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="h-10 rounded-xl border-none bg-slate-50 px-4 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-brand-500/20 outline-none cursor-pointer"
-          >
-            <option value="all">{t("recruiter.allLocations")}</option>
-            {locations.map((loc) => (
-              <option key={loc} value={loc}>{loc}</option>
-            ))}
-          </select>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="rounded-xl h-10 border border-slate-100 bg-white gap-2">
-              <X className="h-3.5 w-3.5" /> {t("common.clear")}
-            </Button>
-          )}
-        </div>
+
+        {/* Expanded filters row */}
+        {showMoreFilters && (
+          <div className="px-6 pb-4 pt-2 border-t border-slate-100 flex flex-wrap items-center gap-3">
+            <select value={workType} onChange={(e) => setWorkType(e.target.value)} className={selectClass}>
+              <option value="all">{t("recruiter.allWorkTypes") || "All work types"}</option>
+              {workTypes.map((wt) => (
+                <option key={wt} value={wt}>
+                  {wt === "onsite" ? (t("recruiter.workOnsite") || "On-site") : wt === "hybrid" ? (t("recruiter.workHybrid") || "Hybrid") : wt === "remote" ? (t("recruiter.workRemote") || "Remote") : wt}
+                </option>
+              ))}
+            </select>
+            <select value={salaryRange} onChange={(e) => setSalaryRange(e.target.value)} className={selectClass}>
+              <option value="all">{t("recruiter.allSalaries") || "All salaries"}</option>
+              {SALARY_RANGES.slice(1).map((range) => (
+                <option key={range.value} value={range.value}>{range.label}</option>
+              ))}
+            </select>
+            {countries.length > 1 && (
+              <select value={country} onChange={(e) => setCountry(e.target.value)} className={selectClass}>
+                <option value="all">{t("recruiter.allCountries") || "All countries"}</option>
+                {countries.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            )}
+            <div className="h-6 w-[1px] bg-slate-200 hidden md:block" />
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className={cn(selectClass, "bg-white border border-slate-200")}>
+              <option value="newest">{t("recruiter.sortNewest") || "Newest first"}</option>
+              <option value="oldest">{t("recruiter.sortOldest") || "Oldest first"}</option>
+              <option value="salary_high">{t("recruiter.sortSalaryHigh") || "Highest salary"}</option>
+              <option value="salary_low">{t("recruiter.sortSalaryLow") || "Lowest salary"}</option>
+              <option value="fee_high">{t("recruiter.sortFeeHigh") || "Highest fee"}</option>
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Jobs Grid */}
@@ -198,7 +331,6 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                               {potentialCommission != null ? formatCurrency(potentialCommission) : t("common.notSpecifiedNeutral")}
                             </span>
                           </div>
-                          <p className="text-[9px] text-slate-400 font-medium mt-1">{t("recruiter.basedOnFee").replace("{fee}", String(job.fee_percentage))}</p>
                         </div>
                         <div className="flex items-center justify-between text-xs px-2">
                           <span className="text-slate-400 font-bold uppercase tracking-wider">{t("recruiter.salaryIndication")}</span>

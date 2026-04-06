@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -20,6 +20,7 @@ import {
     SHIFT_WORK_OPTIONS,
     URGENCY_LEVEL_OPTIONS,
     COUNTRY_OPTIONS,
+    INDUSTRY_OPTIONS,
 } from "@/lib/job-form-options";
 
 const BENEFIT_LABELS: Record<string, string> = {
@@ -56,6 +57,11 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
     const { id } = await params;
     const job = await getJob(id);
     if (!job) notFound();
+
+    // Only drafts can be edited — published jobs are locked
+    if (job.status !== "draft") {
+        redirect(`/company/jobs/${id}`);
+    }
 
     const dict = await getDictionary();
     const t = await createTranslator();
@@ -120,7 +126,12 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">{c.industryLabel}</label>
-                                <Input name="industry" defaultValue={job.industry} required />
+                                <select name="industry" defaultValue={job.industry} className={selectClass} required>
+                                    <option value="">Välj bransch</option>
+                                    {INDUSTRY_OPTIONS.map((opt) => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">

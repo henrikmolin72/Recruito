@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/actions/notifications";
+import { sendUserEmail } from "@/lib/email/internal-notifications";
+import { candidateSubmissionEmail, candidateProgressEmail } from "@/lib/email/email-templates";
 import { validateCandidateForm } from "@/lib/validation/forms";
 import type { PipelineStage } from "@/types/db-types";
 import {
@@ -388,6 +390,45 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
         );
     }
 
+    // Send email notification when candidate is submitted
+    if (status === "submitted" && access.companyUserId && access.job) {
+        try {
+            const { data: company } = await supabase
+                .from("companies")
+                .select("id, company_name")
+                .eq("id", access.job.id)
+                .single();
+
+            const { data: companyProfile } = await supabase
+                .from("profiles")
+                .select("email, full_name")
+                .eq("id", access.companyUserId)
+                .single();
+
+            if (companyProfile?.email && access.candidate) {
+                const candidateUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/company/jobs/${jobId}/candidates/${candidateId}`;
+                const qualifications = (access.candidate as any)?.key_qualifications || "Professional experience in relevant field";
+
+                const emailHtml = candidateSubmissionEmail({
+                    companyName: company?.company_name || "Partner Company",
+                    candidateName: candidateName || "A candidate",
+                    candidateTitle: (access.candidate as any)?.current_title || "Professional",
+                    jobTitle: access.job?.title || "Position",
+                    qualifications,
+                    candidateUrl,
+                });
+
+                await sendUserEmail({
+                    to: companyProfile.email,
+                    subject: `New candidate submitted: ${candidateName}`,
+                    html: emailHtml,
+                });
+            }
+        } catch (error) {
+            console.error("Error sending candidate submission email:", error);
+        }
+    }
+
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
     if (mandateId) {
@@ -455,6 +496,38 @@ export async function moveCandidateToPipelineStage(
             `${actorLabel} flyttade ${candidateName || "kandidaten"} till "${targetStage.title}" för ${job?.title || "uppdraget"}.`,
             `/company/jobs/${jobId}/candidates/${candidateId}`
         );
+    }
+
+    // Send email notification to recruiter when candidate progresses
+    if (recruiterUserId && access.candidate) {
+        try {
+            const { data: recruiterProfile } = await supabase
+                .from("profiles")
+                .select("email, full_name")
+                .eq("id", recruiterUserId)
+                .single();
+
+            if (recruiterProfile?.email) {
+                const recruiterName = recruiterProfile.full_name || "Recruiter";
+                const candidateUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/recruiter/jobs/${jobId}#candidate/${candidateId}`;
+
+                const emailHtml = candidateProgressEmail({
+                    recruiterName,
+                    candidateName: candidateName || "A candidate",
+                    jobTitle: job?.title || "Position",
+                    newStage: targetStage.title,
+                    candidateUrl,
+                });
+
+                await sendUserEmail({
+                    to: recruiterProfile.email,
+                    subject: `Candidate progressed: ${candidateName}`,
+                    html: emailHtml,
+                });
+            }
+        } catch (error) {
+            console.error("Error sending candidate progress email:", error);
+        }
     }
 
     revalidatePath(`/company/jobs/${jobId}`);

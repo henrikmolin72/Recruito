@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { RecruitmentCalculator } from "@/components/layout/recruitment-calculator";
+import { RecruitmentCalculator, CALCULATOR_DEFAULTS, type CalculatorState } from "@/components/layout/recruitment-calculator";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import type { PipelineStage } from "@/types/db-types";
 import { useTranslations } from "@/i18n/client";
@@ -29,6 +29,7 @@ import {
     URGENCY_LEVEL_OPTIONS,
     COUNTRY_OPTIONS,
     EUROPEAN_LANGUAGE_OPTIONS,
+    INDUSTRY_OPTIONS,
 } from "@/lib/job-form-options";
 
 const selectClass = "flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-all font-medium";
@@ -56,6 +57,8 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     const [screeningQuestions, setScreeningQuestions] = useState<string[]>([""]);
     const [keyRequirements, setKeyRequirements] = useState<string[]>([""]);
     const [languageRequirements, setLanguageRequirements] = useState<LanguageRequirement[]>([]);
+    const [draftJobId, setDraftJobId] = useState<string | null>(null);
+    const [calcState, setCalcState] = useState<CalculatorState>(CALCULATOR_DEFAULTS);
 
     const STEPS = [
         { id: 1, title: t("jobForm.step1Title"), description: t("jobForm.step1Desc") },
@@ -169,13 +172,25 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         background_check_required: false,
     });
 
+    // Publish only when all required fields are filled and declaration confirmed
+    const canPublish = Boolean(
+        formData.title.trim() &&
+        formData.location.trim() &&
+        formData.industry.trim() &&
+        formData.employment_type.trim() &&
+        formData.description.trim() &&
+        declarationConfirmed
+    );
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         if (type === "checkbox") {
             const checked = (e.target as HTMLInputElement).checked;
             setFormData(prev => ({ ...prev, [name]: checked }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            // Ensure text fields never become null - always use empty string for empty values
+            const normalizedValue = value === null ? "" : value;
+            setFormData(prev => ({ ...prev, [name]: normalizedValue }));
         }
     };
 
@@ -256,7 +271,9 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
             if (typeof value === "boolean") {
                 if (value) data.append(key, "on");
             } else {
-                data.append(key, String(value));
+                // Ensure null/undefined are converted to empty strings, not "null"/"undefined"
+                const stringValue = value === null || value === undefined ? "" : String(value);
+                data.append(key, stringValue);
             }
         }
         if (isDraft) {
@@ -268,6 +285,11 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
     async function handleSaveDraft() {
         setLoading(true);
         const data = buildFormData(true);
+
+        // If we already saved a draft, pass its ID so it gets updated instead of creating a new one
+        if (draftJobId) {
+            data.append("draft_id", draftJobId);
+        }
 
         // Append arrays
         for (const b of formData.benefits) {
@@ -284,18 +306,30 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
         if (result?.error) {
             toast.error(typeof result.error === "string" ? result.error : "Kunde inte spara utkast");
         } else {
+            if (result?.jobId) {
+                setDraftJobId(result.jobId);
+            }
             toast.success(t("jobForm.draftSaved") || "Utkast sparat!");
         }
         setLoading(false);
     }
 
     async function handleSubmit() {
-        if (!declarationConfirmed) {
-            toast.error(t("jobForm.declarationRequired") || "You must confirm the declaration to submit.");
+        if (!canPublish) {
+            if (!declarationConfirmed) {
+                toast.error(t("jobForm.declarationRequired") || "You must confirm the declaration to submit.");
+            } else {
+                toast.error(t("jobForm.fillAllRequired") || "Please fill all required fields before publishing.");
+            }
             return;
         }
         setLoading(true);
         const data = buildFormData();
+
+        // If this was saved as a draft before, update it instead of creating a new job
+        if (draftJobId) {
+            data.append("draft_id", draftJobId);
+        }
 
         // Hidden defaults for internal fields not shown in form
         data.append("fee_percentage", String(feePercentage));
@@ -425,8 +459,13 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                         </div>
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.industry")} *</label>
-                                            <Input name="industry" value={formData.industry} onChange={handleInputChange}
-                                                placeholder={t("jobForm.industryPlaceholder")} required />
+                                            <select name="industry" value={formData.industry} onChange={handleInputChange}
+                                                className={selectClass} required>
+                                                <option value="">{t("jobForm.industryPlaceholder")}</option>
+                                                {INDUSTRY_OPTIONS.map((opt) => (
+                                                    <option key={opt} value={opt}>{opt}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 pt-1">
@@ -438,7 +477,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                     {/* Recruitment Fee Calculator */}
                                     <div className="pt-4 mt-4 border-t border-slate-100">
                                         <h3 className="text-sm font-bold text-slate-700 mb-3">{t("jobForm.calculatorTitle") || "Calculator"}</h3>
-                                        <RecruitmentCalculator />
+                                        <RecruitmentCalculator state={calcState} onStateChange={setCalcState} />
                                     </div>
                                 </div>
                             )}
@@ -894,8 +933,9 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                                     {t("jobForm.nextStep")} <ChevronRight className="h-4 w-4" />
                                 </Button>
                             ) : (
-                                <Button onClick={handleSubmit} disabled={loading}
-                                    className="bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20">
+                                <Button onClick={handleSubmit} disabled={loading || !canPublish}
+                                    title={!canPublish ? (t("jobForm.fillAllRequired") || "Fill all required fields and confirm the declaration") : undefined}
+                                    className="bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20 disabled:opacity-50">
                                     {loading ? t("jobForm.publishing") : t("jobForm.completeAndPublish")}
                                     <Sparkles className="h-4 w-4 fill-current" />
                                 </Button>
