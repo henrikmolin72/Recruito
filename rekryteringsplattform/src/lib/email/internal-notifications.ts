@@ -81,6 +81,7 @@ export async function sendUserEmail(params: SendUserEmailParams) {
       to: params.to,
       subject: params.subject,
       html: params.html,
+      text: params.subject,
     });
 
     return { sent: true as const };

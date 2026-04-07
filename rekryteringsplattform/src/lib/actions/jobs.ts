@@ -18,7 +18,7 @@ async function verifyJobOwnership(jobId: string) {
 
     const { data: company } = await supabase
         .from("companies")
-        .select("id")
+        .select("id, company_name")
         .eq("user_id", user.id)
         .single();
 
@@ -55,7 +55,7 @@ export async function createJob(formData: FormData) {
     // 2. Get company profile to link job to company (auto-create if missing)
     let { data: company } = await supabase
         .from("companies")
-        .select("id")
+        .select("id, company_name")
         .eq("user_id", user.id)
         .single();
 
@@ -75,7 +75,7 @@ export async function createJob(formData: FormData) {
                 user_id: user.id,
                 company_name: companyName,
             })
-            .select("id")
+            .select("id, company_name")
             .single();
 
         if (createError) {
@@ -83,7 +83,7 @@ export async function createJob(formData: FormData) {
             if (createError.code === "23505") {
                 const { data: refetched } = await supabase
                     .from("companies")
-                    .select("id")
+                    .select("id, company_name")
                     .eq("user_id", user.id)
                     .single();
                 if (refetched) {
