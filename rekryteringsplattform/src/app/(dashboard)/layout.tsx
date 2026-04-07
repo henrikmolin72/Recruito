@@ -17,7 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar role={role} />
       <div className="flex flex-1 flex-col min-w-0">
         <Header role={role} />
-        <main className="flex-1 overflow-y-auto p-6 bg-muted transition-colors duration-300">
+        <main className={`flex-1 overflow-y-auto p-6 transition-colors duration-300 ${role === "admin" ? "bg-emerald-50" : "bg-muted"}`}>
           {children}
         </main>
       </div>

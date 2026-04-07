@@ -396,7 +396,7 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
             const { data: company } = await supabase
                 .from("companies")
                 .select("id, company_name")
-                .eq("id", access.job.id)
+                .eq("user_id", access.companyUserId)
                 .single();
 
             const { data: companyProfile } = await supabase

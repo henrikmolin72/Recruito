@@ -6,6 +6,15 @@
 const BRAND_COLOR = "#0066cc";
 const GRAY_TEXT = "#666666";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 const emailHeaderStyle = `
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: ${GRAY_TEXT};
@@ -36,19 +45,19 @@ export function newJobNotificationEmail({
     </head>
     <body style="${emailHeaderStyle}">
       <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #000; margin-bottom: 20px;">Hi ${recruiterName}!</h2>
+        <h2 style="color: #000; margin-bottom: 20px;">Hi ${escapeHtml(recruiterName)}!</h2>
 
         <p>A new job listing matching your specialization has been posted:</p>
 
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #000; margin-top: 0;">${jobTitle}</h3>
-          <p style="margin: 8px 0;"><strong>Company:</strong> ${companyName}</p>
-          <p style="margin: 8px 0;"><strong>Location:</strong> ${location}</p>
+          <h3 style="color: #000; margin-top: 0;">${escapeHtml(jobTitle)}</h3>
+          <p style="margin: 8px 0;"><strong>Company:</strong> ${escapeHtml(companyName)}</p>
+          <p style="margin: 8px 0;"><strong>Location:</strong> ${escapeHtml(location)}</p>
           <p style="margin: 8px 0;"><strong>Fee:</strong> ${feePercentage}%</p>
         </div>
 
         <p>
-          <a href="${jobUrl}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          <a href="${encodeURI(jobUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             View Job Posting
           </a>
         </p>
@@ -91,15 +100,15 @@ export function candidateSubmissionEmail({
         <p>A recruiter has submitted a candidate for your job posting:</p>
 
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #000; margin-top: 0;">${candidateName}</h3>
-          <p style="margin: 8px 0;"><strong>Current Title:</strong> ${candidateTitle}</p>
-          <p style="margin: 8px 0;"><strong>Applying for:</strong> ${jobTitle}</p>
+          <h3 style="color: #000; margin-top: 0;">${escapeHtml(candidateName)}</h3>
+          <p style="margin: 8px 0;"><strong>Current Title:</strong> ${escapeHtml(candidateTitle)}</p>
+          <p style="margin: 8px 0;"><strong>Applying for:</strong> ${escapeHtml(jobTitle)}</p>
           <p style="margin: 8px 0;"><strong>Key Qualifications:</strong></p>
-          <p style="margin: 8px 0; color: #000;">${qualifications}</p>
+          <p style="margin: 8px 0; color: #000;">${escapeHtml(qualifications)}</p>
         </div>
 
         <p>
-          <a href="${candidateUrl}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          <a href="${encodeURI(candidateUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             Review Candidate
           </a>
         </p>
@@ -140,15 +149,15 @@ export function candidateProgressEmail({
         <p>The company has moved your candidate forward in the hiring process:</p>
 
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #000; margin-top: 0;">${candidateName}</h3>
-          <p style="margin: 8px 0;"><strong>Job Position:</strong> ${jobTitle}</p>
-          <p style="margin: 8px 0;"><strong>New Stage:</strong> <span style="color: ${BRAND_COLOR}; font-weight: bold;">${newStage}</span></p>
+          <h3 style="color: #000; margin-top: 0;">${escapeHtml(candidateName)}</h3>
+          <p style="margin: 8px 0;"><strong>Job Position:</strong> ${escapeHtml(jobTitle)}</p>
+          <p style="margin: 8px 0;"><strong>New Stage:</strong> <span style="color: ${BRAND_COLOR}; font-weight: bold;">${escapeHtml(newStage)}</span></p>
         </div>
 
         <p>Great news! Keep in touch with the candidate and stay updated on their progress.</p>
 
         <p>
-          <a href="${candidateUrl}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          <a href="${encodeURI(candidateUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             View Candidate Status
           </a>
         </p>

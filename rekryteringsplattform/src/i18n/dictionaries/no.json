@@ -90,6 +90,8 @@
     "recruiters": "Rekrutterere",
     "companies": "Bedrifter",
     "placements": "Plasseringer",
+    "analytics": "Analyse",
+    "notifications": "Varsler",
     "settings": "Innstillinger",
     "professional": "Profesjonell",
     "corporate": "Corporate"
@@ -499,7 +501,6 @@
     "sortSalaryHigh": "Høyeste lønn",
     "sortSalaryLow": "Laveste lønn",
     "sortFeeHigh": "Høyeste honorar",
-    "basedOnFee": "Basert på {fee} % av årslønn",
     "salaryIndication": "Lønnsindikasjon",
     "takeMandate": "Ta mandat",
     "takingMandate": "Behandler...",

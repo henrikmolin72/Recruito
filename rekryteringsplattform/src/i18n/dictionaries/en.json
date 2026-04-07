@@ -90,6 +90,8 @@
     "recruiters": "Recruiters",
     "companies": "Companies",
     "placements": "Placements",
+    "analytics": "Analytics",
+    "notifications": "Notifications",
     "settings": "Settings",
     "professional": "Professional",
     "corporate": "Corporate"
@@ -498,8 +500,7 @@
     "sortOldest": "Oldest first",
     "sortSalaryHigh": "Highest salary",
     "sortSalaryLow": "Lowest salary",
-    "sortFeeHigh": "Highest fee"
-    "basedOnFee": "Based on {fee}% of annual salary",
+    "sortFeeHigh": "Highest fee",
     "salaryIndication": "Salary indication",
     "takeMandate": "Take mandate",
     "takingMandate": "Processing...",

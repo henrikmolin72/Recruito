@@ -284,12 +284,12 @@ export async function createJob(formData: FormData) {
                         const jobUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/recruiter/jobs/${jobId}`;
 
                         // Create in-app notification
-                        await createNotification({
-                            userId: recruiter.user_id,
-                            title: `New job: ${job.title}`,
-                            body: `${job.title} at ${company?.company_name || "a company"}`,
-                            link: `/recruiter/jobs/${jobId}`,
-                        });
+                        await createNotification(
+                            recruiter.user_id,
+                            `New job: ${job.title}`,
+                            `${job.title} at ${company?.company_name || "a company"}`,
+                            `/recruiter/jobs/${jobId}`
+                        );
 
                         // Send email notification
                         const emailHtml = newJobNotificationEmail({
@@ -354,6 +354,17 @@ export async function getCompanyJobs() {
 export async function updateJob(jobId: string, formData: FormData) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
+
+    // Verify job is still in draft status before allowing edits
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("status")
+        .eq("id", jobId)
+        .single();
+
+    if (!job || job.status !== "draft") {
+        return { error: "Only draft jobs can be edited" };
+    }
 
     const parsed = await validateJobForm(formData);
     if (!parsed.success) {

@@ -21,6 +21,7 @@ export function Header({ role }: { role: string }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const isRecruiter = role === "recruiter";
+  const isAdmin = role === "admin";
   const navItems = NAV_MAP[role] || NAV_MAP.company;
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export function Header({ role }: { role: string }) {
     <>
       <header className={cn(
         "h-16 border-b flex items-center justify-between px-4 sm:px-6 transition-all duration-300 z-40",
-        isRecruiter ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-border text-foreground"
+        isRecruiter ? "bg-slate-900 border-slate-800 text-white" : isAdmin ? "bg-emerald-50 border-emerald-200 text-foreground" : "bg-white border-border text-foreground"
       )}>
         <div className="flex items-center gap-3">
           {/* Hamburger - visible below lg */}
@@ -49,17 +50,19 @@ export function Header({ role }: { role: string }) {
             onClick={() => setIsMobileNavOpen(true)}
             aria-label={t("common.openMenu")}
           >
-            <Menu className={cn("h-5 w-5", isRecruiter ? "text-slate-300" : "text-slate-600")} />
+            <Menu className={cn("h-5 w-5", isRecruiter ? "text-slate-300" : isAdmin ? "text-emerald-600" : "text-slate-600")} />
           </button>
 
           <div className={cn(
             "flex items-center gap-2 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all",
             isRecruiter
               ? "bg-brand-500/10 border-brand-500/30 text-brand-400"
+              : isAdmin
+              ? "bg-emerald-100 border-emerald-300 text-emerald-700"
               : "bg-blue-50 border-blue-100 text-blue-600"
           )}>
-            <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", isRecruiter ? "bg-brand-400" : "bg-blue-500")} />
-            {isRecruiter ? t("nav.professional") : t("nav.corporate")}
+            <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", isRecruiter ? "bg-brand-400" : isAdmin ? "bg-emerald-600" : "bg-blue-500")} />
+            {isRecruiter ? t("nav.professional") : isAdmin ? "Admin" : t("nav.corporate")}
           </div>
         </div>
 
@@ -78,6 +81,8 @@ export function Header({ role }: { role: string }) {
                 "h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold transition-all border shadow-sm",
                 isRecruiter
                   ? "bg-slate-800 border-slate-700 text-brand-400"
+                  : isAdmin
+                  ? "bg-emerald-100 border-emerald-300 text-emerald-700"
                   : "bg-brand-50 border-brand-100 text-brand-600"
               )}>
                 {initials}
@@ -139,7 +144,7 @@ export function Header({ role }: { role: string }) {
           {/* Drawer */}
           <nav className={cn(
             "absolute inset-y-0 left-0 w-72 flex flex-col shadow-2xl animate-in slide-in-from-left duration-200",
-            isRecruiter ? "bg-slate-900 text-white" : "bg-white text-foreground"
+            isRecruiter ? "bg-slate-900 text-white" : isAdmin ? "bg-emerald-50 text-foreground" : "bg-white text-foreground"
           )}>
             {/* Drawer header */}
             <div className="flex items-center justify-between p-5 border-b border-border/10">
@@ -199,7 +204,7 @@ export function Header({ role }: { role: string }) {
             {/* Drawer footer */}
             <div className={cn(
               "p-4 border-t",
-              isRecruiter ? "border-slate-800" : "border-border"
+              isRecruiter ? "border-slate-800" : isAdmin ? "border-emerald-200" : "border-border"
             )}>
               <LanguageSwitcher variant="dropdown" compact tone={isRecruiter ? "dark" : "light"} />
               <form action={logout} className="mt-2">

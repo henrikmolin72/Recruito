@@ -49,7 +49,7 @@ export async function updateSession(request: NextRequest) {
 
     // Role-based route enforcement
     if (user) {
-        const role = user.user_metadata?.role;
+        const role = user.app_metadata?.role || user.user_metadata?.role;
         if (request.nextUrl.pathname.startsWith("/admin") && role !== "admin") {
             const url = request.nextUrl.clone();
             url.pathname = `/${role || "company"}`;
@@ -74,8 +74,7 @@ export async function updateSession(request: NextRequest) {
     );
 
     if (isAuthRoute && user) {
-        // Get user role from metadata to redirect to correct dashboard
-        const role = user.user_metadata?.role || "company";
+        const role = user.app_metadata?.role || user.user_metadata?.role || "company";
         const url = request.nextUrl.clone();
         url.pathname = `/${role}`;
         return NextResponse.redirect(url);

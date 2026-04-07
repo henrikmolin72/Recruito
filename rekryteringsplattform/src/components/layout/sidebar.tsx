@@ -19,6 +19,8 @@ import {
   UserCheck,
   Banknote,
   Settings,
+  BarChart3,
+  Bell,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -51,10 +53,12 @@ const RECRUITER_NAV: NavItem[] = [
 
 const ADMIN_NAV: NavItem[] = [
   { labelKey: "nav.dashboard", href: "/admin", icon: LayoutDashboard },
-  { labelKey: "nav.recruiters", href: "/admin/recruiters", icon: UserCheck, badge: "4" },
+  { labelKey: "nav.recruiters", href: "/admin/recruiters", icon: UserCheck },
   { labelKey: "nav.companies", href: "/admin/companies", icon: Building2 },
   { labelKey: "nav.jobs", href: "/admin/jobs", icon: Briefcase },
   { labelKey: "nav.placements", href: "/admin/placements", icon: Banknote },
+  { labelKey: "nav.analytics", href: "/admin/analytics", icon: BarChart3 },
+  { labelKey: "nav.notifications", href: "/admin/notifications", icon: Bell },
   { labelKey: "nav.settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -72,6 +76,7 @@ export function Sidebar({ role }: { role: string }) {
   const navItems = NAV_MAP[role] || COMPANY_NAV;
   const [userData, setUserData] = useState<{ fullName: string, initials: string } | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [adminBadges, setAdminBadges] = useState<Record<string, string>>({});
 
   useEffect(() => {
     import("@/lib/actions/user").then(({ getSidebarData }) => {
@@ -90,15 +95,31 @@ export function Sidebar({ role }: { role: string }) {
 
     fetchUnread();
     const interval = setInterval(fetchUnread, 30000);
+
+    // Fetch admin sidebar badges dynamically
+    if (role === "admin") {
+      import("@/lib/actions/admin").then(({ getAdminStats }) => {
+        getAdminStats().then(stats => {
+          setAdminBadges({
+            "/admin/recruiters": String(stats.recruiters),
+            "/admin/companies": String(stats.companies),
+            "/admin/jobs": String(stats.activeJobs),
+            "/admin/placements": String(stats.totalPlacements),
+          });
+        }).catch(() => {});
+      });
+    }
+
     return () => clearInterval(interval);
-  }, []);
+  }, [role]);
 
   const isRecruiter = role === "recruiter";
+  const isAdmin = role === "admin";
 
   return (
     <aside className={cn(
       "hidden lg:flex lg:flex-col w-64 border-r border-border transition-all duration-300",
-      isRecruiter ? "bg-slate-900 border-slate-800 text-white" : "bg-white text-foreground"
+      isRecruiter ? "bg-slate-900 border-slate-800 text-white" : isAdmin ? "bg-emerald-50 border-emerald-200 text-foreground" : "bg-white text-foreground"
     )}>
       <div className="p-6">
         <Link href="/" className="flex items-center gap-2">
@@ -112,7 +133,7 @@ export function Sidebar({ role }: { role: string }) {
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== `/${role}` && pathname.startsWith(item.href));
-          const badge = item.isMessages && unreadMessages > 0 ? unreadMessages.toString() : item.badge;
+          const badge = item.isMessages && unreadMessages > 0 ? unreadMessages.toString() : (adminBadges[item.href] || item.badge);
 
           return (
             <Link
@@ -121,8 +142,8 @@ export function Sidebar({ role }: { role: string }) {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all group",
                 isActive
-                  ? (isRecruiter ? "bg-brand-500 text-white shadow-md shadow-brand-500/20" : "bg-brand-50 text-brand-600")
-                  : (isRecruiter ? "text-slate-400 hover:bg-slate-800/50 hover:text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground")
+                  ? (isRecruiter ? "bg-brand-500 text-white shadow-md shadow-brand-500/20" : isAdmin ? "bg-emerald-200 text-emerald-800 shadow-sm" : "bg-brand-50 text-brand-600")
+                  : (isRecruiter ? "text-slate-400 hover:bg-slate-800/50 hover:text-white" : isAdmin ? "text-emerald-700 hover:bg-emerald-100 hover:text-emerald-900" : "text-muted-foreground hover:bg-muted hover:text-foreground")
               )}
             >
               <item.icon className={cn(
@@ -147,12 +168,12 @@ export function Sidebar({ role }: { role: string }) {
 
       <div className={cn(
         "p-4 border-t",
-        isRecruiter ? "border-slate-800 bg-slate-950/30" : "border-border bg-muted/10 font-medium"
+        isRecruiter ? "border-slate-800 bg-slate-950/30" : isAdmin ? "border-emerald-200 bg-emerald-100/50 font-medium" : "border-border bg-muted/10 font-medium"
       )}>
         <div className="flex items-center gap-3">
           <div className={cn(
             "h-9 w-9 rounded-full flex items-center justify-center border transition-colors",
-            isRecruiter ? "bg-slate-800 border-slate-700 text-brand-400 font-black" : "bg-brand-100 border-brand-200 text-brand-600 font-bold"
+            isRecruiter ? "bg-slate-800 border-slate-700 text-brand-400 font-black" : isAdmin ? "bg-emerald-200 border-emerald-300 text-emerald-700 font-bold" : "bg-brand-100 border-brand-200 text-brand-600 font-bold"
           )}>
             <span className="text-xs uppercase tracking-tighter">
               {userData?.initials || (role === "company" ? "AB" : role === "recruiter" ? "EL" : "AD")}
@@ -167,9 +188,9 @@ export function Sidebar({ role }: { role: string }) {
             </p>
             <p className={cn(
               "text-[9px] uppercase font-black tracking-widest opacity-70",
-              isRecruiter ? "text-brand-400" : "text-muted-foreground"
+              isRecruiter ? "text-brand-400" : isAdmin ? "text-emerald-600" : "text-muted-foreground"
             )}>
-              {role === "recruiter" ? t("nav.professional") : t("nav.corporate")}
+              {role === "recruiter" ? t("nav.professional") : isAdmin ? "Admin" : t("nav.corporate")}
             </p>
           </div>
         </div>

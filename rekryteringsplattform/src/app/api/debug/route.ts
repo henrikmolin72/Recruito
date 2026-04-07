@@ -13,7 +13,8 @@ export async function GET() {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    if (user.user_metadata?.role !== "admin") {
+    const isAdmin = user.app_metadata?.role === "admin" || user.user_metadata?.role === "admin";
+    if (!isAdmin) {
         return NextResponse.json({ error: "Not authorized" }, { status: 403 });
     }
 

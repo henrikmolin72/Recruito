@@ -12,7 +12,7 @@ export async function GET(request: Request) {
         if (!error) {
             // Get the user to determine their role for redirect
             const { data: { user } } = await supabase.auth.getUser();
-            const role = user?.user_metadata?.role || "company";
+            const role = user?.app_metadata?.role || user?.user_metadata?.role || "company";
             let nextPath = `/${role}`;
 
             if (role === "recruiter" && user) {
