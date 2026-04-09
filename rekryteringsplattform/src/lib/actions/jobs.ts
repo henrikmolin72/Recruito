@@ -145,7 +145,7 @@ export async function createJob(formData: FormData) {
         company_id: company.id,
         // Basics
         title: d.title || raw("title") || "Untitled Draft",
-        description: d.description ?? rawOrNull("description"),
+        description: d.description ?? rawOrNull("description") ?? "",
         location: d.location || raw("location") || raw("city") || null,
         industry: d.industry ?? raw("industry") ?? "",
         country: d.country ?? rawOrNull("country"),
@@ -445,7 +445,7 @@ export async function updateJob(jobId: string, formData: FormData) {
     redirect(`/company/jobs/${jobId}`);
 }
 
-export async function closeJob(jobId: string) {
+export async function closeJob(jobId: string, reason?: string) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
 
@@ -454,9 +454,12 @@ export async function closeJob(jobId: string) {
         return { error: "Jobbet kan inte stängas från dess nuvarande status." };
     }
 
+    const updatePayload: Record<string, unknown> = { status: 'closed' };
+    if (reason) updatePayload.close_reason = reason;
+
     const { error } = await supabase
         .from("jobs")
-        .update({ status: 'closed' })
+        .update(updatePayload)
         .eq("id", jobId);
 
     if (error) return { error: error.message };

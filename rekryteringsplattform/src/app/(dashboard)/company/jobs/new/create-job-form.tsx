@@ -37,9 +37,58 @@ const labelClass = "text-sm font-semibold text-slate-700";
 const textareaClass = "flex min-h-[100px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 transition-all leading-relaxed";
 const checkboxClass = "h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500";
 
+interface InitialJobData {
+    title?: string;
+    country?: string;
+    city?: string;
+    location_code?: string;
+    location?: string;
+    industry?: string;
+    is_confidential?: boolean;
+    employment_type?: string;
+    contract_duration?: string;
+    work_type?: string;
+    remote_type?: string;
+    work_permit_accepted?: boolean;
+    visa_sponsorship?: boolean;
+    description?: string;
+    management_required?: boolean;
+    team_size?: number | string | null;
+    reporting_to?: string;
+    position_type?: string;
+    open_positions?: number | string | null;
+    salary_min?: number | string | null;
+    salary_currency?: string;
+    salary_gross_net?: string;
+    salary_period?: string;
+    bonus_structure?: string;
+    benefits?: string[];
+    benefits_other?: string;
+    application_deadline?: string;
+    guarantee_period_months?: number | string | null;
+    num_interviews?: number | string | null;
+    interview_conductors?: string;
+    technical_test_required?: boolean;
+    assessment_type?: string;
+    working_hours?: string;
+    flexible_hours?: boolean;
+    shift_work?: string;
+    shift_timings?: string;
+    overtime_policy?: string;
+    desired_start_date?: string;
+    urgency_level?: string;
+    travel_required?: boolean;
+    background_check_required?: boolean;
+    screening_questions?: string[];
+    key_requirements?: string[];
+    language_requirements?: Array<{ language: string; level: string }>;
+}
+
 interface CreateJobFormProps {
     feePercentage: number;
     tierLabel: string;
+    editJobId?: string;
+    initialData?: InitialJobData;
 }
 
 interface LanguageRequirement {
@@ -47,18 +96,29 @@ interface LanguageRequirement {
     level: string;
 }
 
-export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
+export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJobFormProps) {
     const router = useRouter();
     const { t } = useTranslations();
+    const isEditing = Boolean(editJobId);
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
     const pipelineStages = DEFAULT_PIPELINE_STAGES;
-    const [screeningQuestions, setScreeningQuestions] = useState<string[]>([""]);
-    const [keyRequirements, setKeyRequirements] = useState<string[]>([""]);
-    const [languageRequirements, setLanguageRequirements] = useState<LanguageRequirement[]>([]);
-    const [draftJobId, setDraftJobId] = useState<string | null>(null);
-    const [calcState, setCalcState] = useState<CalculatorState>(CALCULATOR_DEFAULTS);
+    const [screeningQuestions, setScreeningQuestions] = useState<string[]>(
+        initialData?.screening_questions?.length ? initialData.screening_questions : [""]
+    );
+    const [keyRequirements, setKeyRequirements] = useState<string[]>(
+        initialData?.key_requirements?.length ? initialData.key_requirements : [""]
+    );
+    const [languageRequirements, setLanguageRequirements] = useState<LanguageRequirement[]>(
+        initialData?.language_requirements ?? []
+    );
+    const [draftJobId, setDraftJobId] = useState<string | null>(editJobId ?? null);
+    const [calcState, setCalcState] = useState<CalculatorState>({
+        ...CALCULATOR_DEFAULTS,
+        salary: initialData?.salary_min ? Number(initialData.salary_min) : CALCULATOR_DEFAULTS.salary,
+        currency: initialData?.salary_currency ?? CALCULATOR_DEFAULTS.currency,
+    });
 
     const STEPS = [
         { id: 1, title: t("jobForm.step1Title"), description: t("jobForm.step1Desc") },
@@ -121,55 +181,55 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
 
     const [formData, setFormData] = useState({
         // Step 1
-        title: "",
-        country: "",
-        city: "",
-        location_code: "",
-        location: "",
-        industry: "",
-        is_confidential: false,
+        title: initialData?.title ?? "",
+        country: initialData?.country ?? "",
+        city: initialData?.city ?? "",
+        location_code: initialData?.location_code ?? "",
+        location: initialData?.location ?? "",
+        industry: initialData?.industry ?? "",
+        is_confidential: initialData?.is_confidential ?? false,
         // Step 2
-        employment_type: "full_time",
-        contract_duration: "",
-        work_type: "",
-        remote_type: "",
-        work_permit_accepted: false,
-        visa_sponsorship: false,
+        employment_type: initialData?.employment_type ?? "full_time",
+        contract_duration: initialData?.contract_duration ?? "",
+        work_type: initialData?.work_type ?? "",
+        remote_type: initialData?.remote_type ?? "",
+        work_permit_accepted: initialData?.work_permit_accepted ?? false,
+        visa_sponsorship: initialData?.visa_sponsorship ?? false,
         // Step 3
-        description: "",
-        management_required: false,
-        team_size: "",
-        reporting_to: "",
-        position_type: "",
-        open_positions: "1",
+        description: initialData?.description ?? "",
+        management_required: initialData?.management_required ?? false,
+        team_size: initialData?.team_size != null ? String(initialData.team_size) : "",
+        reporting_to: initialData?.reporting_to ?? "",
+        position_type: initialData?.position_type ?? "",
+        open_positions: initialData?.open_positions != null ? String(initialData.open_positions) : "1",
         // Step 4
         salary_min: "",
         salary_max: "",
-        salary_currency: "SEK",
-        salary_gross_net: "",
-        salary_period: "",
-        bonus_structure: "",
-        benefits: [] as string[],
-        benefits_other: "",
+        salary_currency: initialData?.salary_currency ?? "SEK",
+        salary_gross_net: initialData?.salary_gross_net ?? "",
+        salary_period: initialData?.salary_period ?? "",
+        bonus_structure: initialData?.bonus_structure ?? "",
+        benefits: initialData?.benefits ?? [] as string[],
+        benefits_other: initialData?.benefits_other ?? "",
         // Step 5
-        application_deadline: "",
-        guarantee_period_months: "",
+        application_deadline: initialData?.application_deadline ?? "",
+        guarantee_period_months: initialData?.guarantee_period_months != null ? String(initialData.guarantee_period_months) : "",
         // Step 6
-        num_interviews: "",
-        interview_conductors: "",
-        technical_test_required: false,
-        assessment_type: "",
+        num_interviews: initialData?.num_interviews != null ? String(initialData.num_interviews) : "",
+        interview_conductors: initialData?.interview_conductors ?? "",
+        technical_test_required: initialData?.technical_test_required ?? false,
+        assessment_type: initialData?.assessment_type ?? "",
         // Step 7
-        working_hours: "",
-        flexible_hours: false,
-        shift_work: "",
-        shift_timings: "",
-        overtime_policy: "",
-        desired_start_date: "",
-        urgency_level: "",
+        working_hours: initialData?.working_hours ?? "",
+        flexible_hours: initialData?.flexible_hours ?? false,
+        shift_work: initialData?.shift_work ?? "",
+        shift_timings: initialData?.shift_timings ?? "",
+        overtime_policy: initialData?.overtime_policy ?? "",
+        desired_start_date: initialData?.desired_start_date ?? "",
+        urgency_level: initialData?.urgency_level ?? "",
         // Step 8
-        travel_required: false,
-        background_check_required: false,
+        travel_required: initialData?.travel_required ?? false,
+        background_check_required: initialData?.background_check_required ?? false,
     });
 
     // Publish only when all required fields are filled and declaration confirmed
@@ -276,6 +336,11 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                 data.append(key, stringValue);
             }
         }
+        // Override salary and currency with values from the calculator
+        data.set("salary_min", String(calcState.salary));
+        data.set("salary_max", String(calcState.salary));
+        data.set("salary_currency", calcState.currency);
+
         if (isDraft) {
             data.append("status", "draft");
         }
@@ -376,7 +441,7 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">{t("jobForm.createTitle")}</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">{isEditing ? t("jobForm.editTitle") || "Edit assignment" : t("jobForm.createTitle")}</h1>
                         <p className="text-sm text-muted-foreground">{t("jobForm.createSubtitle")}</p>
                     </div>
                 </div>
@@ -673,28 +738,26 @@ export function CreateJobForm({ feePercentage }: CreateJobFormProps) {
                             {step === 4 && (
                                 <div className="space-y-5">
                                     <div className="space-y-2">
-                                        <label className={labelClass}>{t("jobForm.salaryRange")}</label>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            <Input type="number" name="salary_min" value={formData.salary_min} onChange={handleInputChange} placeholder={t("jobForm.salaryFrom")} />
-                                            <Input type="number" name="salary_max" value={formData.salary_max} onChange={handleInputChange} placeholder={t("jobForm.salaryTo")} />
-                                            <select name="salary_currency" value={formData.salary_currency} onChange={handleInputChange} className={selectClass}>
-                                                {SALARY_CURRENCY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-                                            </select>
+                                        <label className={labelClass}>{t("jobForm.maximumSalary")}</label>
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between">
+                                            <span className="text-sm font-semibold text-slate-700 tabular-nums">
+                                                {calcState.salary.toLocaleString("sv-SE")} {calcState.currency}
+                                            </span>
+                                            <span className="text-xs text-slate-400">{t("jobForm.salaryFromCalculator") || "Set in calculator (step 1)"}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
                                             <select name="salary_gross_net" value={formData.salary_gross_net} onChange={handleInputChange} className={selectClass}>
                                                 <option value="">{t("jobForm.grossNet")}</option>
                                                 <option value="gross">{t("jobForm.gross")}</option>
                                                 <option value="net">{t("jobForm.net")}</option>
                                             </select>
+                                            <select name="salary_period" value={formData.salary_period} onChange={handleInputChange} className={selectClass}>
+                                                <option value="">{t("jobForm.selectPeriod")}</option>
+                                                {SALARY_PERIOD_OPTIONS.map(p => (
+                                                    <option key={p} value={p}>{SALARY_PERIOD_LABELS[p]}</option>
+                                                ))}
+                                            </select>
                                         </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className={labelClass}>{t("jobForm.salaryPeriod")}</label>
-                                        <select name="salary_period" value={formData.salary_period} onChange={handleInputChange} className={selectClass}>
-                                            <option value="">{t("jobForm.selectPeriod")}</option>
-                                            {SALARY_PERIOD_OPTIONS.map(p => (
-                                                <option key={p} value={p}>{SALARY_PERIOD_LABELS[p]}</option>
-                                            ))}
-                                        </select>
                                     </div>
                                     <div className="space-y-2">
                                         <label className={labelClass}>{t("jobForm.bonusStructure")}</label>

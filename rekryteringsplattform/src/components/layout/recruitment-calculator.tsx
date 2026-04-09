@@ -71,6 +71,7 @@ export interface CalculatorState {
     guaranteeMonths: 0 | 1 | 2;
     isExclusive: boolean;
     hires: number;
+    currency: string;
 }
 
 export const CALCULATOR_DEFAULTS: CalculatorState = {
@@ -78,7 +79,10 @@ export const CALCULATOR_DEFAULTS: CalculatorState = {
     guaranteeMonths: 0,
     isExclusive: false,
     hires: 1,
+    currency: "EUR",
 };
+
+const CURRENCY_OPTIONS = ["SEK", "EUR", "USD", "GBP", "NOK", "DKK"] as const;
 
 interface RecruitmentCalculatorProps {
     state?: CalculatorState;
@@ -90,12 +94,14 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
     const [localGuaranteeMonths, setLocalGuaranteeMonths] = useState<0 | 1 | 2>(CALCULATOR_DEFAULTS.guaranteeMonths);
     const [localIsExclusive, setLocalIsExclusive] = useState(CALCULATOR_DEFAULTS.isExclusive);
     const [localHires, setLocalHires] = useState(CALCULATOR_DEFAULTS.hires);
+    const [localCurrency, setLocalCurrency] = useState(CALCULATOR_DEFAULTS.currency);
 
     // Use controlled state if provided, otherwise local state
     const salary = state?.salary ?? localSalary;
     const guaranteeMonths = state?.guaranteeMonths ?? localGuaranteeMonths;
     const isExclusive = state?.isExclusive ?? localIsExclusive;
     const hires = state?.hires ?? localHires;
+    const currency = state?.currency ?? localCurrency;
 
     const setSalary = (v: number) => {
         if (onStateChange && state) onStateChange({ ...state, salary: v });
@@ -113,6 +119,10 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
         if (onStateChange && state) onStateChange({ ...state, hires: v });
         else setLocalHires(v);
     };
+    const setCurrency = (v: string) => {
+        if (onStateChange && state) onStateChange({ ...state, currency: v });
+        else setLocalCurrency(v);
+    };
 
     const r = useMemo(
         () => calculate(salary, guaranteeMonths, isExclusive, hires),
@@ -126,13 +136,24 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                 <div className="p-3.5 space-y-3">
                     {/* Annual salary */}
                     <div className="space-y-1">
-                        <div className="flex justify-between items-baseline">
+                        <div className="flex justify-between items-baseline gap-2">
                             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                                 Årslön
                             </label>
-                            <span className="text-xs font-bold text-slate-700 tabular-nums">
-                                €{fmt(salary)}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-bold text-slate-700 tabular-nums">
+                                    {fmt(salary)}
+                                </span>
+                                <select
+                                    value={currency}
+                                    onChange={(e) => setCurrency(e.target.value)}
+                                    className="text-[10px] font-bold text-slate-600 bg-slate-100 border-0 rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-400"
+                                >
+                                    {CURRENCY_OPTIONS.map(c => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         <input
                             type="range"
@@ -266,25 +287,13 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                             Rekryteringsavgift (kund){hires > 1 ? " — per st" : ""}
                         </div>
                         <div className="text-lg font-black text-brand-700 leading-tight tabular-nums">
-                            €{fmt(r.clientFee)} <span className="text-xs font-bold">EUR</span>
+                            {fmt(r.clientFee)} <span className="text-xs font-bold">{currency}</span>
                         </div>
                         {r.minFeeApplied && (
                             <div className="text-[9px] text-brand-500 mt-0.5">
-                                Minimiavgift €3 500 tillämpas
+                                Minimiavgift 3 500 {currency} tillämpas
                             </div>
                         )}
-                    </div>
-
-                    {/* Internal breakdown */}
-                    <div className="rounded-lg bg-slate-50 border border-slate-100 p-2 space-y-0.5 text-[10px] tabular-nums">
-                        <div className="flex justify-between text-slate-500">
-                            <span>Rekryterararvode (7% av lön)</span>
-                            <span className="font-semibold">€{fmt(r.recruiterFee)}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-slate-700">
-                            <span>Recruito intäkt</span>
-                            <span>€{fmt(r.recruitorRevenue)}</span>
-                        </div>
                     </div>
 
                     {/* Total for multiple hires */}
@@ -294,7 +303,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                                 Total kund ({hires} st)
                             </span>
                             <span className="text-sm font-bold text-slate-700 tabular-nums">
-                                €{fmt(r.totalClientFee)}
+                                {fmt(r.totalClientFee)} {currency}
                             </span>
                         </div>
                     )}
@@ -309,7 +318,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                                 </span>
                             </div>
                             <div className="text-base font-black text-emerald-700 leading-tight tabular-nums">
-                                €{fmt(r.savings)}
+                                {fmt(r.savings)} {currency}
                                 <span className="text-[10px] font-semibold text-emerald-500 ml-1.5">
                                     ({Math.round(r.savingsPercent)}% lägre)
                                 </span>
@@ -333,8 +342,8 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                             <div className="flex-1 bg-slate-200 rounded-full" />
                         </div>
                         <div className="flex justify-between text-[9px] tabular-nums text-slate-500">
-                            <span>€{fmt(r.totalClientFee)}</span>
-                            <span>€{fmt(r.traditionalFee)}</span>
+                            <span>{fmt(r.totalClientFee)} {currency}</span>
+                            <span>{fmt(r.traditionalFee)} {currency}</span>
                         </div>
                     </div>
                 </div>
