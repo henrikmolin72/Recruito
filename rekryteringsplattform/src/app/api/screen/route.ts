@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { stripHtml } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -150,7 +151,7 @@ export async function POST(request: NextRequest) {
     }
 
     const cvText = [application.cv_text, application.cover_letter_text].filter(Boolean).join("\n\n");
-    const jobDescription = [job.title && `Titel: ${job.title}`, job.description, job.requirements && `Krav:\n${job.requirements}`]
+    const jobDescription = [job.title && `Titel: ${job.title}`, job.description && stripHtml(job.description), job.requirements && `Krav:\n${job.requirements}`]
       .filter(Boolean)
       .join("\n\n");
 

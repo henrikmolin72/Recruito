@@ -1,0 +1,1 @@
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS recruiter_fee_percentage DECIMAL(4,2) NOT NULL DEFAULT 7.00;

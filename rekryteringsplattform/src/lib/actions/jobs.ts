@@ -214,6 +214,7 @@ export async function createJob(formData: FormData) {
         // Pipeline & status
         pipeline_stages: pipelineStages,
         status: isDraft ? "draft" : "active",
+        ...(!isDraft ? { published_at: new Date().toISOString() } : {}),
     };
 
     const { data: jobData, error: jobError } = existingDraftId
@@ -567,5 +568,82 @@ export async function updatePipelineStages(jobId: string, stages: PipelineStage[
     }
 
     revalidatePath(`/company/jobs/${jobId}`);
+    return { success: true };
+}
+
+export async function createJobAnnouncement(jobId: string, message: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Unauthorized" };
+
+    const { error: authError } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
+
+    const { error } = await supabase
+        .from("job_announcements")
+        .insert({ job_id: jobId, message, created_by: user.id });
+
+    if (error) return { error: error.message };
+
+    // Notify recruiters with mandates
+    const { data: mandates } = await supabase
+        .from("job_mandates")
+        .select("recruiter:recruiters(user_id), job:jobs(title)")
+        .eq("job_id", jobId)
+        .eq("is_active", true);
+
+    if (mandates) {
+        for (const m of mandates) {
+            const userId = (m.recruiter as any)?.user_id;
+            const jobTitle = (m.job as any)?.title;
+            if (userId) {
+                await createNotification(
+                    userId,
+                    "New announcement",
+                    `New update for "${jobTitle}": ${message.slice(0, 100)}${message.length > 100 ? "…" : ""}`,
+                    `/recruiter/mandates`
+                );
+            }
+        }
+    }
+
+    revalidatePath(`/company/jobs/${jobId}`);
+    return { success: true };
+}
+
+export async function getJobAnnouncements(jobId: string) {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("job_announcements")
+        .select("id, message, created_at")
+        .eq("job_id", jobId)
+        .order("created_at", { ascending: false });
+
+    if (error) return [];
+    return data || [];
+}
+
+export async function deleteDraftJob(jobId: string) {
+    const { error: authError, supabase } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("status")
+        .eq("id", jobId)
+        .single();
+
+    if (!job || job.status !== "draft") {
+        return { error: "Only draft assignments can be deleted." };
+    }
+
+    const { error } = await supabase
+        .from("jobs")
+        .delete()
+        .eq("id", jobId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/company/jobs");
     return { success: true };
 }

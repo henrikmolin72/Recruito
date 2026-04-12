@@ -19,11 +19,9 @@ export default async function CompanyJobsPage() {
   }
 
   function formatSalaryRange(job: any) {
-    if (!job.salary_min) return "—";
+    if (!job.salary_max && !job.salary_min) return "—";
     const currency = job.salary_currency || "EUR";
-    const min = formatCurrency(job.salary_min, currency);
-    const max = job.salary_max ? formatCurrency(job.salary_max, currency) : null;
-    return max ? `${min} - ${max}` : min;
+    return formatCurrency(job.salary_max || job.salary_min, currency);
   }
 
   function calculateJobFee(job: any) {
@@ -104,7 +102,7 @@ export default async function CompanyJobsPage() {
                         <td className="px-4 py-3 text-center">
                           <span className={`font-semibold ${statusColor}`}>{statusLabel}</span>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatDateShort(job.created_at)}</td>
+                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatDateShort(job.published_at || job.created_at)}</td>
                         <td className="px-4 py-3 text-center">
                           {job.status === 'draft' ? (
                             <Link href={`/company/jobs/${job.id}/edit`}>

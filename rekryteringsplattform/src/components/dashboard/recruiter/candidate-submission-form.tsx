@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createCandidateExtended } from "@/lib/actions/candidates-extended";
+import { EUROPEAN_LANGUAGE_OPTIONS } from "@/lib/job-form-options";
+import { toast } from "sonner";
 
 type Dict = Record<string, string>;
 
@@ -117,6 +119,39 @@ export function CandidateSubmissionForm({
     const [submitting, setSubmitting] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
 
+    // --- Draft ---
+    const DRAFT_KEY = `candidate_draft_${mandateId}`;
+
+    const TEXT_DRAFT_KEYS = ["first_name","last_name","email","phone","location_city","location_country",
+        "linkedin_url","portfolio_url","current_title","current_company",
+        "years_experience","current_salary","expected_salary","cover_note",
+        "notice_period","first_contact_date","assessment_summary"];
+    const [draftTextFields, setDraftTextFields] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(DRAFT_KEY);
+            if (saved) {
+                const d = JSON.parse(saved);
+                if (d.languages) setLanguages(d.languages);
+                if (d.locationStatus) setLocationStatus(d.locationStatus);
+                if (d.workAuth) setWorkAuth(d.workAuth);
+                if (d.employmentStatus) setEmploymentStatus(d.employmentStatus);
+                if (d.otherProcesses) setOtherProcesses(d.otherProcesses);
+                if (d.otherProcessesStage) setOtherProcessesStage(d.otherProcessesStage);
+                if (d.noticeNegotiable) setNoticeNegotiable(d.noticeNegotiable);
+                if (d.contactMethod) setContactMethod(d.contactMethod);
+                if (d.screeningAnswers) setScreeningAnswers(d.screeningAnswers);
+                if (d.aiScore !== undefined) setAiScore(d.aiScore);
+                const restoredText: Record<string, string> = {};
+                for (const key of TEXT_DRAFT_KEYS) {
+                    if (d[key]) restoredText[key] = d[key];
+                }
+                if (Object.keys(restoredText).length > 0) setDraftTextFields(restoredText);
+            }
+        } catch { }
+    }, [DRAFT_KEY]);
+
     async function handleVerify() {
         if (!verifyEmail.trim()) return;
         setVerifyStatus("checking");
@@ -139,6 +174,37 @@ export function CandidateSubmissionForm({
         const updated = [...languages];
         updated[i][field] = value;
         setLanguages(updated);
+    }
+
+    function handleSaveDraft(e: React.MouseEvent) {
+        e.preventDefault();
+        const form = (e.currentTarget as HTMLElement).closest("form") as HTMLFormElement;
+        const fd = new FormData(form);
+        const draft: Record<string, any> = {
+            languages,
+            locationStatus,
+            workAuth,
+            employmentStatus,
+            otherProcesses,
+            otherProcessesStage,
+            noticeNegotiable,
+            contactMethod,
+            screeningAnswers,
+            aiScore,
+        };
+        ["first_name","last_name","email","phone","location_city","location_country",
+         "linkedin_url","portfolio_url","current_title","current_company",
+         "years_experience","current_salary","expected_salary","cover_note",
+         "notice_period","first_contact_date","assessment_summary"].forEach((key) => {
+            const val = fd.get(key);
+            if (val) draft[key] = val;
+        });
+        try {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+            toast.success("Draft saved");
+        } catch {
+            toast.error("Could not save draft");
+        }
     }
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -177,6 +243,8 @@ export function CandidateSubmissionForm({
                 setFormError(result.error);
                 setSubmitting(false);
             } else {
+                localStorage.removeItem(DRAFT_KEY);
+                setDraftTextFields({});
                 router.push("/recruiter/mandates");
             }
         } catch {
@@ -264,22 +332,22 @@ export function CandidateSubmissionForm({
                         <FieldRow>
                             <div>
                                 <Label>{r.firstNameLabel || "First Name *"}</Label>
-                                <Input name="first_name" required placeholder="Anna" className="h-11 bg-slate-50 border-slate-200" />
+                                <Input name="first_name" required placeholder="Anna" defaultValue={draftTextFields["first_name"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>
                                 <Label>{r.lastNameLabel || "Last Name *"}</Label>
-                                <Input name="last_name" required placeholder="Smith" className="h-11 bg-slate-50 border-slate-200" />
+                                <Input name="last_name" required placeholder="Smith" defaultValue={draftTextFields["last_name"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                         </FieldRow>
 
                         <FieldRow>
                             <div>
                                 <Label>{r.emailRequired || "Primary Email *"}</Label>
-                                <Input type="email" name="email" required placeholder="anna@email.com" className="h-11 bg-slate-50 border-slate-200" />
+                                <Input type="email" name="email" required placeholder="anna@email.com" defaultValue={draftTextFields["email"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>
                                 <Label>{r.phoneLabelOptional || "Mobile Number (incl. country code)"}</Label>
-                                <Input type="tel" name="phone" placeholder="+46 70 000 00 00" className="h-11 bg-slate-50 border-slate-200" />
+                                <Input type="tel" name="phone" placeholder="+46 70 000 00 00" defaultValue={draftTextFields["phone"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                         </FieldRow>
 
@@ -323,11 +391,11 @@ export function CandidateSubmissionForm({
                         <FieldRow>
                             <div>
                                 <Label>{r.linkedinProfileUrl || "LinkedIn Profile URL"}</Label>
-                                <Input type="url" name="linkedin_url" placeholder="https://linkedin.com/in/..." className="h-11 bg-slate-50 border-slate-200" />
+                                <Input type="url" name="linkedin_url" placeholder="https://linkedin.com/in/..." defaultValue={draftTextFields["linkedin_url"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>
                                 <Label>{r.portfolioLabel || "Portfolio / GitHub (optional)"}</Label>
-                                <Input type="url" name="portfolio_url" placeholder={r.portfolioPlaceholder || "https://github.com/..."} className="h-11 bg-slate-50 border-slate-200" />
+                                <Input type="url" name="portfolio_url" placeholder={r.portfolioPlaceholder || "https://github.com/..."} defaultValue={draftTextFields["portfolio_url"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                         </FieldRow>
 
@@ -536,7 +604,7 @@ export function CandidateSubmissionForm({
                                 </div>
                                 <div>
                                     <Label>{r.currentSalaryLabel || "Annual Gross Salary"}</Label>
-                                    <Input type="number" name="current_salary" placeholder="75000" className="h-11 bg-slate-50 border-slate-200" />
+                                    <Input type="number" name="current_salary" placeholder="75000" defaultValue={draftTextFields["current_salary"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                                 </div>
                             </FieldRow>
                             <div className="mt-3">
@@ -557,7 +625,7 @@ export function CandidateSubmissionForm({
                                 </div>
                                 <div>
                                     <Label>{r.desiredSalaryLabel || "Desired Annual Salary"}</Label>
-                                    <Input type="number" name="expected_salary" placeholder="90000" className="h-11 bg-slate-50 border-slate-200" />
+                                    <Input type="number" name="expected_salary" placeholder="90000" defaultValue={draftTextFields["expected_salary"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                                 </div>
                             </FieldRow>
                             <div className="mt-3">
@@ -685,12 +753,16 @@ export function CandidateSubmissionForm({
                                     <div key={i} className="flex gap-3 items-end">
                                         <div className="flex-1">
                                             <Label>{r.languageLabel || "Language"}</Label>
-                                            <Input
+                                            <select
                                                 value={lang.language}
                                                 onChange={(e) => updateLanguage(i, "language", e.target.value)}
-                                                placeholder={r.languagePlaceholder || "e.g. English"}
-                                                className="h-10 bg-slate-50 border-slate-200"
-                                            />
+                                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                            >
+                                                <option value="">— Select language —</option>
+                                                {EUROPEAN_LANGUAGE_OPTIONS.map((l) => (
+                                                    <option key={l} value={l}>{l}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div className="flex-1">
                                             <Label>{r.proficiencyLabel || "Level"}</Label>
@@ -734,6 +806,7 @@ export function CandidateSubmissionForm({
                                 name="cover_note"
                                 rows={7}
                                 placeholder={r.assessmentPlaceholder || "CV vs Job Description Match, Key Technical Skills, Soft Skills, Tools, Risk Factors..."}
+                                defaultValue={draftTextFields["cover_note"] || ""}
                                 className="bg-slate-50 border-slate-200 rounded-xl resize-none"
                             />
                         </div>
@@ -777,20 +850,30 @@ export function CandidateSubmissionForm({
                     >
                         ← Back
                     </button>
-                    <Button
-                        type="submit"
-                        disabled={submitting || !declared}
-                        className="h-12 px-10 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/20 text-base font-bold gap-2 disabled:opacity-60"
-                    >
-                        {submitting ? (
-                            <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Submitting...
-                            </>
-                        ) : (
-                            r.presentCandidateButton || "Present Candidate"
-                        )}
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleSaveDraft}
+                            className="h-12 px-6 rounded-xl font-bold"
+                        >
+                            {r.saveDraft || "Save Draft"}
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={submitting || !declared}
+                            className="h-12 px-10 rounded-xl bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/20 text-base font-bold gap-2 disabled:opacity-60"
+                        >
+                            {submitting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Submitting...
+                                </>
+                            ) : (
+                                r.presentCandidateButton || "Present Candidate"
+                            )}
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Copyright Footer */}

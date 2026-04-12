@@ -5,8 +5,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { createJob } from "@/lib/actions/jobs";
-import { ArrowLeft, Check, ChevronRight, ChevronLeft, Sparkles, Plus, X, ExternalLink } from "lucide-react";
+import { createJob, deleteDraftJob } from "@/lib/actions/jobs";
+import { ArrowLeft, Check, ChevronRight, ChevronLeft, Sparkles, Plus, X, ExternalLink, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ import { RecruitmentCalculator, CALCULATOR_DEFAULTS, type CalculatorState } from
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import type { PipelineStage } from "@/types/db-types";
 import { useTranslations } from "@/i18n/client";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
     EMPLOYMENT_TYPE_OPTIONS,
     WORK_TYPE_OPTIONS,
@@ -101,7 +102,10 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
     const { t } = useTranslations();
     const isEditing = Boolean(editJobId);
     const [step, setStep] = useState(1);
+    const [maxStepReached, setMaxStepReached] = useState(isEditing ? 7 : 1);
     const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
     const [declarationConfirmed, setDeclarationConfirmed] = useState(false);
     const pipelineStages = DEFAULT_PIPELINE_STAGES;
     const [screeningQuestions, setScreeningQuestions] = useState<string[]>(
@@ -138,6 +142,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         profit_sharing: t("jobForm.benefitProfitSharing"),
         stock_options: t("jobForm.benefitStockOptions"),
         relocation_package: t("jobForm.benefitRelocation"),
+        company_car: t("jobForm.benefitCompanyCar"),
     };
 
     const EMPLOYMENT_TYPE_LABELS: Record<string, string> = {
@@ -239,6 +244,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         formData.industry.trim() &&
         formData.employment_type.trim() &&
         formData.description.trim() &&
+        maxStepReached >= 6 &&
         declarationConfirmed
     );
 
@@ -304,10 +310,15 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
 
     const goToStep = (targetStep: number) => {
         setStep(targetStep);
+        setMaxStepReached(prev => Math.max(prev, targetStep));
     };
 
     const nextStep = () => {
-        if (step < 7) setStep(step + 1);
+        if (step < 7) {
+            const next = step + 1;
+            setStep(next);
+            setMaxStepReached(prev => Math.max(prev, next));
+        }
     };
 
     const prevStep = () => {
@@ -430,6 +441,21 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         setLoading(false);
     }
 
+    async function handleDeleteDraft() {
+        if (!editJobId) return;
+        if (!confirmDelete) { setConfirmDelete(true); return; }
+        setDeleting(true);
+        const result = await deleteDraftJob(editJobId);
+        if (result?.error) {
+            toast.error(result.error);
+            setDeleting(false);
+            setConfirmDelete(false);
+        } else {
+            toast.success(t("jobForm.deleteDraft"));
+            router.push("/company/jobs");
+        }
+    }
+
     return (
         <div className="space-y-8 max-w-2xl mx-auto py-4">
             {/* Header */}
@@ -441,10 +467,26 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">{isEditing ? t("jobForm.editTitle") || "Edit assignment" : t("jobForm.createTitle")}</h1>
+                        <h1 className="text-2xl font-bold tracking-tight">{isEditing ? t("jobForm.editTitle") : t("jobForm.createTitle")}</h1>
                         <p className="text-sm text-muted-foreground">{t("jobForm.createSubtitle")}</p>
                     </div>
                 </div>
+                {isEditing && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleDeleteDraft}
+                        disabled={deleting}
+                        onBlur={() => setConfirmDelete(false)}
+                        className={confirmDelete
+                            ? "text-white bg-red-600 hover:bg-red-700"
+                            : "text-red-600 hover:bg-red-50 hover:text-red-700"
+                        }
+                    >
+                        <Trash2 className="h-4 w-4 mr-1.5" />
+                        {confirmDelete ? t("jobForm.deleteDraftConfirm") : t("jobForm.deleteDraft")}
+                    </Button>
+                )}
             </div>
 
             {/* Step Indicator — clickable for navigation */}
@@ -632,9 +674,11 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                     {/* Role description */}
                                     <div className="space-y-2">
                                         <label className={labelClass}>{t("jobForm.roleDescription")} *</label>
-                                        <textarea name="description" value={formData.description} onChange={handleInputChange}
-                                            className={cn(textareaClass, "min-h-[160px]")}
-                                            placeholder={t("jobForm.roleDescPlaceholder")} required />
+                                        <RichTextEditor
+                                            value={formData.description}
+                                            onChange={(html) => setFormData(prev => ({ ...prev, description: html }))}
+                                            placeholder={t("jobForm.roleDescPlaceholder")}
+                                        />
                                     </div>
 
                                     {/* Management responsibility */}
@@ -888,19 +932,10 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                         <Input name="overtime_policy" value={formData.overtime_policy} onChange={handleInputChange}
                                             placeholder={t("jobForm.overtimePlaceholder")} />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <div className="pt-2">
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.desiredStartDate")}</label>
                                             <Input type="date" name="desired_start_date" value={formData.desired_start_date} onChange={handleInputChange} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>{t("jobForm.priorityLevel")}</label>
-                                            <select name="urgency_level" value={formData.urgency_level} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">{t("jobForm.selectPriority")}</option>
-                                                <option value="1">{t("jobForm.priority1")}</option>
-                                                <option value="2">{t("jobForm.priority2")}</option>
-                                                <option value="3">{t("jobForm.priority3")}</option>
-                                            </select>
                                         </div>
                                     </div>
                                     <div className="space-y-3 pt-2 border-t border-slate-100">

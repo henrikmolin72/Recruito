@@ -17,15 +17,19 @@ import {
     LayoutDashboard,
     FileText,
     Users2,
-    Settings2
+    Settings2,
+    Megaphone
 } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { sanitizeRichText } from "@/lib/sanitize";
 import { JobActions } from "@/components/dashboard/company/job-actions";
 import { CompanyCandidatesOverview } from "@/components/dashboard/company/company-candidates-overview";
 import { PipelineEditor } from "@/components/dashboard/company/pipeline-editor";
+import { AnnouncementsTab } from "@/components/dashboard/company/announcements-tab";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
+import { getJobAnnouncements } from "@/lib/actions/jobs";
 
 async function getJob(id: string) {
     const supabase = await createClient();
@@ -76,6 +80,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
         notFound();
     }
 
+    const announcements = await getJobAnnouncements(id);
     const dict = await getDictionary();
     const c = dict.company;
 
@@ -128,12 +133,19 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         <TabsTrigger value="process" className="gap-2 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                             <Settings2 className="h-4 w-4" /> {c.jobDetailsProcess || "Process"}
                         </TabsTrigger>
+                        <TabsTrigger value="announcements" className="gap-2 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                            <Megaphone className="h-4 w-4" /> Announcements
+                        </TabsTrigger>
                     </TabsList>
 
                     <div className="flex items-center gap-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
                             <Banknote className="h-3.5 w-3.5" />
-                            {c.jobDetailsFee}: <span className="text-brand-600">{job.fee_percentage}%</span>
+                            {c.jobDetailsFee}: <span className="text-brand-600">
+                                {(job.salary_max || job.salary_min) && job.fee_percentage
+                                    ? formatCurrency(Math.round((job.salary_max || job.salary_min) * job.fee_percentage / 100), job.salary_currency || "EUR")
+                                    : `${job.fee_percentage}%`}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -154,38 +166,102 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
 
                 <TabsContent value="details" className="mt-0">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <Card className="lg:col-span-2 border-none shadow-xl shadow-slate-200/50 bg-white min-h-[400px]">
-                            <CardContent className="p-8 pt-10">
-                                <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                                    <FileText className="h-5 w-5 text-brand-500" /> {c.jobDescriptionTitle}
-                                </h3>
-                                <div className="prose max-w-none text-slate-600 leading-relaxed whitespace-pre-wrap">
-                                    {job.description}
-                                </div>
-                            </CardContent>
-                        </Card>
+                        {/* Left: Description + Requirements */}
+                        <div className="lg:col-span-2 space-y-6">
+                            <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
+                                <CardContent className="p-8 pt-10">
+                                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                                        <FileText className="h-5 w-5 text-brand-500" /> {c.jobDescriptionTitle}
+                                    </h3>
+                                    {job.description ? (
+                                        <div className="prose max-w-none text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeRichText(job.description) }} />
+                                    ) : (
+                                        <span className="text-slate-400 italic">{dict.common.notSpecified}</span>
+                                    )}
+                                </CardContent>
+                            </Card>
 
+                            {/* Key Requirements */}
+                            {job.key_requirements && job.key_requirements.length > 0 && (
+                                <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
+                                    <CardContent className="p-6">
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Key Requirements</h3>
+                                        <ul className="space-y-2">
+                                            {(job.key_requirements as string[]).map((req, i) => (
+                                                <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                                                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-500 shrink-0" />
+                                                    {req}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Screening Questions */}
+                            {job.screening_questions && job.screening_questions.filter(Boolean).length > 0 && (
+                                <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
+                                    <CardContent className="p-6">
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Screening Questions</h3>
+                                        <ol className="space-y-2 list-decimal list-inside">
+                                            {(job.screening_questions as string[]).filter(Boolean).map((q, i) => (
+                                                <li key={i} className="text-sm text-slate-700">{q}</li>
+                                            ))}
+                                        </ol>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+
+                        {/* Right: Specifications */}
                         <div className="space-y-6">
                             <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
-                                <CardContent className="p-6 space-y-6">
+                                <CardContent className="p-6 space-y-4">
                                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">{c.specificationsTitle}</h3>
 
-                                    <div className="space-y-4">
-                                        <div>
-                                            <span className="text-xs font-bold text-slate-400 uppercase">{c.industryLabel}</span>
-                                            <p className="font-bold text-slate-700">{job.industry}</p>
+                                    {[
+                                        { label: c.industryLabel, value: job.industry },
+                                        { label: c.employmentTypeLabel, value: dict.employment[EMPLOYMENT_TYPE_DICT_KEY[job.employment_type] as keyof typeof dict.employment] || job.employment_type },
+                                        { label: "Work type", value: job.work_type },
+                                        { label: "Remote", value: job.remote_type },
+                                        { label: c.indicativeSalary, value: (job.salary_max || job.salary_min) ? `${formatCurrency(job.salary_max || job.salary_min)} ${job.salary_currency || "EUR"}` : dict.common.notSpecified },
+                                        { label: "Bonus structure", value: job.bonus_structure },
+                                        { label: "Start date", value: job.desired_start_date },
+                                        { label: "Application deadline", value: job.application_deadline ? formatDate(job.application_deadline) : null },
+                                        { label: "Guarantee period", value: job.guarantee_period_months ? `${job.guarantee_period_months} months` : null },
+                                        { label: "Interviews", value: job.num_interviews ? `${job.num_interviews} rounds` : null },
+                                        { label: "Technical test", value: job.technical_test_required ? "Yes" : null },
+                                        { label: "Open positions", value: job.open_positions ? String(job.open_positions) : null },
+                                    ].filter(row => row.value).map(({ label, value }) => (
+                                        <div key={label}>
+                                            <span className="text-xs font-bold text-slate-400 uppercase">{label}</span>
+                                            <p className="font-bold text-slate-700 mt-0.5">{value}</p>
                                         </div>
+                                    ))}
+
+                                    {/* Benefits */}
+                                    {job.benefits && job.benefits.length > 0 && (
                                         <div>
-                                            <span className="text-xs font-bold text-slate-400 uppercase">{c.employmentTypeLabel}</span>
-                                            <p className="font-bold text-slate-700">{dict.employment[EMPLOYMENT_TYPE_DICT_KEY[job.employment_type] as keyof typeof dict.employment] || job.employment_type}</p>
+                                            <span className="text-xs font-bold text-slate-400 uppercase">Benefits</span>
+                                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                                {(job.benefits as string[]).map((b) => (
+                                                    <span key={b} className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 text-[11px] font-semibold border border-brand-100">{b}</span>
+                                                ))}
+                                            </div>
                                         </div>
+                                    )}
+
+                                    {/* Language requirements */}
+                                    {job.language_requirements && job.language_requirements.length > 0 && (
                                         <div>
-                                            <span className="text-xs font-bold text-slate-400 uppercase">{c.indicativeSalary}</span>
-                                            <p className="font-bold text-slate-700">
-                                                {job.salary_min ? `${formatCurrency(job.salary_min)} - ${formatCurrency(job.salary_max || job.salary_min)}` : dict.common.notSpecified}
-                                            </p>
+                                            <span className="text-xs font-bold text-slate-400 uppercase">Languages</span>
+                                            <div className="space-y-1 mt-1">
+                                                {(job.language_requirements as Array<{language: string; level: string}>).map((lr, i) => (
+                                                    <p key={i} className="text-sm font-bold text-slate-700">{lr.language} — {lr.level}</p>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>
@@ -245,6 +321,10 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         initialStages={job.pipeline_stages || DEFAULT_PIPELINE_STAGES}
                         hasCandidates={(job.candidates?.length || 0) > 0}
                     />
+                </TabsContent>
+
+                <TabsContent value="announcements" className="mt-0">
+                    <AnnouncementsTab jobId={job.id} initialAnnouncements={announcements} />
                 </TabsContent>
             </Tabs>
         </div>

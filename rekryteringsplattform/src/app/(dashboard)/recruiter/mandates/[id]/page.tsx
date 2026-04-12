@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Building2, Briefcase, MapPin, Users, Plus, GitBranch, Inbox } from "lucide-react";
+import { ArrowLeft, Building2, Briefcase, MapPin, Users, Plus, GitBranch, Inbox, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +12,10 @@ import { ApplicationReviewActions } from "@/components/dashboard/recruiter/appli
 import { ShortlistGenerator } from "@/components/screening/shortlist-generator";
 import { CandidateScoreCard } from "@/components/screening/candidate-score-card";
 import { getRecruiterMandateById, getRecruiterApplicationsForJob } from "@/lib/actions/recruiter";
+import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { getAppUrl } from "@/lib/app-url";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 
@@ -28,6 +30,7 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
   }
 
   const applications = mandate.job_id ? await getRecruiterApplicationsForJob(mandate.job_id) : [];
+  const announcements = mandate.job_id ? await getJobAnnouncements(mandate.job_id) : [];
   const appUrl = await getAppUrl();
   const publicApplicationLink = `${appUrl}/apply/${mandate.id}`;
 
@@ -76,13 +79,17 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{r.feeLabel}</p>
-            <p className="mt-1 text-sm">{mandate.fee_percentage ? `${mandate.fee_percentage}%` : dict.common.notSpecifiedNeutral}</p>
+            <p className="mt-1 text-sm">
+              {mandate.fee_percentage && (mandate.salary_max || mandate.salary_min)
+                ? formatCurrency(Math.round((mandate.salary_max || mandate.salary_min) * mandate.fee_percentage / 100), mandate.salary_currency || "EUR")
+                : mandate.fee_percentage ? `${mandate.fee_percentage}%` : dict.common.notSpecifiedNeutral}
+            </p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{r.salaryRange}</p>
             <p className="mt-1 text-sm">
-              {mandate.salary_min
-                ? `${formatCurrency(mandate.salary_min)}${mandate.salary_max ? ` - ${formatCurrency(mandate.salary_max)}` : ""}`
+              {(mandate.salary_max || mandate.salary_min)
+                ? `${formatCurrency(mandate.salary_max || mandate.salary_min)} ${mandate.salary_currency || "EUR"}`
                 : dict.common.notSpecifiedNeutral}
             </p>
           </div>
@@ -92,9 +99,29 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
       <Card>
         <CardContent className="p-6">
           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{r.roleDescription}</p>
-          <p className="text-sm whitespace-pre-wrap">{mandate.description || r.noDescriptionAvailable}</p>
+          {mandate.description ? (
+            <div className="prose max-w-none text-sm text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeRichText(mandate.description) }} />
+          ) : (
+            <p className="text-sm text-muted-foreground">{r.noDescriptionAvailable}</p>
+          )}
         </CardContent>
       </Card>
+
+      {announcements.length > 0 && (
+        <Card>
+          <CardContent className="p-6 space-y-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Megaphone className="h-3.5 w-3.5" /> Client Announcements
+            </p>
+            {announcements.map((a: any) => (
+              <div key={a.id} className="rounded-xl border border-amber-100 bg-amber-50/60 p-4">
+                <p className="text-sm whitespace-pre-wrap">{a.message}</p>
+                <p className="text-[10px] text-muted-foreground mt-2">{formatDate(a.created_at)}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {mandate.pipeline_stages && mandate.pipeline_stages.length > 0 && (
         <Card>

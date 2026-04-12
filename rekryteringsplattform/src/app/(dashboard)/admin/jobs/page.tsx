@@ -3,6 +3,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
 import { getAdminJobs } from "@/lib/actions/admin";
 import { getDictionary } from "@/i18n/server";
+import { RecruiterFeeEditor } from "@/components/dashboard/admin/recruiter-fee-editor";
 
 export default async function AdminJobsPage() {
   const jobs = await getAdminJobs();
@@ -18,7 +19,7 @@ export default async function AdminJobsPage() {
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm min-w-[860px]">
+          <table className="w-full text-sm min-w-[960px]">
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobTitle}</th>
@@ -28,16 +29,18 @@ export default async function AdminJobsPage() {
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobStatus}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobRecruiters}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobCandidates}</th>
+                <th className="p-4 font-medium text-muted-foreground">Client Fee</th>
+                <th className="p-4 font-medium text-emerald-700">Recruiter Fee %</th>
               </tr>
             </thead>
             <tbody>
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">{a.noJobsRegistered}</td>
+                  <td colSpan={9} className="p-8 text-center text-muted-foreground">{a.noJobsRegistered}</td>
                 </tr>
               ) : (
                 jobs.map((job) => (
-                  <tr key={job.id} className="border-b border-border last:border-0">
+                  <tr key={job.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                     <td className="p-4 font-medium">{job.title}</td>
                     <td className="p-4">{job.company}</td>
                     <td className="p-4 text-muted-foreground">{job.location || dict.common.noDataDash}</td>
@@ -45,6 +48,10 @@ export default async function AdminJobsPage() {
                     <td className="p-4"><StatusBadge status={job.status} /></td>
                     <td className="p-4">{job.recruiters}/{job.maxRecruiters}</td>
                     <td className="p-4">{job.candidates}</td>
+                    <td className="p-4 text-muted-foreground">{job.feePercentage ? `${job.feePercentage}%` : "—"}</td>
+                    <td className="p-4">
+                      <RecruiterFeeEditor jobId={job.id} initialFee={job.recruiterFeePercentage} />
+                    </td>
                   </tr>
                 ))
               )}
@@ -52,6 +59,10 @@ export default async function AdminJobsPage() {
           </table>
         </CardContent>
       </Card>
+
+      <p className="text-xs text-muted-foreground px-1">
+        💡 <strong>Recruiter Fee %</strong> is the percentage of annual salary paid to the recruiter on successful placement. Click any value to edit. Default is 7%.
+      </p>
     </div>
   );
 }

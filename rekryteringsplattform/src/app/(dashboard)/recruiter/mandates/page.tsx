@@ -46,6 +46,11 @@ export default async function RecruiterMandatesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Link href={`/recruiter/mandates/${mandate.id}`}>
+                      <Button size="sm" variant="outline" className="gap-1">
+                        {r.viewJobDescription || "View Job Description"}
+                      </Button>
+                    </Link>
                     <DownloadJobDescription mandate={mandate} />
                     <Link href={`/recruiter/mandates/${mandate.id}/candidates/new`}>
                       <Button size="sm" className="gap-1 bg-success-500 hover:bg-success-700">

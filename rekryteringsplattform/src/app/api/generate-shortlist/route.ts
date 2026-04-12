@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { stripHtml } from "@/lib/sanitize";
 
 export const runtime = "nodejs";
 
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
     const model = process.env.ANTHROPIC_MODEL || "claude-4-6-sonnet";
     const anthropic = new Anthropic({ apiKey });
 
-    const jobDescription = [jobRow.title && `Titel: ${jobRow.title}`, jobRow.description, jobRow.requirements && `Krav:\n${jobRow.requirements}`]
+    const jobDescription = [jobRow.title && `Titel: ${jobRow.title}`, jobRow.description && stripHtml(jobRow.description), jobRow.requirements && `Krav:\n${jobRow.requirements}`]
       .filter(Boolean)
       .join("\n\n");
 

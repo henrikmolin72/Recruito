@@ -70,7 +70,16 @@ export function Header({ role }: { role: string }) {
           <div className="hidden md:block">
             <LanguageSwitcher variant="dropdown" compact tone={isRecruiter ? "dark" : "light"} />
           </div>
-          <QuickActions role={role} />
+          {!isRecruiter && !isAdmin ? (
+            <Link
+              href="/company/jobs/new"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm bg-brand-600 text-white hover:bg-brand-700"
+            >
+              {t("components.publishJob")}
+            </Link>
+          ) : (
+            <QuickActions role={role} />
+          )}
           <NotificationsDropdown />
           <div className="relative">
             <button

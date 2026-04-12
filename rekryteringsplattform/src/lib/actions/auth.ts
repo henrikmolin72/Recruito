@@ -32,9 +32,15 @@ export async function login(formData: FormData) {
 
     // Get user role for redirect
     const { data: { user } } = await supabase.auth.getUser();
-    const role = user?.user_metadata?.role || "company";
+    const userRole = user?.app_metadata?.role || user?.user_metadata?.role || "company";
+    const requestedRole = formData.get("requestedRole") as string | null;
 
-    redirect(`/${role}`);
+    // Admin users can log in as company or admin
+    if (requestedRole && userRole === "admin" && (requestedRole === "company" || requestedRole === "admin")) {
+        redirect(`/${requestedRole}`);
+    }
+
+    redirect(`/${userRole}`);
 }
 
 export async function registerCompany(formData: FormData) {

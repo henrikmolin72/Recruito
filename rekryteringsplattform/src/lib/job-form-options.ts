@@ -58,6 +58,7 @@ export const BENEFITS_OPTIONS = [
   "profit_sharing",
   "stock_options",
   "relocation_package",
+  "company_car",
 ] as const;
 
 export const POSITION_TYPE_OPTIONS = [

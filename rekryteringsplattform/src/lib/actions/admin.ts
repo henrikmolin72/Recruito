@@ -223,6 +223,10 @@ export async function getAdminJobs() {
             title,
             location,
             salary_min,
+            salary_max,
+            salary_currency,
+            fee_percentage,
+            recruiter_fee_percentage,
             status,
             current_recruiter_count,
             max_recruiters,
@@ -243,7 +247,10 @@ export async function getAdminJobs() {
             title: job.title,
             company: company?.company_name || "Okänt",
             location: job.location || "",
-            salary: job.salary_min,
+            salary: job.salary_max || job.salary_min,
+            salaryCurrency: job.salary_currency || "EUR",
+            feePercentage: job.fee_percentage,
+            recruiterFeePercentage: job.recruiter_fee_percentage ?? 7,
             status: job.status,
             recruiters: job.current_recruiter_count || 0,
             maxRecruiters: job.max_recruiters || 5,
@@ -895,4 +902,21 @@ export async function getAdminNotificationHistory() {
     return Object.values(grouped).sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
+}
+
+export async function updateRecruiterFeePercentage(jobId: string, percentage: number) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    if (percentage < 0 || percentage > 100) return { error: "Invalid percentage" };
+
+    const { error } = await supabaseAdmin
+        .from("jobs")
+        .update({ recruiter_fee_percentage: percentage })
+        .eq("id", jobId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/admin/jobs");
+    return { success: true };
 }

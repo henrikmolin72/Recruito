@@ -38,6 +38,7 @@ function isActiveStatus(status: string | null | undefined) {
 }
 
 export async function createCandidateExtended(mandateId: string, formData: FormData) {
+  try {
     const supabase = await createClient();
     const admin = createAdminClient();
     const {
@@ -248,4 +249,8 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
     revalidatePath("/recruiter/mandates");
     revalidatePath("/recruiter");
     return { success: true };
+  } catch (err: any) {
+      console.error("createCandidateExtended unexpected error:", err);
+      return { error: err?.message || "An unexpected error occurred. Please try again." };
+  }
 }

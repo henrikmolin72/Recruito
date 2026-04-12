@@ -271,8 +271,9 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
           </div>
         ) : (
           filteredJobs.map((job: any) => {
+            const recruiterFeePct = job.recruiter_fee_percentage ?? 7;
             const potentialCommission = (job.salary_max || job.salary_min)
-              ? (job.salary_max || job.salary_min) * (job.fee_percentage / 100)
+              ? Math.round((job.salary_max || job.salary_min) * (recruiterFeePct / 100))
               : null;
 
             return (
@@ -334,7 +335,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                         </div>
                         <div className="flex items-center justify-between text-xs px-2">
                           <span className="text-slate-400 font-bold uppercase tracking-wider">{t("recruiter.salaryIndication")}</span>
-                          <span className="text-slate-600 font-black">{job.salary_min ? formatCurrency(job.salary_min) : t("common.notSpecifiedNeutral")}</span>
+                          <span className="text-slate-600 font-black">{(job.salary_max || job.salary_min) ? formatCurrency(job.salary_max || job.salary_min) : t("common.notSpecifiedNeutral")}</span>
                         </div>
                       </div>
 

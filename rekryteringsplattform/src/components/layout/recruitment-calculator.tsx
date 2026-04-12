@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 const MIN_FEE = 3_500;          // EUR
 const BASE_COMMISSION = 0.11;   // 11%
@@ -90,6 +91,7 @@ interface RecruitmentCalculatorProps {
 }
 
 export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalculatorProps) {
+    const { t } = useTranslations();
     const [localSalary, setLocalSalary] = useState(CALCULATOR_DEFAULTS.salary);
     const [localGuaranteeMonths, setLocalGuaranteeMonths] = useState<0 | 1 | 2>(CALCULATOR_DEFAULTS.guaranteeMonths);
     const [localIsExclusive, setLocalIsExclusive] = useState(CALCULATOR_DEFAULTS.isExclusive);
@@ -138,7 +140,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                     <div className="space-y-1">
                         <div className="flex justify-between items-baseline gap-2">
                             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                                Årslön
+                                {t("calculator.annualSalary")}
                             </label>
                             <div className="flex items-center gap-1.5">
                                 <span className="text-xs font-bold text-slate-700 tabular-nums">
@@ -173,7 +175,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                     {/* Guarantee months */}
                     <div className="space-y-1">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                            Garanti
+                            {t("calculator.guarantee")}
                         </label>
                         <div className="flex gap-1.5">
                             {GUARANTEE_OPTIONS.map((months) => (
@@ -187,7 +189,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                                             : "bg-slate-100 text-slate-500 hover:bg-slate-200",
                                     )}
                                 >
-                                    {months === 0 ? "Ingen" : `${months} mån`}
+                                    {months === 0 ? t("calculator.none") : `${months} ${t("calculator.months")}`}
                                 </button>
                             ))}
                         </div>
@@ -196,7 +198,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                     {/* Job type */}
                     <div className="space-y-1">
                         <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                            Uppdragstyp
+                            {t("calculator.assignmentType")}
                         </label>
                         <div className="flex gap-1.5">
                             {[
@@ -219,7 +221,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                         </div>
                         {isExclusive && (
                             <p className="text-[9px] text-brand-500 font-semibold">
-                                10% rabatt på slutavgiften för Exclusive-uppdrag
+                                {t("calculator.exclusiveDiscountNote")}
                             </p>
                         )}
                     </div>
@@ -228,7 +230,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                     <div className="space-y-1">
                         <div className="flex justify-between items-baseline">
                             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                                Antal anställningar
+                                {t("calculator.numberOfHires")}
                             </label>
                             <span className="text-xs font-bold text-slate-700">{hires}</span>
                         </div>
@@ -256,26 +258,26 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                     {/* Fee breakdown */}
                     <div className="space-y-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                            Beräkning
+                            {t("calculator.calculation")}
                         </span>
                         <div className="rounded-lg bg-slate-50 border border-slate-100 p-2 space-y-0.5 text-[10px] tabular-nums">
                             <div className="flex justify-between text-slate-500">
-                                <span>Basavgift</span>
+                                <span>{t("calculator.baseFee")}</span>
                                 <span className="font-semibold">11%</span>
                             </div>
                             <div className="flex justify-between text-slate-500">
-                                <span>Garanti ({guaranteeMonths} mån)</span>
+                                <span>{t("calculator.guarantee")} ({guaranteeMonths} {t("calculator.months")})</span>
                                 <span className="font-semibold">+{guaranteeMonths}%</span>
                             </div>
                             {isExclusive && (
                                 <div className="flex justify-between text-brand-500">
-                                    <span>Exclusive-rabatt</span>
+                                    <span>{t("calculator.exclusiveDiscountLabel")}</span>
                                     <span className="font-semibold">−10%</span>
                                 </div>
                             )}
                             <div className="h-px bg-slate-200 my-1" />
                             <div className="flex justify-between font-bold text-slate-700 text-[11px]">
-                                <span>Provision</span>
+                                <span>{t("calculator.commission")}</span>
                                 <span>{fmt(r.commission * 100, 0)}%{isExclusive ? " × 0.9" : ""}</span>
                             </div>
                         </div>
@@ -284,14 +286,14 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                     {/* Client fee */}
                     <div className="rounded-lg bg-brand-50 border border-brand-100 p-2.5">
                         <div className="text-[10px] font-bold uppercase tracking-wider text-brand-500 mb-0.5">
-                            Rekryteringsavgift (kund){hires > 1 ? " — per st" : ""}
+                            {t("calculator.recruitmentFeeClient")}{hires > 1 ? ` — ${t("calculator.perUnit")}` : ""}
                         </div>
                         <div className="text-lg font-black text-brand-700 leading-tight tabular-nums">
                             {fmt(r.clientFee)} <span className="text-xs font-bold">{currency}</span>
                         </div>
                         {r.minFeeApplied && (
                             <div className="text-[9px] text-brand-500 mt-0.5">
-                                Minimiavgift 3 500 {currency} tillämpas
+                                {t("calculator.minFeeApplied").replace("{currency}", currency)}
                             </div>
                         )}
                     </div>
@@ -300,7 +302,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                     {hires > 1 && (
                         <div className="flex justify-between items-baseline px-1">
                             <span className="text-[10px] font-semibold text-slate-500">
-                                Total kund ({hires} st)
+                                {t("calculator.totalClient")} ({hires} {t("calculator.perUnit")})
                             </span>
                             <span className="text-sm font-bold text-slate-700 tabular-nums">
                                 {fmt(r.totalClientFee)} {currency}
@@ -314,13 +316,13 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                             <div className="flex items-center gap-1 mb-0.5">
                                 <TrendingDown className="h-3 w-3 text-emerald-600" />
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
-                                    Besparing vs. traditionell ({TRADITIONAL_FEE_PCT}%)
+                                    {t("calculator.savingsVsTraditional")} ({TRADITIONAL_FEE_PCT}%)
                                 </span>
                             </div>
                             <div className="text-base font-black text-emerald-700 leading-tight tabular-nums">
                                 {fmt(r.savings)} {currency}
                                 <span className="text-[10px] font-semibold text-emerald-500 ml-1.5">
-                                    ({Math.round(r.savingsPercent)}% lägre)
+                                    ({Math.round(r.savingsPercent)}% {t("calculator.lower")})
                                 </span>
                             </div>
                         </div>
@@ -330,7 +332,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                     <div className="space-y-1 px-1 pt-1">
                         <div className="flex justify-between text-[9px] font-semibold text-slate-400 uppercase tracking-wider">
                             <span>Recruito</span>
-                            <span>Traditionell</span>
+                            <span>{t("calculator.traditional")}</span>
                         </div>
                         <div className="flex gap-1 h-3 rounded-full overflow-hidden">
                             <div
