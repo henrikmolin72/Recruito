@@ -28,6 +28,7 @@ import { RecruiterPipelineControls } from "@/components/dashboard/recruiter/recr
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { cn } from "@/lib/utils";
+import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
 
 type CandidatePipelineNode = {
     id: string;
@@ -399,6 +400,12 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                                     <p className="text-sm font-bold text-slate-700">{candidate.expected_salary ? `${candidate.expected_salary} ${dict.common.perMonth}` : '-'}</p>
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
+                        <CardContent className="p-6">
+                            <SkillTagEditor candidateId={candidate.id} />
                         </CardContent>
                     </Card>
 

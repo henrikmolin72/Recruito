@@ -10,6 +10,7 @@ import { CandidateChat } from "@/components/shared/candidate-chat";
 import { CandidateProcessFlowchart } from "@/components/shared/candidate-process-flowchart";
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
+import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
 
 async function getCandidate(candidateId: string, jobId: string) {
     const supabase = await createClient();
@@ -184,6 +185,12 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                                     <a href={candidate.linkedin_url} target="_blank" rel="noreferrer" className="text-sm text-brand-600 hover:underline">{dict.common.linkedInProfile}</a>
                                 </div>
                             )}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardContent className="p-5">
+                            <SkillTagEditor candidateId={candidateId} readOnly />
                         </CardContent>
                     </Card>
                 </div>
