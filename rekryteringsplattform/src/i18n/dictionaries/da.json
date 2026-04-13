@@ -94,7 +94,9 @@
     "notifications": "Notifikationer",
     "settings": "Indstillinger",
     "professional": "Professionel",
-    "corporate": "Corporate"
+    "corporate": "Corporate",
+    "aiPolicy": "AI-politik",
+    "talentPool": "Talentpool"
   },
   "status": {
     "draft": "Kladde",

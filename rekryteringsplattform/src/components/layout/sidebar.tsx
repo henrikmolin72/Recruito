@@ -21,6 +21,7 @@ import {
   Settings,
   BarChart3,
   Bell,
+  ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -36,9 +37,11 @@ const COMPANY_NAV: NavItem[] = [
   { labelKey: "nav.dashboard", href: "/company", icon: LayoutDashboard },
   { labelKey: "nav.jobs", href: "/company/jobs", icon: Briefcase },
   { labelKey: "nav.candidates", href: "/company/candidates", icon: Users },
+  { labelKey: "nav.talentPool", href: "/company/talent-pool", icon: Users },
   { labelKey: "nav.messages", href: "/company/messages", icon: MessageSquare, isMessages: true },
   { labelKey: "nav.billing", href: "/company/billing", icon: CreditCard },
   { labelKey: "nav.profile", href: "/company/profile", icon: Building2 },
+  { labelKey: "nav.aiPolicy", href: "/company/ai-policy", icon: ShieldCheck },
 ];
 
 const RECRUITER_NAV: NavItem[] = [
@@ -49,6 +52,7 @@ const RECRUITER_NAV: NavItem[] = [
   { labelKey: "nav.messages", href: "/recruiter/messages", icon: MessageSquare, isMessages: true },
   { labelKey: "nav.earnings", href: "/recruiter/earnings", icon: Wallet },
   { labelKey: "nav.profile", href: "/recruiter/profile", icon: UserCircle },
+  { labelKey: "nav.aiPolicy", href: "/recruiter/ai-policy", icon: ShieldCheck },
 ];
 
 const ADMIN_NAV: NavItem[] = [

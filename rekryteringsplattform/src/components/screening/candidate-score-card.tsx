@@ -1,11 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { AiTransparencyCard } from "./ai-transparency-card";
+
+type ComplianceData = {
+  model: string;
+  promptHash: string;
+  screenedAt: string;
+  isDecisionSupport: boolean;
+};
 
 type ScreeningResult = {
   score: number;
@@ -16,6 +24,7 @@ type ScreeningResult = {
 interface CandidateScoreCardProps {
   applicationId: string;
   initialResult?: ScreeningResult | null;
+  initialCompliance?: ComplianceData | null;
   candidateName?: string;
   className?: string;
   onAnalyzed?: (result: ScreeningResult) => void;
@@ -52,13 +61,16 @@ function getScoreTone(score: number) {
 export function CandidateScoreCard({
   applicationId,
   initialResult = null,
+  initialCompliance = null,
   candidateName,
   className,
   onAnalyzed,
 }: CandidateScoreCardProps) {
   const [result, setResult] = useState<ScreeningResult | null>(initialResult);
+  const [compliance, setCompliance] = useState<ComplianceData | null>(initialCompliance);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTransparency, setShowTransparency] = useState(false);
 
   const score = result?.score ?? 0;
   const tone = getScoreTone(score);
@@ -89,6 +101,10 @@ export function CandidateScoreCard({
         reasoning: Array.isArray(json?.screening?.reasoning) ? json.screening.reasoning : [],
         missingSkills: Array.isArray(json?.screening?.missingSkills) ? json.screening.missingSkills : [],
       };
+
+      if (json?.compliance) {
+        setCompliance(json.compliance);
+      }
 
       setResult(nextResult);
       onAnalyzed?.(nextResult);
@@ -186,7 +202,43 @@ export function CandidateScoreCard({
               </div>
             </div>
           ) : null}
+
+          {/* Human-in-the-loop disclaimer */}
+          {result && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 flex items-start gap-2">
+              <ShieldCheck className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                <span className="font-bold">Decision support only.</span> This AI screening assists the recruiter
+                but does not make hiring decisions. All candidate progression requires human approval.
+              </p>
+            </div>
+          )}
+
+          {/* Transparency report toggle */}
+          {result && compliance && (
+            <button
+              type="button"
+              onClick={() => setShowTransparency(!showTransparency)}
+              className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1.5 transition-colors"
+            >
+              <ShieldCheck className="h-3 w-3" />
+              {showTransparency ? "Hide transparency report" : "View AI transparency report (EU AI Act)"}
+            </button>
+          )}
         </div>
+
+        {/* Expandable transparency card */}
+        {showTransparency && compliance && result && (
+          <div className="px-5 pb-5">
+            <AiTransparencyCard
+              model={compliance.model}
+              promptHash={compliance.promptHash}
+              screenedAt={compliance.screenedAt}
+              score={result.score}
+              reasoning={result.reasoning}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import crypto from "crypto";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -217,12 +218,32 @@ export async function POST(request: NextRequest) {
       applicationName: application.full_name ?? null,
     };
 
-    const { error: upsertError } = await admin.from("ai_screenings").upsert(
+    // EU AI Act compliance: compute prompt hash and model version for audit trail
+    const promptContent = `${jobDescription}\n---\n${cvText}`;
+    const promptHash = crypto.createHash("sha256").update(promptContent).digest("hex").slice(0, 16);
+    const modelVersion = (response as any).model || model;
+    const now = new Date().toISOString();
+
+    const decisionContext = {
+      input_type: "cv_vs_job_description",
+      cv_length: cvText.length,
+      job_description_length: jobDescription.length,
+      temperature: 0.2,
+      max_tokens: 900,
+      prompt_caching: true,
+      disclaimer: "Decision support only — not an automated hiring decision",
+    };
+
+    const { data: screeningRow, error: upsertError } = await admin.from("ai_screenings").upsert(
       {
         application_id: application.id,
         job_id: application.job_id,
         provider: "anthropic",
         model,
+        model_version: modelVersion,
+        prompt_hash: promptHash,
+        decision_context: decisionContext,
+        is_decision_support: true,
         status: "completed",
         match_score: screening.score,
         gap_analysis: normalizedMissingSkills.join(", "),
@@ -230,22 +251,54 @@ export async function POST(request: NextRequest) {
         top_3_skills: [],
         interview_questions: [],
         error_message: null,
-        screened_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        screened_at: now,
+        updated_at: now,
       },
       { onConflict: "application_id" }
-    );
+    ).select("id").single();
 
     if (upsertError) {
       console.error("Failed to upsert ai_screenings:", upsertError);
       return NextResponse.json({ error: "Failed to save screening result" }, { status: 500 });
     }
 
+    // Write to AI audit log for regulatory traceability
+    await admin.from("ai_audit_log").insert({
+      screening_id: screeningRow?.id ?? null,
+      application_id: application.id,
+      job_id: application.job_id,
+      action: "screening_completed",
+      actor_id: auth.userId,
+      actor_role: auth.isAdmin ? "admin" : "recruiter",
+      model,
+      model_version: modelVersion,
+      prompt_hash: promptHash,
+      input_summary: {
+        cv_chars: cvText.length,
+        job_title: job.title || null,
+        has_cover_letter: Boolean(application.cover_letter_text),
+      },
+      output_summary: {
+        score: screening.score,
+        reasoning_count: normalizedReasoning.length,
+        missing_skills_count: normalizedMissingSkills.length,
+      },
+      metadata: decisionContext,
+    }).then(({ error }) => {
+      if (error) console.error("Failed to write ai_audit_log:", error);
+    });
+
     return NextResponse.json({
       ok: true,
       applicationId: application.id,
       jobId: application.job_id,
       screening: persistedAnalysis,
+      compliance: {
+        model: modelVersion,
+        promptHash,
+        screenedAt: now,
+        isDecisionSupport: true,
+      },
     });
   } catch (error) {
     console.error("POST /api/screen failed:", error);

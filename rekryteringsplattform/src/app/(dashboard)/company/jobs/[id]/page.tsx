@@ -18,7 +18,8 @@ import {
     FileText,
     Users2,
     Settings2,
-    Megaphone
+    Megaphone,
+    ShieldCheck,
 } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
@@ -30,6 +31,7 @@ import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
+import { BiasReportCard } from "@/components/compliance/bias-report-card";
 
 async function getJob(id: string) {
     const supabase = await createClient();
@@ -135,6 +137,9 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         </TabsTrigger>
                         <TabsTrigger value="announcements" className="gap-2 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                             <Megaphone className="h-4 w-4" /> Announcements
+                        </TabsTrigger>
+                        <TabsTrigger value="ai-compliance" className="gap-2 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                            <ShieldCheck className="h-4 w-4" /> AI Compliance
                         </TabsTrigger>
                     </TabsList>
 
@@ -325,6 +330,38 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
 
                 <TabsContent value="announcements" className="mt-0">
                     <AnnouncementsTab jobId={job.id} initialAnnouncements={announcements} />
+                </TabsContent>
+
+                <TabsContent value="ai-compliance" className="mt-0">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <BiasReportCard jobId={job.id} />
+                        <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
+                            <CardContent className="p-6 space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <ShieldCheck className="h-4 w-4 text-blue-600" />
+                                    <h4 className="text-xs font-black uppercase tracking-widest text-blue-700">
+                                        EU AI Act Compliance
+                                    </h4>
+                                </div>
+                                <div className="text-sm text-slate-600 space-y-3 leading-relaxed">
+                                    <p>
+                                        All AI screenings for this job are logged with a full audit trail including
+                                        model version, prompt hash, and decision context.
+                                    </p>
+                                    <p>
+                                        Each candidate screening includes a transparency report viewable by
+                                        recruiters and your company. The AI acts as <span className="font-semibold">decision support only</span> —
+                                        all pipeline progression requires human approval.
+                                    </p>
+                                </div>
+                                <div className="pt-2 border-t border-slate-100">
+                                    <a href="/company/ai-policy" className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+                                        View full AI Policy →
+                                    </a>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </TabsContent>
             </Tabs>
         </div>

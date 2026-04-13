@@ -94,7 +94,9 @@
     "notifications": "Notifikationer",
     "settings": "Inställningar",
     "professional": "Professionell",
-    "corporate": "Corporate"
+    "corporate": "Corporate",
+    "aiPolicy": "AI-policy",
+    "talentPool": "Talentpool"
   },
   "status": {
     "draft": "Utkast",

@@ -55,14 +55,15 @@ export async function updateSession(request: NextRequest) {
             url.pathname = `/${role || "company"}`;
             return NextResponse.redirect(url);
         }
+        // Admin can access /company as well
         if (request.nextUrl.pathname.startsWith("/company") && role === "recruiter") {
             const url = request.nextUrl.clone();
             url.pathname = "/recruiter";
             return NextResponse.redirect(url);
         }
-        if (request.nextUrl.pathname.startsWith("/recruiter") && role === "company") {
+        if (request.nextUrl.pathname.startsWith("/recruiter") && (role === "company" || role === "admin")) {
             const url = request.nextUrl.clone();
-            url.pathname = "/company";
+            url.pathname = `/${role}`;
             return NextResponse.redirect(url);
         }
     }

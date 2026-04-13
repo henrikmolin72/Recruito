@@ -94,7 +94,9 @@
     "notifications": "Notifications",
     "settings": "Settings",
     "professional": "Professional",
-    "corporate": "Corporate"
+    "corporate": "Corporate",
+    "aiPolicy": "AI Policy",
+    "talentPool": "Talent Pool"
   },
   "status": {
     "draft": "Draft",

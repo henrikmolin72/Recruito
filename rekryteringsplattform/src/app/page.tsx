@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Building2,
   UserCircle,
+  ShieldCheck,
   PlayCircle,
 } from "lucide-react";
 
@@ -88,6 +89,12 @@ export default function LandingPage() {
               <Button variant="outline" size="sm" className="hidden sm:inline-flex gap-1.5">
                 <UserCircle className="h-3.5 w-3.5" />
                 {t("landing.loginRecruiter")}
+              </Button>
+            </Link>
+            <Link href="/login?role=admin">
+              <Button variant="outline" size="sm" className="hidden sm:inline-flex gap-1.5 border-emerald-500 text-emerald-700 hover:bg-emerald-50">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                {t("landing.loginAdmin")}
               </Button>
             </Link>
             <Link href="/register">

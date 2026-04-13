@@ -94,7 +94,9 @@
     "notifications": "Varsler",
     "settings": "Innstillinger",
     "professional": "Profesjonell",
-    "corporate": "Corporate"
+    "corporate": "Corporate",
+    "aiPolicy": "AI-policy",
+    "talentPool": "Talentpool"
   },
   "status": {
     "draft": "Utkast",

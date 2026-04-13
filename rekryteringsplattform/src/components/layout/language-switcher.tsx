@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale } from "@/i18n/client";
 import { setLocale } from "@/i18n/actions";
@@ -29,6 +29,11 @@ export function LanguageSwitcher({
     const currentLocale = useLocale();
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const handleChange = (newLocale: Locale) => {
         startTransition(async () => {
@@ -39,6 +44,23 @@ export function LanguageSwitcher({
 
     if (variant === "dropdown") {
         const isDarkTone = tone === "dark";
+
+        if (!mounted) {
+            return (
+                <div
+                    className={cn(
+                        "rounded-full font-semibold shadow-sm flex items-center gap-2 px-3",
+                        isDarkTone
+                            ? "border border-slate-700 bg-slate-800/80 text-slate-100"
+                            : "border border-slate-200 bg-white text-slate-700",
+                        compact ? "h-8 w-[132px] text-xs" : "h-9 w-[150px] text-sm"
+                    )}
+                >
+                    <Globe className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4", isDarkTone ? "text-slate-300" : "text-slate-500")} />
+                    <span>{LOCALE_LABELS[currentLocale]}</span>
+                </div>
+            );
+        }
 
         return (
             <Select
