@@ -38,6 +38,7 @@ const COMPANY_NAV: NavItem[] = [
   { labelKey: "nav.jobs", href: "/company/jobs", icon: Briefcase },
   { labelKey: "nav.candidates", href: "/company/candidates", icon: Users },
   { labelKey: "nav.talentPool", href: "/company/talent-pool", icon: Users },
+  { labelKey: "nav.analytics", href: "/company/analytics", icon: BarChart3 },
   { labelKey: "nav.messages", href: "/company/messages", icon: MessageSquare, isMessages: true },
   { labelKey: "nav.billing", href: "/company/billing", icon: CreditCard },
   { labelKey: "nav.profile", href: "/company/profile", icon: Building2 },
