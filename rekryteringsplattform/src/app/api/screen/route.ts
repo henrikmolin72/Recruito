@@ -302,7 +302,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("POST /api/screen failed:", error);
-    const message = error instanceof z.ZodError ? "Invalid AI JSON format" : error instanceof Error ? error.message : "Unexpected error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const status = error instanceof z.ZodError ? 400 : 500;
+    const message = error instanceof z.ZodError ? "Invalid request payload" : "Screening could not be completed. Please try again.";
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -55,6 +55,27 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
+    // Authorization: verify caller is admin or owns the target application/candidate
+    const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+    const isAdmin = profile?.role === "admin";
+
+    if (!isAdmin) {
+        const { data: recruiter } = await admin.from("recruiters").select("id").eq("user_id", user.id).single();
+        if (!recruiter) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+        if (applicationId) {
+            const { data: app } = await admin.from("applications").select("recruiter_id").eq("id", applicationId).single();
+            if (!app || app.recruiter_id !== recruiter.id) {
+                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+            }
+        } else if (candidateId) {
+            const { data: candidate } = await admin.from("candidates").select("recruiter_id").eq("id", candidateId).single();
+            if (!candidate || candidate.recruiter_id !== recruiter.id) {
+                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+            }
+        }
+    }
+
     const presentIds = await matchSkills(admin, presentSkills);
     const missingIds = await matchSkills(admin, missingSkills);
 

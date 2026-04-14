@@ -128,7 +128,7 @@ function isAllowedCvFile(file: File) {
   const mime = (file.type || "").toLowerCase();
 
   const extensionAllowed = !!ext && ALLOWED_CV_EXTENSIONS.has(ext);
-  const mimeAllowed = !mime || ALLOWED_CV_MIME_TYPES.has(mime);
+  const mimeAllowed = ALLOWED_CV_MIME_TYPES.has(mime);
 
   return extensionAllowed && mimeAllowed;
 }

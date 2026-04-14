@@ -5,6 +5,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
+async function getCallerContext(userId: string, admin: ReturnType<typeof createAdminClient>) {
+    const { data: profile } = await admin.from("profiles").select("role").eq("id", userId).single();
+    if (profile?.role === "admin") return { recruiterId: null as string | null, isAdmin: true };
+
+    const { data: recruiter } = await admin.from("recruiters").select("id").eq("user_id", userId).single();
+    return { recruiterId: (recruiter?.id as string) ?? null, isAdmin: false };
+}
+
+async function ownsCandidate(candidateId: string, recruiterId: string, admin: ReturnType<typeof createAdminClient>) {
+    const { data } = await admin.from("candidates").select("recruiter_id").eq("id", candidateId).single();
+    return data?.recruiter_id === recruiterId;
+}
+
 // GET /api/candidate-skills?candidateId=...
 export async function GET(request: NextRequest) {
     const candidateId = request.nextUrl.searchParams.get("candidateId");
@@ -15,6 +28,14 @@ export async function GET(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const admin = createAdminClient();
+    const { recruiterId, isAdmin } = await getCallerContext(user.id, admin);
+
+    if (!isAdmin) {
+        if (!recruiterId || !(await ownsCandidate(candidateId, recruiterId, admin))) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+    }
+
     const { data, error } = await admin
         .from("candidate_skills")
         .select("id, skill_id, source, is_gap, skill:skills(id, name, slug, category)")
@@ -42,6 +63,13 @@ export async function POST(request: NextRequest) {
 
     const { candidateId, skillId, isGap } = parsed.data;
     const admin = createAdminClient();
+    const { recruiterId, isAdmin } = await getCallerContext(user.id, admin);
+
+    if (!isAdmin) {
+        if (!recruiterId || !(await ownsCandidate(candidateId, recruiterId, admin))) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+    }
 
     const { error } = await admin.from("candidate_skills").upsert(
         { candidate_id: candidateId, skill_id: skillId, source: "manual", is_gap: isGap },
@@ -63,6 +91,14 @@ export async function DELETE(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const admin = createAdminClient();
+    const { recruiterId, isAdmin } = await getCallerContext(user.id, admin);
+
+    if (!isAdmin) {
+        if (!recruiterId || !(await ownsCandidate(candidateId, recruiterId, admin))) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+    }
+
     const { error } = await admin.from("candidate_skills")
         .delete()
         .eq("candidate_id", candidateId)

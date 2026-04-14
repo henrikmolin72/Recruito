@@ -81,7 +81,11 @@ export async function GET(request: NextRequest) {
             input.cv_chars ?? "",
             r.created_at,
         ]
-            .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+            .map((v) => {
+                let s = String(v ?? "");
+                if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+                return `"${s.replace(/"/g, '""')}"`;
+            })
             .join(",");
     });
 

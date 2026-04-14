@@ -250,8 +250,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("POST /api/generate-shortlist failed:", error);
-    const message = error instanceof z.ZodError ? "Invalid shortlist JSON format" : error instanceof Error ? error.message : "Unexpected error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const status = error instanceof z.ZodError ? 400 : 500;
+    const message = error instanceof z.ZodError ? "Invalid request payload" : "Shortlist could not be generated. Please try again.";
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
