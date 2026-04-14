@@ -5,6 +5,7 @@ import { CreditCard, Clock, CheckCircle } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/server";
+import { GuaranteeBillingRow } from "@/components/guarantee/guarantee-billing-row";
 
 async function getCompanyBilling() {
   const supabase = await createClient();
@@ -82,17 +83,33 @@ export default async function CompanyBillingPage() {
                     const isPaid = p.status === "payment_received" || p.status === "payout_released";
 
                     return (
-                      <tr key={p.id} className="border-b border-border last:border-0">
-                        <td className="py-3 font-medium">{job?.title || "—"}</td>
-                        <td className="py-3">{candidate ? `${candidate.first_name} ${candidate.last_name}` : "—"}</td>
-                        <td className="py-3 font-medium">{formatCurrency(p.total_fee)}</td>
-                        <td className="py-3">
-                          <Badge variant={isPaid ? "success" : "warning"}>
-                            {isPaid ? c.paid : c.pendingStatus}
-                          </Badge>
-                        </td>
-                        <td className="py-3 text-muted-foreground">{formatDate(p.created_at)}</td>
-                      </tr>
+                      <>
+                        <tr key={p.id} className="border-b border-border last:border-0">
+                          <td className="py-3 font-medium">{job?.title || "—"}</td>
+                          <td className="py-3">{candidate ? `${candidate.first_name} ${candidate.last_name}` : "—"}</td>
+                          <td className="py-3 font-medium">{formatCurrency(p.total_fee)}</td>
+                          <td className="py-3">
+                            <Badge variant={isPaid ? "success" : "warning"}>
+                              {isPaid ? c.paid : c.pendingStatus}
+                            </Badge>
+                          </td>
+                          <td className="py-3 text-muted-foreground">{formatDate(p.created_at)}</td>
+                        </tr>
+                        {p.guarantee_end_date && (
+                          <tr key={`${p.id}-guarantee`}>
+                            <td colSpan={5} className="py-2 px-1">
+                              <GuaranteeBillingRow
+                                placementId={p.id}
+                                candidateName={candidate ? `${candidate.first_name} ${candidate.last_name}` : ""}
+                                jobTitle={job?.title ?? ""}
+                                guaranteeEndDate={p.guarantee_end_date}
+                                status={p.status}
+                                currency={p.salary_currency ?? "SEK"}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </>
                     );
                   })}
                 </tbody>

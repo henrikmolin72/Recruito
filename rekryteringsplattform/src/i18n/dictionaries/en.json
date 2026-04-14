@@ -96,7 +96,8 @@
     "professional": "Professional",
     "corporate": "Corporate",
     "aiPolicy": "AI Policy",
-    "talentPool": "Talent Pool"
+    "talentPool": "Talent Pool",
+    "guarantees": "Guarantees"
   },
   "status": {
     "draft": "Draft",

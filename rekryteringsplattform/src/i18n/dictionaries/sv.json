@@ -96,7 +96,8 @@
     "professional": "Professionell",
     "corporate": "Corporate",
     "aiPolicy": "AI-policy",
-    "talentPool": "Talentpool"
+    "talentPool": "Talentpool",
+    "guarantees": "Garantier"
   },
   "status": {
     "draft": "Utkast",

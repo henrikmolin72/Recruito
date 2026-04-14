@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/guarantee/reminders?secret=CRON_SECRET_PLACEHOLDER",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}
