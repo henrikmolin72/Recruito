@@ -201,7 +201,7 @@ export function CandidateSubmissionForm({
         });
         try {
             localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-            toast.success("Draft saved");
+            toast.success("Draft saved. Return to this page to continue.");
         } catch {
             toast.error("Could not save draft");
         }

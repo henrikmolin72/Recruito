@@ -250,6 +250,10 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
     revalidatePath("/recruiter");
     return { success: true };
   } catch (err: any) {
+      // Re-throw Next.js redirect/notFound errors so they propagate correctly
+      if (typeof err?.digest === "string" && (err.digest.startsWith("NEXT_REDIRECT") || err.digest.startsWith("NEXT_NOT_FOUND"))) {
+          throw err;
+      }
       console.error("createCandidateExtended unexpected error:", err);
       return { error: err?.message || "An unexpected error occurred. Please try again." };
   }

@@ -510,6 +510,7 @@ export async function getRecruiterMandates() {
         .select(`
       id,
       is_active,
+      claimed_at,
       job:jobs(
         id,
         title,
@@ -522,6 +523,8 @@ export async function getRecruiterMandates() {
         salary_currency,
         fee_percentage,
         status,
+        published_at,
+        application_deadline,
         company:companies(company_name)
       ),
       candidates:candidates(
@@ -553,6 +556,9 @@ export async function getRecruiterMandates() {
         salary_currency: mandate.job?.salary_currency || "SEK",
         fee_percentage: mandate.job?.fee_percentage,
         status: mandate.job?.status || "active",
+        claimed_at: mandate.claimed_at,
+        application_deadline: mandate.job?.application_deadline,
+        published_at: mandate.job?.published_at,
         candidates: mandate.candidates?.map((c: any) => ({
             id: c.id,
             name: `${c.first_name} ${c.last_name}`,

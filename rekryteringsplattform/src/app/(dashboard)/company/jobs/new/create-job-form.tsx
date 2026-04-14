@@ -451,8 +451,9 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
             setDeleting(false);
             setConfirmDelete(false);
         } else {
-            toast.success(t("jobForm.deleteDraft"));
+            toast.success(t("jobForm.deleteDraftSuccess"));
             router.push("/company/jobs");
+            router.refresh();
         }
     }
 

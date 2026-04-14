@@ -20,7 +20,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
     },
     editorProps: {
       attributes: {
-        class: "min-h-[160px] px-4 py-3 text-sm leading-relaxed focus:outline-none",
+        class: "min-h-[160px] px-4 py-3 text-sm leading-relaxed focus:outline-none [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5",
       },
     },
   });
