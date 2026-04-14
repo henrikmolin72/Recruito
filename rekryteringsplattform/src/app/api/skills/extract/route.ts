@@ -52,6 +52,9 @@ export async function POST(request: NextRequest) {
     if (!applicationId && !candidateId) {
         return NextResponse.json({ error: "applicationId or candidateId required" }, { status: 400 });
     }
+    if (applicationId && candidateId) {
+        return NextResponse.json({ error: "Provide applicationId or candidateId, not both" }, { status: 400 });
+    }
 
     const admin = createAdminClient();
 

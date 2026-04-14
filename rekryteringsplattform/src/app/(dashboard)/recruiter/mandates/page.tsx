@@ -123,7 +123,7 @@ export default async function RecruiterMandatesPage() {
                     const hired = mandate.candidates.filter((c: any) => HIRED_STATUSES.has(c.status)).length;
                     const rejected = mandate.candidates.filter((c: any) => REJECTED_STATUSES.has(c.status)).length;
                     const clientViewed = mandate.candidates.some(
-                      (c: any) => !SUBMITTED_STATUSES.has(c.status) && c.status !== null
+                      (c: any) => INTERVIEW_STATUSES.has(c.status) || OFFER_STATUSES.has(c.status) || HIRED_STATUSES.has(c.status)
                     );
                     const days = daysUntil(mandate.application_deadline);
 
