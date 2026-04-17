@@ -102,12 +102,8 @@ export function ProcessGuaranteeButton() {
         setLoading(true);
         try {
             const result = await processGuaranteeExpirations();
-            if (result?.error) {
-                toast.error(result.error);
-            } else {
-                toast.success(`${result?.processed || 0} garantier behandlade`);
-                router.refresh();
-            }
+            toast.success(`${result?.processed || 0} garantier behandlade`);
+            router.refresh();
         } catch {
             toast.error("Ett fel uppstod");
         }
