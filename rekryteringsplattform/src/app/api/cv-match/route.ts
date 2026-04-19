@@ -7,6 +7,8 @@ import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -15,8 +17,17 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
     const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role !== "recruiter" && profile?.role !== "admin") {
+    const isAdmin = profile?.role === "admin";
+    if (profile?.role !== "recruiter" && !isAdmin) {
       return NextResponse.json({ error: "Recruiter profile required" }, { status: 403 });
+    }
+
+    // Resolve recruiter id for non-admin users (needed for mandate ownership check)
+    let recruiterId: string | null = null;
+    if (!isAdmin) {
+      const { data: recruiter } = await admin.from("recruiters").select("id").eq("user_id", user.id).single();
+      if (!recruiter) return NextResponse.json({ error: "Recruiter profile required" }, { status: 403 });
+      recruiterId = recruiter.id as string;
     }
 
     const rateLimit = consumeRateLimit({
@@ -36,18 +47,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing cv_file or mandate_id" }, { status: 400 });
     }
 
+    // Server-side file size check (client validation alone is not sufficient)
+    if (cvFile.size > MAX_FILE_SIZE) {
+      return NextResponse.json({ error: "CV file must be at most 5 MB" }, { status: 422 });
+    }
+
     const mime = cvFile.type.toLowerCase();
-    const supported = mime === "application/pdf" || mime === "text/plain";
-    if (!supported) {
+    if (mime !== "application/pdf" && mime !== "text/plain") {
       return NextResponse.json({ error: "pdf_only" }, { status: 422 });
     }
 
-    const { data: mandate } = await admin
+    // Fetch mandate — non-admins must own the mandate and it must be active (IDOR prevention)
+    let mandateQuery = admin
       .from("job_mandates")
       .select("job_id, jobs(title, description, requirements)")
-      .eq("id", mandateId)
-      .single();
+      .eq("id", mandateId);
 
+    if (!isAdmin) {
+      mandateQuery = mandateQuery
+        .eq("recruiter_id", recruiterId as string)
+        .eq("is_active", true);
+    }
+
+    const { data: mandate } = await mandateQuery.single();
     if (!mandate) return NextResponse.json({ error: "Mandate not found" }, { status: 404 });
 
     const job: any = Array.isArray((mandate as any).jobs) ? (mandate as any).jobs[0] : (mandate as any).jobs;
@@ -59,6 +81,10 @@ export async function POST(request: NextRequest) {
       job.requirements && `Requirements:\n${job.requirements}`,
     ].filter(Boolean).join("\n\n");
 
+    if (!jobDescription.trim()) {
+      return NextResponse.json({ error: "Job is missing description" }, { status: 400 });
+    }
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) return NextResponse.json({ error: "AI service not configured" }, { status: 500 });
 
@@ -67,6 +93,9 @@ export async function POST(request: NextRequest) {
 
     const bytes = await cvFile.arrayBuffer();
     const base64 = Buffer.from(bytes).toString("base64");
+
+    // Use the actual MIME type so Claude receives correct document metadata
+    const mediaMime = mime === "text/plain" ? "text/plain" : "application/pdf";
 
     const response = await anthropic.messages.create({
       model,
@@ -79,7 +108,7 @@ export async function POST(request: NextRequest) {
           content: [
             {
               type: "document",
-              source: { type: "base64", media_type: "application/pdf", data: base64 },
+              source: { type: "base64", media_type: mediaMime as "application/pdf" | "text/plain", data: base64 },
             } as any,
             {
               type: "text",
