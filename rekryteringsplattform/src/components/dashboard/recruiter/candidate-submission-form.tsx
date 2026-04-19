@@ -84,6 +84,7 @@ export function CandidateSubmissionForm({
 
     // --- Section 2: AI score ---
     const [aiScore, setAiScore] = useState<number | null>(null);
+    const [aiScoreLoading, setAiScoreLoading] = useState(false);
 
     // --- Section 2: location status & work auth ---
     const [locationStatus, setLocationStatus] = useState("");
@@ -439,9 +440,25 @@ export function CandidateSubmissionForm({
                                     name="cv_file"
                                     accept=".pdf,.doc,.docx"
                                     className="hidden"
-                                    onChange={(e) => {
+                                    onChange={async (e) => {
                                         const f = e.target.files?.[0];
-                                        if (f && f.size <= 5 * 1024 * 1024) setCvFile(f);
+                                        if (!f || f.size > 5 * 1024 * 1024) return;
+                                        setCvFile(f);
+                                        const isPdf = f.type === "application/pdf" || f.name.endsWith(".pdf");
+                                        if (!isPdf) return;
+                                        setAiScoreLoading(true);
+                                        try {
+                                            const fd = new FormData();
+                                            fd.append("cv_file", f);
+                                            fd.append("mandate_id", mandateId);
+                                            const res = await fetch("/api/cv-match", { method: "POST", body: fd });
+                                            if (res.ok) {
+                                                const { score } = await res.json();
+                                                setAiScore(score);
+                                            }
+                                        } catch { /* silent */ } finally {
+                                            setAiScoreLoading(false);
+                                        }
                                     }}
                                 />
                                 {cvFile ? (
@@ -475,7 +492,7 @@ export function CandidateSubmissionForm({
                                     className={`text-3xl font-black tabular-nums min-w-[4rem] text-right ${aiScore !== null && aiScore >= 80 ? "text-emerald-600" : "text-red-500"
                                         }`}
                                 >
-                                    {aiScore ?? "—"}%
+                                    {aiScoreLoading ? "…" : (aiScore ?? "—")}%
                                 </div>
                             </div>
                             {aiScore !== null && aiScore < 80 && (
@@ -745,7 +762,7 @@ export function CandidateSubmissionForm({
                             <div className="flex items-center justify-between mb-3">
                                 <p className="text-sm font-bold text-slate-700">{r.languagesTitle || "Language Proficiency"}</p>
                                 <Button type="button" variant="outline" size="sm" onClick={addLanguage} className="text-xs h-8 gap-1">
-                                    <Plus className="h-3 w-3" /> {r.addLanguageButton || "+ Add Language"}
+                                    <Plus className="h-3 w-3" /> {r.addLanguageButton || "Add Language"}
                                 </Button>
                             </div>
                             <div className="space-y-3">

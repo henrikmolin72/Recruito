@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -133,6 +133,12 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         { id: 6, title: t("jobForm.step6Title"), description: t("jobForm.step6Desc") },
         { id: 7, title: t("jobForm.step7Title"), description: t("jobForm.step7Desc") },
     ];
+
+    const recruitmentFee = useMemo(() => {
+        const commission = 0.11 + calcState.guaranteeMonths * 0.01;
+        const discount = calcState.isExclusive ? 0.10 : 0;
+        return Math.max(calcState.salary * commission * (1 - discount), 3500);
+    }, [calcState]);
 
     const BENEFIT_LABELS: Record<string, string> = {
         bonus: t("jobForm.benefitBonus"),
@@ -452,8 +458,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
             setConfirmDelete(false);
         } else {
             toast.success(t("jobForm.deleteDraftSuccess"));
-            router.push("/company/jobs");
-            router.refresh();
+            window.location.href = "/company/jobs";
         }
     }
 
@@ -526,6 +531,11 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                 <CardHeader className="pb-4">
                     <CardTitle className="text-xl">{STEPS[step - 1].title}</CardTitle>
                     <CardDescription>{STEPS[step - 1].description}</CardDescription>
+                    {step >= 2 && (
+                        <span className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
+                            Recruitment Fee {Math.round(recruitmentFee).toLocaleString("sv-SE")} {calcState.currency}
+                        </span>
+                    )}
                 </CardHeader>
                 <CardContent>
                     <AnimatePresence mode="wait">

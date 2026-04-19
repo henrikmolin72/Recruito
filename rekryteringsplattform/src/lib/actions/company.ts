@@ -170,6 +170,8 @@ export async function getCompanyDashboard() {
         .gte("created_at", twelveMonthsAgo.toISOString());
 
     const activeJobsCount = jobs?.filter(j => j.status === 'active').length || 0;
+    const draftJobsCount = jobs?.filter(j => j.status === 'draft').length || 0;
+    const closedJobsCount = jobs?.filter(j => j.status === 'closed' || j.status === 'paused').length || 0;
 
     // Transform jobs for display
     const jobsFormatted = jobs?.map((job) => ({
@@ -183,6 +185,8 @@ export async function getCompanyDashboard() {
         jobs: jobsFormatted,
         stats: {
             activeJobs: activeJobsCount,
+            draftJobs: draftJobsCount,
+            closedJobs: closedJobsCount,
             candidates: totalCandidates || 0,
             interviews: activeInterviews || 0,
             placements: successfulPlacements || 0,
