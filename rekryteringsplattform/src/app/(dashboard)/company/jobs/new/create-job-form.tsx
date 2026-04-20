@@ -449,16 +449,21 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
 
     async function handleDeleteDraft() {
         if (!editJobId) return;
-        if (!confirmDelete) { setConfirmDelete(true); return; }
         setDeleting(true);
-        const result = await deleteDraftJob(editJobId);
-        if (result?.error) {
-            toast.error(result.error);
+        try {
+            const result = await deleteDraftJob(editJobId);
+            if (result?.error) {
+                toast.error(result.error);
+                setDeleting(false);
+                setConfirmDelete(false);
+            } else {
+                toast.success(t("jobForm.deleteDraftSuccess"));
+                window.location.href = "/company/jobs";
+            }
+        } catch (err: any) {
+            toast.error(err?.message || "Delete failed");
             setDeleting(false);
             setConfirmDelete(false);
-        } else {
-            toast.success(t("jobForm.deleteDraftSuccess"));
-            window.location.href = "/company/jobs";
         }
     }
 
@@ -481,17 +486,29 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={handleDeleteDraft}
+                        onClick={() => setConfirmDelete(true)}
                         disabled={deleting}
-                        onBlur={() => setConfirmDelete(false)}
-                        className={confirmDelete
-                            ? "text-white bg-red-600 hover:bg-red-700"
-                            : "text-red-600 hover:bg-red-50 hover:text-red-700"
-                        }
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
                     >
                         <Trash2 className="h-4 w-4 mr-1.5" />
-                        {confirmDelete ? t("jobForm.deleteDraftConfirm") : t("jobForm.deleteDraft")}
+                        {t("jobForm.deleteDraft")}
                     </Button>
+                )}
+                {confirmDelete && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/40" onClick={() => !deleting && setConfirmDelete(false)} />
+                        <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+                            <h2 className="text-lg font-bold text-slate-900 mb-2">{t("jobForm.deleteDraft")}</h2>
+                            <p className="text-sm text-slate-500 mb-6">{t("jobForm.deleteDraftConfirm")}</p>
+                            <div className="flex justify-end gap-3">
+                                <Button variant="outline" onClick={() => setConfirmDelete(false)} disabled={deleting}>Cancel</Button>
+                                <Button variant="danger" onClick={handleDeleteDraft} disabled={deleting} className="gap-2">
+                                    <Trash2 className="h-4 w-4" />
+                                    {deleting ? "Deleting…" : t("jobForm.deleteDraft")}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
 

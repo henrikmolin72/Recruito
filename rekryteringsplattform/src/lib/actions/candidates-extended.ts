@@ -99,7 +99,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         );
 
         if (duplicate) {
-            initialStatus = "duplicate_rejected";
+            return { error: "A candidate with this email or LinkedIn URL has already been presented for this job." };
         } else if (companyId) {
             const { data: companyJobs } = await admin.from("jobs").select("id").eq("company_id", companyId);
             const companyJobIds = (companyJobs || []).map((j: any) => j.id);

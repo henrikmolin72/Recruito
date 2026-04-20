@@ -637,12 +637,22 @@ export async function deleteDraftJob(jobId: string) {
         return { error: "Only draft assignments can be deleted." };
     }
 
-    const { error } = await supabase
-        .from("jobs")
-        .delete()
-        .eq("id", jobId);
+    // Use admin client to bypass RLS and cascade-clean dependent rows
+    // (mandates/announcements can block the delete with FK constraints).
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
 
-    if (error) return { error: error.message };
+    // Clean up dependent records first; ignore "table doesn't exist" noise.
+    await admin.from("candidates").delete().eq("job_id", jobId);
+    await admin.from("job_announcements").delete().eq("job_id", jobId);
+    await admin.from("job_mandates").delete().eq("job_id", jobId);
+
+    const { error } = await admin.from("jobs").delete().eq("id", jobId);
+
+    if (error) {
+        console.error("[deleteDraftJob]", error);
+        return { error: "Could not delete draft. Please try again." };
+    }
 
     revalidatePath("/company/jobs");
     return { success: true };

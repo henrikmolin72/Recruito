@@ -156,11 +156,20 @@ export function CandidateSubmissionForm({
     async function handleVerify() {
         if (!verifyEmail.trim()) return;
         setVerifyStatus("checking");
-        // Simulate a check — actual check happens in createCandidateExtended
-        // We do a lightweight client-side check here via an API route or just show feedback
-        await new Promise((r) => setTimeout(r, 600));
-        // Optimistic: always show "ok" here; server-side blocks duplicates on submit
-        setVerifyStatus("ok");
+        try {
+            const fd = new FormData();
+            fd.append("mandate_id", mandateId);
+            fd.append("email", verifyEmail.trim());
+            const res = await fetch("/api/candidates/check-duplicate", { method: "POST", body: fd });
+            if (res.ok) {
+                const { duplicate } = await res.json();
+                setVerifyStatus(duplicate ? "blocked" : "ok");
+            } else {
+                setVerifyStatus("ok"); // fail-open so UI isn't stuck; server will still block
+            }
+        } catch {
+            setVerifyStatus("ok");
+        }
     }
 
     function addLanguage() {
@@ -455,8 +464,13 @@ export function CandidateSubmissionForm({
                                             if (res.ok) {
                                                 const { score } = await res.json();
                                                 setAiScore(score);
+                                            } else {
+                                                const { error } = await res.json().catch(() => ({ error: "Scoring failed" }));
+                                                toast.error(`AI scoring failed: ${error || res.status}. Set score manually.`);
                                             }
-                                        } catch { /* silent */ } finally {
+                                        } catch (err: any) {
+                                            toast.error(`AI scoring failed: ${err?.message || "network error"}. Set score manually.`);
+                                        } finally {
                                             setAiScoreLoading(false);
                                         }
                                     }}

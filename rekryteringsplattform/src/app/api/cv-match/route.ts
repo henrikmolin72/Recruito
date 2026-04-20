@@ -64,9 +64,7 @@ export async function POST(request: NextRequest) {
       .eq("id", mandateId);
 
     if (!isAdmin) {
-      mandateQuery = mandateQuery
-        .eq("recruiter_id", recruiterId as string)
-        .eq("is_active", true);
+      mandateQuery = mandateQuery.eq("recruiter_id", recruiterId as string);
     }
 
     const { data: mandate } = await mandateQuery.single();
