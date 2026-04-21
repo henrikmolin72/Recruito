@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "AI service is not configured" }, { status: 500 });
     }
 
-    const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250514";
+    const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
     const anthropic = new Anthropic({ apiKey });
 
     const response = await anthropic.messages.create({

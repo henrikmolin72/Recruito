@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     if (!apiKey) return NextResponse.json({ error: "AI service not configured" }, { status: 500 });
 
     const anthropic = new Anthropic({ apiKey });
-    const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250514";
+    const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 
     const bytes = await cvFile.arrayBuffer();
     const base64 = Buffer.from(bytes).toString("base64");

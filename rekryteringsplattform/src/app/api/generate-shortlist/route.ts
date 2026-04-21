@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "AI service is not configured" }, { status: 500 });
     }
 
-    const model = process.env.ANTHROPIC_MODEL || "claude-4-6-sonnet";
+    const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
     const anthropic = new Anthropic({ apiKey });
 
     const jobDescription = [jobRow.title && `Titel: ${jobRow.title}`, jobRow.description && stripHtml(jobRow.description), jobRow.requirements && `Krav:\n${jobRow.requirements}`]
