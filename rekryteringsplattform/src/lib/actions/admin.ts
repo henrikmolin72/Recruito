@@ -1,20 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-
-async function requireAdmin() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    // Check both app_metadata (secure, server-only) and user_metadata (legacy fallback)
-    const isAdmin = user?.app_metadata?.role === "admin" || user?.user_metadata?.role === "admin";
-    if (!user || !isAdmin) {
-        redirect("/login");
-    }
-    return { supabase, user };
-}
+import { requireAdmin } from "@/lib/actions/require-admin";
 
 function pickFirst<T>(value: T | T[] | null | undefined): T | null {
     if (Array.isArray(value)) {

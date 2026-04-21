@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/actions/notifications";
+import { requireAdmin } from "@/lib/actions/require-admin";
 
 // =============================================
 // Placement helpers
@@ -34,13 +35,7 @@ export async function getPlacementByCandidateId(candidateId: string) {
  * invoice. For now we record the transition and timestamps.
  */
 export async function sendPlacementInvoice(placementId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad" };
-
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
-
+    await requireAdmin();
     const admin = createAdminClient();
 
     const { data: placement } = await admin
@@ -114,13 +109,7 @@ export async function sendPlacementInvoice(placementId: string) {
  * Record that payment has been received for a placement.
  */
 export async function recordPlacementPayment(placementId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad" };
-
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
-
+    await requireAdmin();
     const admin = createAdminClient();
 
     const { data: placement } = await admin
@@ -207,13 +196,7 @@ export async function recordPlacementPayment(placementId: string) {
  * or manually by admin.
  */
 export async function processGuaranteeExpirations() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad" };
-
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
-
+    await requireAdmin();
     const admin = createAdminClient();
 
     // Find all guarantee_active placements past their end date
@@ -307,13 +290,7 @@ export async function processGuaranteeExpirations() {
  * Initiates refund processing.
  */
 export async function reportGuaranteeFailure(placementId: string, reason?: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad" };
-
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
-
+    await requireAdmin();
     const admin = createAdminClient();
 
     const { data: placement } = await admin
@@ -424,13 +401,7 @@ export async function recalculateRecruiterMetrics(recruiterId: string) {
  * Recalculate metrics for ALL recruiters (admin batch job).
  */
 export async function recalculateAllRecruiterMetrics() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad" };
-
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role !== "admin") return { error: "Endast administratörer kan utföra denna åtgärd." };
-
+    await requireAdmin();
     const admin = createAdminClient();
 
     const { data: recruiters } = await admin
@@ -532,18 +503,7 @@ export async function getRecruiterPerformanceMetrics() {
 // =============================================
 
 export async function getAdminPlacements() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-
-    const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-    if (profile?.role !== "admin") return [];
-
+    await requireAdmin();
     const admin = createAdminClient();
     const { data } = await admin
         .from("placements")

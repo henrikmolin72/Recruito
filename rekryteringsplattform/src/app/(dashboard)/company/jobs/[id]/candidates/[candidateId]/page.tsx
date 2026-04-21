@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ArrowLeft, Download, Mail, Phone, Linkedin } from "lucide-react";
-import { CandidateNextStepRequestActions } from "@/components/dashboard/company/candidate-next-step-request-actions";
 import { CandidateChat } from "@/components/shared/candidate-chat";
 import { CandidateProcessFlowchart } from "@/components/shared/candidate-process-flowchart";
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
+import { CandidatePresentStatusPanel } from "@/components/dashboard/company/candidate-present-status-panel";
 
 async function getCandidate(candidateId: string, jobId: string) {
     const supabase = await createClient();
@@ -54,6 +54,37 @@ async function getCandidate(candidateId: string, jobId: string) {
     return candidate;
 }
 
+function formatNoticePeriod(value: string | null) {
+    const map: Record<string, string> = {
+        immediately: "Available Immediately",
+        "2_weeks": "2 Weeks",
+        "1_month": "1 Month",
+        "2_months": "2 Months",
+        "3_months": "3 Months",
+    };
+    return value ? (map[value] || value) : null;
+}
+
+function formatContactMethod(value: string | null) {
+    const map: Record<string, string> = {
+        in_person: "In Person",
+        video_call: "Video Call",
+        phone: "Phone",
+        email: "Email",
+        messaging: "Messaging",
+    };
+    return value ? (map[value] || value) : null;
+}
+
+function formatLocationStatus(value: string | null) {
+    const map: Record<string, string> = {
+        on_site: "Based in / near job location",
+        willing_to_relocate: "Willing to relocate",
+        fully_remote: "Position is fully remote",
+    };
+    return value ? (map[value] || value) : null;
+}
+
 export default async function CandidateDetailsPage({ params }: { params: Promise<{ id: string, candidateId: string }> }) {
     const { id: jobId, candidateId } = await params;
     const candidate = await getCandidate(candidateId, jobId);
@@ -81,6 +112,11 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
             console.error("Storage error:", e);
         }
     }
+
+    const languageProficiency: Array<{ language: string; proficiency: string }> =
+        Array.isArray(candidate.language_proficiency) ? candidate.language_proficiency : [];
+    const screeningAnswers: Array<{ question: string; answer: string }> =
+        Array.isArray(candidate.screening_answers) ? candidate.screening_answers : [];
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
@@ -110,13 +146,6 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                             </Button>
                         </a>
                     )}
-                    <CandidateNextStepRequestActions
-                        candidateId={candidateId}
-                        jobId={jobId}
-                        currentRequest={candidate.company_requested_next_step}
-                        currentRequestNote={candidate.company_requested_next_step_note}
-                        currentRequestAt={candidate.company_requested_next_step_at}
-                    />
                 </div>
             </div>
 
@@ -129,6 +158,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                         helperText="Uppdateras av rekryteraren när kandidaten flyttas i processen."
                     />
 
+                    {/* Profile */}
                     <Card>
                         <CardHeader>
                             <CardTitle>{c.candidateProfileTitle}</CardTitle>
@@ -148,22 +178,208 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                                     <p className="font-semibold">{candidate.years_experience} {dict.common.years}</p>
                                 </div>
                                 <div>
-                                    <p className="text-muted-foreground">{c.salaryExpectation}</p>
-                                    <p className="font-semibold">{candidate.expected_salary ? `${candidate.expected_salary} ${dict.common.perMonth}` : '-'}</p>
+                                    <p className="text-muted-foreground">Location</p>
+                                    <p className="font-semibold">
+                                        {[candidate.location_city, candidate.location_country].filter(Boolean).join(", ") || '-'}
+                                    </p>
                                 </div>
+                                {candidate.location_status && (
+                                    <div>
+                                        <p className="text-muted-foreground">Location Status</p>
+                                        <p className="font-semibold">{formatLocationStatus(candidate.location_status)}</p>
+                                    </div>
+                                )}
+                                {candidate.work_authorization && (
+                                    <div>
+                                        <p className="text-muted-foreground">Work Authorization</p>
+                                        <p className="font-semibold">{candidate.work_authorization}</p>
+                                    </div>
+                                )}
                             </div>
 
-                            <div>
-                                <p className="font-medium mb-2">{c.motivationTitle}</p>
-                                <div className="p-4 bg-muted/30 rounded-lg text-sm whitespace-pre-wrap italic">
-                                    &quot;{candidate.cover_note || c.noMotivationProvided}&quot;
+                            {candidate.cover_note && (
+                                <div>
+                                    <p className="font-medium mb-2">{c.motivationTitle}</p>
+                                    <div className="p-4 bg-muted/30 rounded-lg text-sm whitespace-pre-wrap italic">
+                                        &quot;{candidate.cover_note}&quot;
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </CardContent>
                     </Card>
+
+                    {/* Compensation & Availability */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Compensation & Availability</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-sm">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {candidate.current_salary && (
+                                    <div>
+                                        <p className="text-muted-foreground">Current Salary</p>
+                                        <p className="font-semibold">
+                                            {candidate.current_salary_currency || ''} {candidate.current_salary?.toLocaleString()}
+                                            <span className="text-muted-foreground font-normal"> / year</span>
+                                        </p>
+                                    </div>
+                                )}
+                                {candidate.desired_salary && (
+                                    <div>
+                                        <p className="text-muted-foreground">Expected Salary</p>
+                                        <p className="font-semibold">
+                                            {candidate.desired_salary_currency || ''} {candidate.desired_salary?.toLocaleString()}
+                                            <span className="text-muted-foreground font-normal"> / year</span>
+                                        </p>
+                                    </div>
+                                )}
+                                {candidate.notice_period && (
+                                    <div>
+                                        <p className="text-muted-foreground">Notice Period</p>
+                                        <p className="font-semibold">
+                                            {formatNoticePeriod(candidate.notice_period)}
+                                            {candidate.notice_negotiable && <span className="ml-2 text-xs text-emerald-600 font-medium">(Negotiable)</span>}
+                                        </p>
+                                    </div>
+                                )}
+                                {candidate.first_contact_date && (
+                                    <div>
+                                        <p className="text-muted-foreground">Date of First Contact</p>
+                                        <p className="font-semibold">{new Date(candidate.first_contact_date).toLocaleDateString()}</p>
+                                    </div>
+                                )}
+                                {candidate.contact_method && (
+                                    <div>
+                                        <p className="text-muted-foreground">Contact Method</p>
+                                        <p className="font-semibold">{formatContactMethod(candidate.contact_method)}</p>
+                                    </div>
+                                )}
+                            </div>
+                            {candidate.current_benefits && (
+                                <div>
+                                    <p className="text-muted-foreground mb-1">Current Benefits</p>
+                                    <p className="text-sm">{candidate.current_benefits}</p>
+                                </div>
+                            )}
+                            {candidate.desired_benefits && (
+                                <div>
+                                    <p className="text-muted-foreground mb-1">Desired Benefits</p>
+                                    <p className="text-sm">{candidate.desired_benefits}</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Employment Status */}
+                    {(candidate.employment_status || candidate.other_processes !== null) && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Employment Status & Recruitment Activity</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4 text-sm">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {candidate.employment_status && (
+                                        <div>
+                                            <p className="text-muted-foreground">Employment Status</p>
+                                            <p className="font-semibold capitalize">{candidate.employment_status.replace('_', ' ')}</p>
+                                        </div>
+                                    )}
+                                    {candidate.other_processes !== null && (
+                                        <div>
+                                            <p className="text-muted-foreground">In Other Processes</p>
+                                            <p className="font-semibold">{candidate.other_processes ? `Yes${candidate.other_processes_stage ? ` — ${candidate.other_processes_stage.replace('_', ' ')}` : ''}` : 'No'}</p>
+                                        </div>
+                                    )}
+                                </div>
+                                {candidate.employment_status_reason && (
+                                    <div>
+                                        <p className="text-muted-foreground mb-1">Reason / Motivation</p>
+                                        <p className="text-sm">{candidate.employment_status_reason}</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Language Proficiency */}
+                    {languageProficiency.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Language Proficiency</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex flex-wrap gap-2">
+                                    {languageProficiency.map((l, i) => (
+                                        <span key={i} className="px-3 py-1.5 bg-slate-100 rounded-lg text-sm font-medium">
+                                            {l.language} <span className="text-muted-foreground capitalize">· {l.proficiency}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* AI Match Score */}
+                    {candidate.ai_match_score !== null && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>AI Match Score</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
+                                        <div
+                                            className={`h-3 rounded-full ${candidate.ai_match_score >= 80 ? "bg-emerald-500" : candidate.ai_match_score >= 60 ? "bg-amber-500" : "bg-red-500"}`}
+                                            style={{ width: `${candidate.ai_match_score}%` }}
+                                        />
+                                    </div>
+                                    <span className={`text-2xl font-black tabular-nums min-w-[3.5rem] text-right ${candidate.ai_match_score >= 80 ? "text-emerald-600" : "text-red-500"}`}>
+                                        {candidate.ai_match_score}%
+                                    </span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Assessment Summary */}
+                    {candidate.assessment_summary && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Candidate Assessment Summary</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm whitespace-pre-wrap">{candidate.assessment_summary}</p>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Screening Answers */}
+                    {screeningAnswers.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Screening Answers</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {screeningAnswers.map((qa, i) => (
+                                    <div key={i} className="bg-slate-50 rounded-lg p-4 border border-slate-100">
+                                        <p className="text-xs font-bold text-slate-500 mb-1">Q{i + 1} — {qa.question}</p>
+                                        <p className="text-sm text-slate-700">{qa.answer || <span className="italic text-slate-400">No answer provided</span>}</p>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
                 <div className="space-y-6">
+                    {/* Present Status Panel */}
+                    <CandidatePresentStatusPanel
+                        candidateId={candidateId}
+                        jobId={jobId}
+                        initialStage={(candidate as any).company_stage ?? null}
+                    />
+
+                    {/* Contact Info */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">{c.contactInfoTitle}</CardTitle>
@@ -183,6 +399,12 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                                 <div className="flex items-center gap-3">
                                     <Linkedin className="h-4 w-4 text-muted-foreground" />
                                     <a href={candidate.linkedin_url} target="_blank" rel="noreferrer" className="text-sm text-brand-600 hover:underline">{dict.common.linkedInProfile}</a>
+                                </div>
+                            )}
+                            {candidate.portfolio_url && (
+                                <div className="flex items-center gap-3">
+                                    <Linkedin className="h-4 w-4 text-muted-foreground" />
+                                    <a href={candidate.portfolio_url} target="_blank" rel="noreferrer" className="text-sm text-brand-600 hover:underline">Portfolio</a>
                                 </div>
                             )}
                         </CardContent>

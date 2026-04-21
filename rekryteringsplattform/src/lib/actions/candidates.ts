@@ -602,6 +602,36 @@ export async function requestCandidateNextStep(
     return { success: true };
 }
 
+const COMPANY_STAGES = ["viewed", "interview", "final_interview", "job_offer", "hired", "rejected"] as const;
+export type CompanyStageValue = typeof COMPANY_STAGES[number];
+
+export async function updateCompanyStage(candidateId: string, jobId: string, stage: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Utloggad!" };
+
+    if (!COMPANY_STAGES.includes(stage as CompanyStageValue)) return { error: "Ogiltigt steg" };
+
+    const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
+    if (access.actorRole !== "company") return { error: "Obehörig" };
+
+    const patch: Record<string, any> = { company_stage: stage };
+    if (stage === "viewed" && !(access.candidate as any)?.company_viewed_at) {
+        patch.company_viewed_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+        .from("candidates")
+        .update(patch)
+        .eq("id", candidateId)
+        .eq("job_id", jobId);
+
+    if (error) return { error: error.message };
+
+    revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
+    return { success: true };
+}
+
 export async function clearCandidateNextStepRequest(candidateId: string, jobId: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
