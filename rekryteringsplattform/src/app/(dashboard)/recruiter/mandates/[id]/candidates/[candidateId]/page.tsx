@@ -22,7 +22,7 @@ import {
     PauseCircle,
     Sparkles,
 } from "lucide-react";
-import { CandidateChat } from "@/components/shared/candidate-chat";
+import { TabbedCandidateChat } from "@/components/shared/tabbed-candidate-chat";
 import { CompanyNextStepPanel } from "@/components/dashboard/recruiter/company-next-step-panel";
 import { RecruiterPipelineControls } from "@/components/dashboard/recruiter/recruiter-pipeline-controls";
 import { getCandidateConversation } from "@/lib/actions/messages";
@@ -288,8 +288,12 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    const conversation = await getCandidateConversation(candidateId);
+    const [conversation, recruitorConversation] = await Promise.all([
+        getCandidateConversation(candidateId, 'client'),
+        getCandidateConversation(candidateId, 'recruito'),
+    ]);
     const initialMessages = (conversation as any)?.messages || [];
+    const recruitorMessages = (recruitorConversation as any)?.messages || [];
     const dict = await getDictionary();
     const r = dict.recruiter;
 
@@ -345,12 +349,14 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                         <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-4">
                             {r.candidateDetailDiscussionTitle}
                         </h3>
-                        <CandidateChat
+                        <TabbedCandidateChat
                             candidateId={candidateId}
                             jobId={candidate.job_id}
-                            initialMessages={initialMessages}
+                            clientMessages={initialMessages}
+                            recruitorMessages={recruitorMessages}
                             currentUserId={user?.id || ''}
                             candidate={candidate}
+                            clientTabLabel="Chat with Client"
                         />
                     </div>
                 </div>
@@ -387,18 +393,59 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                             </div>
 
                             <div className="pt-4 border-t border-slate-50 space-y-4">
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{r.currentRoleLabel}</p>
-                                    <p className="text-sm font-bold text-slate-700">{candidate.current_title || '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{r.experienceLabel}</p>
-                                    <p className="text-sm font-bold text-slate-700">{candidate.years_experience} {dict.common.years}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{r.salaryExpectationLabel}</p>
-                                    <p className="text-sm font-bold text-slate-700">{candidate.expected_salary ? `${candidate.expected_salary} ${dict.common.perMonth}` : '-'}</p>
-                                </div>
+                                {candidate.desired_salary && (
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{r.salaryExpectationLabel}</p>
+                                        <p className="text-sm font-bold text-slate-700">
+                                            {candidate.desired_salary_currency || ''} {candidate.desired_salary?.toLocaleString()}
+                                        </p>
+                                    </div>
+                                )}
+                                {(candidate.location_city || candidate.location_country) && (
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Location</p>
+                                        <p className="text-sm font-bold text-slate-700">
+                                            {[candidate.location_city, candidate.location_country].filter(Boolean).join(", ")}
+                                        </p>
+                                    </div>
+                                )}
+                                {candidate.work_authorization && (
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Authorization</p>
+                                        <p className="text-sm font-bold text-slate-700 capitalize">{candidate.work_authorization.replace(/_/g, ' ')}</p>
+                                    </div>
+                                )}
+                                {candidate.employment_status && (
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Employment Status</p>
+                                        <p className="text-sm font-bold text-slate-700 capitalize">{candidate.employment_status.replace(/_/g, ' ')}</p>
+                                    </div>
+                                )}
+                                {candidate.notice_period && (
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Notice Period</p>
+                                        <p className="text-sm font-bold text-slate-700">
+                                            {candidate.notice_period === 'immediately' ? 'Available Immediately' : candidate.notice_period.replace(/_/g, ' ')}
+                                            {candidate.notice_negotiable && <span className="ml-2 text-xs text-emerald-600">(Negotiable)</span>}
+                                        </p>
+                                    </div>
+                                )}
+                                {candidate.other_processes !== null && (
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Other Processes</p>
+                                        <p className="text-sm font-bold text-slate-700">
+                                            {candidate.other_processes
+                                                ? `Yes${candidate.other_processes_stage ? ` — ${candidate.other_processes_stage.replace(/_/g, ' ')}` : ''}`
+                                                : 'No'}
+                                        </p>
+                                    </div>
+                                )}
+                                {candidate.contact_method && (
+                                    <div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Preferred Contact</p>
+                                        <p className="text-sm font-bold text-slate-700 capitalize">{candidate.contact_method.replace(/_/g, ' ')}</p>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

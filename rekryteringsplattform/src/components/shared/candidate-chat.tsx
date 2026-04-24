@@ -32,6 +32,8 @@ interface CandidateChatProps {
         current_title: string;
         status: string;
     };
+    conversationType?: 'client' | 'recruito';
+    sendMessageFn?: (candidateId: string, jobId: string, content: string) => Promise<{ success?: boolean; error?: string }>;
 }
 
 function formatMessageTime(createdAt: string) {
@@ -46,7 +48,7 @@ function formatMessageTime(createdAt: string) {
     }
 }
 
-export function CandidateChat({ candidateId, jobId, initialMessages, currentUserId, candidate }: CandidateChatProps) {
+export function CandidateChat({ candidateId, jobId, initialMessages, currentUserId, candidate, conversationType = 'client', sendMessageFn }: CandidateChatProps) {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -63,17 +65,16 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
         setMessages(initialMessages);
     }, [initialMessages]);
 
-    // Poll for new messages every 5 seconds
     const pollMessages = useCallback(async () => {
         try {
-            const conversation = await getCandidateConversation(candidateId);
+            const conversation = await getCandidateConversation(candidateId, conversationType);
             if (conversation?.messages) {
                 setMessages(conversation.messages);
             }
         } catch {
             // Silently ignore polling errors
         }
-    }, [candidateId]);
+    }, [candidateId, conversationType]);
 
     useEffect(() => {
         const interval = setInterval(pollMessages, 5000);
@@ -97,7 +98,8 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
         setContent("");
         setIsLoading(true);
 
-        const result = await sendMessage(candidateId, jobId, msgContent);
+        const activeSendFn = sendMessageFn ?? sendMessage;
+        const result = await activeSendFn(candidateId, jobId, msgContent);
 
         if (!result.success) {
             setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));

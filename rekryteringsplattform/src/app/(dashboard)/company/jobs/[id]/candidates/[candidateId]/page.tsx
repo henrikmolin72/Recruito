@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ArrowLeft, Download, Mail, Phone, Linkedin } from "lucide-react";
-import { CandidateChat } from "@/components/shared/candidate-chat";
+import { TabbedCandidateChat } from "@/components/shared/tabbed-candidate-chat";
 import { CandidateProcessFlowchart } from "@/components/shared/candidate-process-flowchart";
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
@@ -95,8 +95,12 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    const conversation = await getCandidateConversation(candidateId);
+    const [conversation, recruitorConversation] = await Promise.all([
+        getCandidateConversation(candidateId, 'client'),
+        getCandidateConversation(candidateId, 'recruito'),
+    ]);
     const initialMessages = (conversation as any)?.messages || [];
+    const recruitorMessages = (recruitorConversation as any)?.messages || [];
     const dict = await getDictionary();
     const c = dict.company;
 
@@ -139,6 +143,14 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {candidate.ai_match_score !== null && (
+                        <div className="flex items-center gap-2">
+                            <span className={`text-3xl font-black tabular-nums ${candidate.ai_match_score >= 80 ? "text-emerald-600" : candidate.ai_match_score >= 60 ? "text-amber-500" : "text-red-500"}`}>
+                                {candidate.ai_match_score}%
+                            </span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">AI Match</span>
+                        </div>
+                    )}
                     {cvUrl && (
                         <a href={cvUrl} target="_blank" rel="noreferrer">
                             <Button variant="outline" className="gap-2">
@@ -165,18 +177,6 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <p className="text-muted-foreground">{c.currentRole}</p>
-                                    <p className="font-semibold">{candidate.current_title || '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground">{c.currentEmployer}</p>
-                                    <p className="font-semibold">{candidate.current_company || '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-muted-foreground">{c.experience}</p>
-                                    <p className="font-semibold">{candidate.years_experience} {dict.common.years}</p>
-                                </div>
                                 <div>
                                     <p className="text-muted-foreground">Location</p>
                                     <p className="font-semibold">
@@ -319,28 +319,6 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                         </Card>
                     )}
 
-                    {/* AI Match Score */}
-                    {candidate.ai_match_score !== null && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>AI Match Score</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex-1 bg-slate-100 rounded-full h-3 overflow-hidden">
-                                        <div
-                                            className={`h-3 rounded-full ${candidate.ai_match_score >= 80 ? "bg-emerald-500" : candidate.ai_match_score >= 60 ? "bg-amber-500" : "bg-red-500"}`}
-                                            style={{ width: `${candidate.ai_match_score}%` }}
-                                        />
-                                    </div>
-                                    <span className={`text-2xl font-black tabular-nums min-w-[3.5rem] text-right ${candidate.ai_match_score >= 80 ? "text-emerald-600" : "text-red-500"}`}>
-                                        {candidate.ai_match_score}%
-                                    </span>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
                     {/* Assessment Summary */}
                     {candidate.assessment_summary && (
                         <Card>
@@ -420,12 +398,14 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
 
             <div className="pt-6 border-t">
                 <h2 className="text-xl font-bold mb-4">{c.candidateMessagesTitle}</h2>
-                <CandidateChat
+                <TabbedCandidateChat
                     candidateId={candidateId}
                     jobId={jobId}
-                    initialMessages={initialMessages}
+                    clientMessages={initialMessages}
+                    recruitorMessages={recruitorMessages}
                     currentUserId={user?.id || ''}
                     candidate={candidate}
+                    clientTabLabel="Chat with Candidate"
                 />
             </div>
         </div>

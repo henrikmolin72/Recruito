@@ -5,12 +5,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/actions/notifications";
 
-export async function getCandidateConversation(candidateId: string) {
+export async function getCandidateConversation(candidateId: string, conversationType: 'client' | 'recruito' = 'client') {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    // Försök hitta en existerande konversation för denna kandidat
     const { data: conversation, error } = await supabase
         .from("conversations")
         .select(`
@@ -24,6 +23,7 @@ export async function getCandidateConversation(candidateId: string) {
       )
     `)
         .eq("candidate_id", candidateId)
+        .eq("conversation_type", conversationType)
         .maybeSingle();
 
     if (error) {
@@ -32,6 +32,42 @@ export async function getCandidateConversation(candidateId: string) {
     }
 
     return conversation;
+}
+
+export async function sendRecruitorMessage(candidateId: string, jobId: string, content: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const normalizedContent = content.trim();
+    if (!user || !normalizedContent) return { error: "Not authenticated" };
+
+    const supabaseAdmin = createAdminClient();
+
+    const { data: existingConv } = await supabaseAdmin
+        .from("conversations")
+        .select("id")
+        .eq("candidate_id", candidateId)
+        .eq("conversation_type", "recruito")
+        .maybeSingle();
+
+    let conversationId = existingConv?.id;
+
+    if (!conversationId) {
+        const { data: newConv, error: convError } = await supabase
+            .from("conversations")
+            .insert({ candidate_id: candidateId, job_id: jobId, conversation_type: "recruito" })
+            .select("id")
+            .single();
+        if (convError || !newConv) return { error: convError?.message || "Failed to create conversation" };
+        conversationId = newConv.id;
+    }
+
+    const { error: msgError } = await supabase
+        .from("messages")
+        .insert({ conversation_id: conversationId, sender_id: user.id, content: normalizedContent });
+
+    if (msgError) return { error: msgError.message };
+
+    return { success: true };
 }
 
 export async function sendMessage(candidateId: string, jobId: string, content: string) {

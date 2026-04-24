@@ -149,6 +149,7 @@ export function CandidateSubmissionForm({
                     if (d[key]) restoredText[key] = d[key];
                 }
                 if (Object.keys(restoredText).length > 0) setDraftTextFields(restoredText);
+                if (d.email) { setVerifyEmail(d.email); setVerifyStatus("ok"); }
             }
         } catch { }
     }, [DRAFT_KEY]);
@@ -350,16 +351,11 @@ export function CandidateSubmissionForm({
                             </div>
                         </FieldRow>
 
-                        <FieldRow>
-                            <div>
-                                <Label>{r.emailRequired || "Primary Email *"}</Label>
-                                <Input type="email" name="email" required placeholder="anna@email.com" defaultValue={draftTextFields["email"] || ""} className="h-11 bg-slate-50 border-slate-200" />
-                            </div>
-                            <div>
-                                <Label>{r.phoneLabelOptional || "Mobile Number (incl. country code)"}</Label>
-                                <Input type="tel" name="phone" placeholder="+46 70 000 00 00" defaultValue={draftTextFields["phone"] || ""} className="h-11 bg-slate-50 border-slate-200" />
-                            </div>
-                        </FieldRow>
+                        <input type="hidden" name="email" value={verifyEmail} />
+                        <div>
+                            <Label>{r.phoneLabelOptional || "Mobile Number (incl. country code)"}</Label>
+                            <Input type="tel" name="phone" placeholder="+46 70 000 00 00" defaultValue={draftTextFields["phone"] || ""} className="h-11 bg-slate-50 border-slate-200" />
+                        </div>
 
                         <FieldRow>
                             <div>

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"git add src/app/(dashboard)/company/jobs/[id]/page.tsx src/app/api/screen/route.ts src/components/layout/sidebar.tsx src/components/screening/candidate-score-card.tsx src/i18n/dictionaries...",
+  "error": "Exit code 1\n(eval):1: no matches found: src/app/(dashboard)/company/jobs/[id]/page.tsx",
+  "timestamp": "2026-04-13T17:26:57.438Z",
+  "retry_count": 1
+}
