@@ -218,6 +218,7 @@ export async function getAdminJobs() {
             status,
             current_recruiter_count,
             max_recruiters,
+            max_candidates,
             company:companies (company_name),
             candidates:candidates (count)
         `)
@@ -242,6 +243,7 @@ export async function getAdminJobs() {
             status: job.status,
             recruiters: job.current_recruiter_count || 0,
             maxRecruiters: job.max_recruiters || 5,
+            maxCandidates: job.max_candidates ?? 8,
             candidates: job.candidates?.[0]?.count || 0,
         };
     });
@@ -904,6 +906,30 @@ export async function updateRecruiterFeePercentage(jobId: string, percentage: nu
         .eq("id", jobId);
 
     if (error) return { error: error.message };
+
+    revalidatePath("/admin/jobs");
+    return { success: true };
+}
+
+// Adjust per-job candidate submission cap (default 8). Used to "reopen" a job
+// for more submissions once the client has reviewed the current batch.
+export async function setJobMaxCandidates(jobId: string, max: number) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    if (!Number.isInteger(max) || max < 1 || max > 200) {
+        return { error: "Cap must be an integer between 1 and 200." };
+    }
+
+    const { error } = await supabaseAdmin
+        .from("jobs")
+        .update({ max_candidates: max })
+        .eq("id", jobId);
+
+    if (error) {
+        console.error("[setJobMaxCandidates]", error);
+        return { error: "Could not update cap." };
+    }
 
     revalidatePath("/admin/jobs");
     return { success: true };

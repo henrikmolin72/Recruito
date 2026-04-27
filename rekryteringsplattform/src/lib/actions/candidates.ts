@@ -169,6 +169,26 @@ export async function createCandidate(mandateId: string, formData: FormData) {
         return { error: "Obehörig åtgärd." };
     }
 
+    // Cap submissions per job (client-requested, default 8). Admin can raise
+    // max_candidates once the client has reviewed the current batch.
+    const { data: jobCap } = await admin
+        .from("jobs")
+        .select("max_candidates")
+        .eq("id", mandate.job_id)
+        .single();
+
+    const maxCandidates = (jobCap as any)?.max_candidates ?? 8;
+    const { count: currentCount } = await admin
+        .from("candidates")
+        .select("id", { count: "exact", head: true })
+        .eq("job_id", mandate.job_id);
+
+    if ((currentCount ?? 0) >= maxCandidates) {
+        return {
+            error: `Submission limit reached (${maxCandidates} candidates). The client must review the current batch before more can be submitted.`,
+        };
+    }
+
     const parsed = validateCandidateForm(formData);
     if (!parsed.success) {
         return { error: parsed.error };

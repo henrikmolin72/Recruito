@@ -5,6 +5,7 @@ import { getAdminJobs } from "@/lib/actions/admin";
 import { getDictionary } from "@/i18n/server";
 import { RecruiterFeeEditor } from "@/components/dashboard/admin/recruiter-fee-editor";
 import { ApproveJobButton } from "@/components/dashboard/admin/approve-job-button";
+import { MaxCandidatesEditor } from "@/components/dashboard/admin/max-candidates-editor";
 
 export default async function AdminJobsPage() {
   const jobs = await getAdminJobs();
@@ -29,7 +30,7 @@ export default async function AdminJobsPage() {
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobSalary}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobStatus}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobRecruiters}</th>
-                <th className="p-4 font-medium text-muted-foreground">{a.tableJobCandidates}</th>
+                <th className="p-4 font-medium text-muted-foreground" title="Submitted / Cap">{a.tableJobCandidates} (cap)</th>
                 <th className="p-4 font-medium text-muted-foreground">Client Fee</th>
                 <th className="p-4 font-medium text-emerald-700">Recruiter Fee %</th>
                 <th className="p-4 font-medium text-muted-foreground">Approval</th>
@@ -49,7 +50,13 @@ export default async function AdminJobsPage() {
                     <td className="p-4">{job.salary ? formatCurrency(job.salary) : dict.common.notSpecifiedNeutral}</td>
                     <td className="p-4"><StatusBadge status={job.status} /></td>
                     <td className="p-4">{job.recruiters}/{job.maxRecruiters}</td>
-                    <td className="p-4">{job.candidates}</td>
+                    <td className="p-4">
+                      <MaxCandidatesEditor
+                        jobId={job.id}
+                        initialMax={job.maxCandidates}
+                        currentCount={job.candidates}
+                      />
+                    </td>
                     <td className="p-4 text-muted-foreground">{job.feePercentage ? `${job.feePercentage}%` : "—"}</td>
                     <td className="p-4">
                       <RecruiterFeeEditor jobId={job.id} initialFee={job.recruiterFeePercentage} />
