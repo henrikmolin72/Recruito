@@ -4,6 +4,7 @@ import { formatCurrency } from "@/lib/utils";
 import { getAdminJobs } from "@/lib/actions/admin";
 import { getDictionary } from "@/i18n/server";
 import { RecruiterFeeEditor } from "@/components/dashboard/admin/recruiter-fee-editor";
+import { ApproveJobButton } from "@/components/dashboard/admin/approve-job-button";
 
 export default async function AdminJobsPage() {
   const jobs = await getAdminJobs();
@@ -31,12 +32,13 @@ export default async function AdminJobsPage() {
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobCandidates}</th>
                 <th className="p-4 font-medium text-muted-foreground">Client Fee</th>
                 <th className="p-4 font-medium text-emerald-700">Recruiter Fee %</th>
+                <th className="p-4 font-medium text-muted-foreground">Approval</th>
               </tr>
             </thead>
             <tbody>
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-muted-foreground">{a.noJobsRegistered}</td>
+                  <td colSpan={10} className="p-8 text-center text-muted-foreground">{a.noJobsRegistered}</td>
                 </tr>
               ) : (
                 jobs.map((job) => (
@@ -51,6 +53,9 @@ export default async function AdminJobsPage() {
                     <td className="p-4 text-muted-foreground">{job.feePercentage ? `${job.feePercentage}%` : "—"}</td>
                     <td className="p-4">
                       <RecruiterFeeEditor jobId={job.id} initialFee={job.recruiterFeePercentage} />
+                    </td>
+                    <td className="p-4">
+                      <ApproveJobButton jobId={job.id} status={job.status} />
                     </td>
                   </tr>
                 ))

@@ -8,6 +8,7 @@ import { createNotification } from "@/lib/actions/notifications";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { candidateSubmissionEmail, candidateProgressEmail } from "@/lib/email/email-templates";
 import { validateCandidateForm } from "@/lib/validation/forms";
+import { requireAdmin } from "@/lib/actions/require-admin";
 import type { PipelineStage } from "@/types/db-types";
 import {
     canTransitionCandidateStatus,
@@ -620,6 +621,17 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         patch.company_viewed_at = new Date().toISOString();
     }
 
+    // Step 11 of recruitment process flow: keep candidate.status in sync with offer/hire/reject
+    // transitions so downstream automation (placement trigger, payouts, analytics) sees the change.
+    const STAGE_TO_STATUS: Record<string, string> = {
+        job_offer: "offer_in_progress",
+        hired: "hired",
+        rejected: "rejected_client",
+    };
+    if (STAGE_TO_STATUS[stage]) {
+        patch.status = STAGE_TO_STATUS[stage];
+    }
+
     const { error } = await supabase
         .from("candidates")
         .update(patch)
@@ -648,5 +660,60 @@ export async function clearCandidateNextStepRequest(candidateId: string, jobId: 
         revalidatePath(`/recruiter/mandates/${access.mandateId}`);
         revalidatePath(`/recruiter/mandates/${access.mandateId}/candidates/${candidateId}`);
     }
+    return { success: true };
+}
+
+// Step 11 of recruitment process flow: company marks an outstanding offer as accepted by candidate.
+// Only valid when company_stage is 'job_offer'. Sets candidate.status = 'offer_accepted'.
+export async function markOfferAccepted(candidateId: string, jobId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Utloggad!" };
+
+    const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
+    if (access.actorRole !== "company") return { error: "Obehörig" };
+
+    if ((access.candidate as any)?.company_stage !== "job_offer") {
+        return { error: "Offer must be made before it can be accepted." };
+    }
+
+    const { error } = await supabase
+        .from("candidates")
+        .update({ status: "offer_accepted" })
+        .eq("id", candidateId)
+        .eq("job_id", jobId);
+
+    if (error) {
+        console.error("[markOfferAccepted]", error);
+        return { error: "Could not mark offer as accepted." };
+    }
+
+    revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
+    if (access.mandateId) {
+        revalidatePath(`/recruiter/mandates/${access.mandateId}/candidates/${candidateId}`);
+    }
+    return { success: true };
+}
+
+// Step 7 of recruitment process flow: Recruito admin marks a candidate as internally screened
+// before the client sees them. Sets recruito_screened_at + recruito_screened_by.
+export async function markCandidateRecruitoScreened(candidateId: string) {
+    const { supabase, user } = await requireAdmin();
+
+    const { error } = await supabase
+        .from("candidates")
+        .update({
+            recruito_screened_at: new Date().toISOString(),
+            recruito_screened_by: user.id,
+        })
+        .eq("id", candidateId)
+        .is("recruito_screened_at", null);
+
+    if (error) {
+        console.error("[markCandidateRecruitoScreened]", error);
+        return { error: "Could not mark candidate as screened." };
+    }
+
+    revalidatePath("/admin/candidates");
     return { success: true };
 }

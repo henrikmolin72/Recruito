@@ -9,6 +9,7 @@ import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/actions/notifications";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { newJobNotificationEmail } from "@/lib/email/email-templates";
+import { requireAdmin } from "@/lib/actions/require-admin";
 import type { PipelineStage } from "@/types/db-types";
 
 async function verifyJobOwnership(jobId: string) {
@@ -211,10 +212,10 @@ export async function createJob(formData: FormData) {
         // Other
         travel_required: d.travel_required ?? rawOrNull("travel_required"),
         background_check_required: d.background_check_required ?? rawBool("background_check_required"),
-        // Pipeline & status
+        // Pipeline & status — non-draft jobs go to pending_approval (Step 4 of process flow);
+        // Recruito admin must approve before recruiters see them (sets status='active' + published_at).
         pipeline_stages: pipelineStages,
-        status: isDraft ? "draft" : "active",
-        ...(!isDraft ? { published_at: new Date().toISOString() } : {}),
+        status: isDraft ? "draft" : "pending_approval",
     };
 
     const { data: jobData, error: jobError } = existingDraftId
@@ -230,95 +231,95 @@ export async function createJob(formData: FormData) {
         return { success: true, jobId: jobData?.id };
     }
 
-    // Notify matching recruiters about the new job listing
-    if (jobData?.id) {
-        try {
-            const jobId = jobData.id;
-
-            // Fetch full job details for notification content
-            const { data: job } = await supabase
-                .from("jobs")
-                .select("title, industry, location, country, fee_percentage")
-                .eq("id", jobId)
-                .single();
-
-            if (job) {
-                // Query all approved recruiters and filter by matching criteria:
-                // - Industry matches (primary_industries OR specializations overlap with job.industry)
-                // - OR location matches (locations OR countries_experience overlap with job.country)
-                const { data: allApprovedRecruiters } = await supabase
-                    .from("recruiters")
-                    .select(`
-                        id,
-                        user_id,
-                        primary_industries,
-                        specializations,
-                        locations,
-                        countries_experience,
-                        profiles:user_id (
-                            email,
-                            full_name
-                        )
-                    `)
-                    .eq("approval_status", "approved");
-
-                // Filter recruiters that match job criteria
-                const matchingRecruiters = (allApprovedRecruiters || []).filter((recruiter) => {
-                    const industryMatch =
-                        (recruiter.primary_industries?.includes(job.industry)) ||
-                        (recruiter.specializations?.includes(job.industry));
-                    const locationMatch =
-                        (recruiter.locations?.includes(job.country)) ||
-                        (recruiter.countries_experience?.includes(job.country));
-                    return industryMatch || locationMatch;
-                });
-
-                if (matchingRecruiters && matchingRecruiters.length > 0) {
-                    for (const recruiter of matchingRecruiters) {
-                        const profile = Array.isArray(recruiter.profiles)
-                            ? recruiter.profiles[0]
-                            : recruiter.profiles as any;
-
-                        if (!profile?.email) continue;
-
-                        const recruiterName = profile.full_name || "Recruiter";
-                        const jobUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/recruiter/jobs/${jobId}`;
-
-                        // Create in-app notification
-                        await createNotification(
-                            recruiter.user_id,
-                            `New job: ${job.title}`,
-                            `${job.title} at ${company?.company_name || "a company"}`,
-                            `/recruiter/jobs/${jobId}`
-                        );
-
-                        // Send email notification
-                        const emailHtml = newJobNotificationEmail({
-                            recruiterName,
-                            jobTitle: job.title,
-                            companyName: company?.company_name || "Partner Company",
-                            location: job.location || "Not specified",
-                            feePercentage: job.fee_percentage || 0,
-                            jobUrl,
-                        });
-
-                        await sendUserEmail({
-                            to: profile.email,
-                            subject: `New job: ${job.title}`,
-                            html: emailHtml,
-                        });
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Error notifying recruiters about new job:", error);
-            // Don't fail the job creation if notification fails
-        }
-    }
+    // Job is now pending_approval — recruiters are notified later in approveJob().
 
     revalidatePath("/company");
     revalidatePath("/company/jobs");
     redirect("/company/jobs");
+}
+
+// Notify matching approved recruiters about a job. Called from approveJob() once admin
+// has activated the listing (Step 4 of the recruitment process flow).
+async function notifyMatchingRecruitersAboutJob(jobId: string) {
+    try {
+        const supabase = await createClient();
+
+        const { data: job } = await supabase
+            .from("jobs")
+            .select("title, industry, location, country, fee_percentage, company_id")
+            .eq("id", jobId)
+            .single();
+
+        if (!job) return;
+
+        const { data: company } = await supabase
+            .from("companies")
+            .select("company_name")
+            .eq("id", job.company_id)
+            .single();
+
+        const { data: allApprovedRecruiters } = await supabase
+            .from("recruiters")
+            .select(`
+                id,
+                user_id,
+                primary_industries,
+                specializations,
+                locations,
+                countries_experience,
+                profiles:user_id (
+                    email,
+                    full_name
+                )
+            `)
+            .eq("approval_status", "approved");
+
+        const matchingRecruiters = (allApprovedRecruiters || []).filter((recruiter) => {
+            const industryMatch =
+                (recruiter.primary_industries?.includes(job.industry)) ||
+                (recruiter.specializations?.includes(job.industry));
+            const locationMatch =
+                (recruiter.locations?.includes(job.country)) ||
+                (recruiter.countries_experience?.includes(job.country));
+            return industryMatch || locationMatch;
+        });
+
+        for (const recruiter of matchingRecruiters) {
+            const profile = Array.isArray(recruiter.profiles)
+                ? recruiter.profiles[0]
+                : recruiter.profiles as any;
+
+            if (!profile?.email) continue;
+
+            const recruiterName = profile.full_name || "Recruiter";
+            const jobUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/recruiter/jobs/${jobId}`;
+
+            await createNotification(
+                recruiter.user_id,
+                `New job: ${job.title}`,
+                `${job.title} at ${company?.company_name || "a company"}`,
+                `/recruiter/jobs/${jobId}`
+            );
+
+            const emailHtml = newJobNotificationEmail({
+                recruiterName,
+                jobTitle: job.title,
+                companyName: company?.company_name || "Partner Company",
+                location: job.location || "Not specified",
+                feePercentage: job.fee_percentage || 0,
+                jobUrl,
+            });
+
+            await sendUserEmail({
+                to: profile.email,
+                subject: `New job: ${job.title}`,
+                html: emailHtml,
+            });
+        }
+    } catch (error) {
+        console.error("Error notifying recruiters about new job:", error);
+        // Don't fail approval if notification fails
+    }
 }
 
 export async function getCompanyJobs() {
@@ -655,5 +656,40 @@ export async function deleteDraftJob(jobId: string) {
     }
 
     revalidatePath("/company/jobs");
+    return { success: true };
+}
+
+// Step 4 of recruitment process flow: Recruito admin approves a pending job.
+// Flips status pending_approval -> active, sets published_at, then notifies recruiters.
+export async function approveJob(jobId: string) {
+    const { supabase } = await requireAdmin();
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("status")
+        .eq("id", jobId)
+        .single();
+
+    if (!job) return { error: "Job not found." };
+    if (job.status !== "pending_approval") {
+        return { error: "Job is not pending approval." };
+    }
+
+    const { error } = await supabase
+        .from("jobs")
+        .update({ status: "active", published_at: new Date().toISOString() })
+        .eq("id", jobId)
+        .eq("status", "pending_approval");
+
+    if (error) {
+        console.error("[approveJob]", error);
+        return { error: "Could not approve job. Please try again." };
+    }
+
+    // Fire-and-forget notifications to matching recruiters.
+    await notifyMatchingRecruitersAboutJob(jobId);
+
+    revalidatePath("/admin/jobs");
+    revalidatePath("/recruiter/jobs");
     return { success: true };
 }

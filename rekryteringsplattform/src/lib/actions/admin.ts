@@ -908,3 +908,50 @@ export async function updateRecruiterFeePercentage(jobId: string, percentage: nu
     revalidatePath("/admin/jobs");
     return { success: true };
 }
+
+// Step 7 of recruitment process flow: list submitted candidates not yet screened by Recruito.
+export async function getCandidatesForScreening() {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const { data, error } = await supabaseAdmin
+        .from("candidates")
+        .select(`
+            id,
+            first_name,
+            last_name,
+            current_title,
+            ai_match_score,
+            status,
+            created_at,
+            recruito_screened_at,
+            job:jobs(title, company:companies(company_name)),
+            recruiter:recruiters(profile:profiles!recruiters_user_id_fkey(full_name))
+        `)
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+    if (error) {
+        console.error("[getCandidatesForScreening]", error);
+        return [];
+    }
+
+    return (data || []).map((c: any) => {
+        const job = pickFirst(c.job);
+        const company = job ? pickFirst(job.company) : null;
+        const recruiter = pickFirst(c.recruiter);
+        const profile = recruiter ? pickFirst(recruiter.profile) : null;
+        return {
+            id: c.id,
+            name: `${c.first_name || ""} ${c.last_name || ""}`.trim() || "Unknown",
+            currentTitle: c.current_title || "",
+            aiMatchScore: c.ai_match_score,
+            status: c.status,
+            createdAt: c.created_at,
+            screenedAt: c.recruito_screened_at,
+            jobTitle: job?.title || "—",
+            companyName: company?.company_name || "—",
+            recruiterName: profile?.full_name || "—",
+        };
+    });
+}

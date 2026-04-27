@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1777021529137,
+  "lastScanned": 1777229077711,
   "projectRoot": "/Users/henrikmolin/Desktop/Recruito",
   "techStack": {
     "languages": [],
@@ -36,7 +36,7 @@
       "path": "Architecture",
       "purpose": null,
       "fileCount": 13,
-      "lastAccessed": 1777021529124,
+      "lastAccessed": 1777229077697,
       "keyFiles": [
         "00-MASTER-PLAN.md",
         "01-PROJECT-SETUP.md",
@@ -49,7 +49,7 @@
       "path": "Decisions",
       "purpose": null,
       "fileCount": 3,
-      "lastAccessed": 1777021529125,
+      "lastAccessed": 1777229077697,
       "keyFiles": [
         "2026-04-22-no-gstack.md",
         "2026-04-22-tooling-cleanup.md",
@@ -60,7 +60,7 @@
       "path": "Dev-Notes",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1777021529125,
+      "lastAccessed": 1777229077698,
       "keyFiles": [
         "README.md"
       ]
@@ -69,7 +69,7 @@
       "path": "Work-Log",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1777021529125,
+      "lastAccessed": 1777229077698,
       "keyFiles": [
         "README.md"
       ]
@@ -78,21 +78,21 @@
       "path": "directives",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1777021529126,
+      "lastAccessed": 1777229077698,
       "keyFiles": []
     },
     "execution": {
       "path": "execution",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1777021529126,
+      "lastAccessed": 1777229077698,
       "keyFiles": []
     },
     "graphify-out": {
       "path": "graphify-out",
       "purpose": null,
       "fileCount": 7,
-      "lastAccessed": 1777021529126,
+      "lastAccessed": 1777229077698,
       "keyFiles": [
         "GRAPH_REPORT.md",
         "cost.json",
@@ -105,7 +105,7 @@
       "path": "rekryteringsplattform",
       "purpose": null,
       "fileCount": 22,
-      "lastAccessed": 1777021529126,
+      "lastAccessed": 1777229077699,
       "keyFiles": [
         "README.md",
         "components.json",
@@ -141,6 +141,12 @@
       "type": "file"
     },
     {
+      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/[id]/candidates/[candidateId]/page.tsx",
+      "accessCount": 14,
+      "lastAccessed": 1777293005781,
+      "type": "file"
+    },
+    {
       "path": "rekryteringsplattform/src/i18n/dictionaries/en.json",
       "accessCount": 12,
       "lastAccessed": 1776620682817,
@@ -151,12 +157,6 @@
       "accessCount": 12,
       "lastAccessed": 1776778557577,
       "type": "directory"
-    },
-    {
-      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/[id]/candidates/[candidateId]/page.tsx",
-      "accessCount": 12,
-      "lastAccessed": 1777021951852,
-      "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/i18n/dictionaries/no.json",

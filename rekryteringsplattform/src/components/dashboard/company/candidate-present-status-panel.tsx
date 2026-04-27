@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useTransition, useState } from "react";
-import { updateCompanyStage } from "@/lib/actions/candidates";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { updateCompanyStage, markOfferAccepted } from "@/lib/actions/candidates";
+import { CheckCircle2, XCircle, Handshake } from "lucide-react";
 
 type CompanyStage = "viewed" | "interview" | "final_interview" | "job_offer" | "hired" | "rejected";
 
@@ -19,14 +19,27 @@ export function CandidatePresentStatusPanel({
     candidateId,
     jobId,
     initialStage,
+    initialOfferAccepted = false,
 }: {
     candidateId: string;
     jobId: string;
     initialStage: string | null;
+    initialOfferAccepted?: boolean;
 }) {
     const [currentStage, setCurrentStage] = useState<CompanyStage | null>(initialStage as CompanyStage | null);
     const [pendingStage, setPendingStage] = useState<CompanyStage | null>(null);
+    const [offerAccepted, setOfferAccepted] = useState(initialOfferAccepted);
+    const [offerError, setOfferError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
+
+    const handleMarkOfferAccepted = () => {
+        setOfferError(null);
+        startTransition(async () => {
+            const result = await markOfferAccepted(candidateId, jobId);
+            if (result?.error) setOfferError(result.error);
+            else setOfferAccepted(true);
+        });
+    };
 
     useEffect(() => {
         if (!currentStage) {
@@ -81,6 +94,28 @@ export function CandidatePresentStatusPanel({
                     );
                 })}
             </div>
+
+            {currentStage === "job_offer" && (
+                <div className="pt-2 border-t border-slate-100">
+                    {offerAccepted ? (
+                        <div className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 rounded-lg py-2">
+                            <Handshake className="h-4 w-4" />
+                            Offer accepted by candidate
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={handleMarkOfferAccepted}
+                            disabled={isPending}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-60"
+                        >
+                            <Handshake className="h-4 w-4" />
+                            {isPending ? "Saving…" : "Mark offer accepted"}
+                        </button>
+                    )}
+                    {offerError && <p className="mt-1 text-[10px] text-red-600 text-center">{offerError}</p>}
+                </div>
+            )}
 
             {pendingStage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
