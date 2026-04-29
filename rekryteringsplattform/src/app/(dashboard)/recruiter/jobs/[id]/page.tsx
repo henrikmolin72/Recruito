@@ -71,6 +71,12 @@ export default async function RecruiterJobDetailPage({ params }: { params: Promi
 
     if (!job) notFound();
 
+    // Supabase types the company join as an array; component expects a single object.
+    const normalized = {
+        ...job,
+        company: Array.isArray(job.company) ? job.company[0] ?? null : job.company,
+    };
+
     return (
         <div className="max-w-5xl mx-auto py-6 space-y-6">
             <div className="flex items-center gap-3">
@@ -81,9 +87,7 @@ export default async function RecruiterJobDetailPage({ params }: { params: Promi
                 </Link>
                 <span className="text-sm text-slate-500 font-medium">Back to Jobs</span>
             </div>
-            {/* Explicit column list above intentionally narrows the row to recruiter-visible fields. */}
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <JobPreviewCard job={job as any} variant="recruiter" />
+            <JobPreviewCard job={normalized} variant="recruiter" />
         </div>
     );
 }

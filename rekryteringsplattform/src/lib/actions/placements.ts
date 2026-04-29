@@ -199,8 +199,10 @@ export async function recordPlacementPayment(placementId: string) {
 
 /**
  * Process all placements where guarantee period has expired.
- * Should be called by a cron job (e.g. Supabase Edge Function daily)
- * or manually by admin.
+ * Currently only triggered manually by admin from the UI. If/when this
+ * is wired to a Supabase Edge Function cron, requireAdmin() will redirect
+ * (no user context) — extract the body into a non-action helper and gate
+ * the cron route with a CRON_SECRET header instead.
  */
 export async function processGuaranteeExpirations() {
     await requireAdmin();

@@ -5,7 +5,16 @@ import { sanitizeRichText } from "@/lib/sanitize";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Job } from "@/types/db-types";
 
-type JobWithCompany = Job & {
+// Partial<Job> so callers can pass narrowed SELECT projections (e.g.
+// the recruiter detail page omits client_fee_* fields). The component
+// already handles missing fields via optional chaining. `company` is
+// overridden with a narrower shape because we only render four fields
+// from the join.
+type JobWithCompany = Omit<Partial<Job>, "company"> & {
+    id: string;
+    title: string;
+    max_recruiters: number;
+    current_recruiter_count: number;
     company?: {
         company_name: string;
         website?: string | null;
@@ -149,7 +158,7 @@ export function JobPreviewCard({ job, variant }: JobPreviewCardProps) {
                         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                             <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Key Requirements</h2>
                             <ul className="space-y-2.5">
-                                {job.key_requirements.map((req, i) => (
+                                {job.key_requirements?.map((req, i) => (
                                     <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
                                         <CheckCircle2 className="h-4 w-4 text-brand-500 shrink-0 mt-0.5" />
                                         {req}
@@ -218,7 +227,7 @@ export function JobPreviewCard({ job, variant }: JobPreviewCardProps) {
                         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                             <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Screening Questions</h2>
                             <ol className="space-y-2.5 list-none">
-                                {job.screening_questions.filter(Boolean).map((q, i) => (
+                                {job.screening_questions?.filter(Boolean).map((q, i) => (
                                     <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
                                         <span className="text-brand-500 font-bold shrink-0">{i + 1}.</span>
                                         {q}
