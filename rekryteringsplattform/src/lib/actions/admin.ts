@@ -3,6 +3,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/actions/require-admin";
+import { isValidUpliftReason, reasonI18nKey } from "@/lib/fee-reconfirm";
+import { feeReconfirmEmail } from "@/lib/email/email-templates";
+import { sendUserEmail } from "@/lib/email/internal-notifications";
+import { createNotification } from "@/lib/actions/notifications";
+import { getDictionary } from "@/i18n/server";
+import type { ClientFeeUpliftReason } from "@/types/db-types";
 
 function pickFirst<T>(value: T | T[] | null | undefined): T | null {
     if (Array.isArray(value)) {
@@ -217,6 +223,13 @@ export async function getAdminJobs() {
             recruiter_fee_percentage,
             client_fee_amount,
             recruiter_fee_amount,
+            client_fee_amount_estimated,
+            client_fee_amount_proposed,
+            client_fee_uplift_reason,
+            client_fee_uplift_note,
+            client_fee_reconfirm_requested_at,
+            client_fee_reconfirm_resolved_at,
+            client_fee_reconfirm_decision,
             is_exclusive,
             guarantee_period_months,
             status,
@@ -246,6 +259,12 @@ export async function getAdminJobs() {
             recruiterFeePercentage: job.recruiter_fee_percentage ?? 7,
             clientFeeAmount: job.client_fee_amount != null ? Number(job.client_fee_amount) : null,
             recruiterFeeAmount: job.recruiter_fee_amount != null ? Number(job.recruiter_fee_amount) : null,
+            clientFeeEstimated: job.client_fee_amount_estimated != null ? Number(job.client_fee_amount_estimated) : null,
+            clientFeeProposed: job.client_fee_amount_proposed != null ? Number(job.client_fee_amount_proposed) : null,
+            upliftReason: job.client_fee_uplift_reason ?? null,
+            upliftNote: job.client_fee_uplift_note ?? null,
+            reconfirmRequestedAt: job.client_fee_reconfirm_requested_at ?? null,
+            reconfirmDecision: job.client_fee_reconfirm_decision ?? null,
             isExclusive: !!job.is_exclusive,
             guaranteePeriodMonths: job.guarantee_period_months ?? 0,
             status: job.status,
@@ -1025,4 +1044,153 @@ export async function getCandidatesForScreening() {
             recruiterName: profile?.full_name || "—",
         };
     });
+}
+
+// Called from the admin Approve modal when client_fee_amount is higher than
+// client_fee_amount_estimated. Atomic: validates, transitions status, writes
+// proposal columns, sends in-app notification + email. Status guard prevents
+// races with parallel admin actions.
+export async function requestClientFeeReconfirm(
+    jobId: string,
+    reason: ClientFeeUpliftReason,
+    note?: string | null,
+) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    if (!isValidUpliftReason(reason)) {
+        return { error: "Invalid reason" };
+    }
+    const trimmedNote = (note ?? "").trim() || null;
+    if (reason === "custom" && !trimmedNote) {
+        return { error: "Note required for custom reason" };
+    }
+
+    const { data: job } = await supabaseAdmin
+        .from("jobs")
+        .select(
+            "id, status, title, salary_currency, client_fee_amount, client_fee_amount_estimated, company_id"
+        )
+        .eq("id", jobId)
+        .single();
+
+    if (!job) return { error: "Job not found" };
+    if (job.status !== "pending_approval" && job.status !== "pending_client_reconfirm") {
+        return { error: "Job is not in a re-confirmable state" };
+    }
+    if (
+        job.client_fee_amount == null ||
+        job.client_fee_amount_estimated == null ||
+        Number(job.client_fee_amount) <= Number(job.client_fee_amount_estimated)
+    ) {
+        return { error: "Final fee is not higher than the estimate" };
+    }
+
+    const { error: updateError } = await supabaseAdmin
+        .from("jobs")
+        .update({
+            status: "pending_client_reconfirm",
+            client_fee_amount_proposed: job.client_fee_amount,
+            client_fee_uplift_reason: reason,
+            client_fee_uplift_note: trimmedNote,
+            client_fee_reconfirm_requested_at: new Date().toISOString(),
+            client_fee_reconfirm_resolved_at: null,
+            client_fee_reconfirm_decision: null,
+        })
+        .eq("id", jobId)
+        .in("status", ["pending_approval", "pending_client_reconfirm"]);
+
+    if (updateError) {
+        console.error("[requestClientFeeReconfirm]", updateError);
+        return { error: "Could not request re-confirmation" };
+    }
+
+    // Best-effort notification dispatch.
+    try {
+        const { data: company } = await supabaseAdmin
+            .from("companies")
+            .select("user_id")
+            .eq("id", job.company_id)
+            .single();
+        if (company?.user_id) {
+            const dict = await getDictionary();
+            const reasonLabel =
+                (dict as any)?.feeReconfirm?.reason?.[reason] ?? reasonI18nKey(reason);
+            const jobUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/company/jobs/${jobId}`;
+            await createNotification(
+                company.user_id,
+                (dict as any)?.feeReconfirm?.cardTitle ?? "Fee re-confirmation needed",
+                job.title,
+                `/company/jobs/${jobId}`,
+            );
+            const { data: profile } = await supabaseAdmin
+                .from("profiles")
+                .select("email")
+                .eq("id", company.user_id)
+                .single();
+            if (profile?.email) {
+                const tmpl = feeReconfirmEmail({
+                    jobTitle: job.title,
+                    originalAmount: Number(job.client_fee_amount_estimated),
+                    proposedAmount: Number(job.client_fee_amount),
+                    currency: job.salary_currency || "EUR",
+                    reasonLabel,
+                    note: trimmedNote,
+                    jobUrl,
+                });
+                await sendUserEmail({ to: profile.email, subject: tmpl.subject, html: tmpl.html });
+            }
+        }
+    } catch (err) {
+        console.error("[requestClientFeeReconfirm] notify failed", err);
+    }
+
+    revalidatePath("/admin/jobs");
+    revalidatePath(`/company/jobs/${jobId}`);
+    return { success: true as const };
+}
+
+// One-click revert. Restores client_fee_amount to the estimated baseline,
+// clears the proposal, marks decision='withdrawn', publishes the job.
+export async function withdrawClientFeeReconfirm(jobId: string) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const { data: job } = await supabaseAdmin
+        .from("jobs")
+        .select("id, status, client_fee_amount_estimated, published_at")
+        .eq("id", jobId)
+        .single();
+
+    if (!job) return { error: "Job not found" };
+    if (job.status !== "pending_client_reconfirm") {
+        return { error: "Job is not awaiting re-confirmation" };
+    }
+    if (job.client_fee_amount_estimated == null) {
+        return { error: "No baseline estimate to revert to" };
+    }
+
+    const { error } = await supabaseAdmin
+        .from("jobs")
+        .update({
+            status: "active",
+            client_fee_amount: job.client_fee_amount_estimated,
+            client_fee_amount_proposed: null,
+            client_fee_uplift_reason: null,
+            client_fee_uplift_note: null,
+            client_fee_reconfirm_resolved_at: new Date().toISOString(),
+            client_fee_reconfirm_decision: "withdrawn",
+            published_at: job.published_at ?? new Date().toISOString(),
+        })
+        .eq("id", jobId)
+        .eq("status", "pending_client_reconfirm");
+
+    if (error) {
+        console.error("[withdrawClientFeeReconfirm]", error);
+        return { error: "Could not withdraw re-confirmation" };
+    }
+
+    revalidatePath("/admin/jobs");
+    revalidatePath(`/company/jobs/${jobId}`);
+    return { success: true as const };
 }

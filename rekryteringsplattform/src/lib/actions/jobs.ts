@@ -717,3 +717,91 @@ export async function approveJob(jobId: string) {
     revalidatePath("/recruiter/jobs");
     return { success: true };
 }
+
+// Company-side: accept the higher fee proposed during admin review. Status guard
+// prevents race with admin withdraw or repeated client clicks. Reuses
+// notifyMatchingRecruitersAboutJob since the job is now eligible for recruiters.
+export async function clientApproveProposedFee(jobId: string) {
+    const { error: authError, supabase, user } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
+    if (!user) return { error: "Ej inloggad" };
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("id, status, client_fee_amount_proposed, published_at, title")
+        .eq("id", jobId)
+        .single();
+    if (!job) return { error: "Job not found" };
+    if (job.status !== "pending_client_reconfirm") {
+        return { error: "Job is no longer awaiting re-confirmation" };
+    }
+    if (job.client_fee_amount_proposed == null) {
+        return { error: "No proposed amount on file" };
+    }
+
+    const { error } = await supabase
+        .from("jobs")
+        .update({
+            status: "active",
+            client_fee_amount: job.client_fee_amount_proposed,
+            client_fee_amount_proposed: null,
+            client_fee_reconfirm_resolved_at: new Date().toISOString(),
+            client_fee_reconfirm_decision: "approved",
+            published_at: job.published_at ?? new Date().toISOString(),
+        })
+        .eq("id", jobId)
+        .eq("status", "pending_client_reconfirm");
+
+    if (error) {
+        console.error("[clientApproveProposedFee]", error);
+        return { error: "Could not approve. Please try again." };
+    }
+
+    await notifyMatchingRecruitersAboutJob(jobId);
+
+    revalidatePath("/company/jobs");
+    revalidatePath(`/company/jobs/${jobId}`);
+    revalidatePath("/admin/jobs");
+    return { success: true as const };
+}
+
+// Company-side: reject the higher fee. Routes back to pending_approval; admin
+// can revise the fee or withdraw.
+export async function clientRejectProposedFee(jobId: string) {
+    const { error: authError, supabase, user } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
+    if (!user) return { error: "Ej inloggad" };
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("id, status")
+        .eq("id", jobId)
+        .single();
+    if (!job) return { error: "Job not found" };
+    if (job.status !== "pending_client_reconfirm") {
+        return { error: "Job is no longer awaiting re-confirmation" };
+    }
+
+    const { error } = await supabase
+        .from("jobs")
+        .update({
+            status: "pending_approval",
+            client_fee_amount_proposed: null,
+            client_fee_uplift_reason: null,
+            client_fee_uplift_note: null,
+            client_fee_reconfirm_resolved_at: new Date().toISOString(),
+            client_fee_reconfirm_decision: "rejected",
+        })
+        .eq("id", jobId)
+        .eq("status", "pending_client_reconfirm");
+
+    if (error) {
+        console.error("[clientRejectProposedFee]", error);
+        return { error: "Could not reject. Please try again." };
+    }
+
+    revalidatePath("/company/jobs");
+    revalidatePath(`/company/jobs/${jobId}`);
+    revalidatePath("/admin/jobs");
+    return { success: true as const };
+}

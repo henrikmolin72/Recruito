@@ -170,3 +170,55 @@ export function candidateProgressEmail({
     </html>
   `;
 }
+
+// Sent to the company when admin raises client_fee_amount above the estimated
+// baseline and clicks Approve. Plain-text body; deep-links to the job detail.
+export function feeReconfirmEmail({
+  jobTitle,
+  originalAmount,
+  proposedAmount,
+  currency,
+  reasonLabel,
+  note,
+  jobUrl,
+}: {
+  jobTitle: string;
+  originalAmount: number;
+  proposedAmount: number;
+  currency: string;
+  reasonLabel: string;
+  note?: string | null;
+  jobUrl: string;
+}) {
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("sv-SE", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+  const lines = [
+    `We've reviewed your job "${jobTitle}" and propose a higher fee.`,
+    ``,
+    `Original estimate: ${fmt(originalAmount)} ${currency}`,
+    `Proposed final fee: ${fmt(proposedAmount)} ${currency}`,
+    `Reason: ${reasonLabel}`,
+  ];
+  if (note && note.trim()) lines.push(`Note: ${note.trim()}`);
+  lines.push(``, `Please review and approve or reject in the dashboard:`, jobUrl);
+  const text = lines.join("\n");
+  const html = `<div style="${emailHeaderStyle}">
+    <p>We've reviewed your job <strong>${escapeHtml(jobTitle)}</strong> and propose a higher fee.</p>
+    <p>
+      <strong>Original estimate:</strong> ${fmt(originalAmount)} ${escapeHtml(currency)}<br/>
+      <strong>Proposed final fee:</strong> ${fmt(proposedAmount)} ${escapeHtml(currency)}<br/>
+      <strong>Reason:</strong> ${escapeHtml(reasonLabel)}
+      ${note && note.trim() ? `<br/><strong>Note:</strong> ${escapeHtml(note.trim())}` : ""}
+    </p>
+    <p>
+      <a href="${jobUrl}" style="color: ${BRAND_COLOR}; font-weight: bold;">
+        Review and respond in your dashboard →
+      </a>
+    </p>
+  </div>`;
+  return {
+    subject: `Fee re-confirmation needed for ${jobTitle}`,
+    text,
+    html,
+  };
+}
