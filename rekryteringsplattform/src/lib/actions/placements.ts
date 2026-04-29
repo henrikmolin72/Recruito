@@ -64,7 +64,10 @@ export async function sendPlacementInvoice(placementId: string) {
         })
         .eq("id", placementId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // Notify company about invoice
     const companyData = Array.isArray(placement.company) ? placement.company[0] : placement.company;
@@ -143,7 +146,10 @@ export async function recordPlacementPayment(placementId: string) {
         .update(updatePatch)
         .eq("id", placementId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // If entering guarantee, update candidate status
     if (nextStatus === "guarantee_active") {
@@ -317,7 +323,10 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
         })
         .eq("id", placementId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // Update candidate
     await admin
@@ -393,7 +402,7 @@ export async function recalculateRecruiterMetrics(recruiterId: string) {
 
     if (error) {
         console.error(`Failed to recalculate metrics for recruiter ${recruiterId}:`, error);
-        { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+        return { error: "Something went wrong. Please try again." };
     }
 
     return { success: true };

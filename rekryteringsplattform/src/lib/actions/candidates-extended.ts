@@ -221,7 +221,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
 
     if (insertError) {
         console.error("Candidate Insert Error:", insertError);
-        { console.error("[ServerAction]", insertError); return { error: "Something went wrong. Please try again." }; }
+        return { error: "Something went wrong. Please try again." };
     }
 
     // --- Notify company ---

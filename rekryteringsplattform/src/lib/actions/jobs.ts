@@ -248,7 +248,7 @@ export async function createJob(formData: FormData) {
 
     if (jobError) {
         console.error("Error creating job:", jobError);
-        { console.error("[ServerAction]", jobError); return { error: "Something went wrong. Please try again." }; }
+        return { error: "Something went wrong. Please try again." };
     }
 
     if (isDraft) {
@@ -463,7 +463,7 @@ export async function updateJob(jobId: string, formData: FormData) {
 
     if (error) {
         console.error("Error updating job:", error);
-        { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+        return { error: "Something went wrong. Please try again." };
     }
 
     revalidatePath(`/company/jobs/${jobId}`);
@@ -488,7 +488,10 @@ export async function closeJob(jobId: string, reason?: string) {
         .update(updatePayload)
         .eq("id", jobId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -508,7 +511,10 @@ export async function pauseJob(jobId: string) {
         .update({ status: 'paused' })
         .eq("id", jobId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -528,7 +534,10 @@ export async function resumeJob(jobId: string) {
         .update({ status: 'active' })
         .eq("id", jobId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -563,7 +572,10 @@ export async function updatePipelineStages(jobId: string, stages: PipelineStage[
         .update({ pipeline_stages: validation.data })
         .eq("id", jobId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // Notify recruiters that the pipeline has changed
     const { data: mandates } = await supabase
@@ -608,7 +620,10 @@ export async function createJobAnnouncement(jobId: string, message: string) {
         .from("job_announcements")
         .insert({ job_id: jobId, message, created_by: user.id });
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // Notify recruiters with mandates
     const { data: mandates } = await supabase
@@ -699,15 +714,19 @@ export async function approveJob(jobId: string) {
         return { error: "Job is not pending approval." };
     }
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
         .from("jobs")
         .update({ status: "active", published_at: new Date().toISOString() })
         .eq("id", jobId)
-        .eq("status", "pending_approval");
+        .eq("status", "pending_approval")
+        .select("id");
 
     if (error) {
         console.error("[approveJob]", error);
         return { error: "Could not approve job. Please try again." };
+    }
+    if (!updated || updated.length === 0) {
+        return { error: "Job state changed; please refresh." };
     }
 
     // Fire-and-forget notifications to matching recruiters.
@@ -739,7 +758,7 @@ export async function clientApproveProposedFee(jobId: string) {
         return { error: "No proposed amount on file" };
     }
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
         .from("jobs")
         .update({
             status: "active",
@@ -750,11 +769,15 @@ export async function clientApproveProposedFee(jobId: string) {
             published_at: job.published_at ?? new Date().toISOString(),
         })
         .eq("id", jobId)
-        .eq("status", "pending_client_reconfirm");
+        .eq("status", "pending_client_reconfirm")
+        .select("id");
 
     if (error) {
         console.error("[clientApproveProposedFee]", error);
         return { error: "Could not approve. Please try again." };
+    }
+    if (!updated || updated.length === 0) {
+        return { error: "Job state changed; please refresh." };
     }
 
     await notifyMatchingRecruitersAboutJob(jobId);
@@ -782,7 +805,7 @@ export async function clientRejectProposedFee(jobId: string) {
         return { error: "Job is no longer awaiting re-confirmation" };
     }
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
         .from("jobs")
         .update({
             status: "pending_approval",
@@ -793,11 +816,15 @@ export async function clientRejectProposedFee(jobId: string) {
             client_fee_reconfirm_decision: "rejected",
         })
         .eq("id", jobId)
-        .eq("status", "pending_client_reconfirm");
+        .eq("status", "pending_client_reconfirm")
+        .select("id");
 
     if (error) {
         console.error("[clientRejectProposedFee]", error);
         return { error: "Could not reject. Please try again." };
+    }
+    if (!updated || updated.length === 0) {
+        return { error: "Job state changed; please refresh." };
     }
 
     revalidatePath("/company/jobs");

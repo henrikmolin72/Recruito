@@ -20,8 +20,9 @@ function matchesAny(bytes: Uint8Array, sigs: number[][]): boolean {
 }
 
 function isMostlyPrintable(bytes: Uint8Array): boolean {
-    let printable = 0;
     const sample = bytes.slice(0, Math.min(bytes.length, 512));
+    if (sample.length === 0) return false;
+    let printable = 0;
     for (const b of sample) {
         if (b === 0x09 || b === 0x0a || b === 0x0d || (b >= 0x20 && b <= 0x7e) || b >= 0x80) {
             printable++;

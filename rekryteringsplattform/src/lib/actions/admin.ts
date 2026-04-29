@@ -116,7 +116,10 @@ export async function approveRecruiter(recruiterId: string) {
         })
         .eq("id", recruiterId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath("/admin");
     revalidatePath("/admin/recruiters");
@@ -139,7 +142,10 @@ export async function rejectRecruiter(recruiterId: string) {
         })
         .eq("id", recruiterId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath("/admin");
     revalidatePath("/admin/recruiters");
@@ -160,7 +166,10 @@ export async function suspendRecruiter(recruiterId: string) {
         })
         .eq("id", recruiterId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath("/admin/recruiters");
     revalidatePath("/recruiter/profile");
@@ -1086,7 +1095,7 @@ export async function requestClientFeeReconfirm(
         return { error: "Final fee is not higher than the estimate" };
     }
 
-    const { error: updateError } = await supabaseAdmin
+    const { data: updated, error: updateError } = await supabaseAdmin
         .from("jobs")
         .update({
             status: "pending_client_reconfirm",
@@ -1098,11 +1107,15 @@ export async function requestClientFeeReconfirm(
             client_fee_reconfirm_decision: null,
         })
         .eq("id", jobId)
-        .in("status", ["pending_approval", "pending_client_reconfirm"]);
+        .in("status", ["pending_approval", "pending_client_reconfirm"])
+        .select("id");
 
     if (updateError) {
         console.error("[requestClientFeeReconfirm]", updateError);
         return { error: "Could not request re-confirmation" };
+    }
+    if (!updated || updated.length === 0) {
+        return { error: "Job state changed; please refresh." };
     }
 
     // Best-effort notification dispatch.
@@ -1170,7 +1183,7 @@ export async function withdrawClientFeeReconfirm(jobId: string) {
         return { error: "No baseline estimate to revert to" };
     }
 
-    const { error } = await supabaseAdmin
+    const { data: updated, error } = await supabaseAdmin
         .from("jobs")
         .update({
             status: "active",
@@ -1183,11 +1196,15 @@ export async function withdrawClientFeeReconfirm(jobId: string) {
             published_at: job.published_at ?? new Date().toISOString(),
         })
         .eq("id", jobId)
-        .eq("status", "pending_client_reconfirm");
+        .eq("status", "pending_client_reconfirm")
+        .select("id");
 
     if (error) {
         console.error("[withdrawClientFeeReconfirm]", error);
         return { error: "Could not withdraw re-confirmation" };
+    }
+    if (!updated || updated.length === 0) {
+        return { error: "Job state changed; please refresh." };
     }
 
     revalidatePath("/admin/jobs");

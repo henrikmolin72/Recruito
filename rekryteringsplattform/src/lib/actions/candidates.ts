@@ -283,7 +283,7 @@ export async function createCandidate(mandateId: string, formData: FormData) {
 
     if (insertError) {
         console.error("Candidate Insert Error:", insertError);
-        { console.error("[ServerAction]", insertError); return { error: "Something went wrong. Please try again." }; }
+        return { error: "Something went wrong. Please try again." };
     }
 
     // Notification: Notify Company Owner
@@ -496,7 +496,10 @@ export async function moveCandidateToPipelineStage(
         })
         .eq("id", candidateId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     await clearCompanyNextStepRequest(supabase, candidateId);
 
@@ -591,7 +594,10 @@ export async function requestCandidateNextStep(
         .eq("id", candidateId)
         .eq("job_id", jobId);
 
-    if (updateError) { console.error("[ServerAction]", updateError); return { error: "Something went wrong. Please try again." }; }
+    if (updateError) {
+        console.error("[ServerAction]", updateError);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     const { recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
 
@@ -652,7 +658,10 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         .eq("id", candidateId)
         .eq("job_id", jobId);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
     return { success: true };

@@ -71,7 +71,10 @@ export async function updateRecruiterProfile(formData: FormData) {
         })
         .eq("user_id", user.id);
 
-    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath("/recruiter/profile");
     return { success: true };
@@ -137,7 +140,7 @@ export async function completeRecruiterOnboarding(formData: FormData) {
 
     if (recruiterUpdateError) {
         console.error("Recruiter onboarding update error:", recruiterUpdateError);
-        { console.error("[ServerAction]", recruiterUpdateError); return { error: "Something went wrong. Please try again." }; }
+        return { error: "Something went wrong. Please try again." };
     }
 
     if (avatarUrl) {
@@ -456,7 +459,7 @@ export async function claimMandate(jobId: string) {
             return { error: "Du har redan tagit detta uppdrag" };
         }
         console.error("Error claiming mandate:", mandateError);
-        { console.error("[ServerAction]", mandateError); return { error: "Something went wrong. Please try again." }; }
+        return { error: "Something went wrong. Please try again." };
     }
 
     revalidatePath("/recruiter/jobs");
