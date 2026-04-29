@@ -248,7 +248,7 @@ export async function createJob(formData: FormData) {
 
     if (jobError) {
         console.error("Error creating job:", jobError);
-        return { error: jobError.message };
+        { console.error("[ServerAction]", jobError); return { error: "Something went wrong. Please try again." }; }
     }
 
     if (isDraft) {
@@ -463,7 +463,7 @@ export async function updateJob(jobId: string, formData: FormData) {
 
     if (error) {
         console.error("Error updating job:", error);
-        return { error: error.message };
+        { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
     }
 
     revalidatePath(`/company/jobs/${jobId}`);
@@ -488,7 +488,7 @@ export async function closeJob(jobId: string, reason?: string) {
         .update(updatePayload)
         .eq("id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -508,7 +508,7 @@ export async function pauseJob(jobId: string) {
         .update({ status: 'paused' })
         .eq("id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -528,7 +528,7 @@ export async function resumeJob(jobId: string) {
         .update({ status: 'active' })
         .eq("id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -563,7 +563,7 @@ export async function updatePipelineStages(jobId: string, stages: PipelineStage[
         .update({ pipeline_stages: validation.data })
         .eq("id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
 
     // Notify recruiters that the pipeline has changed
     const { data: mandates } = await supabase
@@ -608,7 +608,7 @@ export async function createJobAnnouncement(jobId: string, message: string) {
         .from("job_announcements")
         .insert({ job_id: jobId, message, created_by: user.id });
 
-    if (error) return { error: error.message };
+    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
 
     // Notify recruiters with mandates
     const { data: mandates } = await supabase

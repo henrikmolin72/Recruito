@@ -211,7 +211,7 @@ export function feeReconfirmEmail({
       ${note && note.trim() ? `<br/><strong>Note:</strong> ${escapeHtml(note.trim())}` : ""}
     </p>
     <p>
-      <a href="${jobUrl}" style="color: ${BRAND_COLOR}; font-weight: bold;">
+      <a href="${escapeHtml(jobUrl)}" style="color: ${BRAND_COLOR}; font-weight: bold;">
         Review and respond in your dashboard →
       </a>
     </p>

@@ -116,7 +116,7 @@ export async function approveRecruiter(recruiterId: string) {
         })
         .eq("id", recruiterId);
 
-    if (error) return { error: error.message };
+    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
 
     revalidatePath("/admin");
     revalidatePath("/admin/recruiters");
@@ -139,7 +139,7 @@ export async function rejectRecruiter(recruiterId: string) {
         })
         .eq("id", recruiterId);
 
-    if (error) return { error: error.message };
+    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
 
     revalidatePath("/admin");
     revalidatePath("/admin/recruiters");
@@ -160,7 +160,7 @@ export async function suspendRecruiter(recruiterId: string) {
         })
         .eq("id", recruiterId);
 
-    if (error) return { error: error.message };
+    if (error) { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
 
     revalidatePath("/admin/recruiters");
     revalidatePath("/recruiter/profile");

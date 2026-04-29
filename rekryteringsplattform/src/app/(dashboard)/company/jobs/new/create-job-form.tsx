@@ -391,10 +391,10 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         data.append("max_recruiters", "5");
 
         const result = await createJob(data);
-        if (result?.error) {
+        if (result && "error" in result) {
             toast.error(typeof result.error === "string" ? result.error : "Kunde inte spara utkast");
         } else {
-            if (result?.jobId) {
+            if (result && "jobId" in result && result.jobId) {
                 setDraftJobId(result.jobId);
             }
             toast.success(t("jobForm.draftSaved") || "Utkast sparat!");
@@ -444,7 +444,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         data.append("pipeline_stages", JSON.stringify(pipelineStages));
 
         const result = await createJob(data);
-        if (result?.error) {
+        if (result && "error" in result) {
             toast.error(result.error);
         } else {
             toast.success(t("jobForm.jobPublished"));
