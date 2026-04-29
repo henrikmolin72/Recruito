@@ -1,5 +1,14 @@
 export type UserRole = 'company' | 'recruiter' | 'admin';
-export type JobStatus = 'draft' | 'active' | 'paused' | 'filled' | 'closed' | 'cancelled';
+export type JobStatus = 'draft' | 'pending_approval' | 'pending_client_reconfirm' | 'active' | 'paused' | 'filled' | 'closed' | 'cancelled';
+
+export type ClientFeeUpliftReason =
+    | 'hard_to_fill'
+    | 'niche_specialist'
+    | 'senior_executive'
+    | 'urgent_timeline'
+    | 'custom';
+
+export type ClientFeeReconfirmDecision = 'approved' | 'rejected' | 'withdrawn';
 export type CandidateStatus =
   | 'submitted'
   | 'reviewing'
@@ -166,6 +175,13 @@ export interface Job {
     client_fee_amount: number | null;
     recruiter_fee_amount: number | null;
     recruiter_fee_percentage?: number | null;
+    client_fee_amount_estimated: number | null;
+    client_fee_amount_proposed: number | null;
+    client_fee_uplift_reason: ClientFeeUpliftReason | null;
+    client_fee_uplift_note: string | null;
+    client_fee_reconfirm_requested_at: string | null;
+    client_fee_reconfirm_resolved_at: string | null;
+    client_fee_reconfirm_decision: ClientFeeReconfirmDecision | null;
     max_recruiters: number;
     current_recruiter_count: number;
     status: JobStatus;
