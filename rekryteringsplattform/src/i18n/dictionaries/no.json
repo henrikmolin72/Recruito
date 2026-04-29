@@ -1169,5 +1169,42 @@
     "savingsVsTraditional": "Besparelse vs. tradisjonell",
     "lower": "lavere",
     "traditional": "Tradisjonell"
+  },
+  "feeReconfirm": {
+    "declarationDisclaimer": "Dette er et estimat. Hvis vi justerer avgiften under gjennomgang, ber vi deg bekrefte den nye summen før jobben publiseres.",
+    "bannerSingular": "{count} jobb trenger din bekreftelse",
+    "bannerPlural": "{count} jobber trenger din bekreftelse",
+    "cardTitle": "Avgiftsbekreftelse nødvendig",
+    "cardOriginal": "Opprinnelig estimat",
+    "cardProposed": "Foreslått endelig avgift",
+    "cardDelta": "Endring",
+    "cardReason": "Grunn",
+    "cardNote": "Notat fra Recruito",
+    "cardApprove": "Godkjenn ny avgift",
+    "cardReject": "Avvis",
+    "cardApproved": "Ny avgift godkjent.",
+    "cardRejected": "Avgift avvist. Recruito tar kontakt.",
+    "adminApproveLabelDefault": "Godkjenn",
+    "adminApproveLabelUplift": "Godkjenn & be kunde bekrefte",
+    "adminWithdrawButton": "Tilbake til opprinnelig",
+    "adminAwaitingClient": "Venter på kundebekreftelse (sendt {date})",
+    "modalTitle": "Be om kundebekreftelse",
+    "modalReasonLabel": "Grunn til økning",
+    "modalNoteLabel": "Valgfritt notat (påkrevd hvis Grunn er Annet)",
+    "modalSubmit": "Send forespørsel",
+    "modalCancel": "Avbryt",
+    "emailSubject": "Avgiftsbekreftelse nødvendig for {jobTitle}",
+    "reason": {
+      "hard_to_fill": "Vanskelig rolle å fylle",
+      "niche_specialist": "Nisje / spesialist",
+      "senior_executive": "Senior / ledernivå",
+      "urgent_timeline": "Hastetidslinje",
+      "custom": "Annet (se notat)"
+    },
+    "errors": {
+      "noteRequiredForCustom": "Legg til et notat som forklarer den egendefinerte grunnen.",
+      "notWaiting": "Denne jobben venter ikke lenger på bekreftelse.",
+      "feeNotIncreased": "Den endelige avgiften er ikke høyere enn estimatet."
+    }
   }
 }

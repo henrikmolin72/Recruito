@@ -1169,5 +1169,42 @@
     "savingsVsTraditional": "Savings vs. traditional",
     "lower": "lower",
     "traditional": "Traditional"
+  },
+  "feeReconfirm": {
+    "declarationDisclaimer": "This is an estimate. If we adjust it during review, we will ask you to re-confirm before publishing.",
+    "bannerSingular": "{count} job needs your re-confirmation",
+    "bannerPlural": "{count} jobs need your re-confirmation",
+    "cardTitle": "Fee re-confirmation needed",
+    "cardOriginal": "Original estimate",
+    "cardProposed": "Proposed final fee",
+    "cardDelta": "Change",
+    "cardReason": "Reason",
+    "cardNote": "Admin note",
+    "cardApprove": "Approve new fee",
+    "cardReject": "Reject",
+    "cardApproved": "New fee approved.",
+    "cardRejected": "Fee rejected. Recruito will follow up.",
+    "adminApproveLabelDefault": "Approve",
+    "adminApproveLabelUplift": "Approve & request client re-confirm",
+    "adminWithdrawButton": "Withdraw to original",
+    "adminAwaitingClient": "Awaiting client re-confirm (sent {date})",
+    "modalTitle": "Request client re-confirmation",
+    "modalReasonLabel": "Reason for fee increase",
+    "modalNoteLabel": "Optional note (required if reason is Custom)",
+    "modalSubmit": "Send request",
+    "modalCancel": "Cancel",
+    "emailSubject": "Fee re-confirmation needed for {jobTitle}",
+    "reason": {
+      "hard_to_fill": "Hard-to-fill role",
+      "niche_specialist": "Niche / specialist market",
+      "senior_executive": "Senior / executive level",
+      "urgent_timeline": "Urgent timeline",
+      "custom": "Other (see note)"
+    },
+    "errors": {
+      "noteRequiredForCustom": "Please add a note explaining the custom reason.",
+      "notWaiting": "This job is no longer awaiting re-confirmation.",
+      "feeNotIncreased": "Final fee is not higher than the original estimate."
+    }
   }
 }

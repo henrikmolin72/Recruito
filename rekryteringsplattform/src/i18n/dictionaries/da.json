@@ -1169,5 +1169,42 @@
     "savingsVsTraditional": "Besparelse vs. traditionel",
     "lower": "lavere",
     "traditional": "Traditionel"
+  },
+  "feeReconfirm": {
+    "declarationDisclaimer": "Dette er et estimat. Hvis vi justerer gebyret under gennemgangen, beder vi dig bekræfte det nye beløb, før jobbet offentliggøres.",
+    "bannerSingular": "{count} job kræver din bekræftelse",
+    "bannerPlural": "{count} job kræver din bekræftelse",
+    "cardTitle": "Bekræftelse af gebyr kræves",
+    "cardOriginal": "Oprindeligt estimat",
+    "cardProposed": "Foreslået endeligt gebyr",
+    "cardDelta": "Ændring",
+    "cardReason": "Begrundelse",
+    "cardNote": "Note fra Recruito",
+    "cardApprove": "Godkend nyt gebyr",
+    "cardReject": "Afvis",
+    "cardApproved": "Nyt gebyr godkendt.",
+    "cardRejected": "Gebyr afvist. Recruito vender tilbage.",
+    "adminApproveLabelDefault": "Godkend",
+    "adminApproveLabelUplift": "Godkend & bed kunde bekræfte",
+    "adminWithdrawButton": "Tilbage til oprindeligt",
+    "adminAwaitingClient": "Afventer kundebekræftelse (sendt {date})",
+    "modalTitle": "Anmod om kundebekræftelse",
+    "modalReasonLabel": "Årsag til stigning",
+    "modalNoteLabel": "Valgfri note (kræves hvis Årsag er Andet)",
+    "modalSubmit": "Send anmodning",
+    "modalCancel": "Annullér",
+    "emailSubject": "Bekræftelse af gebyr kræves for {jobTitle}",
+    "reason": {
+      "hard_to_fill": "Svær at besætte",
+      "niche_specialist": "Niche / specialist",
+      "senior_executive": "Senior / ledelsesniveau",
+      "urgent_timeline": "Akut tidslinje",
+      "custom": "Andet (se note)"
+    },
+    "errors": {
+      "noteRequiredForCustom": "Tilføj en note der forklarer den brugerdefinerede årsag.",
+      "notWaiting": "Dette job afventer ikke længere bekræftelse.",
+      "feeNotIncreased": "Det endelige gebyr er ikke højere end estimatet."
+    }
   }
 }
