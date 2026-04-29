@@ -13,6 +13,14 @@ import {
 import { mapExperienceBracketToYears } from "@/lib/recruiter-onboarding-options";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
 
+function mapAuthError(message: string | undefined): string {
+  if (!message) return "Tjänsten är otillgänglig just nu. Försök igen.";
+  if (/invalid login credentials/i.test(message)) return "Felaktig e-post eller lösenord.";
+  if (/email not confirmed/i.test(message)) return "Bekräfta din e-post först.";
+  if (/rate.*limit|too many|429/i.test(message)) return "För många försök. Vänta en stund och försök igen.";
+  return "Tjänsten är otillgänglig just nu. Försök igen.";
+}
+
 export async function login(formData: FormData) {
     const supabase = await createClient();
 
@@ -27,7 +35,8 @@ export async function login(formData: FormData) {
     });
 
     if (error) {
-        return { error: error.message };
+        console.error("Auth error:", error);
+        return { error: mapAuthError(error.message) };
     }
 
     // Get user role for redirect
@@ -66,7 +75,8 @@ export async function registerCompany(formData: FormData) {
     });
 
     if (error) {
-        return { error: error.message };
+        console.error("Auth error:", error);
+        return { error: mapAuthError(error.message) };
     }
 
     // Create company profile using Admin client to bypass RLS
@@ -111,7 +121,8 @@ export async function registerRecruiter(formData: FormData) {
     });
 
     if (error) {
-        return { error: error.message };
+        console.error("Auth error:", error);
+        return { error: mapAuthError(error.message) };
     }
 
     // Create recruiter profile using Admin client to bypass RLS
