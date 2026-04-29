@@ -110,8 +110,12 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
         case "salary_low":
           return (a.salary_min || a.salary_max || 0) - (b.salary_min || b.salary_max || 0);
         case "fee_high": {
-          const feeA = (a.salary_max || a.salary_min || 0) * (a.fee_percentage / 100);
-          const feeB = (b.salary_max || b.salary_min || 0) * (b.fee_percentage / 100);
+          const feeA = a.recruiter_fee_amount != null
+            ? Number(a.recruiter_fee_amount)
+            : (a.salary_max || a.salary_min || 0) * ((a.recruiter_fee_percentage ?? 7) / 100);
+          const feeB = b.recruiter_fee_amount != null
+            ? Number(b.recruiter_fee_amount)
+            : (b.salary_max || b.salary_min || 0) * ((b.recruiter_fee_percentage ?? 7) / 100);
           return feeB - feeA;
         }
         case "newest":
@@ -272,9 +276,11 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
         ) : (
           filteredJobs.map((job: any) => {
             const recruiterFeePct = job.recruiter_fee_percentage ?? 7;
-            const potentialCommission = (job.salary_max || job.salary_min)
-              ? Math.round((job.salary_max || job.salary_min) * (recruiterFeePct / 100))
-              : null;
+            const potentialCommission = job.recruiter_fee_amount != null
+              ? Number(job.recruiter_fee_amount)
+              : (job.salary_max || job.salary_min)
+                ? Math.round((job.salary_max || job.salary_min) * (recruiterFeePct / 100))
+                : null;
 
             return (
               <Card key={job.id} className="group relative border-none shadow-lg shadow-slate-200/40 hover:shadow-2xl hover:shadow-brand-500/10 transition-all duration-300 rounded-[2rem] overflow-hidden bg-white">

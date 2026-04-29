@@ -21,7 +21,7 @@ import {
     Megaphone,
     ShieldCheck,
 } from "lucide-react";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate, formatCurrency, calculateClientFee } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { JobActions } from "@/components/dashboard/company/job-actions";
 import { CompanyCandidatesOverview } from "@/components/dashboard/company/company-candidates-overview";
@@ -147,9 +147,11 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
                             <Banknote className="h-3.5 w-3.5" />
                             {c.jobDetailsFee}: <span className="text-brand-600">
-                                {(job.salary_max || job.salary_min) && job.fee_percentage
-                                    ? formatCurrency(Math.round((job.salary_max || job.salary_min) * job.fee_percentage / 100), job.salary_currency || "EUR")
-                                    : `${job.fee_percentage}%`}
+                                {job.client_fee_amount != null
+                                    ? formatCurrency(Number(job.client_fee_amount), job.salary_currency || "EUR")
+                                    : (job.salary_max || job.salary_min)
+                                        ? formatCurrency(calculateClientFee(job.salary_max || job.salary_min, job.guarantee_period_months ?? 0, !!job.is_exclusive), job.salary_currency || "EUR")
+                                        : `${job.fee_percentage}%`}
                             </span>
                         </div>
                     </div>

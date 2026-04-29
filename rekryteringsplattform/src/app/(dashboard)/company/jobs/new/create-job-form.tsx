@@ -357,6 +357,9 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         data.set("salary_min", String(calcState.salary));
         data.set("salary_max", String(calcState.salary));
         data.set("salary_currency", calcState.currency);
+        // Pass calculator inputs so server can lock the client fee using the same formula
+        data.set("guarantee_period_months", String(calcState.guaranteeMonths));
+        data.set("is_exclusive", calcState.isExclusive ? "true" : "false");
 
         if (isDraft) {
             data.append("status", "draft");

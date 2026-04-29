@@ -2,7 +2,7 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Briefcase, Users, Clock, CheckCircle } from "lucide-react";
 import { getCompanyDashboard } from "@/lib/actions/company";
-import { formatCurrency, formatDateShort } from "@/lib/utils";
+import { formatCurrency, formatDateShort, calculateClientFee } from "@/lib/utils";
 import { getDictionary, createTranslator } from "@/i18n/server";
 
 export default async function CompanyDashboard() {
@@ -59,9 +59,11 @@ export default async function CompanyDashboard() {
                     const salaryRange = job.salary_min
                       ? `${formatCurrency(job.salary_min, job.salary_currency || "EUR")}${job.salary_max ? ` - ${formatCurrency(job.salary_max, job.salary_currency || "EUR")}` : ""}`
                       : "—";
-                    const fee = (job.salary_min && job.fee_percentage)
-                      ? formatCurrency(Math.round((job.salary_max ? (job.salary_min + job.salary_max) / 2 : job.salary_min) * (job.fee_percentage / 100)), job.salary_currency || "EUR")
-                      : "—";
+                    const fee = job.client_fee_amount != null
+                      ? formatCurrency(Number(job.client_fee_amount), job.salary_currency || "EUR")
+                      : (job.salary_max || job.salary_min)
+                        ? formatCurrency(calculateClientFee(job.salary_max || job.salary_min, job.guarantee_period_months ?? 0, !!job.is_exclusive), job.salary_currency || "EUR")
+                        : "—";
                     const guarantee = job.guarantee_period_months
                       ? (job.guarantee_period_months === 1
                         ? (c.guaranteeMonths || "{count} month").replace("{count}", String(job.guarantee_period_months))

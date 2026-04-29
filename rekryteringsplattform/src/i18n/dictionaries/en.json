@@ -1162,6 +1162,7 @@
     "recruitmentFeeClient": "Recruitment Fee (client)",
     "perUnit": "per unit",
     "minFeeApplied": "Minimum fee 3 500 {currency} applied",
+    "estimateDisclaimer": "Estimate only. In most cases this matches the final fee. For certain roles fees may be reviewed and confirmed separately.",
     "totalClient": "Total client",
     "savingsVsTraditional": "Savings vs. traditional",
     "lower": "lower",

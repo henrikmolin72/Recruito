@@ -3,6 +3,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
 import { getAdminJobs } from "@/lib/actions/admin";
 import { getDictionary } from "@/i18n/server";
+import { JobFeeAmountEditor } from "@/components/dashboard/admin/job-fee-amount-editor";
 import { RecruiterFeeEditor } from "@/components/dashboard/admin/recruiter-fee-editor";
 import { ApproveJobButton } from "@/components/dashboard/admin/approve-job-button";
 import { MaxCandidatesEditor } from "@/components/dashboard/admin/max-candidates-editor";
@@ -32,7 +33,7 @@ export default async function AdminJobsPage() {
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobRecruiters}</th>
                 <th className="p-4 font-medium text-muted-foreground" title="Submitted / Cap">{a.tableJobCandidates} (cap)</th>
                 <th className="p-4 font-medium text-muted-foreground">Client Fee</th>
-                <th className="p-4 font-medium text-emerald-700">Recruiter Fee %</th>
+                <th className="p-4 font-medium text-emerald-700">Recruiter Fee</th>
                 <th className="p-4 font-medium text-muted-foreground">Approval</th>
               </tr>
             </thead>
@@ -57,9 +58,24 @@ export default async function AdminJobsPage() {
                         currentCount={job.candidates}
                       />
                     </td>
-                    <td className="p-4 text-muted-foreground">{job.feePercentage ? `${job.feePercentage}%` : "—"}</td>
                     <td className="p-4">
-                      <RecruiterFeeEditor jobId={job.id} initialFee={job.recruiterFeePercentage} />
+                      <JobFeeAmountEditor
+                        jobId={job.id}
+                        initialAmount={job.clientFeeAmount}
+                        currency={job.salaryCurrency}
+                        field="client"
+                      />
+                    </td>
+                    <td className="p-4 space-y-1">
+                      <JobFeeAmountEditor
+                        jobId={job.id}
+                        initialAmount={job.recruiterFeeAmount}
+                        currency={job.salaryCurrency}
+                        field="recruiter"
+                      />
+                      <div className="text-[10px] text-muted-foreground">
+                        <RecruiterFeeEditor jobId={job.id} initialFee={job.recruiterFeePercentage} />
+                      </div>
                     </td>
                     <td className="p-4">
                       <ApproveJobButton jobId={job.id} status={job.status} />

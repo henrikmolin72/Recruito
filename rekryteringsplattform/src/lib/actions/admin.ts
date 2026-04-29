@@ -215,6 +215,10 @@ export async function getAdminJobs() {
             salary_currency,
             fee_percentage,
             recruiter_fee_percentage,
+            client_fee_amount,
+            recruiter_fee_amount,
+            is_exclusive,
+            guarantee_period_months,
             status,
             current_recruiter_count,
             max_recruiters,
@@ -240,6 +244,10 @@ export async function getAdminJobs() {
             salaryCurrency: job.salary_currency || "EUR",
             feePercentage: job.fee_percentage,
             recruiterFeePercentage: job.recruiter_fee_percentage ?? 7,
+            clientFeeAmount: job.client_fee_amount != null ? Number(job.client_fee_amount) : null,
+            recruiterFeeAmount: job.recruiter_fee_amount != null ? Number(job.recruiter_fee_amount) : null,
+            isExclusive: !!job.is_exclusive,
+            guaranteePeriodMonths: job.guarantee_period_months ?? 0,
             status: job.status,
             recruiters: job.current_recruiter_count || 0,
             maxRecruiters: job.max_recruiters || 5,
@@ -905,7 +913,44 @@ export async function updateRecruiterFeePercentage(jobId: string, percentage: nu
         .update({ recruiter_fee_percentage: percentage })
         .eq("id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) return { error: "Could not update recruiter fee" };
+
+    revalidatePath("/admin/jobs");
+    return { success: true };
+}
+
+// Override the locked client fee on a single job. Called from the admin review screen
+// before approval. Once approved, the value is treated as final and never recomputed.
+export async function updateClientFeeAmount(jobId: string, amount: number) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    if (!Number.isFinite(amount) || amount < 0) return { error: "Invalid amount" };
+
+    const { error } = await supabaseAdmin
+        .from("jobs")
+        .update({ client_fee_amount: Math.round(amount) })
+        .eq("id", jobId);
+
+    if (error) return { error: "Could not update client fee" };
+
+    revalidatePath("/admin/jobs");
+    return { success: true };
+}
+
+// Override the locked recruiter payout on a single job.
+export async function updateRecruiterFeeAmount(jobId: string, amount: number) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    if (!Number.isFinite(amount) || amount < 0) return { error: "Invalid amount" };
+
+    const { error } = await supabaseAdmin
+        .from("jobs")
+        .update({ recruiter_fee_amount: Math.round(amount) })
+        .eq("id", jobId);
+
+    if (error) return { error: "Could not update recruiter fee" };
 
     revalidatePath("/admin/jobs");
     return { success: true };

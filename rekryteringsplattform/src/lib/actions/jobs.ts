@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { validateJobForm, validatePipelineStages } from "@/lib/validation/forms";
 import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
+import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/actions/notifications";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
@@ -139,6 +140,22 @@ export async function createJob(formData: FormData) {
     const rawBool = (key: string) => formData.get(key) === "on" || formData.get(key) === "true";
     const rawJson = (key: string) => { try { const v = formData.get(key)?.toString(); return v ? JSON.parse(v) : null; } catch { return null; } };
 
+    // Lock client + recruiter fees on the row using the calculator formula.
+    // After approval these are immutable from the client side; admin override flows
+    // through dedicated server actions in admin.ts.
+    const dAny = d as Record<string, unknown>;
+    const salaryMin = (dAny.salary_min as number | undefined) ?? rawInt("salary_min");
+    const salaryMax = (dAny.salary_max as number | undefined) ?? rawInt("salary_max");
+    const guaranteeMonths = (dAny.guarantee_period_months as number | undefined) ?? rawInt("guarantee_period_months") ?? 0;
+    const isExclusive = (dAny.is_exclusive as boolean | undefined) ?? rawBool("is_exclusive");
+    const feeBaseSalary = salaryMax || salaryMin || 0;
+    const lockedClientFee = feeBaseSalary > 0
+        ? calculateClientFee(feeBaseSalary, guaranteeMonths || 0, isExclusive)
+        : null;
+    const lockedRecruiterFee = feeBaseSalary > 0
+        ? calculateRecruiterFee(feeBaseSalary)
+        : null;
+
     // If updating an existing draft, use upsert with the provided ID
     const existingDraftId = formData.get("draft_id")?.toString();
     const jobPayload = {
@@ -189,9 +206,12 @@ export async function createJob(formData: FormData) {
         benefits_other: d.benefits_other ?? rawOrNull("benefits_other"),
         // Recruitment details
         fee_percentage: feePercentage,
+        is_exclusive: isExclusive,
+        client_fee_amount: lockedClientFee,
+        recruiter_fee_amount: lockedRecruiterFee,
         max_recruiters: d.max_recruiters ?? rawInt("max_recruiters"),
         application_deadline: d.application_deadline || rawOrNull("application_deadline"),
-        guarantee_period_months: d.guarantee_period_months ?? rawInt("guarantee_period_months"),
+        guarantee_period_months: guaranteeMonths,
         recruiter_fee_manual: d.recruiter_fee_manual ?? rawFloat("recruiter_fee_manual"),
         // Screening & hiring
         screening_questions: d.screening_questions ?? rawJson("screening_questions"),

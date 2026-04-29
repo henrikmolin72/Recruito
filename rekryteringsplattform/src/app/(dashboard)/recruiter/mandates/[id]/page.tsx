@@ -9,7 +9,7 @@ import { PipelineFlowchart } from "@/components/dashboard/recruiter/pipeline-flo
 import { ShortlistGenerator } from "@/components/screening/shortlist-generator";
 import { getRecruiterMandateById } from "@/lib/actions/recruiter";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, calculateClientFee } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
@@ -65,9 +65,11 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{r.feeLabel}</p>
             <p className="mt-1 text-sm">
-              {mandate.fee_percentage && (mandate.salary_max || mandate.salary_min)
-                ? formatCurrency(Math.round((mandate.salary_max || mandate.salary_min) * mandate.fee_percentage / 100), mandate.salary_currency || "EUR")
-                : mandate.fee_percentage ? `${mandate.fee_percentage}%` : dict.common.notSpecifiedNeutral}
+              {mandate.client_fee_amount != null
+                ? formatCurrency(Number(mandate.client_fee_amount), mandate.salary_currency || "EUR")
+                : (mandate.salary_max || mandate.salary_min)
+                  ? formatCurrency(calculateClientFee(mandate.salary_max || mandate.salary_min, mandate.guarantee_period_months ?? 0, !!mandate.is_exclusive), mandate.salary_currency || "EUR")
+                  : mandate.fee_percentage ? `${mandate.fee_percentage}%` : dict.common.notSpecifiedNeutral}
             </p>
           </div>
           <div>

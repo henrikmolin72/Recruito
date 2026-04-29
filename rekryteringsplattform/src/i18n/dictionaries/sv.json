@@ -1162,6 +1162,7 @@
     "recruitmentFeeClient": "Rekryteringsavgift (kund)",
     "perUnit": "per st",
     "minFeeApplied": "Minimiavgift 3 500 {currency} tillämpas",
+    "estimateDisclaimer": "Endast en uppskattning. I de flesta fall stämmer den med den slutliga avgiften. För vissa roller kan avgiften ses över och bekräftas separat.",
     "totalClient": "Total kund",
     "savingsVsTraditional": "Besparing vs. traditionell",
     "lower": "lägre",

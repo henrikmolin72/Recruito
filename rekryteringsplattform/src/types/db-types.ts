@@ -162,6 +162,10 @@ export interface Job {
     background_check_required: boolean | null;
     // Core
     fee_percentage: number;
+    is_exclusive: boolean;
+    client_fee_amount: number | null;
+    recruiter_fee_amount: number | null;
+    recruiter_fee_percentage?: number | null;
     max_recruiters: number;
     current_recruiter_count: number;
     status: JobStatus;

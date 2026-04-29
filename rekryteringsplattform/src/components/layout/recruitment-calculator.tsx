@@ -296,6 +296,9 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                                 {t("calculator.minFeeApplied").replace("{currency}", currency)}
                             </div>
                         )}
+                        <div className="text-[9px] text-slate-500 mt-1.5 leading-snug">
+                            {t("calculator.estimateDisclaimer")}
+                        </div>
                     </div>
 
                     {/* Total for multiple hires */}

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Info } from "lucide-react";
 import { getCompanyJobs } from "@/lib/actions/jobs";
-import { formatCurrency, formatDateShort } from "@/lib/utils";
+import { formatCurrency, formatDateShort, calculateClientFee } from "@/lib/utils";
 import { getDictionary } from "@/i18n/server";
 
 export default async function CompanyJobsPage() {
@@ -25,13 +25,17 @@ export default async function CompanyJobsPage() {
   }
 
   function calculateJobFee(job: any) {
-    if (!job.salary_min || !job.fee_percentage) return "—";
-    const avgSalary = job.salary_max
-      ? (job.salary_min + job.salary_max) / 2
-      : job.salary_min;
-    const fee = Math.round(avgSalary * (job.fee_percentage / 100));
     const currency = job.salary_currency || "EUR";
-    return formatCurrency(fee, currency);
+    // Locked fee wins — set on creation/admin override and never recomputed.
+    if (job.client_fee_amount != null) {
+      return formatCurrency(Number(job.client_fee_amount), currency);
+    }
+    const baseSalary = job.salary_max || job.salary_min;
+    if (!baseSalary) return "—";
+    return formatCurrency(
+      calculateClientFee(baseSalary, job.guarantee_period_months ?? 0, !!job.is_exclusive),
+      currency,
+    );
   }
 
   function getStatusDisplay(status: string) {

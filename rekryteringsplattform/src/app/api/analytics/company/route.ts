@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     // Get jobs
     let jobsQuery = admin
         .from("jobs")
-        .select("id, title, salary_min, salary_max, salary_currency, fee_percentage, published_at, filled_at, created_at, status")
+        .select("id, title, salary_min, salary_max, salary_currency, fee_percentage, client_fee_amount, is_exclusive, guarantee_period_months, published_at, filled_at, created_at, status")
         .eq("company_id", company.id)
         .order("created_at", { ascending: false });
 
@@ -144,7 +144,9 @@ export async function GET(request: NextRequest) {
     const costs = (placements ?? []).map((p) => {
         const job = jobs.find((j) => j.id === p.job_id);
         const annualSalary = p.annual_salary ?? (job?.salary_max || job?.salary_min || 0);
-        const recruiToCost = p.total_fee ?? Math.round(annualSalary * (p.fee_percentage ?? job?.fee_percentage ?? 15) / 100);
+        const recruiToCost = p.total_fee
+            ?? (job?.client_fee_amount != null ? Number(job.client_fee_amount) : null)
+            ?? Math.round(annualSalary * (p.fee_percentage ?? job?.fee_percentage ?? 15) / 100);
         const traditionalCost = Math.round(annualSalary * TRADITIONAL_PCT / 100);
         const saving = traditionalCost - recruiToCost;
         const savingPct = traditionalCost > 0 ? Math.round((saving / traditionalCost) * 100) : 0;

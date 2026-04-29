@@ -1162,6 +1162,7 @@
     "recruitmentFeeClient": "Rekrutteringsgebyr (kunde)",
     "perUnit": "per stk",
     "minFeeApplied": "Minimumsgebyr 3 500 {currency} anvendes",
+    "estimateDisclaimer": "Kun et estimat. I de fleste tilfælde svarer det til det endelige gebyr. For visse roller kan gebyret blive gennemgået og bekræftet separat.",
     "totalClient": "Total kunde",
     "savingsVsTraditional": "Besparelse vs. traditionel",
     "lower": "lavere",
