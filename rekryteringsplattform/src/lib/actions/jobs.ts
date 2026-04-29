@@ -208,6 +208,10 @@ export async function createJob(formData: FormData) {
         fee_percentage: feePercentage,
         is_exclusive: isExclusive,
         client_fee_amount: lockedClientFee,
+        // Snapshot the baseline once at submission. Drafts get NULL; the estimate is
+        // recorded the moment the row leaves draft. Per the design, this column is
+        // written exactly once and never recomputed thereafter.
+        client_fee_amount_estimated: isDraft ? null : lockedClientFee,
         recruiter_fee_amount: lockedRecruiterFee,
         max_recruiters: d.max_recruiters ?? rawInt("max_recruiters"),
         application_deadline: d.application_deadline || rawOrNull("application_deadline"),
