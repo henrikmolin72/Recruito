@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { formatDate, formatCurrency, calculateClientFee } from "@/lib/utils";
 import { FeeReconfirmCard } from "@/components/dashboard/company/fee-reconfirm-card";
+import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { JobActions } from "@/components/dashboard/company/job-actions";
 import { CompanyCandidatesOverview } from "@/components/dashboard/company/company-candidates-overview";
@@ -184,107 +185,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                 </TabsContent>
 
                 <TabsContent value="details" className="mt-0">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Left: Description + Requirements */}
-                        <div className="lg:col-span-2 space-y-6">
-                            <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
-                                <CardContent className="p-8 pt-10">
-                                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                                        <FileText className="h-5 w-5 text-brand-500" /> {c.jobDescriptionTitle}
-                                    </h3>
-                                    {job.description ? (
-                                        <div className="prose max-w-none text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeRichText(job.description) }} />
-                                    ) : (
-                                        <span className="text-slate-400 italic">{dict.common.notSpecified}</span>
-                                    )}
-                                </CardContent>
-                            </Card>
-
-                            {/* Key Requirements */}
-                            {job.key_requirements && job.key_requirements.length > 0 && (
-                                <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
-                                    <CardContent className="p-6">
-                                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Key Requirements</h3>
-                                        <ul className="space-y-2">
-                                            {(job.key_requirements as string[]).map((req, i) => (
-                                                <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
-                                                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-500 shrink-0" />
-                                                    {req}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </CardContent>
-                                </Card>
-                            )}
-
-                            {/* Screening Questions */}
-                            {job.screening_questions && job.screening_questions.filter(Boolean).length > 0 && (
-                                <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
-                                    <CardContent className="p-6">
-                                        <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Screening Questions</h3>
-                                        <ol className="space-y-2 list-decimal list-inside">
-                                            {(job.screening_questions as string[]).filter(Boolean).map((q, i) => (
-                                                <li key={i} className="text-sm text-slate-700">{q}</li>
-                                            ))}
-                                        </ol>
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </div>
-
-                        {/* Right: Specifications */}
-                        <div className="space-y-6">
-                            <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
-                                <CardContent className="p-6 space-y-4">
-                                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">{c.specificationsTitle}</h3>
-
-                                    {[
-                                        { label: c.industryLabel, value: job.industry },
-                                        { label: c.employmentTypeLabel, value: dict.employment[EMPLOYMENT_TYPE_DICT_KEY[job.employment_type] as keyof typeof dict.employment] || job.employment_type },
-                                        { label: "Work type", value: job.work_type },
-                                        { label: "Remote", value: job.remote_type },
-                                        { label: c.indicativeSalary, value: (job.salary_max || job.salary_min) ? `${formatCurrency(job.salary_max || job.salary_min)} ${job.salary_currency || "EUR"}` : dict.common.notSpecified },
-                                        { label: "Bonus structure", value: job.bonus_structure },
-                                        { label: "Start date", value: job.desired_start_date },
-                                        { label: "Application deadline", value: job.application_deadline ? formatDate(job.application_deadline) : null },
-                                        { label: "Guarantee period", value: job.guarantee_period_months ? `${job.guarantee_period_months} months` : null },
-                                        { label: "Interviews", value: job.num_interviews ? `${job.num_interviews} rounds` : null },
-                                        { label: "Technical test", value: job.technical_test_required ? "Yes" : null },
-                                        { label: "Open positions", value: job.open_positions ? String(job.open_positions) : null },
-                                    ].filter(row => row.value).map(({ label, value }) => (
-                                        <div key={label}>
-                                            <span className="text-xs font-bold text-slate-400 uppercase">{label}</span>
-                                            <p className="font-bold text-slate-700 mt-0.5">{value}</p>
-                                        </div>
-                                    ))}
-
-                                    {/* Benefits */}
-                                    {job.benefits && job.benefits.length > 0 && (
-                                        <div>
-                                            <span className="text-xs font-bold text-slate-400 uppercase">Benefits</span>
-                                            <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                                {(job.benefits as string[]).map((b) => (
-                                                    <span key={b} className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 text-[11px] font-semibold border border-brand-100">{b}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Language requirements */}
-                                    {job.language_requirements && job.language_requirements.length > 0 && (
-                                        <div>
-                                            <span className="text-xs font-bold text-slate-400 uppercase">Languages</span>
-                                            <div className="space-y-1 mt-1">
-                                                {(job.language_requirements as Array<{language: string; level: string}>).map((lr, i) => (
-                                                    <p key={i} className="text-sm font-bold text-slate-700">{lr.language} — {lr.level}</p>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
+                    <JobPreviewCard job={job} variant="company" />
                 </TabsContent>
 
                 <TabsContent value="recruiters" className="mt-0">

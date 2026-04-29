@@ -20,7 +20,6 @@ import {
     EMPLOYMENT_TYPE_OPTIONS,
     WORK_TYPE_OPTIONS,
     REMOTE_TYPE_OPTIONS,
-    SALARY_GROSS_NET_OPTIONS,
     SALARY_PERIOD_OPTIONS,
     SALARY_CURRENCY_OPTIONS,
     BENEFITS_OPTIONS,
@@ -31,6 +30,10 @@ import {
     COUNTRY_OPTIONS,
     EUROPEAN_LANGUAGE_OPTIONS,
     INDUSTRY_OPTIONS,
+    REPORTING_TO_OPTIONS,
+    TEAM_SIZE_OPTIONS,
+    EXPERIENCE_BRACKET_OPTIONS,
+    WORKING_HOURS_OPTIONS,
 } from "@/lib/job-form-options";
 
 const selectClass = "flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-all font-medium";
@@ -53,8 +56,8 @@ interface InitialJobData {
     work_permit_accepted?: boolean;
     visa_sponsorship?: boolean;
     description?: string;
-    management_required?: boolean;
-    team_size?: number | string | null;
+    experience_bracket?: string;
+    team_size?: string | null;
     reporting_to?: string;
     position_type?: string;
     open_positions?: number | string | null;
@@ -208,8 +211,8 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         visa_sponsorship: initialData?.visa_sponsorship ?? false,
         // Step 3
         description: initialData?.description ?? "",
-        management_required: initialData?.management_required ?? false,
-        team_size: initialData?.team_size != null ? String(initialData.team_size) : "",
+        experience_bracket: initialData?.experience_bracket ?? "",
+        team_size: initialData?.team_size ?? "",
         reporting_to: initialData?.reporting_to ?? "",
         position_type: initialData?.position_type ?? "",
         open_positions: initialData?.open_positions != null ? String(initialData.open_positions) : "1",
@@ -217,7 +220,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         salary_min: "",
         salary_max: "",
         salary_currency: initialData?.salary_currency ?? "SEK",
-        salary_gross_net: initialData?.salary_gross_net ?? "",
+        salary_gross_net: initialData?.salary_gross_net ?? "gross",
         salary_period: initialData?.salary_period ?? "",
         bonus_structure: initialData?.bonus_structure ?? "",
         benefits: initialData?.benefits ?? [] as string[],
@@ -552,14 +555,9 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                     <CardTitle className="text-xl">{STEPS[step - 1].title}</CardTitle>
                     <CardDescription>{STEPS[step - 1].description}</CardDescription>
                     {step >= 2 && (
-                        <>
-                            <span className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
-                                Recruitment Fee {Math.round(recruitmentFee).toLocaleString("sv-SE")} {calcState.currency}
-                            </span>
-                            <p className="mt-2 text-xs text-slate-500 leading-snug">
-                                {t("feeReconfirm.declarationDisclaimer")}
-                            </p>
-                        </>
+                        <p className="mt-2 text-xs text-slate-500 leading-snug">
+                            {t("feeReconfirm.declarationDisclaimer")}
+                        </p>
                     )}
                 </CardHeader>
                 <CardContent>
@@ -707,6 +705,15 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                         )}
                                     </div>
 
+                                    {/* Experience requirements */}
+                                    <div className="space-y-2">
+                                        <label className={labelClass}>{t("jobForm.experienceRequirements")}</label>
+                                        <select name="experience_bracket" value={formData.experience_bracket} onChange={handleInputChange} className={selectClass}>
+                                            <option value="">{t("jobForm.selectExperience")}</option>
+                                            {EXPERIENCE_BRACKET_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                                        </select>
+                                    </div>
+
                                     {/* Role description */}
                                     <div className="space-y-2">
                                         <label className={labelClass}>{t("jobForm.roleDescription")} *</label>
@@ -717,47 +724,22 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                         />
                                     </div>
 
-                                    {/* Management responsibility */}
-                                    <div className="space-y-3">
-                                        <label className={labelClass}>{t("jobForm.managementRequired")}</label>
-                                        <div className="flex gap-3">
-                                            <label className={cn(
-                                                "flex items-center gap-2 rounded-lg border px-4 py-2.5 cursor-pointer transition-all text-sm font-medium",
-                                                formData.management_required
-                                                    ? "border-brand-500 bg-brand-50 text-brand-700"
-                                                    : "border-slate-200 hover:bg-slate-50"
-                                            )}>
-                                                <input type="radio" name="mgmt_toggle" checked={formData.management_required}
-                                                    onChange={() => setFormData(prev => ({ ...prev, management_required: true }))}
-                                                    className="sr-only" />
-                                                {t("jobForm.managementYes")}
-                                            </label>
-                                            <label className={cn(
-                                                "flex items-center gap-2 rounded-lg border px-4 py-2.5 cursor-pointer transition-all text-sm font-medium",
-                                                !formData.management_required
-                                                    ? "border-brand-500 bg-brand-50 text-brand-700"
-                                                    : "border-slate-200 hover:bg-slate-50"
-                                            )}>
-                                                <input type="radio" name="mgmt_toggle" checked={!formData.management_required}
-                                                    onChange={() => setFormData(prev => ({ ...prev, management_required: false }))}
-                                                    className="sr-only" />
-                                                {t("jobForm.managementNo")}
-                                            </label>
+                                    {/* Team size & Reporting to */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className={labelClass}>{t("jobForm.teamSize")}</label>
+                                            <select name="team_size" value={formData.team_size} onChange={handleInputChange} className={selectClass}>
+                                                <option value="">{t("jobForm.selectTeamSize")}</option>
+                                                {TEAM_SIZE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                                            </select>
                                         </div>
-                                        {formData.management_required && (
-                                            <div className="grid grid-cols-2 gap-4 pl-1">
-                                                <div className="space-y-2">
-                                                    <label className={labelClass}>{t("jobForm.teamSize")}</label>
-                                                    <Input type="number" name="team_size" value={formData.team_size} onChange={handleInputChange}
-                                                        min="1" placeholder="e.g. 5" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className={labelClass}>{t("jobForm.reportingTo")}</label>
-                                                    <Input name="reporting_to" value={formData.reporting_to} onChange={handleInputChange}
-                                                        placeholder={t("jobForm.reportingToPlaceholder")} />
-                                                </div>
-                                            </div>
-                                        )}
+                                        <div className="space-y-2">
+                                            <label className={labelClass}>{t("jobForm.reportingTo")}</label>
+                                            <select name="reporting_to" value={formData.reporting_to} onChange={handleInputChange} className={selectClass}>
+                                                <option value="">{t("jobForm.selectReportingTo")}</option>
+                                                {REPORTING_TO_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                                            </select>
+                                        </div>
                                     </div>
 
                                     {/* Position type & count */}
@@ -825,12 +807,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                             </span>
                                             <span className="text-xs text-slate-400">{t("jobForm.salaryFromCalculator") || "Set in calculator (step 1)"}</span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <select name="salary_gross_net" value={formData.salary_gross_net} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">{t("jobForm.grossNet")}</option>
-                                                <option value="gross">{t("jobForm.gross")}</option>
-                                                <option value="net">{t("jobForm.net")}</option>
-                                            </select>
+                                        <div className="max-w-xs">
                                             <select name="salary_period" value={formData.salary_period} onChange={handleInputChange} className={selectClass}>
                                                 <option value="">{t("jobForm.selectPeriod")}</option>
                                                 {SALARY_PERIOD_OPTIONS.map(p => (
@@ -838,12 +815,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                                 ))}
                                             </select>
                                         </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className={labelClass}>{t("jobForm.bonusStructure")}</label>
-                                        <textarea name="bonus_structure" value={formData.bonus_structure} onChange={handleInputChange}
-                                            className={cn(textareaClass, "min-h-[60px]")}
-                                            placeholder={t("jobForm.bonusPlaceholder")} />
                                     </div>
                                     <div className="space-y-3">
                                         <label className={labelClass}>{t("jobForm.benefits")}</label>
@@ -873,12 +844,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                             {/* ===== STEP 5: RECRUITMENT & SCREENING ===== */}
                             {step === 5 && (
                                 <div className="space-y-5">
-                                    <div className="space-y-2">
-                                        <label className={labelClass}>{t("jobForm.applicationDeadline")}</label>
-                                        <Input type="date" name="application_deadline" value={formData.application_deadline} onChange={handleInputChange} className="max-w-xs" />
-                                        <p className="text-[10px] text-muted-foreground italic">{t("jobForm.deadlineHelp")}</p>
-                                    </div>
-                                    <div className="space-y-3 pt-2 border-t border-slate-100">
+                                    <div className="space-y-3">
                                         <label className={labelClass}>{t("jobForm.screeningQuestions")}</label>
                                         {screeningQuestions.map((q, i) => (
                                             <div key={i} className="flex items-center gap-2">
@@ -900,8 +866,8 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                             </button>
                                         )}
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-                                        <div className="space-y-2">
+                                    <div className="pt-2 border-t border-slate-100">
+                                        <div className="space-y-2 max-w-xs">
                                             <label className={labelClass}>{t("jobForm.numInterviews")}</label>
                                             <select name="num_interviews" value={formData.num_interviews} onChange={handleInputChange} className={selectClass}>
                                                 <option value="">{t("jobForm.selectNumInterviews")}</option>
@@ -910,11 +876,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                                 <option value="3">3</option>
                                                 <option value="4">4</option>
                                             </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className={labelClass}>{t("jobForm.interviewConductor")}</label>
-                                            <Input name="interview_conductors" value={formData.interview_conductors} onChange={handleInputChange}
-                                                placeholder={t("jobForm.interviewConductorPlaceholder")} />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
@@ -938,8 +899,10 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.workingHours")}</label>
-                                            <Input name="working_hours" value={formData.working_hours} onChange={handleInputChange}
-                                                placeholder={t("jobForm.workingHoursPlaceholder")} />
+                                            <select name="working_hours" value={formData.working_hours} onChange={handleInputChange} className={selectClass}>
+                                                <option value="">{t("jobForm.selectWorkingHours")}</option>
+                                                {WORKING_HOURS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                                            </select>
                                         </div>
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.shiftWork")}</label>
@@ -980,11 +943,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                             <input type="checkbox" name="travel_required" id="travel_required"
                                                 checked={formData.travel_required} onChange={handleInputChange} className={checkboxClass} />
                                             <label htmlFor="travel_required" className="text-sm text-slate-600">{t("jobForm.travelRequired")}</label>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <input type="checkbox" name="background_check_required" id="background_check_required"
-                                                checked={formData.background_check_required} onChange={handleInputChange} className={checkboxClass} />
-                                            <label htmlFor="background_check_required" className="text-sm text-slate-600">{t("jobForm.backgroundCheck")}</label>
                                         </div>
                                     </div>
                                 </div>

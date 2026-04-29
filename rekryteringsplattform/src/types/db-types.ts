@@ -126,6 +126,7 @@ export interface Job {
     guarantee_period_months: number | null;
     recruiter_fee_manual: number | null;
     is_confidential: boolean;
+    industry: string | null;
     // Position
     position_type: string | null;
     open_positions: number | null;
@@ -143,8 +144,9 @@ export interface Job {
     tools_technologies: string | null;
     // Management structure
     management_required: boolean | null;
-    team_size: number | null;
+    team_size: string | null;
     reporting_to: string | null;
+    experience_bracket: string | null;
     // Key requirements
     key_requirements: string[];
     // Language requirements (multi)
