@@ -14,9 +14,7 @@ import {
     canTransitionCandidateStatus,
     inferInterviewWorkflowStatus,
     isCandidateStatusValue,
-    normalizeCandidateStatusForWorkflow,
     statusChangeTimestampPatch,
-    TERMINAL_CANDIDATE_STATUSES,
 } from "@/lib/candidate-workflow";
 import {
     getPlacementByCandidateId,
@@ -120,23 +118,11 @@ function mapCompanyNextStepLabel(nextStep: CandidateNextStepRequest) {
     return labels[nextStep];
 }
 
-function normalizeIdentity(value: string | null | undefined) {
-    return value?.trim().toLowerCase() || null;
-}
-
-function candidateMatchesIdentity(candidate: any, email: string | null, linkedinUrl: string | null) {
-    const candidateEmail = normalizeIdentity(candidate?.email);
-    const candidateLinkedIn = normalizeIdentity(candidate?.linkedin_url);
-
-    const emailMatch = !!email && candidateEmail === email;
-    const linkedInMatch = !!linkedinUrl && candidateLinkedIn === linkedinUrl;
-    return emailMatch || linkedInMatch;
-}
-
-function isClientEngagementActiveStatus(status: string | null | undefined) {
-    const normalized = normalizeCandidateStatusForWorkflow(status);
-    return !TERMINAL_CANDIDATE_STATUSES.has(normalized);
-}
+import {
+    normalizeIdentity,
+    candidateMatchesIdentity,
+    isClientEngagementActiveStatus,
+} from "@/lib/candidate-identity";
 
 export async function createCandidate(mandateId: string, formData: FormData) {
     const supabase = await createClient();

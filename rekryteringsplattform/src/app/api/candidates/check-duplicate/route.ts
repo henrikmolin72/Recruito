@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
+import {
+    normalizeIdentity,
+    candidateMatchesIdentity,
+    isClientEngagementActiveStatus,
+} from "@/lib/candidate-identity";
 
 export const runtime = "nodejs";
-
-function normalize(value: string | null | undefined) {
-    return value?.trim().toLowerCase() || null;
-}
 
 export async function POST(request: NextRequest) {
     try {
@@ -40,8 +41,8 @@ export async function POST(request: NextRequest) {
 
         const formData = await request.formData();
         const mandateId = String(formData.get("mandate_id") || "");
-        const email = normalize(String(formData.get("email") || ""));
-        const linkedIn = normalize(String(formData.get("linkedin_url") || ""));
+        const email = normalizeIdentity(String(formData.get("email") || ""));
+        const linkedIn = normalizeIdentity(String(formData.get("linkedin_url") || ""));
 
         if (!mandateId || (!email && !linkedIn)) {
             return NextResponse.json({ duplicate: false });
@@ -52,18 +53,65 @@ export async function POST(request: NextRequest) {
         const { data: mandate } = await mandateQuery.single();
         if (!mandate) return NextResponse.json({ error: "Mandate not found" }, { status: 404 });
 
+        const jobId = (mandate as any).job_id as string;
+
+        // 1) Same-job duplicate (mirror createCandidate same-job rule).
         const { data: sameJobCandidates } = await admin
             .from("candidates")
             .select("email, linkedin_url")
-            .eq("job_id", (mandate as any).job_id);
+            .eq("job_id", jobId);
 
-        const duplicate = (sameJobCandidates || []).some((c: any) => {
-            const ce = normalize(c.email);
-            const cl = normalize(c.linkedin_url);
-            return (email && ce === email) || (linkedIn && cl === linkedIn);
-        });
+        if ((sameJobCandidates || []).some((c: any) => candidateMatchesIdentity(c, email, linkedIn))) {
+            return NextResponse.json({ duplicate: true, reason: "same_job" });
+        }
 
-        return NextResponse.json({ duplicate });
+        // 2) Same-company active engagement duplicate (mirror createCandidate
+        //    client_already_engaged rule).
+        const { data: jobRow } = await admin
+            .from("jobs")
+            .select("company_id")
+            .eq("id", jobId)
+            .single();
+        const companyId = (jobRow as any)?.company_id as string | undefined;
+
+        if (companyId) {
+            const { data: companyJobs } = await admin
+                .from("jobs")
+                .select("id")
+                .eq("company_id", companyId);
+
+            const companyJobIds = (companyJobs || []).map((j: any) => j.id).filter(Boolean);
+            if (companyJobIds.length > 0) {
+                const { data: companyCandidates } = await admin
+                    .from("candidates")
+                    .select("job_id, email, linkedin_url, status")
+                    .in("job_id", companyJobIds);
+
+                const clientEngaged = (companyCandidates || []).some((c: any) =>
+                    c.job_id !== jobId &&
+                    candidateMatchesIdentity(c, email, linkedIn) &&
+                    isClientEngagementActiveStatus(c.status),
+                );
+                if (clientEngaged) {
+                    return NextResponse.json({ duplicate: true, reason: "client_already_engaged" });
+                }
+            }
+        }
+
+        // 3) Same-recruiter previously submitted (catches the most common
+        //    user-error: "did I already submit this person?"). Skipped for admin.
+        if (recruiterId) {
+            const { data: recruiterCandidates } = await admin
+                .from("candidates")
+                .select("email, linkedin_url")
+                .eq("recruiter_id", recruiterId);
+
+            if ((recruiterCandidates || []).some((c: any) => candidateMatchesIdentity(c, email, linkedIn))) {
+                return NextResponse.json({ duplicate: true, reason: "recruiter_already_submitted" });
+            }
+        }
+
+        return NextResponse.json({ duplicate: false });
     } catch (err) {
         console.error("[check-duplicate]", err);
         return NextResponse.json({ error: "Check failed" }, { status: 500 });
