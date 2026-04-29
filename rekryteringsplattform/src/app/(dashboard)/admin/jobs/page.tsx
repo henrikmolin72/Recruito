@@ -6,6 +6,9 @@ import { getDictionary } from "@/i18n/server";
 import { JobFeeAmountEditor } from "@/components/dashboard/admin/job-fee-amount-editor";
 import { RecruiterFeeEditor } from "@/components/dashboard/admin/recruiter-fee-editor";
 import { ApproveJobButton } from "@/components/dashboard/admin/approve-job-button";
+import { ApproveJobModal } from "@/components/dashboard/admin/approve-job-modal";
+import { WithdrawReconfirmButton } from "@/components/dashboard/admin/withdraw-reconfirm-button";
+import { formatDateShort } from "@/lib/utils";
 import { MaxCandidatesEditor } from "@/components/dashboard/admin/max-candidates-editor";
 
 export default async function AdminJobsPage() {
@@ -78,7 +81,31 @@ export default async function AdminJobsPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <ApproveJobButton jobId={job.id} status={job.status} />
+                      {job.status === "pending_approval" && (
+                        <ApproveJobModal
+                          jobId={job.id}
+                          status={job.status}
+                          requiresUplift={
+                            job.clientFeeAmount != null &&
+                            job.clientFeeEstimated != null &&
+                            Number(job.clientFeeAmount) > Number(job.clientFeeEstimated)
+                          }
+                        />
+                      )}
+                      {job.status === "pending_client_reconfirm" && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">
+                            Awaiting client re-confirm
+                            {job.reconfirmRequestedAt
+                              ? ` (sent ${formatDateShort(job.reconfirmRequestedAt)})`
+                              : ""}
+                          </p>
+                          <WithdrawReconfirmButton jobId={job.id} />
+                        </div>
+                      )}
+                      {job.status !== "pending_approval" && job.status !== "pending_client_reconfirm" && (
+                        <ApproveJobButton jobId={job.id} status={job.status} />
+                      )}
                     </td>
                   </tr>
                 ))

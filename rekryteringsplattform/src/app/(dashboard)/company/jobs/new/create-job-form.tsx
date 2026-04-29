@@ -552,9 +552,14 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                     <CardTitle className="text-xl">{STEPS[step - 1].title}</CardTitle>
                     <CardDescription>{STEPS[step - 1].description}</CardDescription>
                     {step >= 2 && (
-                        <span className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
-                            Recruitment Fee {Math.round(recruitmentFee).toLocaleString("sv-SE")} {calcState.currency}
-                        </span>
+                        <>
+                            <span className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
+                                Recruitment Fee {Math.round(recruitmentFee).toLocaleString("sv-SE")} {calcState.currency}
+                            </span>
+                            <p className="mt-2 text-xs text-slate-500 leading-snug">
+                                {t("feeReconfirm.declarationDisclaimer")}
+                            </p>
+                        </>
                     )}
                 </CardHeader>
                 <CardContent>

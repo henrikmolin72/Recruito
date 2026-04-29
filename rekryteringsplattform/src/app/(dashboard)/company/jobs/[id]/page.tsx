@@ -22,6 +22,7 @@ import {
     ShieldCheck,
 } from "lucide-react";
 import { formatDate, formatCurrency, calculateClientFee } from "@/lib/utils";
+import { FeeReconfirmCard } from "@/components/dashboard/company/fee-reconfirm-card";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { JobActions } from "@/components/dashboard/company/job-actions";
 import { CompanyCandidatesOverview } from "@/components/dashboard/company/company-candidates-overview";
@@ -118,6 +119,17 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                     <JobActions jobId={job.id} status={job.status} />
                 </div>
             </div>
+
+            {job.status === "pending_client_reconfirm" && job.client_fee_amount_proposed != null && job.client_fee_amount_estimated != null && (
+                <FeeReconfirmCard
+                    jobId={job.id}
+                    estimated={Number(job.client_fee_amount_estimated)}
+                    proposed={Number(job.client_fee_amount_proposed)}
+                    currency={job.salary_currency || "EUR"}
+                    reason={job.client_fee_uplift_reason}
+                    note={job.client_fee_uplift_note}
+                />
+            )}
 
             {/* Main Layout with Tabs */}
             <Tabs defaultValue="pipeline" className="space-y-8">
