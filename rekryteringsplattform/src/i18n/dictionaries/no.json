@@ -477,6 +477,8 @@
     "tableMessages": "Meldinger",
     "tableView": "Vist",
     "referCandidate": "Tips om kandidat",
+    "expiredLabel": "Utgått",
+    "capReachedLabel": "Tak nådd",
     "colSubmitted": "Innsendt",
     "colInInterview": "Intervju",
     "colJobOffer": "Jobbtilbud",

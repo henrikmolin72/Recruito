@@ -477,6 +477,8 @@
     "tableMessages": "Beskeder",
     "tableView": "Vist",
     "referCandidate": "Henvis kandidat",
+    "expiredLabel": "Udløbet",
+    "capReachedLabel": "Grænse nået",
     "colSubmitted": "Indsendt",
     "colInInterview": "Til samtale",
     "colJobOffer": "Jobtilbud",

@@ -219,15 +219,40 @@ export default async function RecruiterMandatesPage() {
 
                         {/* Refer a Candidate */}
                         <td className="px-4 py-3 text-center">
-                          <Link href={`/recruiter/mandates/${mandate.id}/candidates/new`}>
-                            <Button
-                              size="sm"
-                              className="gap-1.5 bg-brand-600 hover:bg-brand-700 text-white whitespace-nowrap text-xs"
-                            >
-                              <UserPlus className="h-3.5 w-3.5" />
-                              {r.referCandidate || "Refer a Candidate"}
-                            </Button>
-                          </Link>
+                          {(() => {
+                            const isExpired = days !== null && days <= 0;
+                            const cap = mandate.max_candidates ?? 8;
+                            const totalSubmitted = mandate.submitted_count ?? 0;
+                            const capReached = totalSubmitted >= cap;
+                            const blocked = isExpired || capReached;
+
+                            if (blocked) {
+                              return (
+                                <Button
+                                  size="sm"
+                                  disabled
+                                  className="gap-1.5 whitespace-nowrap text-xs opacity-60 cursor-not-allowed"
+                                >
+                                  <UserPlus className="h-3.5 w-3.5" />
+                                  {isExpired
+                                    ? (r.expiredLabel || "Expired")
+                                    : (r.capReachedLabel || "Cap reached")}
+                                </Button>
+                              );
+                            }
+
+                            return (
+                              <Link href={`/recruiter/mandates/${mandate.id}/candidates/new`}>
+                                <Button
+                                  size="sm"
+                                  className="gap-1.5 bg-brand-600 hover:bg-brand-700 text-white whitespace-nowrap text-xs"
+                                >
+                                  <UserPlus className="h-3.5 w-3.5" />
+                                  {r.referCandidate || "Refer a Candidate"}
+                                </Button>
+                              </Link>
+                            );
+                          })()}
                         </td>
                       </tr>
                     );

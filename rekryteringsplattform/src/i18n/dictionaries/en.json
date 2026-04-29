@@ -477,6 +477,8 @@
     "tableMessages": "Messages",
     "tableView": "View",
     "referCandidate": "Refer a Candidate",
+    "expiredLabel": "Expired",
+    "capReachedLabel": "Cap reached",
     "colSubmitted": "Submitted",
     "colInInterview": "In Interview",
     "colJobOffer": "Job Offer",
