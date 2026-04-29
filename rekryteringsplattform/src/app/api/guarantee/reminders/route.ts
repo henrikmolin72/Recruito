@@ -21,8 +21,13 @@ function daysUntil(dateStr: string): number {
 }
 
 export async function GET(request: NextRequest) {
-    const secret = request.headers.get("x-cron-secret") ?? request.nextUrl.searchParams.get("secret");
-    if (secret !== process.env.CRON_SECRET) {
+    // Header-only auth: query-param secrets get persisted in access logs.
+    // Vercel Cron sends Authorization: Bearer <CRON_SECRET>; we also accept
+    // the legacy x-cron-secret header for direct curl/admin invocation.
+    const authHeader = request.headers.get("authorization");
+    const bearerSecret = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const secret = bearerSecret ?? request.headers.get("x-cron-secret");
+    if (!secret || secret !== process.env.CRON_SECRET) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
