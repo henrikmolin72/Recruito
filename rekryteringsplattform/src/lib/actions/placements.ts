@@ -11,9 +11,10 @@ import { requireAdmin } from "@/lib/actions/require-admin";
 // =============================================
 
 /**
- * Get a placement by candidate ID (admin-level access)
+ * Get a placement by candidate ID (admin-only).
  */
 export async function getPlacementByCandidateId(candidateId: string) {
+    await requireAdmin();
     const admin = createAdminClient();
     const { data } = await admin
         .from("placements")
@@ -63,7 +64,10 @@ export async function sendPlacementInvoice(placementId: string) {
         })
         .eq("id", placementId);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // Notify company about invoice
     const companyData = Array.isArray(placement.company) ? placement.company[0] : placement.company;
@@ -142,7 +146,10 @@ export async function recordPlacementPayment(placementId: string) {
         .update(updatePatch)
         .eq("id", placementId);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // If entering guarantee, update candidate status
     if (nextStatus === "guarantee_active") {
@@ -192,8 +199,10 @@ export async function recordPlacementPayment(placementId: string) {
 
 /**
  * Process all placements where guarantee period has expired.
- * Should be called by a cron job (e.g. Supabase Edge Function daily)
- * or manually by admin.
+ * Currently only triggered manually by admin from the UI. If/when this
+ * is wired to a Supabase Edge Function cron, requireAdmin() will redirect
+ * (no user context) — extract the body into a non-action helper and gate
+ * the cron route with a CRON_SECRET header instead.
  */
 export async function processGuaranteeExpirations() {
     await requireAdmin();
@@ -316,7 +325,10 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
         })
         .eq("id", placementId);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // Update candidate
     await admin
@@ -379,10 +391,11 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
 // =============================================
 
 /**
- * Recalculate performance metrics for a single recruiter.
+ * Recalculate performance metrics for a single recruiter (admin-only).
  * Uses the database function for accuracy.
  */
 export async function recalculateRecruiterMetrics(recruiterId: string) {
+    await requireAdmin();
     const admin = createAdminClient();
 
     const { error } = await admin.rpc("fn_recalculate_recruiter_metrics", {
@@ -391,7 +404,7 @@ export async function recalculateRecruiterMetrics(recruiterId: string) {
 
     if (error) {
         console.error(`Failed to recalculate metrics for recruiter ${recruiterId}:`, error);
-        return { error: error.message };
+        return { error: "Something went wrong. Please try again." };
     }
 
     return { success: true };

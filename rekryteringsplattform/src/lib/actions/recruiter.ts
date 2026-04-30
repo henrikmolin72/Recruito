@@ -71,7 +71,10 @@ export async function updateRecruiterProfile(formData: FormData) {
         })
         .eq("user_id", user.id);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath("/recruiter/profile");
     return { success: true };
@@ -137,7 +140,7 @@ export async function completeRecruiterOnboarding(formData: FormData) {
 
     if (recruiterUpdateError) {
         console.error("Recruiter onboarding update error:", recruiterUpdateError);
-        return { error: recruiterUpdateError.message };
+        return { error: "Something went wrong. Please try again." };
     }
 
     if (avatarUrl) {
@@ -456,7 +459,7 @@ export async function claimMandate(jobId: string) {
             return { error: "Du har redan tagit detta uppdrag" };
         }
         console.error("Error claiming mandate:", mandateError);
-        return { error: mandateError.message };
+        return { error: "Something went wrong. Please try again." };
     }
 
     revalidatePath("/recruiter/jobs");
@@ -525,6 +528,7 @@ export async function getRecruiterMandates() {
         status,
         published_at,
         application_deadline,
+        max_candidates,
         company:companies(company_name)
       ),
       candidates:candidates(
@@ -559,6 +563,8 @@ export async function getRecruiterMandates() {
         claimed_at: mandate.claimed_at,
         application_deadline: mandate.job?.application_deadline,
         published_at: mandate.job?.published_at,
+        max_candidates: mandate.job?.max_candidates ?? 8,
+        submitted_count: (mandate.candidates || []).length,
         candidates: mandate.candidates?.map((c: any) => ({
             id: c.id,
             name: `${c.first_name} ${c.last_name}`,

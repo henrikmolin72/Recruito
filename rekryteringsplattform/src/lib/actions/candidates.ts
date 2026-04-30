@@ -9,14 +9,13 @@ import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { candidateSubmissionEmail, candidateProgressEmail } from "@/lib/email/email-templates";
 import { validateCandidateForm } from "@/lib/validation/forms";
 import { requireAdmin } from "@/lib/actions/require-admin";
+import { verifyCvFileContent } from "@/lib/file-magic";
 import type { PipelineStage } from "@/types/db-types";
 import {
     canTransitionCandidateStatus,
     inferInterviewWorkflowStatus,
     isCandidateStatusValue,
-    normalizeCandidateStatusForWorkflow,
     statusChangeTimestampPatch,
-    TERMINAL_CANDIDATE_STATUSES,
 } from "@/lib/candidate-workflow";
 import {
     getPlacementByCandidateId,
@@ -120,23 +119,11 @@ function mapCompanyNextStepLabel(nextStep: CandidateNextStepRequest) {
     return labels[nextStep];
 }
 
-function normalizeIdentity(value: string | null | undefined) {
-    return value?.trim().toLowerCase() || null;
-}
-
-function candidateMatchesIdentity(candidate: any, email: string | null, linkedinUrl: string | null) {
-    const candidateEmail = normalizeIdentity(candidate?.email);
-    const candidateLinkedIn = normalizeIdentity(candidate?.linkedin_url);
-
-    const emailMatch = !!email && candidateEmail === email;
-    const linkedInMatch = !!linkedinUrl && candidateLinkedIn === linkedinUrl;
-    return emailMatch || linkedInMatch;
-}
-
-function isClientEngagementActiveStatus(status: string | null | undefined) {
-    const normalized = normalizeCandidateStatusForWorkflow(status);
-    return !TERMINAL_CANDIDATE_STATUSES.has(normalized);
-}
+import {
+    normalizeIdentity,
+    candidateMatchesIdentity,
+    isClientEngagementActiveStatus,
+} from "@/lib/candidate-identity";
 
 export async function createCandidate(mandateId: string, formData: FormData) {
     const supabase = await createClient();
@@ -252,7 +239,14 @@ export async function createCandidate(mandateId: string, formData: FormData) {
     let cvFilePath = null;
 
     if (cvFile.size > 0) {
-        const fileExt = cvFile.name.split('.').pop();
+        const fileExt = (cvFile.name.split('.').pop() ?? "").toLowerCase();
+        const allowedExts = new Set(["pdf", "doc", "docx", "txt", "rtf"]);
+        if (!allowedExts.has(fileExt)) {
+            return { error: "Tillåtna filtyper för CV är PDF, DOC, DOCX, TXT eller RTF." };
+        }
+        if (!(await verifyCvFileContent(cvFile, fileExt))) {
+            return { error: "Filinnehåll matchar inte filtypen. Ladda upp en giltig CV-fil." };
+        }
         const fileName = `${mandate.job_id}/${recruiter.id}/${Date.now()}.${fileExt}`;
 
         const { error: uploadError, data } = await supabase.storage
@@ -289,7 +283,7 @@ export async function createCandidate(mandateId: string, formData: FormData) {
 
     if (insertError) {
         console.error("Candidate Insert Error:", insertError);
-        return { error: insertError.message };
+        return { error: "Something went wrong. Please try again." };
     }
 
     // Notification: Notify Company Owner
@@ -363,7 +357,7 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
         .eq("id", candidateId);
 
     if (error) {
-        return { error: error.message };
+        { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
     }
 
     // Recruiter/company applying a status change should clear pending company request.
@@ -502,7 +496,10 @@ export async function moveCandidateToPipelineStage(
         })
         .eq("id", candidateId);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     await clearCompanyNextStepRequest(supabase, candidateId);
 
@@ -597,7 +594,10 @@ export async function requestCandidateNextStep(
         .eq("id", candidateId)
         .eq("job_id", jobId);
 
-    if (updateError) return { error: updateError.message };
+    if (updateError) {
+        console.error("[ServerAction]", updateError);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     const { recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
 
@@ -658,7 +658,10 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         .eq("id", candidateId)
         .eq("job_id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
     return { success: true };

@@ -44,7 +44,7 @@ export default async function RootLayout({
         <Suspense fallback={null}>
           <TopLoader />
         </Suspense>
-        <LocaleProvider locale={locale} dictionary={dictionary as Record<string, Record<string, string>>}>
+        <LocaleProvider locale={locale} dictionary={dictionary}>
           {children}
         </LocaleProvider>
         <Toaster position="top-right" richColors closeButton />

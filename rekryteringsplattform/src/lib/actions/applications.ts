@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { verifyCvFileContent } from "@/lib/file-magic";
 
 export type PublicApplicationFormState = {
   error?: string;
@@ -246,6 +247,11 @@ export async function submitPublicMandateApplication(
 
     if (!isAllowedCvFile(cvFile)) {
       return { error: "Tillåtna filtyper för CV är PDF, DOC, DOCX, TXT eller RTF." };
+    }
+
+    // Magic-byte content check: file.type and extension are client-controlled
+    if (!(await verifyCvFileContent(cvFile, getFileExtension(cvFile.name)))) {
+      return { error: "Filinnehåll matchar inte filtypen. Ladda upp en giltig CV-fil." };
     }
 
     const safeName = sanitizeFileName(cvFile.name || "cv");

@@ -1,1 +1,10 @@
 .DS_Store
+
+# Claude Code local-only config (may contain personal allow rules)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# OMC ephemeral state
+.omc/state/
+.omc/sessions/
+.omc/notepad.md

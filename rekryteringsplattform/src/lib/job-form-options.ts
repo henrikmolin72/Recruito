@@ -154,6 +154,53 @@ export const INDUSTRY_OPTIONS = [
   "Others",
 ] as const;
 
+export const REPORTING_TO_OPTIONS = [
+  "No Reporting Required",
+  "Supervisor",
+  "Manager",
+  "Senior Manager",
+  "Team Lead",
+  "Head / Head of Department",
+  "Director",
+  "Vice President (VP)",
+  "Senior Vice President (SVP)",
+  "Executive (C-Level: CEO, CTO, CFO, etc.)",
+  "Founder / Owner",
+] as const;
+
+export const TEAM_SIZE_OPTIONS = [
+  "No team management",
+  "1 - 5",
+  "6 - 10",
+  "11 - 20",
+  "21 - 50",
+  "51 - 70",
+  "71 - 100",
+  "101 - 200",
+  "201+",
+] as const;
+
+export const EXPERIENCE_BRACKET_OPTIONS = [
+  "Fresh Graduate / No Experience",
+  "0–1 year",
+  "1–3 years",
+  "3–5 years",
+  "5–7 years",
+  "7–10 years",
+  "10–15 years",
+  "15+ years",
+] as const;
+
+export const WORKING_HOURS_OPTIONS = [
+  "Standard Business Hours",
+  "Flexible Hours",
+  "Shift-Based",
+  "Rotational Shifts",
+  "Night Shift",
+  "Weekend Shifts",
+  "Split Shift (e.g., morning + evening)",
+] as const;
+
 export const COUNTRY_OPTIONS = [
   "Sverige",
   "Norge",

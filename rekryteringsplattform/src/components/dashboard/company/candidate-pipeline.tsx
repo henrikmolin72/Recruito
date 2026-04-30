@@ -195,7 +195,12 @@ function ListView({ candidates }: { candidates: any[] }) {
                   <h3 className="font-semibold">{candidate.first_name} {candidate.last_name}</h3>
                   <StatusBadge status={candidate.status} />
                 </div>
-                <p className="text-sm text-muted-foreground">{candidate.current_title || t("common.noTitle")}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2 break-words">{candidate.current_title || t("common.noTitle")}</p>
+                {candidate.company_requested_next_step_note && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 break-words">
+                    {candidate.company_requested_next_step_note}
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-y-1 gap-x-4 mt-2 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">{t("components.recruiterJobsListJobLabel")} <span className="text-foreground font-medium">{candidate.job?.title}</span></span>
                   <span className="flex items-center gap-1">{t("components.recruiterJobsListRecruiterLabel")} <span className="text-foreground font-medium">{candidate.recruiter?.profile?.full_name || t("common.recruiter")}</span></span>

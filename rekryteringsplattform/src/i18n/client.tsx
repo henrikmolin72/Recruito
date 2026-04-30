@@ -3,7 +3,8 @@
 import { createContext, useContext, useCallback, type ReactNode } from "react";
 import type { Locale } from "./config";
 
-type Dictionary = Record<string, Record<string, string>>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Dictionary = Record<string, any>;
 
 interface I18nContextValue {
     locale: Locale;

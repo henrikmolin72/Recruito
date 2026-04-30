@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -297,9 +298,11 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                         </Badge>
                       </div>
 
-                      <h3 className="text-2xl font-black text-slate-900 mb-2 group-hover:text-brand-600 transition-colors">
-                        {job.title}
-                      </h3>
+                      <Link href={`/recruiter/jobs/${job.id}`}>
+                        <h3 className="text-2xl font-black text-slate-900 mb-2 group-hover:text-brand-600 transition-colors cursor-pointer">
+                          {job.title}
+                        </h3>
+                      </Link>
 
                       <div className="flex items-center flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500 font-medium">
                         <div className="flex items-center gap-2">

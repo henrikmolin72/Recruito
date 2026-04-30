@@ -208,6 +208,10 @@ export async function createJob(formData: FormData) {
         fee_percentage: feePercentage,
         is_exclusive: isExclusive,
         client_fee_amount: lockedClientFee,
+        // Snapshot the baseline once at submission. Drafts get NULL; the estimate is
+        // recorded the moment the row leaves draft. Per the design, this column is
+        // written exactly once and never recomputed thereafter.
+        client_fee_amount_estimated: isDraft ? null : lockedClientFee,
         recruiter_fee_amount: lockedRecruiterFee,
         max_recruiters: d.max_recruiters ?? rawInt("max_recruiters"),
         application_deadline: d.application_deadline || rawOrNull("application_deadline"),
@@ -244,7 +248,7 @@ export async function createJob(formData: FormData) {
 
     if (jobError) {
         console.error("Error creating job:", jobError);
-        return { error: jobError.message };
+        return { error: "Something went wrong. Please try again." };
     }
 
     if (isDraft) {
@@ -459,7 +463,7 @@ export async function updateJob(jobId: string, formData: FormData) {
 
     if (error) {
         console.error("Error updating job:", error);
-        return { error: error.message };
+        return { error: "Something went wrong. Please try again." };
     }
 
     revalidatePath(`/company/jobs/${jobId}`);
@@ -484,7 +488,10 @@ export async function closeJob(jobId: string, reason?: string) {
         .update(updatePayload)
         .eq("id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -504,7 +511,10 @@ export async function pauseJob(jobId: string) {
         .update({ status: 'paused' })
         .eq("id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -524,7 +534,10 @@ export async function resumeJob(jobId: string) {
         .update({ status: 'active' })
         .eq("id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -559,7 +572,10 @@ export async function updatePipelineStages(jobId: string, stages: PipelineStage[
         .update({ pipeline_stages: validation.data })
         .eq("id", jobId);
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // Notify recruiters that the pipeline has changed
     const { data: mandates } = await supabase
@@ -604,7 +620,10 @@ export async function createJobAnnouncement(jobId: string, message: string) {
         .from("job_announcements")
         .insert({ job_id: jobId, message, created_by: user.id });
 
-    if (error) return { error: error.message };
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Something went wrong. Please try again." };
+    }
 
     // Notify recruiters with mandates
     const { data: mandates } = await supabase
@@ -686,7 +705,7 @@ export async function approveJob(jobId: string) {
 
     const { data: job } = await supabase
         .from("jobs")
-        .select("status")
+        .select("status, client_fee_amount, client_fee_amount_estimated")
         .eq("id", jobId)
         .single();
 
@@ -694,16 +713,27 @@ export async function approveJob(jobId: string) {
     if (job.status !== "pending_approval") {
         return { error: "Job is not pending approval." };
     }
+    if (
+        job.client_fee_amount != null &&
+        job.client_fee_amount_estimated != null &&
+        Number(job.client_fee_amount) > Number(job.client_fee_amount_estimated)
+    ) {
+        return { error: "Fee has been increased above the original estimate. Use 'Approve & request client re-confirm' instead." };
+    }
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
         .from("jobs")
         .update({ status: "active", published_at: new Date().toISOString() })
         .eq("id", jobId)
-        .eq("status", "pending_approval");
+        .eq("status", "pending_approval")
+        .select("id");
 
     if (error) {
         console.error("[approveJob]", error);
         return { error: "Could not approve job. Please try again." };
+    }
+    if (!updated || updated.length === 0) {
+        return { error: "Job state changed; please refresh." };
     }
 
     // Fire-and-forget notifications to matching recruiters.
@@ -712,4 +742,100 @@ export async function approveJob(jobId: string) {
     revalidatePath("/admin/jobs");
     revalidatePath("/recruiter/jobs");
     return { success: true };
+}
+
+// Company-side: accept the higher fee proposed during admin review. Status guard
+// prevents race with admin withdraw or repeated client clicks. Reuses
+// notifyMatchingRecruitersAboutJob since the job is now eligible for recruiters.
+export async function clientApproveProposedFee(jobId: string) {
+    const { error: authError, supabase, user } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
+    if (!user) return { error: "Ej inloggad" };
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("id, status, client_fee_amount_proposed, published_at, title")
+        .eq("id", jobId)
+        .single();
+    if (!job) return { error: "Job not found" };
+    if (job.status !== "pending_client_reconfirm") {
+        return { error: "Job is no longer awaiting re-confirmation" };
+    }
+    if (job.client_fee_amount_proposed == null) {
+        return { error: "No proposed amount on file" };
+    }
+
+    const { data: updated, error } = await supabase
+        .from("jobs")
+        .update({
+            status: "active",
+            client_fee_amount: job.client_fee_amount_proposed,
+            client_fee_amount_proposed: null,
+            client_fee_reconfirm_resolved_at: new Date().toISOString(),
+            client_fee_reconfirm_decision: "approved",
+            published_at: job.published_at ?? new Date().toISOString(),
+        })
+        .eq("id", jobId)
+        .eq("status", "pending_client_reconfirm")
+        .select("id");
+
+    if (error) {
+        console.error("[clientApproveProposedFee]", error);
+        return { error: "Could not approve. Please try again." };
+    }
+    if (!updated || updated.length === 0) {
+        return { error: "Job state changed; please refresh." };
+    }
+
+    await notifyMatchingRecruitersAboutJob(jobId);
+
+    revalidatePath("/company/jobs");
+    revalidatePath(`/company/jobs/${jobId}`);
+    revalidatePath("/admin/jobs");
+    return { success: true as const };
+}
+
+// Company-side: reject the higher fee. Routes back to pending_approval; admin
+// can revise the fee or withdraw.
+export async function clientRejectProposedFee(jobId: string) {
+    const { error: authError, supabase, user } = await verifyJobOwnership(jobId);
+    if (authError) return { error: authError };
+    if (!user) return { error: "Ej inloggad" };
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("id, status")
+        .eq("id", jobId)
+        .single();
+    if (!job) return { error: "Job not found" };
+    if (job.status !== "pending_client_reconfirm") {
+        return { error: "Job is no longer awaiting re-confirmation" };
+    }
+
+    const { data: updated, error } = await supabase
+        .from("jobs")
+        .update({
+            status: "pending_approval",
+            client_fee_amount_proposed: null,
+            client_fee_uplift_reason: null,
+            client_fee_uplift_note: null,
+            client_fee_reconfirm_resolved_at: new Date().toISOString(),
+            client_fee_reconfirm_decision: "rejected",
+        })
+        .eq("id", jobId)
+        .eq("status", "pending_client_reconfirm")
+        .select("id");
+
+    if (error) {
+        console.error("[clientRejectProposedFee]", error);
+        return { error: "Could not reject. Please try again." };
+    }
+    if (!updated || updated.length === 0) {
+        return { error: "Job state changed; please refresh." };
+    }
+
+    revalidatePath("/company/jobs");
+    revalidatePath(`/company/jobs/${jobId}`);
+    revalidatePath("/admin/jobs");
+    return { success: true as const };
 }
