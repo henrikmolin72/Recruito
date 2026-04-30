@@ -35,6 +35,7 @@ export default async function AdminJobsPage() {
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobStatus}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobRecruiters}</th>
                 <th className="p-4 font-medium text-muted-foreground" title="Submitted / Cap">{a.tableJobCandidates} (cap)</th>
+                <th className="p-4 font-medium text-muted-foreground">Original Fee</th>
                 <th className="p-4 font-medium text-muted-foreground">Client Fee</th>
                 <th className="p-4 font-medium text-emerald-700">Recruiter Fee</th>
                 <th className="p-4 font-medium text-muted-foreground">Approval</th>
@@ -43,7 +44,7 @@ export default async function AdminJobsPage() {
             <tbody>
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-muted-foreground">{a.noJobsRegistered}</td>
+                  <td colSpan={11} className="p-8 text-center text-muted-foreground">{a.noJobsRegistered}</td>
                 </tr>
               ) : (
                 jobs.map((job) => (
@@ -60,6 +61,11 @@ export default async function AdminJobsPage() {
                         initialMax={job.maxCandidates}
                         currentCount={job.candidates}
                       />
+                    </td>
+                    <td className="p-4 text-muted-foreground">
+                      {job.clientFeeEstimated != null
+                        ? formatCurrency(job.clientFeeEstimated, job.salaryCurrency)
+                        : dict.common.noDataDash}
                     </td>
                     <td className="p-4">
                       <JobFeeAmountEditor

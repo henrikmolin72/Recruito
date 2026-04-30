@@ -705,13 +705,20 @@ export async function approveJob(jobId: string) {
 
     const { data: job } = await supabase
         .from("jobs")
-        .select("status")
+        .select("status, client_fee_amount, client_fee_amount_estimated")
         .eq("id", jobId)
         .single();
 
     if (!job) return { error: "Job not found." };
     if (job.status !== "pending_approval") {
         return { error: "Job is not pending approval." };
+    }
+    if (
+        job.client_fee_amount != null &&
+        job.client_fee_amount_estimated != null &&
+        Number(job.client_fee_amount) > Number(job.client_fee_amount_estimated)
+    ) {
+        return { error: "Fee has been increased above the original estimate. Use 'Approve & request client re-confirm' instead." };
     }
 
     const { data: updated, error } = await supabase

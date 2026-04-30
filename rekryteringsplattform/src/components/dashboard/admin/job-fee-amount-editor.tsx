@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { updateClientFeeAmount, updateRecruiterFeeAmount } from "@/lib/actions/admin";
 import { toast } from "sonner";
 import { Check, Pencil, X } from "lucide-react";
@@ -14,6 +15,7 @@ interface JobFeeAmountEditorProps {
 }
 
 export function JobFeeAmountEditor({ jobId, initialAmount, currency = "EUR", field }: JobFeeAmountEditorProps) {
+    const router = useRouter();
     const [editing, setEditing] = useState(false);
     const [value, setValue] = useState(initialAmount != null ? String(initialAmount) : "");
     const [saving, setSaving] = useState(false);
@@ -33,6 +35,7 @@ export function JobFeeAmountEditor({ jobId, initialAmount, currency = "EUR", fie
         } else {
             toast.success("Fee updated");
             setEditing(false);
+            router.refresh();
         }
     }
 
