@@ -19,7 +19,6 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
@@ -296,6 +295,11 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                         <Badge variant="outline" className="rounded-full bg-blue-50 text-blue-600 border-blue-100 py-1 px-3">
                           {t(`employment.${EMPLOYMENT_TYPE_DICT_KEY[job.employment_type] || "fullTime"}`)}
                         </Badge>
+                        {job.status !== "active" && (
+                          <Badge variant="outline" className="rounded-full bg-rose-50 text-rose-600 border-rose-100 py-1 px-3">
+                            {t("recruiter.expired") || "Expired"}
+                          </Badge>
+                        )}
                       </div>
 
                       <Link href={`/recruiter/jobs/${job.id}`}>
@@ -324,7 +328,9 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                           <div className="text-[11px] leading-tight capitalize">
                             <p className="text-slate-400 font-bold uppercase tracking-widest">{t("recruiter.slotsLabel")}</p>
                             <p className={cn("font-black", job.recruiters_count >= job.max_recruiters ? "text-danger-500" : "text-slate-700")}>
-                              {t("recruiter.slotsFilled").replace("{count}", String(job.recruiters_count)).replace("{max}", String(job.max_recruiters))}
+                              {job.recruiters_count >= job.max_recruiters
+                                ? t("recruiter.slotsFull")
+                                : t("recruiter.slotsTaken").replace("{count}", String(job.recruiters_count))}
                             </p>
                           </div>
                         </div>
@@ -349,7 +355,11 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                       </div>
 
                       <div className="mt-8">
-                        <TakeMandateButton jobId={job.id} />
+                        <Link href={`/recruiter/jobs/${job.id}`}>
+                          <Button size="sm" className="w-full">
+                            {t("recruiter.viewDetails") || "View details"}
+                          </Button>
+                        </Link>
                       </div>
                     </div>
                   </div>

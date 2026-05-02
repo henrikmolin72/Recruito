@@ -388,7 +388,7 @@ export async function getAvailableJobsForRecruiter() {
       company:companies(company_name),
       mandates:job_mandates(count)
     `)
-        .eq("status", "active")
+        .in("status", ["active", "closed", "paused"])
         .order("created_at", { ascending: false });
 
     if (error) {
@@ -397,6 +397,7 @@ export async function getAvailableJobsForRecruiter() {
     }
 
     const availableJobs = jobs.filter(job => {
+        if (job.status !== "active") return true;
         const isClaimed = claimedJobIds.includes(job.id);
         const recruitersCount = job.current_recruiter_count || 0;
         const isFull = recruitersCount >= job.max_recruiters;

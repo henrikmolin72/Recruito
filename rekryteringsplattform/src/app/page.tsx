@@ -19,7 +19,6 @@ import {
   ArrowRight,
   Building2,
   UserCircle,
-  ShieldCheck,
   PlayCircle,
 } from "lucide-react";
 
@@ -89,12 +88,6 @@ export default function LandingPage() {
               <Button variant="outline" size="sm" className="hidden sm:inline-flex gap-1.5">
                 <UserCircle className="h-3.5 w-3.5" />
                 {t("landing.loginRecruiter")}
-              </Button>
-            </Link>
-            <Link href="/login?role=admin">
-              <Button variant="outline" size="sm" className="hidden sm:inline-flex gap-1.5 border-emerald-500 text-emerald-700 hover:bg-emerald-50">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                {t("landing.loginAdmin")}
               </Button>
             </Link>
             <Link href="/register">
@@ -272,26 +265,26 @@ export default function LandingPage() {
             <Card className="p-6 lg:p-8 border-slate-200 shadow-sm">
               <div className="space-y-5">
                 <div className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-brand-700">
-                  Demo &amp; Start
+                  {t("landing.demoStartBadge")}
                 </div>
                 <div>
                   <h3 className="text-2xl font-black tracking-tight text-slate-900">
-                    Se hur Recruito fungerar i praktiken
+                    {t("landing.demoStartTitle")}
                   </h3>
                   <p className="mt-3 text-sm leading-6 text-slate-600">
-                    Boka en demo eller skapa konto direkt. Ni får ett tydligt arbetsflöde för företag, rekryterare och kandidater i samma plattform.
+                    {t("landing.demoStartDesc")}
                   </p>
                 </div>
 
                 <div className="space-y-3">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                    Följ kandidater visuellt i flowchart medan rekryteraren driver processen.
+                    {t("landing.demoStartBullet1")}
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                    Publik ansökningslänk per mandat och AI-screening på rekryterarsidan.
+                    {t("landing.demoStartBullet2")}
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                    Inbyggd chatt och tydliga nästa steg mellan företag och rekryterare.
+                    {t("landing.demoStartBullet3")}
                   </div>
                 </div>
 

@@ -131,6 +131,14 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
         [salary, guaranteeMonths, isExclusive, hires],
     );
 
+    const isScandi = currency === "SEK" || currency === "NOK" || currency === "DKK";
+    const sliderMin = isScandi ? 200_000 : 20_000;
+    const sliderMax = isScandi ? 3_000_000 : 200_000;
+    const sliderStep = isScandi ? 10_000 : 1_000;
+    const currencySymbol = currency === "EUR" ? "€" : currency === "USD" ? "$" : currency === "GBP" ? "£" : "";
+    const minLabel = currencySymbol ? `${currencySymbol}${fmt(sliderMin)}` : `${fmt(sliderMin)} ${currency}`;
+    const maxLabel = currencySymbol ? `${currencySymbol}${fmt(sliderMax)}` : `${fmt(sliderMax)} ${currency}`;
+
     return (
         <div className="mx-0 mt-1 mb-1">
             <div className="rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/80 shadow-lg shadow-brand-500/5 overflow-hidden">
@@ -148,7 +156,15 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                                 </span>
                                 <select
                                     value={currency}
-                                    onChange={(e) => setCurrency(e.target.value)}
+                                    onChange={(e) => {
+                                        const next = e.target.value;
+                                        const nextIsScandi = next === "SEK" || next === "NOK" || next === "DKK";
+                                        const prevIsScandi = currency === "SEK" || currency === "NOK" || currency === "DKK";
+                                        if (nextIsScandi !== prevIsScandi) {
+                                            setSalary(nextIsScandi ? salary * 10 : Math.round(salary / 10));
+                                        }
+                                        setCurrency(next);
+                                    }}
                                     className="text-[10px] font-bold text-slate-600 bg-slate-100 border-0 rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-400"
                                 >
                                     {CURRENCY_OPTIONS.map(c => (
@@ -159,16 +175,16 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                         </div>
                         <input
                             type="range"
-                            min={20_000}
-                            max={200_000}
-                            step={1_000}
-                            value={salary}
+                            min={sliderMin}
+                            max={sliderMax}
+                            step={sliderStep}
+                            value={Math.min(Math.max(salary, sliderMin), sliderMax)}
                             onChange={(e) => setSalary(Number(e.target.value))}
                             className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-200 accent-brand-600"
                         />
                         <div className="flex justify-between text-[9px] text-slate-400">
-                            <span>€20 000</span>
-                            <span>€200 000</span>
+                            <span>{minLabel}</span>
+                            <span>{maxLabel}</span>
                         </div>
                     </div>
 

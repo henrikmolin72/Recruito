@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
+import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
 
 async function getJob(id: string) {
     const supabase = await createClient();
@@ -59,7 +60,7 @@ async function getJob(id: string) {
             company:companies(company_name, website, logo_url, linkedin_url)
         `)
         .eq("id", id)
-        .eq("status", "active")
+        .in("status", ["active", "closed", "paused"])
         .single();
 
     return job;
@@ -88,6 +89,11 @@ export default async function RecruiterJobDetailPage({ params }: { params: Promi
                 <span className="text-sm text-slate-500 font-medium">Back to Jobs</span>
             </div>
             <JobPreviewCard job={normalized} variant="recruiter" />
+            {normalized.status === "active" && (
+                <div className="flex justify-end">
+                    <TakeMandateButton jobId={normalized.id} />
+                </div>
+            )}
         </div>
     );
 }
