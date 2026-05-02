@@ -42,7 +42,7 @@ export default async function CompanyJobsPage() {
     if (status === "active") return { label: c.statusLive || "Live", color: "text-success-500" };
     if (status === "paused") return { label: c.statusPaused || "Paused", color: "text-danger-500" };
     if (status === "draft") return { label: "Draft", color: "text-amber-500" };
-    if (status === "closed") return { label: "Closed", color: "text-muted-foreground" };
+    if (status === "closed") return { label: c.statusPaused || "Paused", color: "text-danger-500" };
     return { label: status, color: "text-muted-foreground" };
   }
 

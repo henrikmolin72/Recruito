@@ -40,42 +40,42 @@ export default function RegisterRecruiterPage() {
             <div className="bg-slate-900 px-8 py-10 text-white lg:px-10">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest">
                 <Sparkles className="h-3.5 w-3.5" />
-                Recruiter Registration
+                {t("auth.recruiterRegBadge")}
               </div>
 
               <h1 className="mt-4 text-3xl font-black leading-tight tracking-tight">
-                Join Recruito as a freelance recruiter
+                {t("auth.recruiterRegHeadline")}
               </h1>
               <p className="mt-3 max-w-md text-sm leading-6 text-slate-300">
-                Submit your application to join the platform. We review every recruiter profile before approval.
+                {t("auth.recruiterRegSubheadline")}
               </p>
 
               <div className="mt-8 space-y-4">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <Globe className="h-4 w-4 text-emerald-300" />
-                    Global recruiter network
+                    {t("auth.recruiterRegFeature1Title")}
                   </div>
                   <p className="mt-1 text-xs leading-5 text-slate-300">
-                    Share your current country and experience level so we can route relevant mandates faster.
+                    {t("auth.recruiterRegFeature1Desc")}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <Handshake className="h-4 w-4 text-sky-300" />
-                    Transparent freelance terms
+                    {t("auth.recruiterRegFeature2Title")}
                   </div>
                   <p className="mt-1 text-xs leading-5 text-slate-300">
-                    Commission is paid after successful placement and client guarantee completion.
+                    {t("auth.recruiterRegFeature2Desc")}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <ShieldCheck className="h-4 w-4 text-amber-300" />
-                    Internal review
+                    {t("auth.recruiterRegFeature3Title")}
                   </div>
                   <p className="mt-1 text-xs leading-5 text-slate-300">
-                    Your application is sent internally for review automatically after submission.
+                    {t("auth.recruiterRegFeature3Desc")}
                   </p>
                 </div>
               </div>

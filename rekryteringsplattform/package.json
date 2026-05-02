@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "dotenv -e .env.local -e .env.test.local -- playwright test",
+    "test:e2e:ui": "dotenv -e .env.local -e .env.test.local -- playwright test --ui",
+    "test:e2e:install": "playwright install chromium",
+    "test:e2e:setup": "dotenv -e .env.local -e .env.test.local -- tsx e2e/setup-test-user.ts",
+    "test:smoke": "dotenv -e .env.local -e .env.test.local -- playwright test e2e/smoke.spec.ts",
+    "test:smoke:setup": "dotenv -e .env.local -e .env.test.local -- tsx e2e/setup-test-user.ts && dotenv -e .env.local -e .env.test.local -- tsx e2e/setup-test-recruiter.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.66.0",
@@ -47,11 +53,12 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",

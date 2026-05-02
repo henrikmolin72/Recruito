@@ -497,18 +497,10 @@ export function CandidateSubmissionForm({
 
                         {/* AI Match Score */}
                         <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
-                            <Label>{r.aiMatchScore || "AI Match Score"}</Label>
-                            <div className="flex items-center gap-4 mt-2">
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={100}
-                                    value={aiScore ?? 50}
-                                    onChange={(e) => setAiScore(Number(e.target.value))}
-                                    className="flex-1 accent-brand-600"
-                                />
+                            <div className="flex items-center justify-between gap-4">
+                                <Label>{r.aiMatchScore || "AI Match Score"}</Label>
                                 <div
-                                    className={`text-3xl font-black tabular-nums min-w-[4rem] text-right ${aiScore !== null && aiScore >= 80 ? "text-emerald-600" : "text-red-500"
+                                    className={`text-3xl font-black tabular-nums text-right ${aiScore !== null && aiScore >= 80 ? "text-emerald-600" : "text-red-500"
                                         }`}
                                 >
                                     {aiScoreLoading ? "…" : (aiScore ?? "—")}%
