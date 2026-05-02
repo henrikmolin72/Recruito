@@ -10,7 +10,9 @@
     "test:e2e": "dotenv -e .env.local -e .env.test.local -- playwright test",
     "test:e2e:ui": "dotenv -e .env.local -e .env.test.local -- playwright test --ui",
     "test:e2e:install": "playwright install chromium",
-    "test:e2e:setup": "dotenv -e .env.local -e .env.test.local -- tsx e2e/setup-test-user.ts"
+    "test:e2e:setup": "dotenv -e .env.local -e .env.test.local -- tsx e2e/setup-test-user.ts",
+    "test:smoke": "dotenv -e .env.local -e .env.test.local -- playwright test e2e/smoke.spec.ts",
+    "test:smoke:setup": "dotenv -e .env.local -e .env.test.local -- tsx e2e/setup-test-user.ts && dotenv -e .env.local -e .env.test.local -- tsx e2e/setup-test-recruiter.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.66.0",
