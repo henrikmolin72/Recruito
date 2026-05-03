@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -36,15 +37,15 @@ export default async function AdminRecruitersPage() {
                 <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">{a.noRecruitersRegistered}</td></tr>
               ) : (
                 recruiters.map((r) => (
-                  <tr key={r.id} className="border-b border-border last:border-0">
+                  <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/50">
                     <td className="p-4">
-                      <div className="flex items-center gap-3">
+                      <Link href={`/admin/recruiters/${r.id}`} className="flex items-center gap-3 group">
                         <Avatar initials={r.name.split(" ").map((n: string) => n[0]).join("")} size="sm" />
                         <div>
-                          <p className="font-medium">{r.name}</p>
+                          <p className="font-medium group-hover:text-brand-600">{r.name}</p>
                           <p className="text-xs text-muted-foreground">{r.email}</p>
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     <td className="p-4 text-muted-foreground">{r.headline || dict.common.noDataDash}</td>
                     <td className="p-4">

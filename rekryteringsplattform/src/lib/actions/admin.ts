@@ -984,6 +984,39 @@ export async function updateRecruiterFeeAmount(jobId: string, amount: number) {
     return { success: true };
 }
 
+// Adjust per-job recruiter cap. Bounds: 1–10, default 5.
+export async function setJobMaxRecruiters(jobId: string, max: number) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    if (!Number.isInteger(max) || max < 1 || max > 10) {
+        return { error: "Cap must be an integer between 1 and 10." };
+    }
+
+    const { data: job } = await supabaseAdmin
+        .from("jobs")
+        .select("current_recruiter_count")
+        .eq("id", jobId)
+        .single();
+
+    if (job && (job.current_recruiter_count ?? 0) > max) {
+        return { error: "Cap cannot be lower than the current number of assigned recruiters." };
+    }
+
+    const { error } = await supabaseAdmin
+        .from("jobs")
+        .update({ max_recruiters: max })
+        .eq("id", jobId);
+
+    if (error) {
+        console.error("[setJobMaxRecruiters]", error);
+        return { error: "Could not update cap." };
+    }
+
+    revalidatePath("/admin/jobs");
+    return { success: true as const };
+}
+
 // Adjust per-job candidate submission cap (default 8). Used to "reopen" a job
 // for more submissions once the client has reviewed the current batch.
 export async function setJobMaxCandidates(jobId: string, max: number) {
@@ -1160,6 +1193,321 @@ export async function requestClientFeeReconfirm(
 
     revalidatePath("/admin/jobs");
     revalidatePath(`/company/jobs/${jobId}`);
+    return { success: true as const };
+}
+
+// ===== ADMIN RECRUITER DETAIL =====
+
+export async function getAdminRecruiterById(recruiterId: string) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const { data: recruiter, error } = await supabaseAdmin
+        .from("recruiters")
+        .select(`
+            id, user_id, headline, bio, specializations, locations,
+            years_experience, linkedin_url, approval_status, approved_at,
+            rating, total_placements, created_at
+        `)
+        .eq("id", recruiterId)
+        .single();
+
+    if (error || !recruiter) return null;
+
+    const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, email, phone, avatar_url")
+        .eq("id", recruiter.user_id)
+        .single();
+
+    const { data: mandates } = await supabaseAdmin
+        .from("job_mandates")
+        .select("id, is_active, claimed_at, job:jobs(id, title, status, company:companies(company_name))")
+        .eq("recruiter_id", recruiterId)
+        .order("claimed_at", { ascending: false });
+
+    const { data: placements } = await supabaseAdmin
+        .from("placements")
+        .select("id, status, total_fee, recruiter_fee, created_at, job:jobs(title), company:companies(company_name)")
+        .eq("recruiter_id", recruiterId)
+        .order("created_at", { ascending: false });
+
+    return {
+        id: recruiter.id,
+        user_id: recruiter.user_id,
+        full_name: profile?.full_name || "",
+        email: profile?.email || "",
+        phone: profile?.phone || "",
+        avatar_url: profile?.avatar_url || "",
+        headline: recruiter.headline || "",
+        bio: recruiter.bio || "",
+        specializations: recruiter.specializations || [],
+        locations: recruiter.locations || [],
+        years_experience: recruiter.years_experience ?? null,
+        linkedin_url: recruiter.linkedin_url || "",
+        approval_status: recruiter.approval_status,
+        approved_at: recruiter.approved_at,
+        rating: recruiter.rating || 0,
+        total_placements: recruiter.total_placements || 0,
+        created_at: recruiter.created_at,
+        mandates: (mandates || []).map((m: any) => {
+            const job = pickFirst(m.job);
+            const company = job ? pickFirst(job.company) : null;
+            return {
+                id: m.id,
+                jobId: job?.id,
+                jobTitle: job?.title || "—",
+                jobStatus: job?.status,
+                companyName: company?.company_name || "—",
+                isActive: m.is_active,
+                claimedAt: m.claimed_at,
+            };
+        }),
+        placements: (placements || []).map((p: any) => {
+            const job = pickFirst(p.job);
+            const company = pickFirst(p.company);
+            return {
+                id: p.id,
+                status: p.status,
+                totalFee: p.total_fee || 0,
+                recruiterFee: p.recruiter_fee || 0,
+                createdAt: p.created_at,
+                jobTitle: job?.title || "—",
+                companyName: company?.company_name || "—",
+            };
+        }),
+    };
+}
+
+export async function updateAdminRecruiter(
+    recruiterId: string,
+    fields: {
+        headline?: string | null;
+        bio?: string | null;
+        specializations?: string[] | null;
+        locations?: string[] | null;
+        years_experience?: number | null;
+        linkedin_url?: string | null;
+        full_name?: string | null;
+        phone?: string | null;
+    },
+) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const recruiterUpdate: Record<string, unknown> = {};
+    if (fields.headline !== undefined) recruiterUpdate.headline = fields.headline?.trim() || null;
+    if (fields.bio !== undefined) recruiterUpdate.bio = fields.bio?.trim() || null;
+    if (fields.specializations !== undefined) recruiterUpdate.specializations = fields.specializations;
+    if (fields.locations !== undefined) recruiterUpdate.locations = fields.locations;
+    if (fields.years_experience !== undefined) {
+        const yrs = fields.years_experience;
+        if (yrs !== null && (!Number.isInteger(yrs) || yrs < 0 || yrs > 80)) {
+            return { error: "Invalid years of experience" };
+        }
+        recruiterUpdate.years_experience = yrs;
+    }
+    if (fields.linkedin_url !== undefined) recruiterUpdate.linkedin_url = fields.linkedin_url?.trim() || null;
+
+    const { data: existing } = await supabaseAdmin
+        .from("recruiters")
+        .select("user_id")
+        .eq("id", recruiterId)
+        .single();
+    if (!existing) return { error: "Recruiter not found" };
+
+    if (Object.keys(recruiterUpdate).length > 0) {
+        const { error } = await supabaseAdmin
+            .from("recruiters")
+            .update(recruiterUpdate)
+            .eq("id", recruiterId);
+        if (error) {
+            console.error("[updateAdminRecruiter]", error);
+            return { error: "Could not save recruiter" };
+        }
+    }
+
+    const profileUpdate: Record<string, unknown> = {};
+    if (fields.full_name !== undefined) {
+        const name = fields.full_name?.trim();
+        if (!name) return { error: "Name is required" };
+        profileUpdate.full_name = name;
+    }
+    if (fields.phone !== undefined) profileUpdate.phone = fields.phone?.trim() || null;
+
+    if (Object.keys(profileUpdate).length > 0) {
+        const { error } = await supabaseAdmin
+            .from("profiles")
+            .update(profileUpdate)
+            .eq("id", existing.user_id);
+        if (error) {
+            console.error("[updateAdminRecruiter:profile]", error);
+            return { error: "Could not save profile" };
+        }
+    }
+
+    revalidatePath(`/admin/recruiters/${recruiterId}`);
+    revalidatePath("/admin/recruiters");
+    return { success: true as const };
+}
+
+// ===== ADMIN COMPANY DETAIL =====
+
+export async function getAdminCompanyById(companyId: string) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const { data: company, error } = await supabaseAdmin
+        .from("companies")
+        .select(`
+            id, user_id, company_name, org_number, description, industry,
+            website, logo_url, city, country, employee_count,
+            billing_email, billing_address, is_verified, created_at
+        `)
+        .eq("id", companyId)
+        .single();
+
+    if (error || !company) return null;
+
+    const { data: profile } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, email, phone")
+        .eq("id", company.user_id)
+        .single();
+
+    const { data: jobs } = await supabaseAdmin
+        .from("jobs")
+        .select("id, title, status, location, created_at")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false });
+
+    const { data: placements } = await supabaseAdmin
+        .from("placements")
+        .select("id, status, total_fee, created_at, job:jobs(title)")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false });
+
+    return {
+        id: company.id,
+        user_id: company.user_id,
+        company_name: company.company_name || "",
+        org_number: company.org_number || "",
+        description: company.description || "",
+        industry: company.industry || "",
+        website: company.website || "",
+        logo_url: company.logo_url || "",
+        city: company.city || "",
+        country: company.country || "",
+        employee_count: company.employee_count || "",
+        billing_email: company.billing_email || "",
+        billing_address: company.billing_address || "",
+        is_verified: !!company.is_verified,
+        created_at: company.created_at,
+        contact: {
+            full_name: profile?.full_name || "",
+            email: profile?.email || "",
+            phone: profile?.phone || "",
+        },
+        jobs: (jobs || []).map((j: any) => ({
+            id: j.id,
+            title: j.title,
+            status: j.status,
+            location: j.location || "",
+            createdAt: j.created_at,
+        })),
+        placements: (placements || []).map((p: any) => {
+            const job = pickFirst(p.job);
+            return {
+                id: p.id,
+                status: p.status,
+                totalFee: p.total_fee || 0,
+                createdAt: p.created_at,
+                jobTitle: job?.title || "—",
+            };
+        }),
+    };
+}
+
+export async function updateAdminCompany(
+    companyId: string,
+    fields: {
+        company_name?: string | null;
+        org_number?: string | null;
+        description?: string | null;
+        industry?: string | null;
+        website?: string | null;
+        logo_url?: string | null;
+        city?: string | null;
+        country?: string | null;
+        employee_count?: string | null;
+        billing_email?: string | null;
+        billing_address?: string | null;
+        is_verified?: boolean;
+        contact_full_name?: string | null;
+        contact_phone?: string | null;
+    },
+) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const companyUpdate: Record<string, unknown> = {};
+    const text = (v: string | null | undefined) => v?.trim() || null;
+    if (fields.company_name !== undefined) {
+        const name = fields.company_name?.trim();
+        if (!name) return { error: "Company name is required" };
+        companyUpdate.company_name = name;
+    }
+    if (fields.org_number !== undefined) companyUpdate.org_number = text(fields.org_number);
+    if (fields.description !== undefined) companyUpdate.description = text(fields.description);
+    if (fields.industry !== undefined) companyUpdate.industry = text(fields.industry);
+    if (fields.website !== undefined) companyUpdate.website = text(fields.website);
+    if (fields.logo_url !== undefined) companyUpdate.logo_url = text(fields.logo_url);
+    if (fields.city !== undefined) companyUpdate.city = text(fields.city);
+    if (fields.country !== undefined) companyUpdate.country = text(fields.country);
+    if (fields.employee_count !== undefined) companyUpdate.employee_count = text(fields.employee_count);
+    if (fields.billing_email !== undefined) companyUpdate.billing_email = text(fields.billing_email);
+    if (fields.billing_address !== undefined) companyUpdate.billing_address = text(fields.billing_address);
+    if (fields.is_verified !== undefined) companyUpdate.is_verified = !!fields.is_verified;
+
+    const { data: existing } = await supabaseAdmin
+        .from("companies")
+        .select("user_id")
+        .eq("id", companyId)
+        .single();
+    if (!existing) return { error: "Company not found" };
+
+    if (Object.keys(companyUpdate).length > 0) {
+        const { error } = await supabaseAdmin
+            .from("companies")
+            .update(companyUpdate)
+            .eq("id", companyId);
+        if (error) {
+            console.error("[updateAdminCompany]", error);
+            return { error: "Could not save company" };
+        }
+    }
+
+    const profileUpdate: Record<string, unknown> = {};
+    if (fields.contact_full_name !== undefined) {
+        const name = fields.contact_full_name?.trim();
+        if (!name) return { error: "Contact name is required" };
+        profileUpdate.full_name = name;
+    }
+    if (fields.contact_phone !== undefined) profileUpdate.phone = text(fields.contact_phone);
+
+    if (Object.keys(profileUpdate).length > 0) {
+        const { error } = await supabaseAdmin
+            .from("profiles")
+            .update(profileUpdate)
+            .eq("id", existing.user_id);
+        if (error) {
+            console.error("[updateAdminCompany:profile]", error);
+            return { error: "Could not save contact" };
+        }
+    }
+
+    revalidatePath(`/admin/companies/${companyId}`);
+    revalidatePath("/admin/companies");
     return { success: true as const };
 }
 
