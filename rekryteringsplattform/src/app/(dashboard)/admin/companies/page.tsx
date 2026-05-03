@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2 } from "lucide-react";
@@ -35,17 +36,17 @@ export default async function AdminCompaniesPage() {
                 </tr>
               ) : (
                 companies.map((company) => (
-                  <tr key={company.id} className="border-b border-border last:border-0">
+                  <tr key={company.id} className="border-b border-border last:border-0 hover:bg-muted/50">
                     <td className="p-4">
-                      <div className="flex items-center gap-3">
+                      <Link href={`/admin/companies/${company.id}`} className="flex items-center gap-3 group">
                         <div className="h-8 w-8 rounded bg-brand-50 flex items-center justify-center">
                           <Building2 className="h-4 w-4 text-brand-600" />
                         </div>
                         <div>
-                          <p className="font-medium">{company.name}</p>
+                          <p className="font-medium group-hover:text-brand-600">{company.name}</p>
                           <p className="text-xs text-muted-foreground">{company.email || a.noEmail}</p>
                         </div>
-                      </div>
+                      </Link>
                     </td>
                     <td className="p-4 text-muted-foreground">{company.org_number || dict.common.noDataDash}</td>
                     <td className="p-4">{company.contact || dict.common.noDataDash}</td>

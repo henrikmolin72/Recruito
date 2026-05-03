@@ -10,6 +10,7 @@ import { ApproveJobModal } from "@/components/dashboard/admin/approve-job-modal"
 import { WithdrawReconfirmButton } from "@/components/dashboard/admin/withdraw-reconfirm-button";
 import { formatDateShort } from "@/lib/utils";
 import { MaxCandidatesEditor } from "@/components/dashboard/admin/max-candidates-editor";
+import { MaxRecruitersEditor } from "@/components/dashboard/admin/max-recruiters-editor";
 
 export default async function AdminJobsPage() {
   const jobs = await getAdminJobs();
@@ -54,7 +55,13 @@ export default async function AdminJobsPage() {
                     <td className="p-4 text-muted-foreground">{job.location || dict.common.noDataDash}</td>
                     <td className="p-4">{job.salary ? formatCurrency(job.salary) : dict.common.notSpecifiedNeutral}</td>
                     <td className="p-4"><StatusBadge status={job.status} /></td>
-                    <td className="p-4">{job.recruiters}/{job.maxRecruiters}</td>
+                    <td className="p-4">
+                      <MaxRecruitersEditor
+                        jobId={job.id}
+                        initialMax={job.maxRecruiters}
+                        currentCount={job.recruiters}
+                      />
+                    </td>
                     <td className="p-4">
                       <MaxCandidatesEditor
                         jobId={job.id}
