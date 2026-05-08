@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Globe, Handshake, ShieldCheck, Sparkles } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { CheckCircle2, Globe, Handshake, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,8 +14,35 @@ import { COUNTRY_OPTIONS, EXPERIENCE_BRACKET_OPTIONS } from "@/lib/recruiter-onb
 
 export default function RegisterRecruiterPage() {
   const { t } = useTranslations();
+  const searchParams = useSearchParams();
+  const submitted = searchParams.get("submitted") === "1";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-[radial-gradient(circle_at_20%_15%,#dcfce7,transparent_38%),radial-gradient(circle_at_85%_15%,#dbeafe,transparent_40%),linear-gradient(180deg,#f8fafc,#ffffff)] px-4 py-10 flex items-center justify-center">
+        <Card className="max-w-lg w-full border-slate-200 shadow-2xl shadow-slate-200/70">
+          <CardContent className="p-10 text-center space-y-5">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <AppLogo size="md" priority />
+            </Link>
+            <div className="mx-auto h-14 w-14 rounded-full bg-emerald-100 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">Thank you for applying!</h1>
+            <p className="text-sm leading-6 text-slate-600">
+              We&apos;ve received your application. An administrator within Recruito will get back to you
+              when we have fact-checked your information. A confirmation email has been sent to your inbox.
+            </p>
+            <Link href="/" className="inline-block">
+              <Button variant="outline">Back to home</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);

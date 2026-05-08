@@ -6,7 +6,7 @@ type SendInternalRecruiterEmailParams = {
   html?: string;
 };
 
-const INTERNAL_RECRUITER_REVIEW_EMAIL = "info@aiaid.com.se";
+const INTERNAL_RECRUITER_REVIEW_EMAIL = "henrik@aiaid.com.se";
 
 function getSmtpConfig() {
   const host = process.env.SMTP_HOST;
