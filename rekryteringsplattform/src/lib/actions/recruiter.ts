@@ -376,10 +376,13 @@ export async function getAvailableJobsForRecruiter() {
 
     const { data: claimedMandates } = await supabase
         .from("job_mandates")
-        .select("job_id")
+        .select("job_id, is_active")
         .eq("recruiter_id", recruiter.id);
 
-    const claimedJobIds = claimedMandates?.map(m => m.job_id) || [];
+    const activeClaimedJobIds = new Set(
+        (claimedMandates || []).filter(m => m.is_active).map(m => m.job_id)
+    );
+    const everClaimedJobIds = new Set((claimedMandates || []).map(m => m.job_id));
 
     const { data: jobs, error } = await supabase
         .from("jobs")
@@ -398,7 +401,7 @@ export async function getAvailableJobsForRecruiter() {
 
     const availableJobs = jobs.filter(job => {
         if (job.status !== "active") return true;
-        const isClaimed = claimedJobIds.includes(job.id);
+        const isClaimed = activeClaimedJobIds.has(job.id);
         const recruitersCount = job.current_recruiter_count || 0;
         const isFull = recruitersCount >= job.max_recruiters;
         return !isClaimed && !isFull;
@@ -407,7 +410,8 @@ export async function getAvailableJobsForRecruiter() {
     return availableJobs.map(job => ({
         ...job,
         company_name: job.company?.company_name || 'Okänt företag',
-        recruiters_count: job.current_recruiter_count || 0
+        recruiters_count: job.current_recruiter_count || 0,
+        worked_previously: everClaimedJobIds.has(job.id),
     }));
 }
 

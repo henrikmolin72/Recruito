@@ -300,6 +300,11 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                             {t("recruiter.expired") || "Expired"}
                           </Badge>
                         )}
+                        {job.worked_previously && (
+                          <Badge variant="outline" className="rounded-full bg-amber-50 text-amber-700 border-amber-200 py-1 px-3">
+                            {t("recruiter.workedPreviously") || "Worked Previously"}
+                          </Badge>
+                        )}
                       </div>
 
                       <Link href={`/recruiter/jobs/${job.id}`}>

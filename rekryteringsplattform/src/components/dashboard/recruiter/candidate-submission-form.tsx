@@ -78,8 +78,8 @@ export function CandidateSubmissionForm({
 }: Props) {
     const router = useRouter();
 
-    // --- Section 1: Verification ---
-    const [verifyEmail, setVerifyEmail] = useState("");
+    // --- Email (shared between Verify tool and Personal Details) ---
+    const [email, setEmail] = useState("");
     const [verifyStatus, setVerifyStatus] = useState<"idle" | "checking" | "ok" | "blocked">("idle");
 
     // --- Section 2: AI score ---
@@ -149,18 +149,18 @@ export function CandidateSubmissionForm({
                     if (d[key]) restoredText[key] = d[key];
                 }
                 if (Object.keys(restoredText).length > 0) setDraftTextFields(restoredText);
-                if (d.email) { setVerifyEmail(d.email); setVerifyStatus("ok"); }
+                if (d.email) { setEmail(d.email); setVerifyStatus("ok"); }
             }
         } catch { }
     }, [DRAFT_KEY]);
 
     async function handleVerify() {
-        if (!verifyEmail.trim()) return;
+        if (!email.trim()) return;
         setVerifyStatus("checking");
         try {
             const fd = new FormData();
             fd.append("mandate_id", mandateId);
-            fd.append("email", verifyEmail.trim());
+            fd.append("email", email.trim());
             const res = await fetch("/api/candidates/check-duplicate", { method: "POST", body: fd });
             if (res.ok) {
                 const { duplicate } = await res.json();
@@ -296,20 +296,20 @@ export function CandidateSubmissionForm({
 
                     <div className="space-y-4">
                         <div>
-                            <Label>{r.verifyEmailLabel || "Candidate Email Address"}</Label>
+                            <Label>{r.emailLabel || "Candidate Email Address"}</Label>
                             <div className="flex gap-3">
                                 <Input
                                     type="email"
-                                    value={verifyEmail}
-                                    onChange={(e) => { setVerifyEmail(e.target.value); setVerifyStatus("idle"); }}
-                                    placeholder={r.verifyEmailPlaceholder || "Enter Email"}
+                                    value={email}
+                                    onChange={(e) => { setEmail(e.target.value); setVerifyStatus("idle"); }}
+                                    placeholder={r.emailPlaceholder || "Enter Email"}
                                     className="h-11 flex-1 bg-slate-50 border-slate-200"
                                 />
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={handleVerify}
-                                    disabled={verifyStatus === "checking" || !verifyEmail}
+                                    disabled={verifyStatus === "checking" || !email}
                                     className="h-11 px-6 shrink-0"
                                 >
                                     {verifyStatus === "checking" ? (
@@ -351,11 +351,24 @@ export function CandidateSubmissionForm({
                             </div>
                         </FieldRow>
 
-                        <input type="hidden" name="email" value={verifyEmail} />
-                        <div>
-                            <Label>{r.phoneLabelOptional || "Mobile Number (incl. country code)"}</Label>
-                            <Input type="tel" name="phone" placeholder="+46 70 000 00 00" defaultValue={draftTextFields["phone"] || ""} className="h-11 bg-slate-50 border-slate-200" />
-                        </div>
+                        <FieldRow>
+                            <div>
+                                <Label>{r.emailLabel || "Email Address *"}</Label>
+                                <Input
+                                    type="email"
+                                    name="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => { setEmail(e.target.value); setVerifyStatus("idle"); }}
+                                    placeholder="anna@example.com"
+                                    className="h-11 bg-slate-50 border-slate-200"
+                                />
+                            </div>
+                            <div>
+                                <Label>{r.phoneLabelOptional || "Mobile Number (incl. country code)"}</Label>
+                                <Input type="tel" name="phone" placeholder="+46 70 000 00 00" defaultValue={draftTextFields["phone"] || ""} className="h-11 bg-slate-50 border-slate-200" />
+                            </div>
+                        </FieldRow>
 
                         <FieldRow>
                             <div>
