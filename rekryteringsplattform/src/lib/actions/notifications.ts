@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { sendNotificationEmail } from "@/lib/email/notification-email";
 
 export async function getNotifications() {
     const supabase = await createClient();
@@ -71,5 +72,10 @@ export async function createNotification(userId: string, title: string, body: st
 
     if (error) {
         console.error("Failed to create notification:", error);
+        return;
     }
+
+    // Fire-and-forget email. Failures are swallowed inside the helper so
+    // the in-app notification flow is never blocked by SMTP issues.
+    void sendNotificationEmail(userId, normalizedTitle, normalizedBody, normalizedLink);
 }
