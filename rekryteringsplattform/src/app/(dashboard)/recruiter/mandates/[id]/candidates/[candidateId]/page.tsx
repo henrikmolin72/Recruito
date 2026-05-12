@@ -399,6 +399,11 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                                         <p className="text-sm font-bold text-slate-700">
                                             {candidate.desired_salary_currency || ''} {candidate.desired_salary?.toLocaleString()}
                                         </p>
+                                        {candidate.expected_salary_below_current_reason && (
+                                            <p className="mt-1 text-xs text-slate-500 italic">
+                                                {candidate.expected_salary_below_current_reason}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                                 {(candidate.location_city || candidate.location_country) && (

@@ -209,6 +209,8 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         desired_salary: toOptionalInt(formData.get("expected_salary")),
         desired_salary_currency: toString(formData.get("desired_salary_currency")) || "EUR",
         desired_benefits: toString(formData.get("desired_benefits")) || null,
+        expected_salary_below_current_reason:
+            toString(formData.get("expected_salary_below_current_reason")) || null,
         notice_period: toString(formData.get("notice_period")) || null,
         notice_negotiable: toString(formData.get("notice_negotiable")) === "yes",
         first_contact_date: firstContactDate || null,

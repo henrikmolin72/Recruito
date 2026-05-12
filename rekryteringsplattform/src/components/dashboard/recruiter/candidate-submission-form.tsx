@@ -98,6 +98,16 @@ export function CandidateSubmissionForm({
     // --- Section 4: notice negotiable ---
     const [noticeNegotiable, setNoticeNegotiable] = useState("");
 
+    // --- Section 4: compensation (linked currency + below-current reason) ---
+    const [currentCurrency, setCurrentCurrency] = useState("EUR");
+    const [expectedCurrency, setExpectedCurrency] = useState("EUR");
+    const [currentSalary, setCurrentSalary] = useState("");
+    const [expectedSalary, setExpectedSalary] = useState("");
+    const expectedBelowCurrent =
+        !!currentSalary &&
+        !!expectedSalary &&
+        Number(expectedSalary) < Number(currentSalary);
+
     // --- Section 5: contact method, languages ---
     const [contactMethod, setContactMethod] = useState("");
     const [languages, setLanguages] = useState<{ language: string; proficiency: string }[]>([
@@ -639,13 +649,28 @@ export function CandidateSubmissionForm({
                             <FieldRow>
                                 <div>
                                     <Label>{r.currencyLabel || "Currency"}</Label>
-                                    <select name="current_salary_currency" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                    <select
+                                        name="current_salary_currency"
+                                        value={currentCurrency}
+                                        onChange={(e) => {
+                                            setCurrentCurrency(e.target.value);
+                                            setExpectedCurrency(e.target.value);
+                                        }}
+                                        className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    >
                                         {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <Label>{r.currentSalaryLabel || "Annual Gross Salary"}</Label>
-                                    <Input type="number" name="current_salary" placeholder="75000" defaultValue={draftTextFields["current_salary"] || ""} className="h-11 bg-slate-50 border-slate-200" />
+                                    <Input
+                                        type="number"
+                                        name="current_salary"
+                                        placeholder="75000"
+                                        value={currentSalary}
+                                        onChange={(e) => setCurrentSalary(e.target.value)}
+                                        className="h-11 bg-slate-50 border-slate-200"
+                                    />
                                 </div>
                             </FieldRow>
                             <div className="mt-3">
@@ -660,15 +685,41 @@ export function CandidateSubmissionForm({
                             <FieldRow>
                                 <div>
                                     <Label>{r.currencyLabel || "Currency"}</Label>
-                                    <select name="desired_salary_currency" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                    <select
+                                        name="desired_salary_currency"
+                                        value={expectedCurrency}
+                                        onChange={(e) => setExpectedCurrency(e.target.value)}
+                                        className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                                    >
                                         {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <Label>{r.desiredSalaryLabel || "Desired Annual Salary"}</Label>
-                                    <Input type="number" name="expected_salary" placeholder="90000" defaultValue={draftTextFields["expected_salary"] || ""} className="h-11 bg-slate-50 border-slate-200" />
+                                    <Input
+                                        type="number"
+                                        name="expected_salary"
+                                        placeholder="90000"
+                                        value={expectedSalary}
+                                        onChange={(e) => setExpectedSalary(e.target.value)}
+                                        className="h-11 bg-slate-50 border-slate-200"
+                                    />
                                 </div>
                             </FieldRow>
+                            {expectedBelowCurrent && (
+                                <div className="mt-3">
+                                    <Label>
+                                        {r.expectedBelowCurrentLabel ||
+                                            "Just to ensure we have accurate details, could you please explain why the expected salary is set below the current salary?"}
+                                    </Label>
+                                    <Textarea
+                                        name="expected_salary_below_current_reason"
+                                        rows={3}
+                                        placeholder={r.expectedBelowCurrentPlaceholder || "Explain the reason..."}
+                                        className="bg-slate-50 border-slate-200 rounded-xl resize-none"
+                                    />
+                                </div>
+                            )}
                             <div className="mt-3">
                                 <Label>{r.desiredBenefitsLabel || "Desired Benefits"}</Label>
                                 <Textarea name="desired_benefits" rows={2} placeholder={r.desiredBenefitsPlaceholder || "Describe desired benefits..."} className="bg-slate-50 border-slate-200 rounded-xl resize-none" />

@@ -231,6 +231,11 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                                             {candidate.desired_salary_currency || ''} {candidate.desired_salary?.toLocaleString()}
                                             <span className="text-muted-foreground font-normal"> / year</span>
                                         </p>
+                                        {candidate.expected_salary_below_current_reason && (
+                                            <p className="mt-1 text-xs text-muted-foreground italic">
+                                                Reason expected is below current: {candidate.expected_salary_below_current_reason}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                                 {candidate.notice_period && (
