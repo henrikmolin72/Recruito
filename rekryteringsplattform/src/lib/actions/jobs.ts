@@ -7,7 +7,7 @@ import { validateJobForm, validatePipelineStages } from "@/lib/validation/forms"
 import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
-import { createNotification } from "@/lib/actions/notifications";
+import { createNotification } from "@/lib/notifications/create";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";

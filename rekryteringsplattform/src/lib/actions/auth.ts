@@ -12,6 +12,7 @@ import {
 } from "@/lib/validation/forms";
 import { mapExperienceBracketToYears } from "@/lib/recruiter-onboarding-options";
 import { sendInternalRecruiterEmail, sendUserEmail } from "@/lib/email/internal-notifications";
+import { createTranslator } from "@/i18n/server";
 
 function mapAuthError(message: string | undefined): string {
   if (!message) return "Tjänsten är otillgänglig just nu. Försök igen.";
@@ -165,15 +166,19 @@ export async function registerRecruiter(formData: FormData) {
         }
 
         try {
+            const t = await createTranslator();
+            const escapedName = parsed.data.full_name.replace(/[<>&"']/g, (c) =>
+                ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c]!)
+            );
             await sendUserEmail({
                 to: parsed.data.email,
-                subject: "Thank you for applying to Recruito",
+                subject: t("auth.recruiterConfirmEmailSubject"),
                 html: `
                     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a;">
-                      <h2 style="color:#0f172a;">Thank you, ${parsed.data.full_name}!</h2>
-                      <p>We've received your application to join Recruito as a freelance recruiter.</p>
-                      <p>An administrator at Recruito will get back to you once we have fact-checked your information.</p>
-                      <p style="color:#64748b;font-size:13px;">If you didn't submit this application, please ignore this email.</p>
+                      <h2 style="color:#0f172a;">${t("auth.recruiterConfirmEmailGreeting", { name: escapedName })}</h2>
+                      <p>${t("auth.recruiterConfirmEmailBody1")}</p>
+                      <p>${t("auth.recruiterConfirmEmailBody2")}</p>
+                      <p style="color:#64748b;font-size:13px;">${t("auth.recruiterConfirmEmailIgnore")}</p>
                       <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
                       <p style="color:#94a3b8;font-size:12px;">Recruito · recruito.eu</p>
                     </div>

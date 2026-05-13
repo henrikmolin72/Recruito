@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/actions/require-admin";
 import { isValidUpliftReason, reasonI18nKey } from "@/lib/fee-reconfirm";
 import { feeReconfirmEmail } from "@/lib/email/email-templates";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
-import { createNotification } from "@/lib/actions/notifications";
+import { createNotification } from "@/lib/notifications/create";
 import { getDictionary } from "@/i18n/server";
 import type { ClientFeeUpliftReason } from "@/types/db-types";
 

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createNotification } from "@/lib/actions/notifications";
+import { createNotification } from "@/lib/notifications/create";
 
 function toString(value: FormDataEntryValue | null) {
     return typeof value === "string" ? value : "";
@@ -174,6 +174,18 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
 
     const otherProcessesRaw = toString(formData.get("other_processes"));
 
+    // The "below current" reason is only meaningful when expected < current.
+    // Drop it otherwise so the field can't be set out-of-band by a hand-crafted POST.
+    const currentSalaryParsed = toOptionalInt(formData.get("current_salary"));
+    const expectedSalaryParsed = toOptionalInt(formData.get("expected_salary"));
+    const expectedBelowCurrent =
+        currentSalaryParsed !== null &&
+        expectedSalaryParsed !== null &&
+        expectedSalaryParsed < currentSalaryParsed;
+    const expectedBelowCurrentReason = expectedBelowCurrent
+        ? toString(formData.get("expected_salary_below_current_reason")) || null
+        : null;
+
     // --- Insert candidate ---
     const { error: insertError } = await supabase.from("candidates").insert({
         job_id: mandate.job_id,
@@ -187,7 +199,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         current_title: toString(formData.get("current_title")) || null,
         current_company: toString(formData.get("current_company")) || null,
         years_experience: toOptionalInt(formData.get("years_experience")),
-        expected_salary: toOptionalInt(formData.get("expected_salary")),
+        expected_salary: expectedSalaryParsed,
         cover_note: toString(formData.get("cover_note")) || null,
         cv_file_path: cvFilePath,
         status: initialStatus,
@@ -203,14 +215,13 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         employment_status_reason: toString(formData.get("employment_reason")) || null,
         other_processes: otherProcessesRaw === "yes",
         other_processes_stage: toString(formData.get("other_processes_stage")) || null,
-        current_salary: toOptionalInt(formData.get("current_salary")),
+        current_salary: currentSalaryParsed,
         current_salary_currency: toString(formData.get("current_salary_currency")) || "EUR",
         current_benefits: toString(formData.get("current_benefits")) || null,
-        desired_salary: toOptionalInt(formData.get("expected_salary")),
+        desired_salary: expectedSalaryParsed,
         desired_salary_currency: toString(formData.get("desired_salary_currency")) || "EUR",
         desired_benefits: toString(formData.get("desired_benefits")) || null,
-        expected_salary_below_current_reason:
-            toString(formData.get("expected_salary_below_current_reason")) || null,
+        expected_salary_below_current_reason: expectedBelowCurrentReason,
         notice_period: toString(formData.get("notice_period")) || null,
         notice_negotiable: toString(formData.get("notice_negotiable")) === "yes",
         first_contact_date: firstContactDate || null,

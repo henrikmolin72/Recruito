@@ -1,9 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-import { sendNotificationEmail } from "@/lib/email/notification-email";
 
 export async function getNotifications() {
     const supabase = await createClient();
@@ -49,33 +47,4 @@ export async function markAllAsRead() {
         .eq("is_read", false);
 
     revalidatePath("/");
-}
-
-// Internal helper to create notification (not exposed as action)
-export async function createNotification(userId: string, title: string, body: string, link?: string) {
-    const supabaseAdmin = createAdminClient();
-
-    const normalizedTitle = title.trim();
-    const normalizedBody = body.trim();
-    const normalizedLink = link?.trim() || null;
-
-    if (!normalizedTitle || !normalizedBody || !userId) {
-        return;
-    }
-
-    const { error } = await supabaseAdmin.from("notifications").insert({
-        user_id: userId,
-        title: normalizedTitle,
-        body: normalizedBody,
-        link: normalizedLink
-    });
-
-    if (error) {
-        console.error("Failed to create notification:", error);
-        return;
-    }
-
-    // Fire-and-forget email. Failures are swallowed inside the helper so
-    // the in-app notification flow is never blocked by SMTP issues.
-    void sendNotificationEmail(userId, normalizedTitle, normalizedBody, normalizedLink);
 }

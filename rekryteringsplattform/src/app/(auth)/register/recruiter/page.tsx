@@ -30,13 +30,12 @@ export default function RegisterRecruiterPage() {
             <div className="mx-auto h-14 w-14 rounded-full bg-emerald-100 flex items-center justify-center">
               <CheckCircle2 className="h-8 w-8 text-emerald-600" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Thank you for applying!</h1>
+            <h1 className="text-2xl font-bold text-slate-900">{t("auth.recruiterThankYouTitle")}</h1>
             <p className="text-sm leading-6 text-slate-600">
-              We&apos;ve received your application. An administrator within Recruito will get back to you
-              when we have fact-checked your information. A confirmation email has been sent to your inbox.
+              {t("auth.recruiterThankYouBody")}
             </p>
             <Link href="/" className="inline-block">
-              <Button variant="outline">Back to home</Button>
+              <Button variant="outline">{t("auth.backToHome")}</Button>
             </Link>
           </CardContent>
         </Card>

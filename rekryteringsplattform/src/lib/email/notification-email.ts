@@ -3,6 +3,22 @@ import { sendUserEmail } from "./internal-notifications";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://recruito.eu";
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Refuse anything that isn't a same-origin path. Caller may pass null.
+function safePath(link: string | null): string | null {
+  if (!link) return null;
+  if (!link.startsWith("/") || link.startsWith("//")) return null;
+  return link;
+}
+
 function renderTemplate({
   title,
   body,
@@ -12,10 +28,11 @@ function renderTemplate({
   body: string;
   link: string | null;
 }): string {
-  const cta = link
+  const safeLink = safePath(link);
+  const cta = safeLink
     ? `<tr>
          <td style="padding:24px 0 0 0;">
-           <a href="${APP_URL}${link}"
+           <a href="${escapeHtml(`${APP_URL}${safeLink}`)}"
               style="background:#0b5fff;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600;font-size:14px;display:inline-block;">
              View in Recruito
            </a>
@@ -48,7 +65,7 @@ function renderTemplate({
               <p style="margin:24px 0 0 0;font-size:12px;color:#94a3b8;line-height:1.5;">
                 You're receiving this because you have a Recruito account.
                 Manage email preferences in your
-                <a href="${APP_URL}/recruiter/profile" style="color:#0b5fff;text-decoration:none;">profile settings</a>.
+                <a href="${escapeHtml(`${APP_URL}/recruiter/profile`)}" style="color:#0b5fff;text-decoration:none;">profile settings</a>.
               </p>
             </td>
           </tr>
@@ -60,20 +77,24 @@ function renderTemplate({
 </html>`;
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+// Plain-text fallback so anti-spam scoring isn't penalised by html-only mail.
+function renderText({ title, body, link }: { title: string; body: string; link: string | null }): string {
+  const safeLink = safePath(link);
+  const cta = safeLink ? `\n\nOpen in Recruito: ${APP_URL}${safeLink}` : "";
+  return `${title}\n\n${body}${cta}\n\n— Recruito`;
 }
+
+type ProfileWithOptOut = {
+  email: string | null;
+  email_opt_out: boolean | null;
+};
 
 /**
  * Fire-and-forget notification email. Looks up the user's email + opt-out
- * flag from `profiles`, renders a branded template, and dispatches via SMTP.
- * Never throws — failures are logged and swallowed so they don't block the
- * underlying transactional action that created the in-app notification.
+ * flag from `profiles`, renders a branded template, and dispatches via the
+ * Resend → SMTP pipeline. Never throws — failures are logged and swallowed
+ * so they don't block the underlying transactional action that created the
+ * in-app notification.
  */
 export async function sendNotificationEmail(
   userId: string,
@@ -83,20 +104,25 @@ export async function sendNotificationEmail(
 ): Promise<void> {
   try {
     const admin = createAdminClient();
+    // `email_opt_out` was added in migration 037. Cast the row shape rather
+    // than `as any` so the field is typed at the call site; remove the cast
+    // once `supabase gen types` is re-run.
     const { data: profile } = await admin
       .from("profiles")
       .select("email, email_opt_out")
       .eq("id", userId)
-      .maybeSingle();
+      .maybeSingle<ProfileWithOptOut>();
 
     if (!profile?.email) return;
-    if ((profile as any).email_opt_out) return;
+    if (profile.email_opt_out) return;
 
     const html = renderTemplate({ title, body, link });
+    const text = renderText({ title, body, link });
     await sendUserEmail({
       to: profile.email,
       subject: title,
       html,
+      text,
     });
   } catch (err) {
     console.error("sendNotificationEmail failed:", err);

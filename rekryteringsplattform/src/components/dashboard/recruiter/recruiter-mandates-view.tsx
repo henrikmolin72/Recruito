@@ -44,7 +44,22 @@ type TabKey = "active" | "closed" | "hired";
 
 type Dict = Record<string, string>;
 
-type Mandate = any;
+interface MandateCandidate {
+    status: string;
+}
+
+interface Mandate {
+    id: string;
+    title: string;
+    company: string;
+    location: string | null;
+    status: string | null;
+    application_deadline: string | null;
+    claimed_at: string | null;
+    max_candidates: number | null;
+    submitted_count: number | null;
+    candidates: MandateCandidate[];
+}
 
 interface Props {
     mandates: Mandate[];
@@ -52,7 +67,7 @@ interface Props {
 }
 
 function classifyMandate(m: Mandate): TabKey {
-    const hasHired = (m.candidates || []).some((c: any) => HIRED_STATUSES.has(c.status));
+    const hasHired = (m.candidates || []).some((c) => HIRED_STATUSES.has(c.status));
     if (hasHired) return "hired";
 
     const days = daysUntil(m.application_deadline);
@@ -178,12 +193,12 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {visibleMandates.map((mandate: Mandate) => {
-                                        const submitted = mandate.candidates.filter((c: any) => SUBMITTED_STATUSES.has(c.status)).length;
-                                        const interview = mandate.candidates.filter((c: any) => INTERVIEW_STATUSES.has(c.status)).length;
-                                        const offer = mandate.candidates.filter((c: any) => OFFER_STATUSES.has(c.status)).length;
-                                        const hired = mandate.candidates.filter((c: any) => HIRED_STATUSES.has(c.status)).length;
-                                        const rejected = mandate.candidates.filter((c: any) => REJECTED_STATUSES.has(c.status)).length;
+                                    {visibleMandates.map((mandate) => {
+                                        const submitted = mandate.candidates.filter((c) => SUBMITTED_STATUSES.has(c.status)).length;
+                                        const interview = mandate.candidates.filter((c) => INTERVIEW_STATUSES.has(c.status)).length;
+                                        const offer = mandate.candidates.filter((c) => OFFER_STATUSES.has(c.status)).length;
+                                        const hired = mandate.candidates.filter((c) => HIRED_STATUSES.has(c.status)).length;
+                                        const rejected = mandate.candidates.filter((c) => REJECTED_STATUSES.has(c.status)).length;
                                         const days = daysUntil(mandate.application_deadline);
 
                                         return (
