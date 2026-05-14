@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const parsed = bodySchema.safeParse(await request.json());
-    if (!parsed.success) return NextResponse.json({ error: "Invalid payload", issues: parsed.success }, { status: 400 });
+    if (!parsed.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
     const { placementId, endDate, reason, notes } = parsed.data;
     const admin = createAdminClient();

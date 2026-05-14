@@ -57,7 +57,7 @@ export function newJobNotificationEmail({
         </div>
 
         <p>
-          <a href="${encodeURI(jobUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          <a href="${escapeHtml(jobUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             View Job Posting
           </a>
         </p>
@@ -108,7 +108,7 @@ export function candidateSubmissionEmail({
         </div>
 
         <p>
-          <a href="${encodeURI(candidateUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          <a href="${escapeHtml(candidateUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             Review Candidate
           </a>
         </p>
@@ -157,7 +157,7 @@ export function candidateProgressEmail({
         <p>Great news! Keep in touch with the candidate and stay updated on their progress.</p>
 
         <p>
-          <a href="${encodeURI(candidateUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          <a href="${escapeHtml(candidateUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             View Candidate Status
           </a>
         </p>
