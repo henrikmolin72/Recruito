@@ -104,7 +104,79 @@ export async function getAdminRecruiters() {
     });
 }
 
-export async function approveRecruiter(recruiterId: string) {
+// KYC criteria the admin must confirm before approving a recruiter. All four
+// required true. The `notes` field is optional free text. Keep in sync with
+// the UI checkboxes in recruiter-approval-actions.tsx.
+export type RecruiterKycChecklist = {
+    linkedin_verified: boolean;
+    email_domain_match: boolean;
+    experience_credible: boolean;
+    agreement_signed: boolean;
+    notes?: string;
+};
+
+const REQUIRED_KYC_KEYS = [
+    "linkedin_verified",
+    "email_domain_match",
+    "experience_credible",
+    "agreement_signed",
+] as const;
+
+function isKycComplete(input: unknown): input is RecruiterKycChecklist {
+    if (!input || typeof input !== "object") return false;
+    const c = input as Record<string, unknown>;
+    return REQUIRED_KYC_KEYS.every((key) => c[key] === true);
+}
+
+export async function approveRecruiter(
+    recruiterId: string,
+    checklist: RecruiterKycChecklist,
+) {
+    const { user } = await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    if (!isKycComplete(checklist)) {
+        return { error: "KYC-checklistan måste bekräftas i sin helhet innan rekryteraren kan godkännas." };
+    }
+
+    const storedChecklist: RecruiterKycChecklist = {
+        linkedin_verified: true,
+        email_domain_match: true,
+        experience_credible: true,
+        agreement_signed: true,
+        notes: checklist.notes?.trim().slice(0, 2000) || undefined,
+    };
+
+    const { error } = await supabaseAdmin
+        .from("recruiters")
+        .update({
+            approval_status: "approved",
+            approved_at: new Date().toISOString(),
+            approved_by: user.id,
+            kyc_checklist: storedChecklist,
+            kyc_rejection_reason: null,
+        })
+        .eq("id", recruiterId);
+
+    if (error) {
+        console.error("[approveRecruiter]", error);
+        return { error: "Något gick fel. Försök igen." };
+    }
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/recruiters");
+    revalidatePath(`/admin/recruiters/${recruiterId}`);
+    revalidatePath("/recruiter");
+    revalidatePath("/recruiter/jobs");
+    revalidatePath("/recruiter/profile");
+    return { success: true };
+}
+
+// Re-activate a previously suspended or rejected recruiter without re-running
+// full KYC — admin's decision is the audit signal (approved_at/approved_by
+// timestamps update). For a fresh KYC pass, call approveRecruiter with a
+// new checklist instead.
+export async function reactivateRecruiter(recruiterId: string) {
     const { user } = await requireAdmin();
     const supabaseAdmin = createAdminClient();
 
@@ -114,25 +186,29 @@ export async function approveRecruiter(recruiterId: string) {
             approval_status: "approved",
             approved_at: new Date().toISOString(),
             approved_by: user.id,
+            kyc_rejection_reason: null,
         })
         .eq("id", recruiterId);
 
     if (error) {
-        console.error("[ServerAction]", error);
+        console.error("[reactivateRecruiter]", error);
         return { error: "Något gick fel. Försök igen." };
     }
 
     revalidatePath("/admin");
     revalidatePath("/admin/recruiters");
-    revalidatePath("/recruiter");
-    revalidatePath("/recruiter/jobs");
-    revalidatePath("/recruiter/profile");
+    revalidatePath(`/admin/recruiters/${recruiterId}`);
     return { success: true };
 }
 
-export async function rejectRecruiter(recruiterId: string) {
+export async function rejectRecruiter(recruiterId: string, reason: string) {
     await requireAdmin();
     const supabaseAdmin = createAdminClient();
+
+    const trimmedReason = (reason || "").trim().slice(0, 1000);
+    if (!trimmedReason) {
+        return { error: "Anledning krävs för att avslå rekryterare." };
+    }
 
     const { error } = await supabaseAdmin
         .from("recruiters")
@@ -140,16 +216,18 @@ export async function rejectRecruiter(recruiterId: string) {
             approval_status: "rejected",
             approved_at: null,
             approved_by: null,
+            kyc_rejection_reason: trimmedReason,
         })
         .eq("id", recruiterId);
 
     if (error) {
-        console.error("[ServerAction]", error);
+        console.error("[rejectRecruiter]", error);
         return { error: "Något gick fel. Försök igen." };
     }
 
     revalidatePath("/admin");
     revalidatePath("/admin/recruiters");
+    revalidatePath(`/admin/recruiters/${recruiterId}`);
     revalidatePath("/recruiter/profile");
     return { success: true };
 }
