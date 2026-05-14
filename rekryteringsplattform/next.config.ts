@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -55,4 +56,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap with Sentry. When SENTRY_AUTH_TOKEN is unset (e.g. preview without
+// secrets) source-map upload is skipped silently — the wrapper is a no-op.
+export default withSentryConfig(nextConfig, {
+    org: process.env.SENTRY_ORG,
+    project: process.env.SENTRY_PROJECT,
+    silent: !process.env.CI,
+    // Source maps are uploaded only when authenticated.
+    sourcemaps: {
+        disable: !process.env.SENTRY_AUTH_TOKEN,
+    },
+    disableLogger: true,
+});
