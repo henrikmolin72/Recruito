@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     const auth = await getAuthenticatedRecruiterContext();
     if ("error" in auth) return auth.error;
 
-    const rateLimit = consumeRateLimit({
+    const rateLimit = await consumeRateLimit({
       key: `api:screen:user:${auth.userId}`,
       // High enough for normal work, low enough to cap accidental cost spikes.
       limit: 40,

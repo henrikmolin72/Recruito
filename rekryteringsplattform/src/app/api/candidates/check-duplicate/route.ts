@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
             recruiterId = recruiter.id as string;
         }
 
-        const rateLimit = consumeRateLimit({
+        const rateLimit = await consumeRateLimit({
             key: `api:check-duplicate:user:${user.id}`,
             limit: 60,
             windowMs: 10 * 60 * 1000,
@@ -61,8 +61,13 @@ export async function POST(request: NextRequest) {
             .select("email, linkedin_url")
             .eq("job_id", jobId);
 
+        // Cross-recruiter reasons (same_job, client_already_engaged) are collapsed
+        // to a generic { duplicate: true } so this endpoint cannot be used as an
+        // oracle to enumerate emails / LinkedIn URLs submitted by other recruiters
+        // or engaged by other companies. Only the caller's own submissions get a
+        // specific reason (recruiter_already_submitted) below.
         if ((sameJobCandidates || []).some((c: any) => candidateMatchesIdentity(c, email, linkedIn))) {
-            return NextResponse.json({ duplicate: true, reason: "same_job" });
+            return NextResponse.json({ duplicate: true });
         }
 
         // 2) Same-company active engagement duplicate (mirror createCandidate
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
                     isClientEngagementActiveStatus(c.status),
                 );
                 if (clientEngaged) {
-                    return NextResponse.json({ duplicate: true, reason: "client_already_engaged" });
+                    return NextResponse.json({ duplicate: true });
                 }
             }
         }

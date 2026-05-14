@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       recruiterId = recruiter.id as string;
     }
 
-    const rateLimit = consumeRateLimit({
+    const rateLimit = await consumeRateLimit({
       key: `api:cv-match:user:${user.id}`,
       limit: 20,
       windowMs: 10 * 60 * 1000,

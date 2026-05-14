@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     const { admin, recruiterId, isAdmin, userId } = auth;
     const { jobId } = parsedBody.data;
 
-    const rateLimit = consumeRateLimit({
+    const rateLimit = await consumeRateLimit({
       key: `api:shortlist:user:${userId}`,
       limit: 8,
       windowMs: 10 * 60 * 1000,
