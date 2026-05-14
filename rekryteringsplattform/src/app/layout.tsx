@@ -6,6 +6,7 @@ import { TopLoader } from "@/components/layout/top-loader";
 import { Suspense } from "react";
 import { getLocale, getDictionary } from "@/i18n/server";
 import { LocaleProvider } from "@/i18n/client";
+import { CookieConsentBanner } from "@/components/cookie-consent";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -46,6 +47,7 @@ export default async function RootLayout({
         </Suspense>
         <LocaleProvider locale={locale} dictionary={dictionary}>
           {children}
+          <CookieConsentBanner />
         </LocaleProvider>
         <Toaster position="top-right" richColors closeButton />
       </body>

@@ -1,4 +1,17 @@
 {
+  "cookieConsent": {
+    "title": "Vi bruker informasjonskapsler",
+    "description": "Vi bruker nødvendige informasjonskapsler for at plattformen skal fungere. Med ditt samtykke bruker vi også analysekapsler for å forbedre tjenesten.",
+    "privacyLink": "Les personvernerklæringen",
+    "acceptAll": "Godta alle",
+    "rejectNonEssential": "Kun nødvendige",
+    "customize": "Tilpass",
+    "save": "Lagre valg",
+    "necessaryTitle": "Nødvendige informasjonskapsler",
+    "necessaryDescription": "Kreves for innlogging, sikkerhet og språkvalg. Kan ikke slås av.",
+    "analyticsTitle": "Analyse",
+    "analyticsDescription": "Hjelper oss å forstå hvordan plattformen brukes så vi kan forbedre den. Ingen personopplysninger deles med tredjeparter for markedsføring."
+  },
   "common": {
     "save": "Lagre",
     "saveChanges": "Lagre endringer",
