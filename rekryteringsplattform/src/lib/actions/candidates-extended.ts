@@ -151,7 +151,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         const { error: uploadError, data } = await supabase.storage.from("cvs").upload(fileName, cvFile);
         if (uploadError) {
             console.error("CV Upload Error:", uploadError);
-            return { error: "Could not upload CV." };
+            return { error: "Kunde inte ladda upp CV." };
         }
         cvFilePath = data.path;
     }
@@ -234,7 +234,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
 
     if (insertError) {
         console.error("Candidate Insert Error:", insertError);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     // --- Notify company ---

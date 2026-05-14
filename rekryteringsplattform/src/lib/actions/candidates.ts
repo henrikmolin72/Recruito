@@ -283,7 +283,7 @@ export async function createCandidate(mandateId: string, formData: FormData) {
 
     if (insertError) {
         console.error("Candidate Insert Error:", insertError);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     // Notification: Notify Company Owner
@@ -357,7 +357,7 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
         .eq("id", candidateId);
 
     if (error) {
-        { console.error("[ServerAction]", error); return { error: "Something went wrong. Please try again." }; }
+        { console.error("[ServerAction]", error); return { error: "Något gick fel. Försök igen." }; }
     }
 
     // Recruiter/company applying a status change should clear pending company request.
@@ -498,7 +498,7 @@ export async function moveCandidateToPipelineStage(
 
     if (error) {
         console.error("[ServerAction]", error);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     await clearCompanyNextStepRequest(supabase, candidateId);
@@ -596,7 +596,7 @@ export async function requestCandidateNextStep(
 
     if (updateError) {
         console.error("[ServerAction]", updateError);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     const { recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
@@ -660,7 +660,7 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
 
     if (error) {
         console.error("[ServerAction]", error);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
@@ -708,7 +708,7 @@ export async function markOfferAccepted(candidateId: string, jobId: string) {
 
     if (error) {
         console.error("[markOfferAccepted]", error);
-        return { error: "Could not mark offer as accepted." };
+        return { error: "Kunde inte markera erbjudande som accepterat." };
     }
 
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
@@ -734,7 +734,7 @@ export async function markCandidateRecruitoScreened(candidateId: string) {
 
     if (error) {
         console.error("[markCandidateRecruitoScreened]", error);
-        return { error: "Could not mark candidate as screened." };
+        return { error: "Kunde inte markera kandidat som screenad." };
     }
 
     revalidatePath("/admin/candidates");
