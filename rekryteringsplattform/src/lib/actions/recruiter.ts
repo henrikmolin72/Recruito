@@ -389,7 +389,8 @@ export async function getAvailableJobsForRecruiter() {
         .select(`
       *,
       company:companies(company_name),
-      mandates:job_mandates(count)
+      mandates:job_mandates(count),
+      candidates:candidates(status)
     `)
         .in("status", ["active", "closed", "paused"])
         .order("created_at", { ascending: false });
@@ -407,11 +408,21 @@ export async function getAvailableJobsForRecruiter() {
         return !isClaimed && !isFull;
     });
 
+    // Candidates "in process" — exclude terminal/rejected statuses.
+    const TERMINAL_STATUSES = new Set([
+        "hired", "rejected", "declined", "rejected_client", "rejected_interview",
+        "candidate_withdrawn", "duplicate_rejected", "client_already_engaged",
+        "guarantee_failed", "recruiter_rejected", "completed",
+    ]);
+
     return availableJobs.map(job => ({
         ...job,
         company_name: job.company?.company_name || 'Okänt företag',
         recruiters_count: job.current_recruiter_count || 0,
         worked_previously: everClaimedJobIds.has(job.id),
+        pending_candidates_count: (job.candidates || []).filter(
+            (c: { status: string | null }) => c.status && !TERMINAL_STATUSES.has(c.status),
+        ).length,
     }));
 }
 
@@ -540,7 +551,8 @@ export async function getRecruiterMandates() {
         id,
         first_name,
         last_name,
-        status
+        status,
+        recruito_screened_at
       )
     `)
         .eq("recruiter_id", recruiter.id)
@@ -573,7 +585,8 @@ export async function getRecruiterMandates() {
         candidates: mandate.candidates?.map((c: any) => ({
             id: c.id,
             name: `${c.first_name} ${c.last_name}`,
-            status: c.status
+            status: c.status,
+            recruito_screened_at: c.recruito_screened_at,
         })) || []
     }));
 }
