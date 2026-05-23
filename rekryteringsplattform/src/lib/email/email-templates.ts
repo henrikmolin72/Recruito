@@ -171,6 +171,93 @@ export function candidateProgressEmail({
   `;
 }
 
+// Sent to all active recruiters when a company changes a job's lifecycle state
+// (paused / reopened / closed). Same shape across all three transitions; the
+// caller picks the headline + status verb.
+export function jobLifecycleEmail({
+  recruiterName,
+  jobTitle,
+  companyName,
+  headline,
+  bodyLine,
+  jobUrl,
+}: {
+  recruiterName: string;
+  jobTitle: string;
+  companyName: string;
+  headline: string;
+  bodyLine: string;
+  jobUrl: string;
+}): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="${emailHeaderStyle}">
+      <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #000; margin-bottom: 20px;">Hi ${escapeHtml(recruiterName)},</h2>
+        <p>${escapeHtml(bodyLine)}</p>
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="color: #000; margin-top: 0;">${escapeHtml(jobTitle)}</h3>
+          <p style="margin: 8px 0;"><strong>Company:</strong> ${escapeHtml(companyName)}</p>
+          <p style="margin: 8px 0;"><strong>Status:</strong> <span style="color: ${BRAND_COLOR}; font-weight: bold;">${escapeHtml(headline)}</span></p>
+        </div>
+        <p>
+          <a href="${encodeURI(jobUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            View Job
+          </a>
+        </p>
+        <p style="margin-top: 40px; color: #999; font-size: 12px;">
+          You received this email because you have taken this mandate on Recruito.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Sent to the recruiter once the placement invoice has been paid by the company
+// and their payout is unlocked. Plain status update.
+export function paymentCompletedEmail({
+  recruiterName,
+  jobTitle,
+  candidateName,
+  payoutUrl,
+}: {
+  recruiterName: string;
+  jobTitle: string;
+  candidateName: string;
+  payoutUrl: string;
+}): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body style="${emailHeaderStyle}">
+      <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #000; margin-bottom: 20px;">Hi ${escapeHtml(recruiterName)},</h2>
+        <p>Your placement has been paid out. Congratulations!</p>
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 8px 0;"><strong>Candidate:</strong> ${escapeHtml(candidateName)}</p>
+          <p style="margin: 8px 0;"><strong>Job:</strong> ${escapeHtml(jobTitle)}</p>
+        </div>
+        <p>
+          <a href="${encodeURI(payoutUrl)}" style="background-color: ${BRAND_COLOR}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            View Earnings
+          </a>
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
 // Sent to the company when admin raises client_fee_amount above the estimated
 // baseline and clicks Approve. Plain-text body; deep-links to the job detail.
 export function feeReconfirmEmail({

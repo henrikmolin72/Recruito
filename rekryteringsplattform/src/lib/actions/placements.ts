@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications/create";
 import { requireAdmin } from "@/lib/actions/require-admin";
+import { sendUserEmail } from "@/lib/email/internal-notifications";
+import { paymentCompletedEmail } from "@/lib/email/email-templates";
 
 // =============================================
 // Placement helpers
@@ -185,6 +187,35 @@ export async function recordPlacementPayment(placementId: string) {
             msg,
             `/recruiter/earnings`
         );
+
+        // Send confirmation email (honors profiles.email_opt_out)
+        try {
+            const { data: recruiterProfile } = await admin
+                .from("profiles")
+                .select("email, full_name, email_opt_out")
+                .eq("id", recruiter.user_id)
+                .single();
+
+            if (recruiterProfile?.email && !(recruiterProfile as any).email_opt_out) {
+                const { data: jobRow } = placement.job_id
+                    ? await admin.from("jobs").select("title").eq("id", placement.job_id).single()
+                    : { data: null as { title?: string } | null };
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com";
+
+                await sendUserEmail({
+                    to: recruiterProfile.email,
+                    subject: `Payment received for ${candidateName}`,
+                    html: paymentCompletedEmail({
+                        recruiterName: recruiterProfile.full_name || "Recruiter",
+                        jobTitle: jobRow?.title || "Position",
+                        candidateName,
+                        payoutUrl: `${baseUrl}/recruiter/earnings`,
+                    }),
+                });
+            }
+        } catch (err) {
+            console.error("[recordPlacementPayment email]", err);
+        }
     }
 
     revalidatePath("/admin/placements");
