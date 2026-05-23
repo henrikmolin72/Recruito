@@ -53,6 +53,54 @@ async function getCandidateMessagingContext(supabase: Awaited<ReturnType<typeof 
     };
 }
 
+// Sends a "your candidate's status changed" email to the recruiter, honoring
+// the profiles.email_opt_out preference (migration 037). Used for the offer
+// sent / offer accepted / hired / rejected transitions in updateCompanyStage
+// + markOfferAccepted. Reuses candidateProgressEmail since it already accepts
+// an arbitrary stage label — no need for four near-identical templates.
+async function sendRecruiterStageEmail(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    params: {
+        recruiterUserId: string;
+        candidateId: string;
+        jobId: string;
+        candidateName: string;
+        jobTitle: string;
+        stageLabel: string;
+        subject: string;
+    }
+) {
+    try {
+        const { data: recruiterProfile } = await supabase
+            .from("profiles")
+            .select("email, full_name, email_opt_out")
+            .eq("id", params.recruiterUserId)
+            .single();
+
+        if (!recruiterProfile?.email || (recruiterProfile as any).email_opt_out) return;
+
+        const candidateUrl =
+            `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}` +
+            `/recruiter/jobs/${params.jobId}#candidate/${params.candidateId}`;
+
+        const emailHtml = candidateProgressEmail({
+            recruiterName: recruiterProfile.full_name || "Recruiter",
+            candidateName: params.candidateName || "A candidate",
+            jobTitle: params.jobTitle || "Position",
+            newStage: params.stageLabel,
+            candidateUrl,
+        });
+
+        await sendUserEmail({
+            to: recruiterProfile.email,
+            subject: params.subject,
+            html: emailHtml,
+        });
+    } catch (err) {
+        console.error("[sendRecruiterStageEmail]", err);
+    }
+}
+
 async function getActorRoleForCandidateAction(
     supabase: Awaited<ReturnType<typeof createClient>>,
     userId: string,
@@ -416,11 +464,11 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
 
             const { data: companyProfile } = await supabase
                 .from("profiles")
-                .select("email, full_name")
+                .select("email, full_name, email_opt_out")
                 .eq("id", access.companyUserId)
                 .single();
 
-            if (companyProfile?.email && access.candidate) {
+            if (companyProfile?.email && !(companyProfile as any).email_opt_out && access.candidate) {
                 const candidateUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/company/jobs/${jobId}/candidates/${candidateId}`;
                 const qualifications = (access.candidate as any)?.key_qualifications || "Professional experience in relevant field";
 
@@ -521,11 +569,11 @@ export async function moveCandidateToPipelineStage(
         try {
             const { data: recruiterProfile } = await supabase
                 .from("profiles")
-                .select("email, full_name")
+                .select("email, full_name, email_opt_out")
                 .eq("id", recruiterUserId)
                 .single();
 
-            if (recruiterProfile?.email) {
+            if (recruiterProfile?.email && !(recruiterProfile as any).email_opt_out) {
                 const recruiterName = recruiterProfile.full_name || "Recruiter";
                 const candidateUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/recruiter/jobs/${jobId}#candidate/${candidateId}`;
 
@@ -663,6 +711,28 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         return { error: "Something went wrong. Please try again." };
     }
 
+    // Email recruiter for offer-sent / hired / rejected transitions
+    const STAGE_EMAIL_LABEL: Record<string, { stage: string; subject: (name: string) => string }> = {
+        job_offer: { stage: "Job offer sent", subject: (n) => `Offer sent to ${n}` },
+        hired: { stage: "Hired", subject: (n) => `${n} was hired` },
+        rejected: { stage: "Rejected", subject: (n) => `${n} was rejected` },
+    };
+    const emailConfig = STAGE_EMAIL_LABEL[stage];
+    if (emailConfig) {
+        const ctx = await getCandidateMessagingContext(supabase, candidateId);
+        if (ctx.recruiterUserId) {
+            await sendRecruiterStageEmail(supabase, {
+                recruiterUserId: ctx.recruiterUserId,
+                candidateId,
+                jobId,
+                candidateName: ctx.candidateName,
+                jobTitle: access.job?.title || "Position",
+                stageLabel: emailConfig.stage,
+                subject: emailConfig.subject(ctx.candidateName || "candidate"),
+            });
+        }
+    }
+
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
     return { success: true };
 }
@@ -709,6 +779,19 @@ export async function markOfferAccepted(candidateId: string, jobId: string) {
     if (error) {
         console.error("[markOfferAccepted]", error);
         return { error: "Could not mark offer as accepted." };
+    }
+
+    const ctx = await getCandidateMessagingContext(supabase, candidateId);
+    if (ctx.recruiterUserId) {
+        await sendRecruiterStageEmail(supabase, {
+            recruiterUserId: ctx.recruiterUserId,
+            candidateId,
+            jobId,
+            candidateName: ctx.candidateName,
+            jobTitle: access.job?.title || "Position",
+            stageLabel: "Offer accepted",
+            subject: `Offer accepted by ${ctx.candidateName || "candidate"}`,
+        });
     }
 
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
