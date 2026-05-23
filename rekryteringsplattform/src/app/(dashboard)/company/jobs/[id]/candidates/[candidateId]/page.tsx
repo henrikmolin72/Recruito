@@ -361,6 +361,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                         jobId={jobId}
                         initialStage={(candidate as any).company_stage ?? null}
                         initialOfferAccepted={candidate.status === 'offer_accepted'}
+                        initialViewedAt={(candidate as any).company_viewed_at ?? null}
                     />
 
                     {/* Contact Info */}
