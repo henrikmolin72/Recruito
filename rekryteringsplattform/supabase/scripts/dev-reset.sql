@@ -1,4 +1,22 @@
--- Kör denna FÖRST för att rensa ALLT
+-- ============================================================================
+-- DEV-ONLY DESTRUCTIVE RESET — DO NOT RUN AGAINST PRODUCTION
+-- ============================================================================
+-- This script DROPs every Recruito application table CASCADE and is intended
+-- only for wiping a fresh local Supabase instance before re-applying migrations.
+--
+-- This file lives in supabase/scripts/ (NOT supabase/migrations/) so it is
+-- never picked up by `supabase db push` / `supabase db reset` automatically.
+-- It was previously at supabase/migrations/000_cleanup.sql, which made it
+-- one careless `db reset` away from destroying production. Do not move it
+-- back into migrations/.
+--
+-- To run intentionally against a local dev DB:
+--   psql "$LOCAL_DB_URL" -f supabase/scripts/dev-reset.sql
+--
+-- The auth.users and storage.objects schemas are NOT wiped by this script;
+-- if you really want a clean slate, drop them via the Supabase dashboard.
+-- ============================================================================
+
 
 -- Drop RLS helper functions (CASCADE tar bort alla beroende policies)
 DROP FUNCTION IF EXISTS auth_role() CASCADE;
