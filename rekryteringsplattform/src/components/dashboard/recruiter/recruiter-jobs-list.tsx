@@ -339,6 +339,17 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                             </p>
                           </div>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
+                            <Clock className="h-4 w-4 text-slate-500" />
+                          </div>
+                          <div className="text-[11px] leading-tight capitalize">
+                            <p className="text-slate-400 font-bold uppercase tracking-widest">{t("recruiter.pendingLabel") || "Pending"}</p>
+                            <p className="font-black text-slate-700">
+                              {t("recruiter.pendingCount").replace("{count}", String(job.pending_candidates_count ?? 0))}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 

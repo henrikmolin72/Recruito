@@ -97,9 +97,12 @@ export async function POST(request: NextRequest) {
 
     const response = await anthropic.messages.create({
       model,
-      max_tokens: 300,
+      max_tokens: 500,
       temperature: 0.1,
-      system: 'You are a recruitment assistant. Score how well a CV matches a job. Respond ONLY with valid JSON: {"score": <integer 0-100>}. No other text.',
+      system:
+        'You are a recruitment assistant. Score how well a CV matches a job and surface concrete improvement hints. ' +
+        'Respond ONLY with valid JSON of the form {"score": <integer 0-100>, "hints": ["hint1","hint2","hint3"]}. ' +
+        'Each hint must be one short sentence (max ~15 words) suggesting what would strengthen the candidate\'s fit (missing skill, missing evidence, etc.). Return 2–3 hints. No other text.',
       messages: [
         {
           role: "user",
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
             } as any,
             {
               type: "text",
-              text: `Job description:\n\n${jobDescription}\n\nScore this CV match 0–100.`,
+              text: `Job description:\n\n${jobDescription}\n\nScore this CV match 0–100 and return 2–3 short improvement hints.`,
             },
           ],
         },
@@ -122,13 +125,29 @@ export async function POST(request: NextRequest) {
       .map((b) => (b as any).text)
       .join("");
 
-    const match = text.match(/\{[\s\S]*?\}/);
+    const match = text.match(/\{[\s\S]*\}/);
     if (!match) return NextResponse.json({ error: "Invalid AI response" }, { status: 500 });
 
-    const { score } = JSON.parse(match[0]);
-    if (typeof score !== "number") return NextResponse.json({ error: "Invalid score" }, { status: 500 });
+    let parsed: { score?: unknown; hints?: unknown };
+    try {
+      parsed = JSON.parse(match[0]);
+    } catch {
+      return NextResponse.json({ error: "Invalid AI response" }, { status: 500 });
+    }
 
-    return NextResponse.json({ score: Math.min(100, Math.max(0, Math.round(score))) });
+    if (typeof parsed.score !== "number") {
+      return NextResponse.json({ error: "Invalid score" }, { status: 500 });
+    }
+    const score = Math.min(100, Math.max(0, Math.round(parsed.score)));
+    const hints = Array.isArray(parsed.hints)
+      ? parsed.hints
+          .filter((h): h is string => typeof h === "string")
+          .map((h) => h.trim())
+          .filter(Boolean)
+          .slice(0, 3)
+      : [];
+
+    return NextResponse.json({ score, hints });
   } catch (err) {
     console.error("[cv-match]", err);
     return NextResponse.json({ error: "Scoring failed" }, { status: 500 });
