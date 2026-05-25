@@ -45,6 +45,25 @@ export async function login(formData: FormData) {
     const userRole = user?.app_metadata?.role || user?.user_metadata?.role || "company";
     const requestedRole = formData.get("requestedRole") as string | null;
 
+    // For recruiters: check approval_status before allowing access
+    if (userRole === "recruiter" && user) {
+        const { data: recruiter } = await supabase
+            .from("recruiters")
+            .select("approval_status")
+            .eq("user_id", user.id)
+            .single();
+
+        const status = recruiter?.approval_status;
+        if (status === "suspended" || status === "blocked" || status === "rejected") {
+            await supabase.auth.signOut();
+            return { error: "Ditt konto är spärrat. Kontakta support för mer information." };
+        }
+        if (status === "pending") {
+            await supabase.auth.signOut();
+            return { error: "Ditt konto väntar på godkännande. Du får ett e-postmeddelande när du är godkänd." };
+        }
+    }
+
     // Admin users can log in as company or admin
     if (requestedRole && userRole === "admin" && (requestedRole === "company" || requestedRole === "admin")) {
         redirect(`/${requestedRole}`);
