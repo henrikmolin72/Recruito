@@ -120,7 +120,7 @@ function EnglishGdpr() {
                 explains how Recruito complies with GDPR and how you exercise your rights.
             </p>
 
-            <h2 className="mt-8 text-xl font-semibold">Recruito's role: controller or processor?</h2>
+            <h2 className="mt-8 text-xl font-semibold">Recruito&apos;s role: controller or processor?</h2>
             <p>Recruito has two roles depending on which data is concerned:</p>
             <ul className="list-disc pl-6 space-y-1">
                 <li>

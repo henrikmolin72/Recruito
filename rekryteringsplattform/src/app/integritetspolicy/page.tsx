@@ -26,7 +26,7 @@ function SwedishPolicy() {
     return (
         <>
             <p>
-                Recruito AB ("Recruito", "vi") respekterar din integritet och behandlar
+                Recruito AB (&quot;Recruito&quot;, &quot;vi&quot;) respekterar din integritet och behandlar
                 personuppgifter i enlighet med EU:s dataskyddsförordning (GDPR) och svensk
                 lag. Den här policyn beskriver vilka uppgifter vi samlar in, varför, hur
                 länge vi sparar dem, och vilka rättigheter du har.
@@ -143,7 +143,7 @@ function EnglishPolicy() {
     return (
         <>
             <p>
-                Recruito AB ("Recruito", "we") respects your privacy and processes personal
+                Recruito AB (&quot;Recruito&quot;, &quot;we&quot;) respects your privacy and processes personal
                 data in accordance with the EU General Data Protection Regulation (GDPR) and
                 Swedish law. This policy describes what data we collect, why, how long we
                 keep it, and what rights you have.

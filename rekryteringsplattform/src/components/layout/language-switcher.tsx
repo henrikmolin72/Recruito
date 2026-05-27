@@ -32,6 +32,9 @@ export function LanguageSwitcher({
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // Mount-gate for the Select component to avoid hydration mismatch. The
+        // set-state-in-effect pattern is intentional and SSR-safe.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 

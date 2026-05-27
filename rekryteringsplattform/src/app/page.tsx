@@ -409,15 +409,15 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold mb-3">{t("landing.footerPlatform")}</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="/#how-it-works" className="hover:text-foreground">{t("landing.navHowItWorks")}</a></li>
-                <li><a href="/#pricing" className="hover:text-foreground">{t("landing.navPricing")}</a></li>
+                <li><Link href="/#how-it-works" className="hover:text-foreground">{t("landing.navHowItWorks")}</Link></li>
+                <li><Link href="/#pricing" className="hover:text-foreground">{t("landing.navPricing")}</Link></li>
                 <li><a href="mailto:hello@recruito.se" className="hover:text-foreground">{t("landing.footerFaq")}</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-3">{t("landing.footerCompany")}</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="/#companies" className="hover:text-foreground">{t("landing.footerAboutUs")}</a></li>
+                <li><Link href="/#companies" className="hover:text-foreground">{t("landing.footerAboutUs")}</Link></li>
                 <li><a href="mailto:hello@recruito.se" className="hover:text-foreground">{t("landing.footerContact")}</a></li>
                 <li><a href="mailto:hello@recruito.se" className="hover:text-foreground">{t("landing.footerBlog")}</a></li>
               </ul>

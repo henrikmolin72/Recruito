@@ -327,8 +327,8 @@ export async function getConversations() {
     const messageSenderIds = [...new Set((messageRows || []).map((m: any) => m.sender_id).filter(Boolean))];
     const allProfileIds = [...new Set([...(participantOtherUserIds as string[]), ...(messageSenderIds as string[])])];
 
-    let profileMap: Record<string, string> = {};
-    let profileDetailMap: Record<string, { full_name: string; role?: string }> = {};
+    const profileMap: Record<string, string> = {};
+    const profileDetailMap: Record<string, { full_name: string; role?: string }> = {};
     if (allProfileIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabaseAdmin
             .from("profiles")

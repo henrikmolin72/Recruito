@@ -12,7 +12,10 @@ export function CookieConsentBanner() {
     const [analyticsChoice, setAnalyticsChoice] = useState(false);
 
     useEffect(() => {
-        // Render only after mount so SSR HTML is consent-agnostic.
+        // Render only after mount so SSR HTML is consent-agnostic. The set-state-in-effect
+        // pattern is intentional here: localStorage isn't available during SSR, so we must
+        // defer the decision to client-mount.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (!getConsent()) setVisible(true);
     }, []);
 
