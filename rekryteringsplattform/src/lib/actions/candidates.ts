@@ -685,7 +685,8 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
     if (access.actorRole !== "company") return { error: "Obehörig" };
 
     const patch: Record<string, any> = { company_stage: stage };
-    if (stage === "viewed" && !(access.candidate as any)?.company_viewed_at) {
+    const isFirstView = stage === "viewed" && !(access.candidate as any)?.company_viewed_at;
+    if (isFirstView) {
         patch.company_viewed_at = new Date().toISOString();
     }
 
@@ -730,6 +731,27 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
                 stageLabel: emailConfig.stage,
                 subject: emailConfig.subject(ctx.candidateName || "candidate"),
             });
+        }
+    }
+
+    // First-view recruiter ping: surfaces the 5-day response-window UX on the
+    // recruiter side. Only fires on the first transition into 'viewed'.
+    if (isFirstView) {
+        try {
+            const { recruiterUserId, mandateId, candidateName } =
+                await getCandidateMessagingContext(supabase, candidateId);
+            if (recruiterUserId) {
+                await createNotification(
+                    recruiterUserId,
+                    "The client viewed your candidate",
+                    `${access.job?.title || "The client"} opened ${candidateName || "your candidate"}'s profile. A 5-day response window has started.`,
+                    mandateId
+                        ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}`
+                        : "/recruiter/mandates"
+                );
+            }
+        } catch (err) {
+            console.error("[updateCompanyStage first-view notify]", err);
         }
     }
 
