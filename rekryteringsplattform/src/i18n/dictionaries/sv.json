@@ -145,6 +145,9 @@
     "refundProcessing": "Återbetalning"
   },
   "auth": {
+    "account_unavailable": "Tjänsten är otillgänglig just nu. Försök igen.",
+    "account_blocked": "Ditt konto är spärrat. Kontakta support för mer information.",
+    "account_pending": "Ditt konto väntar på godkännande. Du får ett e-postmeddelande när du är godkänd.",
     "loginTitle": "Logga in",
     "loginDescription": "Ange dina uppgifter för att fortsätta",
     "loginCompanyTitle": "Logga in som företag",
@@ -752,6 +755,8 @@
     "tableContact": "Kontakt",
     "tableIndustry": "Bransch",
     "tableActiveJobs": "Aktiva jobb",
+    "tableJoiningDate": "Anslutningsdatum",
+    "tablePublishDate": "Publiceringsdatum",
     "noCompaniesRegistered": "Inga företag registrerade",
     "noEmail": "Ingen e-post",
     "recruitersPageTitle": "Rekryterare",

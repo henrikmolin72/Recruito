@@ -145,6 +145,9 @@
     "refundProcessing": "Tilbakebetaling"
   },
   "auth": {
+    "account_unavailable": "Tjenesten er utilgjengelig. Prøv igjen.",
+    "account_blocked": "Kontoen din er sperret. Kontakt support for mer informasjon.",
+    "account_pending": "Kontoen din venter på godkjenning. Du får en e-post når du er godkjent.",
     "loginTitle": "Logg inn",
     "loginDescription": "Oppgi opplysningene dine for å fortsette",
     "loginCompanyTitle": "Logg inn som bedrift",
@@ -752,6 +755,8 @@
     "tableContact": "Kontakt",
     "tableIndustry": "Bransje",
     "tableActiveJobs": "Aktive jobber",
+    "tableJoiningDate": "Tilmeldingsdato",
+    "tablePublishDate": "Publiseringsdato",
     "noCompaniesRegistered": "Ingen selskaper registrert",
     "noEmail": "Ingen e-post",
     "recruitersPageTitle": "Rekrutterere",

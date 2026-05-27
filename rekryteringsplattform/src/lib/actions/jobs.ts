@@ -479,12 +479,13 @@ async function notifyRecruitersOfJobLifecycleChange(
     transition: "closed" | "paused" | "reopened"
 ) {
     try {
-        const supabase = await createClient();
+        const { createAdminClient } = await import("@/lib/supabase/admin");
+        const supabase = createAdminClient();
         const { data: jobRow } = await supabase
             .from("jobs")
-            .select(`title, company:companies(company_name), mandates:job_mandates(recruiter:recruiters(user_id))`)
+            .select(`title, company:companies(company_name), mandates:job_mandates!inner(is_active, recruiter:recruiters(user_id))`)
             .eq("id", jobId)
-            .eq("job_mandates.is_active", true)
+            .eq("mandates.is_active", true)
             .single();
         if (!jobRow) return;
 
@@ -515,7 +516,7 @@ async function notifyRecruitersOfJobLifecycleChange(
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com";
 
-        await Promise.all(
+        const results = await Promise.allSettled(
             (profiles || [])
                 .filter((p: any) => p.email && !p.email_opt_out)
                 .map((p: any) =>
@@ -533,6 +534,10 @@ async function notifyRecruitersOfJobLifecycleChange(
                     })
                 )
         );
+        const failed = results.filter((r) => r.status === "rejected");
+        if (failed.length > 0) {
+            console.error(`[notifyRecruitersOfJobLifecycleChange] ${failed.length} send(s) failed`, failed.map((f) => (f as PromiseRejectedResult).reason));
+        }
     } catch (err) {
         console.error("[notifyRecruitersOfJobLifecycleChange]", err);
     }

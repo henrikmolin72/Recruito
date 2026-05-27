@@ -145,6 +145,9 @@
     "refundProcessing": "Tilbagebetaling"
   },
   "auth": {
+    "account_unavailable": "Tjenesten er ikke tilgængelig. Prøv igen.",
+    "account_blocked": "Din konto er spærret. Kontakt support for mere information.",
+    "account_pending": "Din konto afventer godkendelse. Du modtager en e-mail, når du er godkendt.",
     "loginTitle": "Log ind",
     "loginDescription": "Indtast dine oplysninger for at fortsætte",
     "loginCompanyTitle": "Log ind som virksomhed",
@@ -752,6 +755,8 @@
     "tableContact": "Kontakt",
     "tableIndustry": "Branche",
     "tableActiveJobs": "Aktive jobs",
+    "tableJoiningDate": "Tilmeldingsdato",
+    "tablePublishDate": "Udgivelsesdato",
     "noCompaniesRegistered": "Ingen virksomheder registreret",
     "noEmail": "Ingen e-mail",
     "recruitersPageTitle": "Rekrutterere",

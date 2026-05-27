@@ -47,20 +47,26 @@ export async function login(formData: FormData) {
 
     // For recruiters: check approval_status before allowing access
     if (userRole === "recruiter" && user) {
-        const { data: recruiter } = await supabase
+        const t = await createTranslator();
+        const { data: recruiter, error: recruiterError } = await supabase
             .from("recruiters")
             .select("approval_status")
             .eq("user_id", user.id)
-            .single();
+            .maybeSingle();
 
-        const status = recruiter?.approval_status;
+        if (recruiterError || !recruiter) {
+            await supabase.auth.signOut();
+            return { error: t("auth.account_unavailable") };
+        }
+
+        const status = recruiter.approval_status;
         if (status === "suspended" || status === "blocked" || status === "rejected") {
             await supabase.auth.signOut();
-            return { error: "Ditt konto är spärrat. Kontakta support för mer information." };
+            return { error: t("auth.account_blocked") };
         }
         if (status === "pending") {
             await supabase.auth.signOut();
-            return { error: "Ditt konto väntar på godkännande. Du får ett e-postmeddelande när du är godkänd." };
+            return { error: t("auth.account_pending") };
         }
     }
 

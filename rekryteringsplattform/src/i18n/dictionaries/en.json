@@ -145,6 +145,9 @@
     "refundProcessing": "Refund processing"
   },
   "auth": {
+    "account_unavailable": "Service unavailable. Please try again.",
+    "account_blocked": "Your account is blocked. Contact support for more information.",
+    "account_pending": "Your account is awaiting approval. You will receive an email once approved.",
     "loginTitle": "Log in",
     "loginDescription": "Enter your credentials to continue",
     "loginCompanyTitle": "Log in as company",
@@ -752,6 +755,8 @@
     "tableContact": "Contact",
     "tableIndustry": "Industry",
     "tableActiveJobs": "Active jobs",
+    "tableJoiningDate": "Joining date",
+    "tablePublishDate": "Publish date",
     "noCompaniesRegistered": "No companies registered",
     "noEmail": "No email",
     "recruitersPageTitle": "Recruiters",

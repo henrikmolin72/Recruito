@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       .map((b) => (b as any).text)
       .join("");
 
-    const match = text.match(/\{[\s\S]*\}/);
+    const match = text.match(/\{[\s\S]*?\}/);
     if (!match) return NextResponse.json({ error: "Invalid AI response" }, { status: 500 });
 
     let parsed: { score?: unknown; hints?: unknown };
