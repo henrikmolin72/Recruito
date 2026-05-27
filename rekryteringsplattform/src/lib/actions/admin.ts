@@ -119,7 +119,7 @@ export async function approveRecruiter(recruiterId: string) {
 
     if (error) {
         console.error("[ServerAction]", error);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     revalidatePath("/admin");
@@ -145,7 +145,7 @@ export async function rejectRecruiter(recruiterId: string) {
 
     if (error) {
         console.error("[ServerAction]", error);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     revalidatePath("/admin");
@@ -169,7 +169,7 @@ export async function suspendRecruiter(recruiterId: string) {
 
     if (error) {
         console.error("[ServerAction]", error);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     revalidatePath("/admin/recruiters");

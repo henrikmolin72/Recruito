@@ -7,7 +7,6 @@ type SendInternalRecruiterEmailParams = {
   html?: string;
 };
 
-const DEFAULT_INTERNAL_REVIEW_EMAIL = "henrik@aiaid.com.se";
 const DEFAULT_FROM = "Recruito <no-reply@recruito.eu>";
 
 /* ------------------------------------------------------------------ *
@@ -48,8 +47,11 @@ function getFromAddress() {
   return process.env.EMAIL_FROM || process.env.SMTP_FROM || DEFAULT_FROM;
 }
 
-function getInternalReviewEmail() {
-  return process.env.INTERNAL_REVIEW_EMAIL || DEFAULT_INTERNAL_REVIEW_EMAIL;
+function getInternalReviewEmail(): string | null {
+  // No fallback — previously defaulted to a personal address which leaked in
+  // source. If the env var is missing, callers get null and skip the send
+  // gracefully (logged), rather than the email going to a hardcoded recipient.
+  return process.env.INTERNAL_REVIEW_EMAIL?.trim() || null;
 }
 
 // Subject lines must be single-line; CRLF in subject enables header injection.
@@ -125,8 +127,13 @@ async function dispatch(args: {
 }
 
 export async function sendInternalRecruiterEmail(params: SendInternalRecruiterEmailParams) {
+  const to = getInternalReviewEmail();
+  if (!to) {
+    console.warn("INTERNAL_REVIEW_EMAIL not configured, skipping internal email:", params.subject);
+    return { skipped: true } as const;
+  }
   return dispatch({
-    to: getInternalReviewEmail(),
+    to,
     subject: params.subject,
     text: params.text,
     html: params.html,

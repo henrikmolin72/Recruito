@@ -68,7 +68,7 @@ export async function sendPlacementInvoice(placementId: string) {
 
     if (error) {
         console.error("[ServerAction]", error);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     // Notify company about invoice
@@ -150,7 +150,7 @@ export async function recordPlacementPayment(placementId: string) {
 
     if (error) {
         console.error("[ServerAction]", error);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     // If entering guarantee, update candidate status
@@ -358,7 +358,7 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
 
     if (error) {
         console.error("[ServerAction]", error);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     // Update candidate
@@ -435,7 +435,7 @@ export async function recalculateRecruiterMetrics(recruiterId: string) {
 
     if (error) {
         console.error(`Failed to recalculate metrics for recruiter ${recruiterId}:`, error);
-        return { error: "Something went wrong. Please try again." };
+        return { error: "Något gick fel. Försök igen." };
     }
 
     return { success: true };
