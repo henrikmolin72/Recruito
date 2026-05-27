@@ -1,4 +1,17 @@
 {
+  "cookieConsent": {
+    "title": "Vi använder cookies",
+    "description": "Vi använder nödvändiga cookies för att plattformen ska fungera. Med ditt samtycke använder vi även analys-cookies för att förbättra tjänsten.",
+    "privacyLink": "Läs vår integritetspolicy",
+    "acceptAll": "Acceptera alla",
+    "rejectNonEssential": "Endast nödvändiga",
+    "customize": "Anpassa",
+    "save": "Spara val",
+    "necessaryTitle": "Nödvändiga cookies",
+    "necessaryDescription": "Krävs för inloggning, säkerhet och språkval. Kan inte stängas av.",
+    "analyticsTitle": "Analys",
+    "analyticsDescription": "Hjälper oss förstå hur plattformen används så vi kan förbättra den. Inga personuppgifter delas med tredje part i marknadsföringssyfte."
+  },
   "common": {
     "save": "Spara",
     "saveChanges": "Spara ändringar",

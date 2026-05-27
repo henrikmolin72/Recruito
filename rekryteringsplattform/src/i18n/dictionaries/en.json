@@ -1,4 +1,17 @@
 {
+  "cookieConsent": {
+    "title": "We use cookies",
+    "description": "We use necessary cookies to run the platform. With your consent we also use analytics cookies to improve the service.",
+    "privacyLink": "Read our privacy policy",
+    "acceptAll": "Accept all",
+    "rejectNonEssential": "Necessary only",
+    "customize": "Customize",
+    "save": "Save choices",
+    "necessaryTitle": "Necessary cookies",
+    "necessaryDescription": "Required for login, security and language selection. Cannot be turned off.",
+    "analyticsTitle": "Analytics",
+    "analyticsDescription": "Helps us understand how the platform is used so we can improve it. No personal data is shared with third parties for marketing."
+  },
   "common": {
     "save": "Save",
     "saveChanges": "Save changes",
