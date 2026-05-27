@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     const hints = Array.isArray(parsed.hints)
       ? parsed.hints
           .filter((h): h is string => typeof h === "string")
-          .map((h) => h.trim())
+          .map((h) => h.trim().slice(0, 200))
           .filter(Boolean)
           .slice(0, 3)
       : [];

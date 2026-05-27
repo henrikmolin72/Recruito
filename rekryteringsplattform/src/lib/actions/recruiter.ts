@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Recruiter } from "@/types/db-types";
@@ -384,7 +385,11 @@ export async function getAvailableJobsForRecruiter() {
     );
     const everClaimedJobIds = new Set((claimedMandates || []).map(m => m.job_id));
 
-    const { data: jobs, error } = await supabase
+    // Use admin client for the listing aggregate: recruiter is auth'd above and
+    // we only expose non-PII counts (pending candidate count per job). RLS on
+    // `candidates` would otherwise silently return [] and break the count.
+    const adminClient = createAdminClient();
+    const { data: jobs, error } = await adminClient
         .from("jobs")
         .select(`
       *,
