@@ -30,6 +30,7 @@ export default async function AdminJobsPage() {
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobTitle}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePublishDate}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobCompany}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobLocation}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJobSalary}</th>
@@ -45,12 +46,13 @@ export default async function AdminJobsPage() {
             <tbody>
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="p-8 text-center text-muted-foreground">{a.noJobsRegistered}</td>
+                  <td colSpan={12} className="p-8 text-center text-muted-foreground">{a.noJobsRegistered}</td>
                 </tr>
               ) : (
                 jobs.map((job) => (
                   <tr key={job.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                     <td className="p-4 font-medium">{job.title}</td>
+                    <td className="p-4 text-muted-foreground">{job.publishedAt ? formatDateShort(job.publishedAt) : dict.common.noDataDash}</td>
                     <td className="p-4">{job.company}</td>
                     <td className="p-4 text-muted-foreground">{job.location || dict.common.noDataDash}</td>
                     <td className="p-4">{job.salary ? formatCurrency(job.salary) : dict.common.notSpecifiedNeutral}</td>

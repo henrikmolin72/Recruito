@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Building2 } from "lucide-react";
 import { getAdminCompanies } from "@/lib/actions/admin";
 import { getDictionary } from "@/i18n/server";
+import { formatDateShort } from "@/lib/utils";
 
 export default async function AdminCompaniesPage() {
   const companies = await getAdminCompanies();
@@ -26,13 +27,14 @@ export default async function AdminCompaniesPage() {
                 <th className="p-4 font-medium text-muted-foreground">{a.tableOrgNumber}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableContact}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableIndustry}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tableJoiningDate}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableActiveJobs}</th>
               </tr>
             </thead>
             <tbody>
               {companies.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-muted-foreground">{a.noCompaniesRegistered}</td>
+                  <td colSpan={6} className="p-8 text-center text-muted-foreground">{a.noCompaniesRegistered}</td>
                 </tr>
               ) : (
                 companies.map((company) => (
@@ -53,6 +55,7 @@ export default async function AdminCompaniesPage() {
                     <td className="p-4">
                       {company.industry ? <Badge variant="outline">{company.industry}</Badge> : dict.common.noDataDash}
                     </td>
+                    <td className="p-4 text-muted-foreground">{company.joinedAt ? formatDateShort(company.joinedAt) : dict.common.noDataDash}</td>
                     <td className="p-4">{company.jobs}</td>
                   </tr>
                 ))

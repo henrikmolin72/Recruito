@@ -492,43 +492,10 @@ export async function getRecruiterPerformanceMetrics() {
 
     if (!recruiter) return null;
 
-    // If metrics are stale (older than 1 hour), recalculate
-    const lastCalc = recruiter.perf_last_calculated_at
-        ? new Date(recruiter.perf_last_calculated_at)
-        : null;
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-
-    if (!lastCalc || lastCalc < oneHourAgo) {
-        await recalculateRecruiterMetrics(recruiter.id);
-
-        // Re-fetch updated metrics
-        const { data: updated } = await supabase
-            .from("recruiters")
-            .select(`
-                perf_hire_rate,
-                perf_avg_time_to_hire_days,
-                perf_candidates_submitted,
-                perf_candidates_hired,
-                perf_active_placements,
-                perf_guarantee_success_rate,
-                perf_last_calculated_at
-            `)
-            .eq("id", recruiter.id)
-            .single();
-
-        if (updated) {
-            return {
-                totalPlacements: recruiter.total_placements ?? 0,
-                rating: recruiter.rating ?? 0,
-                hireRate: updated.perf_hire_rate ?? 0,
-                avgTimeToHireDays: updated.perf_avg_time_to_hire_days ?? 0,
-                candidatesSubmitted: updated.perf_candidates_submitted ?? 0,
-                candidatesHired: updated.perf_candidates_hired ?? 0,
-                activePlacements: updated.perf_active_placements ?? 0,
-                guaranteeSuccessRate: updated.perf_guarantee_success_rate ?? 100,
-            };
-        }
-    }
+    // Metrics staleness is handled by admin batch job (recalculateAllRecruiterMetrics)
+    // and by placement-create/update hooks. We deliberately do NOT call
+    // recalculateRecruiterMetrics() here because it requires admin auth and would
+    // crash the recruiter dashboard with a redirect-to-login.
 
     return {
         totalPlacements: recruiter.total_placements ?? 0,

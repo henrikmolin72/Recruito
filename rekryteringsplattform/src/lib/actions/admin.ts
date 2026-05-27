@@ -99,6 +99,7 @@ export async function getAdminRecruiters() {
             rating: r.rating || 0,
             placements: r.total_placements || 0,
             years_experience: r.years_experience || 0,
+            joinedAt: r.created_at,
         };
     });
 }
@@ -188,6 +189,7 @@ export async function getAdminCompanies() {
             company_name,
             org_number,
             industry,
+            created_at,
             profile:profiles!companies_user_id_fkey (
                 full_name,
                 email
@@ -211,6 +213,7 @@ export async function getAdminCompanies() {
             contact: profile?.full_name || "",
             email: profile?.email || "",
             jobs: company.jobs?.[0]?.count || 0,
+            joinedAt: company.created_at,
         };
     });
 }
@@ -245,6 +248,7 @@ export async function getAdminJobs() {
             current_recruiter_count,
             max_recruiters,
             max_candidates,
+            created_at,
             company:companies (company_name),
             candidates:candidates (count)
         `)
@@ -281,6 +285,7 @@ export async function getAdminJobs() {
             maxRecruiters: job.max_recruiters || 5,
             maxCandidates: job.max_candidates ?? 8,
             candidates: job.candidates?.[0]?.count || 0,
+            publishedAt: job.created_at,
         };
     });
 }

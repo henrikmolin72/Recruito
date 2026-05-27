@@ -48,7 +48,7 @@ const COMPANY_NAV: NavItem[] = [
 const RECRUITER_NAV: NavItem[] = [
   { labelKey: "nav.dashboard", href: "/recruiter", icon: LayoutDashboard },
   { labelKey: "nav.browseJobs", href: "/recruiter/jobs", icon: Search },
-  { labelKey: "nav.myMandates", href: "/recruiter/mandates", icon: FileCheck, badge: "3/5" },
+  { labelKey: "nav.myMandates", href: "/recruiter/mandates", icon: FileCheck },
   { labelKey: "nav.candidates", href: "/recruiter/candidates", icon: Users },
   { labelKey: "nav.messages", href: "/recruiter/messages", icon: MessageSquare, isMessages: true },
   { labelKey: "nav.earnings", href: "/recruiter/earnings", icon: Wallet },

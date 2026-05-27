@@ -6,6 +6,7 @@ import { Star } from "lucide-react";
 import { getAdminRecruiters } from "@/lib/actions/admin";
 import { RecruiterApprovalActions, RecruiterManageActions } from "@/components/dashboard/admin/recruiter-approval-actions";
 import { getDictionary } from "@/i18n/server";
+import { formatDateShort } from "@/lib/utils";
 
 export default async function AdminRecruitersPage() {
   const recruiters = await getAdminRecruiters();
@@ -26,6 +27,7 @@ export default async function AdminRecruitersPage() {
               <tr className="border-b border-border text-left">
                 <th className="p-4 font-medium text-muted-foreground">{a.tableRecruiter}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableTitleColumn}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tableJoiningDate}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableStatusColumn}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tablePlacements}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableRating}</th>
@@ -34,7 +36,7 @@ export default async function AdminRecruitersPage() {
             </thead>
             <tbody>
               {recruiters.length === 0 ? (
-                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">{a.noRecruitersRegistered}</td></tr>
+                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">{a.noRecruitersRegistered}</td></tr>
               ) : (
                 recruiters.map((r) => (
                   <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/50">
@@ -48,6 +50,7 @@ export default async function AdminRecruitersPage() {
                       </Link>
                     </td>
                     <td className="p-4 text-muted-foreground">{r.headline || dict.common.noDataDash}</td>
+                    <td className="p-4 text-muted-foreground">{r.joinedAt ? formatDateShort(r.joinedAt) : dict.common.noDataDash}</td>
                     <td className="p-4">
                       <Badge variant={r.status === "approved" ? "success" : r.status === "pending" ? "warning" : "danger"}>
                         {r.status === "approved" ? a.statusApproved : r.status === "pending" ? a.statusPending : r.status === "rejected" ? a.statusRejected : a.statusSuspended}

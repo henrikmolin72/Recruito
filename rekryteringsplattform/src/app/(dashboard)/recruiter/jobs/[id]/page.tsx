@@ -11,57 +11,24 @@ async function getJob(id: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data: job } = await supabase
+    const { data: job, error } = await supabase
         .from("jobs")
         .select(`
-            id,
-            company_id,
-            title,
-            description,
-            location,
-            country,
-            city,
-            location_code,
-            industry,
-            is_confidential,
-            employment_type,
-            contract_duration,
-            work_type,
-            remote_type,
-            work_permit_accepted,
-            visa_sponsorship,
-            salary_min,
-            salary_max,
-            salary_currency,
-            salary_period,
-            benefits,
-            benefits_other,
-            position_type,
-            open_positions,
-            experience_bracket,
-            team_size,
-            reporting_to,
-            key_requirements,
-            language_requirements,
-            screening_questions,
-            num_interviews,
-            technical_test_required,
-            assessment_type,
-            working_hours,
-            flexible_hours,
-            travel_required,
-            desired_start_date,
-            recruiter_fee_amount,
-            recruiter_fee_percentage,
-            max_recruiters,
-            current_recruiter_count,
-            status,
-            created_at,
+            *,
             company:companies(company_name, website, logo_url, linkedin_url)
         `)
         .eq("id", id)
         .in("status", ["active", "closed", "paused"])
-        .single();
+        .maybeSingle();
+
+    if (error) {
+        console.error("[recruiter/jobs/[id]] getJob failed:", {
+            id,
+            message: error.message,
+            code: (error as any).code,
+            details: (error as any).details,
+        });
+    }
 
     return job;
 }
