@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
@@ -11,7 +12,11 @@ async function getJob(id: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data: job, error } = await supabase
+    // Match the listing's data access: recruiter is authenticated above; use the
+    // admin client to bypass RLS that would otherwise hide the job row from the
+    // recruiter and trigger a spurious 404.
+    const adminClient = createAdminClient();
+    const { data: job, error } = await adminClient
         .from("jobs")
         .select(`
             *,
