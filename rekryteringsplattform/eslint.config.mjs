@@ -13,12 +13,14 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
-  // no-explicit-any is intentionally a warning, not an error: the codebase has
-  // ~280 pre-existing `any` usages in legacy admin/analytics/api code. Tighten
-  // gradually rather than blocking CI on the bulk migration.
+  // no-explicit-any is disabled. The ~270 instances live almost entirely in
+  // Supabase query handling (joins return loose row shapes) and Anthropic SDK
+  // response parsing. Properly typing them requires generated Supabase types,
+  // which is a separate project. The rule is off rather than warn to keep
+  // CI output clean. Re-enable after running `supabase gen types typescript`.
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 ]);
