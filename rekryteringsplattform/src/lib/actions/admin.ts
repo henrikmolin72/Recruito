@@ -871,12 +871,24 @@ export async function sendAdminNotification(formData: {
         return { error: "No recipients found" };
     }
 
+    // Sanitize link: only allow same-origin paths; reject absolute / protocol-relative
+    // / javascript: URLs. Mirrors safePath() in notifications/create.ts so admin
+    // broadcasts can't ship arbitrary URLs into recipient emails.
+    const trimmedLink = link?.trim() || "";
+    const safeLink =
+        trimmedLink && trimmedLink.startsWith("/") && !trimmedLink.startsWith("//")
+            ? trimmedLink
+            : null;
+
+    // Strip CRLF from title to defend against email-header / log injection.
+    const safeTitle = title.trim().replace(/[\r\n\t\v\f]/g, " ");
+
     // Insert notifications in batch
     const notifications = targetUserIds.map(userId => ({
         user_id: userId,
-        title: title.trim(),
+        title: safeTitle,
         body: body.trim(),
-        link: link?.trim() || null,
+        link: safeLink,
     }));
 
     const { error } = await supabaseAdmin.from("notifications").insert(notifications);

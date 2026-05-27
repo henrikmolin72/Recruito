@@ -57,7 +57,10 @@ export async function sendRecruitorMessage(candidateId: string, jobId: string, c
             .insert({ candidate_id: candidateId, job_id: jobId, conversation_type: "recruito" })
             .select("id")
             .single();
-        if (convError || !newConv) return { error: convError?.message || "Failed to create conversation" };
+        if (convError || !newConv) {
+            if (convError) console.error("Failed to create conversation:", convError);
+            return { error: "Kunde inte skapa konversation." };
+        }
         conversationId = newConv.id;
     }
 
@@ -65,7 +68,10 @@ export async function sendRecruitorMessage(candidateId: string, jobId: string, c
         .from("messages")
         .insert({ conversation_id: conversationId, sender_id: user.id, content: normalizedContent });
 
-    if (msgError) return { error: msgError.message };
+    if (msgError) {
+        console.error("Failed to insert recruiter message:", msgError);
+        return { error: "Kunde inte skicka meddelande." };
+    }
 
     return { success: true };
 }
@@ -123,7 +129,8 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
         .limit(2);
 
     if (conversationLookupError) {
-        return { error: conversationLookupError.message };
+        console.error("Failed to look up conversation:", conversationLookupError);
+        return { error: "Kunde inte hämta konversation." };
     }
 
     if ((existingConversations || []).length > 1) {
@@ -142,7 +149,10 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
             .select("id, job_id, candidate_id, created_at")
             .single();
 
-        if (convError || !newConv) return { error: convError?.message || "Failed to create conversation" };
+        if (convError || !newConv) {
+            if (convError) console.error("Failed to create conversation:", convError);
+            return { error: "Kunde inte skapa konversation." };
+        }
         conversationData = newConv;
     }
 
@@ -157,7 +167,8 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
         .upsert(participantRows, { onConflict: "conversation_id,user_id", ignoreDuplicates: true });
 
     if (participantEnsureError) {
-        return { error: participantEnsureError.message };
+        console.error("Failed to ensure participants:", participantEnsureError);
+        return { error: "Kunde inte uppdatera konversation." };
     }
 
     const { error: readUpdateError } = await supabase
@@ -167,7 +178,8 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
         .eq("user_id", user.id);
 
     if (readUpdateError) {
-        return { error: readUpdateError.message };
+        console.error("Failed to update last_read_at:", readUpdateError);
+        return { error: "Kunde inte uppdatera lässtatus." };
     }
 
     const { error: msgError } = await supabase
@@ -178,7 +190,10 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
             content: normalizedContent
         });
 
-    if (msgError) return { error: msgError.message };
+    if (msgError) {
+        console.error("Failed to insert message:", msgError);
+        return { error: "Kunde inte skicka meddelande." };
+    }
 
     const isCompany = user.user_metadata.role === 'company';
     const link = isCompany ? '/recruiter/messages' : '/company/messages';

@@ -176,7 +176,7 @@ export async function submitPublicMandateApplication(
     return { error: parsed.error.issues[0]?.message || "Ogiltig ansökan" };
   }
 
-  const applyRateLimit = consumeRateLimit({
+  const applyRateLimit = await consumeRateLimit({
     key: `public-apply:ip:${clientIp}`,
     limit: 12,
     windowMs: 60 * 60 * 1000,

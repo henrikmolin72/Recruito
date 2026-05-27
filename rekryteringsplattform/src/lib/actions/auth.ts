@@ -40,9 +40,23 @@ export async function login(formData: FormData) {
         return { error: mapAuthError(error.message) };
     }
 
-    // Get user role for redirect
+    // Get user role for redirect. Admin role MUST come from app_metadata only —
+    // user_metadata is client-writable via supabase.auth.updateUser(), so trusting
+    // it would let any user self-promote to admin. user_metadata.role is allowed
+    // as a fallback only for non-admin roles (set during signup). Whitelist the
+    // final value to prevent path injection in the redirect target.
     const { data: { user } } = await supabase.auth.getUser();
-    const userRole = user?.app_metadata?.role || user?.user_metadata?.role || "company";
+    const appRole = user?.app_metadata?.role;
+    const metaRole = user?.user_metadata?.role;
+    const candidateRole =
+        appRole === "admin"
+            ? "admin"
+            : metaRole === "company" || metaRole === "recruiter"
+                ? metaRole
+                : appRole === "company" || appRole === "recruiter"
+                    ? appRole
+                    : "company";
+    const userRole: "admin" | "company" | "recruiter" = candidateRole;
     const requestedRole = formData.get("requestedRole") as string | null;
 
     // For recruiters: check approval_status before allowing access
