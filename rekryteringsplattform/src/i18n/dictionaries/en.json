@@ -375,6 +375,7 @@
     "importantNote4": "Once published, there is no option for the client to permanently close the job.",
     "statusLive": "Live",
     "statusPaused": "Paused",
+    "statusClosed": "Closed",
     "recentActivity": "Recent activity",
     "noActivityYet": "No activity to show yet.",
     "jobsPageTitle": "Jobs",

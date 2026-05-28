@@ -375,6 +375,7 @@
     "importantNote4": "När ett jobb har publicerats finns det inget alternativ för klienten att permanent stänga jobbet.",
     "statusLive": "Aktiv",
     "statusPaused": "Pausad",
+    "statusClosed": "Stängd",
     "recentActivity": "Senaste aktiviteten",
     "noActivityYet": "Ingen aktivitet att visa än.",
     "jobsPageTitle": "Jobb",
