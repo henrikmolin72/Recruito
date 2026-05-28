@@ -20,7 +20,7 @@ async function getJob(id: string) {
         .from("jobs")
         .select(`
             *,
-            company:companies(company_name, website, logo_url, linkedin_url)
+            company:companies(company_name, website, logo_url)
         `)
         .eq("id", id)
         .in("status", ["active", "closed", "paused"])
