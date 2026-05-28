@@ -375,6 +375,7 @@
     "importantNote4": "Når det er publiceret, er der ingen mulighed for klienten at permanent lukke jobbet.",
     "statusLive": "Aktiv",
     "statusPaused": "Pauset",
+    "statusClosed": "Lukket",
     "recentActivity": "Seneste aktivitet",
     "noActivityYet": "Ingen aktivitet at vise endnu.",
     "jobsPageTitle": "Jobs",

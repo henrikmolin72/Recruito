@@ -375,6 +375,7 @@
     "importantNote4": "Når den er publisert, finnes det ingen mulighet for klienten å permanent lukke jobben.",
     "statusLive": "Aktiv",
     "statusPaused": "Pauset",
+    "statusClosed": "Lukket",
     "recentActivity": "Siste aktivitet",
     "noActivityYet": "Ingen aktivitet å vise ennå.",
     "jobsPageTitle": "Jobber",
