@@ -523,6 +523,7 @@
     "emailLabel": "Email Address *",
     "expiredLabel": "Expired",
     "capReachedLabel": "Cap reached",
+    "colInReview": "In Review",
     "colSubmitted": "Submitted",
     "colInInterview": "In Interview",
     "colJobOffer": "Job Offer",

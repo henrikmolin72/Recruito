@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, UserPlus } from "lucide-react";
 import { formatDateShort, cn } from "@/lib/utils";
 
+// Mandate auto-expires this many days after claim if no candidate has been
+// submitted to the client (i.e. screened by Recruito). Display-only.
+const MANDATE_EXPIRY_DAYS = 10;
+
+// "In Review" = candidate is still in Recruito's internal review, not yet
+// screened/submitted to the client. The recruito_screened_at timestamp is the
+// divider: empty => internal review; set => submitted to client.
+const IN_REVIEW_STATUSES = new Set([
+    "submitted", "reviewing",
+]);
 const SUBMITTED_STATUSES = new Set([
     "under_client_review", "info_requested", "resubmitted",
     "submitted_to_client", "client_already_engaged", "duplicate_rejected",
@@ -35,17 +45,27 @@ function CountBadge({ count, colorClass }: { count: number; colorClass: string }
     );
 }
 
-function daysUntil(dateStr: string | null | undefined): number | null {
-    if (!dateStr) return null;
-    return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86_400_000);
-}
-
 type TabKey = "active" | "closed" | "hired";
 
 type Dict = Record<string, string>;
 
 interface MandateCandidate {
     status: string;
+    recruito_screened_at?: string | null;
+}
+
+// A mandate is "presented to client" once any candidate has been screened by
+// Recruito (recruito_screened_at set). That clears the 10-day expiry timer.
+function isPresentedToClient(m: Mandate): boolean {
+    return (m.candidates || []).some((c) => !!c.recruito_screened_at);
+}
+
+// Days left on the 10-day no-candidate expiry, or null if not applicable
+// (already presented to client, or no claim date).
+function mandateExpiryDays(m: Mandate): number | null {
+    if (!m.claimed_at || isPresentedToClient(m)) return null;
+    const expiry = new Date(m.claimed_at).getTime() + MANDATE_EXPIRY_DAYS * 86_400_000;
+    return Math.ceil((expiry - Date.now()) / 86_400_000);
 }
 
 interface Mandate {
@@ -70,8 +90,11 @@ function classifyMandate(m: Mandate): TabKey {
     const hasHired = (m.candidates || []).some((c) => HIRED_STATUSES.has(c.status));
     if (hasHired) return "hired";
 
-    const days = daysUntil(m.application_deadline);
-    const isExpired = days !== null && days <= 0;
+    // Active/closed is driven by the recruiter's own mandate (claimed_at + 10d),
+    // not the job's original application_deadline — a freshly-taken mandate must
+    // show as Active even if the job's posting deadline has already passed.
+    const exp = mandateExpiryDays(m);
+    const isExpired = exp !== null && exp <= 0;
     const jobInactive = m.status && m.status !== "active";
     if (isExpired || jobInactive) return "closed";
     return "active";
@@ -158,7 +181,7 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                         <th className="px-4 py-3 text-left font-semibold text-foreground" rowSpan={2}>
                                             {r.tableLocation || "Location"}
                                         </th>
-                                        <th className="px-4 py-3 text-center font-semibold text-foreground border-l border-border" colSpan={5}>
+                                        <th className="px-4 py-3 text-center font-semibold text-foreground border-l border-border" colSpan={6}>
                                             {r.myCandidates || "My candidates"}
                                         </th>
                                         <th className="px-4 py-3 text-left font-semibold text-foreground border-l border-border" rowSpan={2}>
@@ -176,6 +199,9 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                     </tr>
                                     <tr className="border-b border-border bg-muted/10">
                                         <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground border-l border-border">
+                                            {r.colInReview || "In Review"}
+                                        </th>
+                                        <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground">
                                             {r.colSubmitted || "Submitted"}
                                         </th>
                                         <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground">
@@ -194,12 +220,13 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                 </thead>
                                 <tbody>
                                     {visibleMandates.map((mandate) => {
+                                        const inReview = mandate.candidates.filter((c) => IN_REVIEW_STATUSES.has(c.status) && !c.recruito_screened_at).length;
                                         const submitted = mandate.candidates.filter((c) => SUBMITTED_STATUSES.has(c.status)).length;
                                         const interview = mandate.candidates.filter((c) => INTERVIEW_STATUSES.has(c.status)).length;
                                         const offer = mandate.candidates.filter((c) => OFFER_STATUSES.has(c.status)).length;
                                         const hired = mandate.candidates.filter((c) => HIRED_STATUSES.has(c.status)).length;
                                         const rejected = mandate.candidates.filter((c) => REJECTED_STATUSES.has(c.status)).length;
-                                        const days = daysUntil(mandate.application_deadline);
+                                        const expiryDays = mandateExpiryDays(mandate);
 
                                         return (
                                             <tr key={mandate.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors align-middle">
@@ -221,6 +248,9 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                 </td>
 
                                                 <td className="px-3 py-3 text-center border-l border-border">
+                                                    <CountBadge count={inReview} colorClass="bg-sky-100 text-sky-700" />
+                                                </td>
+                                                <td className="px-3 py-3 text-center">
                                                     <CountBadge count={submitted} colorClass="bg-blue-100 text-blue-700" />
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
@@ -241,14 +271,14 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                 </td>
 
                                                 <td className="px-4 py-3 text-xs whitespace-nowrap">
-                                                    {days === null ? (
+                                                    {expiryDays === null ? (
                                                         <span className="text-muted-foreground">—</span>
-                                                    ) : days <= 0 ? (
+                                                    ) : expiryDays <= 0 ? (
                                                         <span className="text-danger-500 font-semibold">{r.expiredLabel || "Expired"}</span>
-                                                    ) : days <= 7 ? (
-                                                        <span className="text-amber-600 font-semibold">{days}d</span>
+                                                    ) : expiryDays <= 3 ? (
+                                                        <span className="text-amber-600 font-semibold">{expiryDays}d</span>
                                                     ) : (
-                                                        <span className="text-muted-foreground">{days}d</span>
+                                                        <span className="text-muted-foreground">{expiryDays}d</span>
                                                     )}
                                                 </td>
 
@@ -263,7 +293,7 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
 
                                                 <td className="px-4 py-3 text-center">
                                                     {(() => {
-                                                        const isExpired = days !== null && days <= 0;
+                                                        const isExpired = expiryDays !== null && expiryDays <= 0;
                                                         const cap = mandate.max_candidates ?? 8;
                                                         const totalSubmitted = mandate.submitted_count ?? 0;
                                                         const capReached = totalSubmitted >= cap;
