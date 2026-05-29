@@ -69,36 +69,36 @@ export async function POST(request: NextRequest) {
         // Notify company
         const { data: company } = await admin.from("companies").select("user_id").eq("id", report.company_id).single();
         if (company?.user_id) {
-            await createNotification(
-                company.user_id,
-                "Återbetalning godkänd",
-                `Garantibrottet för ${name} (${jobTitle}) har godkänts. Återbetalning på ${report.refund_amount} ${report.refund_currency} bearbetas.`,
-                "/company/billing"
-            );
+            await createNotification(company.user_id, {
+                titleKey: "notif.refundApprovedTitle",
+                bodyKey: "notif.refundApprovedBody",
+                params: { name, jobTitle, amount: report.refund_amount, currency: report.refund_currency },
+                link: "/company/billing",
+            });
         }
 
         // Notify recruiter
         if (placement?.recruiter_id) {
             const { data: recruiter } = await admin.from("recruiters").select("user_id").eq("id", placement.recruiter_id).single();
             if (recruiter?.user_id) {
-                await createNotification(
-                    recruiter.user_id,
-                    "Garantibrott godkänt",
-                    `Garantin för ${name} (${jobTitle}) har misslyckats och återbetalning bearbetas.`,
-                    "/recruiter/earnings"
-                );
+                await createNotification(recruiter.user_id, {
+                    titleKey: "notif.guaranteeBreachApprovedTitle",
+                    bodyKey: "notif.guaranteeBreachApprovedBody",
+                    params: { name, jobTitle },
+                    link: "/recruiter/earnings",
+                });
             }
         }
     } else {
         // Notify company — rejected
         const { data: company } = await admin.from("companies").select("user_id").eq("id", report.company_id).single();
         if (company?.user_id) {
-            await createNotification(
-                company.user_id,
-                "Garantibrott avvisat",
-                `Ditt garantibrott-ärende för ${name} (${jobTitle}) har granskats och avvisats${notes ? `: ${notes}` : "."}`,
-                "/company/billing"
-            );
+            await createNotification(company.user_id, {
+                titleKey: "notif.breachRejectedTitle",
+                bodyKey: notes ? "notif.breachRejectedBodyNotes" : "notif.breachRejectedBody",
+                params: { name, jobTitle, notes },
+                link: "/company/billing",
+            });
         }
     }
 

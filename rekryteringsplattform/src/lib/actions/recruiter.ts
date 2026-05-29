@@ -503,12 +503,12 @@ export async function claimMandate(jobId: string) {
         const targetUserId = company?.user_id;
 
         if (targetUserId) {
-            await createNotification(
-                targetUserId,
-                "Ny rekryterare på uppdraget!",
-                `En rekryterare har tagit ditt uppdrag: ${jobInfo.title}`,
-                `/company/jobs/${jobId}`
-            );
+            await createNotification(targetUserId, {
+                titleKey: "notif.newRecruiterTitle",
+                bodyKey: "notif.newRecruiterBody",
+                params: { jobTitle: jobInfo.title },
+                link: `/company/jobs/${jobId}`,
+            });
         }
     }
 

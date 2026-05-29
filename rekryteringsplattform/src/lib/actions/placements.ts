@@ -81,12 +81,12 @@ export async function sendPlacementInvoice(placementId: string) {
     const jobTitle = Array.isArray(placement.job) ? placement.job[0]?.title : placement.job?.title;
 
     if (companyUserId) {
-        await createNotification(
-            companyUserId,
-            "Faktura skickad",
-            `Faktura för ${candidateName} (${jobTitle || "uppdraget"}) har skickats. Belopp: ${placement.total_fee} ${placement.salary_currency}.`,
-            `/company/billing`
-        );
+        await createNotification(companyUserId, {
+            titleKey: "notif.invoiceSentCompanyTitle",
+            bodyKey: "notif.invoiceSentCompanyBody",
+            params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget", amount: placement.total_fee, currency: placement.salary_currency },
+            link: `/company/billing`,
+        });
     }
 
     // Notify recruiter
@@ -97,12 +97,12 @@ export async function sendPlacementInvoice(placementId: string) {
         .single();
 
     if (recruiter?.user_id) {
-        await createNotification(
-            recruiter.user_id,
-            "Faktura har skickats till företaget",
-            `Faktura för ${candidateName} (${jobTitle || "uppdraget"}) är utskickad. Ditt arvode: ${placement.recruiter_fee} ${placement.salary_currency}.`,
-            `/recruiter/earnings`
-        );
+        await createNotification(recruiter.user_id, {
+            titleKey: "notif.invoiceSentRecruiterTitle",
+            bodyKey: "notif.invoiceSentRecruiterBody",
+            params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget", fee: placement.recruiter_fee, currency: placement.salary_currency },
+            link: `/recruiter/earnings`,
+        });
     }
 
     revalidatePath("/admin/placements");
@@ -177,16 +177,14 @@ export async function recordPlacementPayment(placementId: string) {
         : "kandidaten";
 
     if (recruiter?.user_id) {
-        const msg = nextStatus === "guarantee_active"
-            ? `Betalning mottagen för ${candidateName}. Garantiperioden har startat.`
-            : `Betalning mottagen och utbetalning frigiven för ${candidateName}!`;
-
-        await createNotification(
-            recruiter.user_id,
-            "Betalning mottagen",
-            msg,
-            `/recruiter/earnings`
-        );
+        await createNotification(recruiter.user_id, {
+            titleKey: "notif.paymentReceivedTitle",
+            bodyKey: nextStatus === "guarantee_active"
+                ? "notif.paymentReceivedGuaranteeBody"
+                : "notif.paymentReceivedReleasedBody",
+            params: { candidate: candidateName },
+            link: `/recruiter/earnings`,
+        });
 
         // Send confirmation email (honors profiles.email_opt_out)
         try {
@@ -291,12 +289,12 @@ export async function processGuaranteeExpirations() {
         const jobTitle = Array.isArray(placement.job) ? placement.job[0]?.title : (placement.job as any)?.title;
 
         if (recruiter?.user_id) {
-            await createNotification(
-                recruiter.user_id,
-                "Garantiperiod avslutad — utbetalning frigiven!",
-                `Garantiperioden för ${candidateName} (${jobTitle || "uppdraget"}) har löpt ut. Ditt arvode ${placement.recruiter_fee} ${placement.salary_currency} har frigivits.`,
-                `/recruiter/earnings`
-            );
+            await createNotification(recruiter.user_id, {
+                titleKey: "notif.guaranteeReleasedTitle",
+                bodyKey: "notif.guaranteeReleasedBody",
+                params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget", fee: placement.recruiter_fee, currency: placement.salary_currency },
+                link: `/recruiter/earnings`,
+            });
         }
 
         // Notify company
@@ -307,12 +305,12 @@ export async function processGuaranteeExpirations() {
             .single();
 
         if (company?.user_id) {
-            await createNotification(
-                company.user_id,
-                "Garantiperiod avslutad",
-                `Garantiperioden för ${candidateName} (${jobTitle || "uppdraget"}) har löpt ut framgångsrikt.`,
-                `/company/billing`
-            );
+            await createNotification(company.user_id, {
+                titleKey: "notif.guaranteeEndedCompanyTitle",
+                bodyKey: "notif.guaranteeEndedCompanyBody",
+                params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget" },
+                link: `/company/billing`,
+            });
         }
 
         // Recalculate recruiter metrics
@@ -384,12 +382,12 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
         .single();
 
     if (recruiter?.user_id) {
-        await createNotification(
-            recruiter.user_id,
-            "Garantiperiod — misslyckad",
-            `Garantin för ${candidateName} (${jobTitle || "uppdraget"}) har rapporterats som misslyckad. Anledning: ${failureReason}`,
-            `/recruiter/earnings`
-        );
+        await createNotification(recruiter.user_id, {
+            titleKey: "notif.guaranteeFailedRecruiterTitle",
+            bodyKey: "notif.guaranteeFailedRecruiterBody",
+            params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget", reason: failureReason },
+            link: `/recruiter/earnings`,
+        });
     }
 
     // Notify company
@@ -400,12 +398,12 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
         .single();
 
     if (company?.user_id) {
-        await createNotification(
-            company.user_id,
-            "Garantiperiod — misslyckad, återbetalning påbörjad",
-            `Garantin för ${candidateName} (${jobTitle || "uppdraget"}) har rapporterats som misslyckad. Återbetalning på ${placement.total_fee} ${placement.salary_currency} påbörjas.`,
-            `/company/billing`
-        );
+        await createNotification(company.user_id, {
+            titleKey: "notif.guaranteeFailedCompanyTitle",
+            bodyKey: "notif.guaranteeFailedCompanyBody",
+            params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget", amount: placement.total_fee, currency: placement.salary_currency },
+            link: `/company/billing`,
+        });
     }
 
     // Recalculate recruiter metrics

@@ -70,24 +70,24 @@ export async function GET(request: NextRequest) {
 
         // T-14 reminder
         if (days <= 14 && days > 7 && !sentSet.has(`${p.id}:t_minus_14`) && companyUserId) {
-            await createNotification(
-                companyUserId,
-                `Garanti löper ut om ${days} dagar`,
-                `Garantiperioden för ${name} (${jobTitle}) löper ut om ${days} dagar. Är anställningen på rätt spår?`,
-                "/company/billing"
-            );
+            await createNotification(companyUserId, {
+                titleKey: "notif.guaranteeExpiringTitle",
+                bodyKey: "notif.guaranteeExpiring14Body",
+                params: { name, jobTitle, days },
+                link: "/company/billing",
+            });
             await admin.from("guarantee_reminders_sent").insert({ placement_id: p.id, reminder_type: "t_minus_14" });
             sent++;
         }
 
         // T-7 reminder
         if (days <= 7 && days > 0 && !sentSet.has(`${p.id}:t_minus_7`) && companyUserId) {
-            await createNotification(
-                companyUserId,
-                `Garanti löper ut om ${days} dagar`,
-                `Påminnelse: Garantiperioden för ${name} (${jobTitle}) löper ut om ${days} dagar.`,
-                "/company/billing"
-            );
+            await createNotification(companyUserId, {
+                titleKey: "notif.guaranteeExpiringTitle",
+                bodyKey: "notif.guaranteeExpiring7Body",
+                params: { name, jobTitle, days },
+                link: "/company/billing",
+            });
             await admin.from("guarantee_reminders_sent").insert({ placement_id: p.id, reminder_type: "t_minus_7" });
             sent++;
         }
@@ -101,12 +101,12 @@ export async function GET(request: NextRequest) {
             }).eq("id", p.id);
 
             if (companyUserId) {
-                await createNotification(
-                    companyUserId,
-                    "Garantiperiod avslutad ✓",
-                    `Garantiperioden för ${name} (${jobTitle}) har löpt ut framgångsrikt. Allt gick bra!`,
-                    "/company/billing"
-                );
+                await createNotification(companyUserId, {
+                    titleKey: "notif.guaranteeCompletedTitle",
+                    bodyKey: "notif.guaranteeCompletedBody",
+                    params: { name, jobTitle },
+                    link: "/company/billing",
+                });
             }
 
             await admin.from("guarantee_reminders_sent").insert({ placement_id: p.id, reminder_type: "expired" });

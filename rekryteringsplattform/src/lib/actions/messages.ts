@@ -199,12 +199,12 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
     const link = isCompany ? '/recruiter/messages' : '/company/messages';
     const senderName = user.user_metadata?.full_name || user.email || "okänd användare";
 
-    await createNotification(
-        otherUserId,
-        `Nytt meddelande från ${senderName}`,
-        normalizedContent.length > 50 ? normalizedContent.substring(0, 50) + '...' : normalizedContent,
-        link
-    );
+    await createNotification(otherUserId, {
+        titleKey: "notif.newMessageTitle",
+        params: { sender: senderName },
+        body: normalizedContent.length > 50 ? normalizedContent.substring(0, 50) + '...' : normalizedContent,
+        link,
+    });
 
     revalidatePath(`/company/jobs/${resolvedJobId}/candidates/${candidateId}`);
     revalidatePath("/company/messages");
