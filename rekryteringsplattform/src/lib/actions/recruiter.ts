@@ -640,6 +640,7 @@ export async function getRecruiterMandateById(mandateId: string) {
         last_name,
         status,
         current_pipeline_stage,
+        recruito_screened_at,
         created_at
       )
     `)
@@ -664,6 +665,7 @@ export async function getRecruiterMandateById(mandateId: string) {
             last_name: candidate.last_name,
             status: candidate.status,
             current_pipeline_stage: candidate.current_pipeline_stage,
+            recruito_screened_at: candidate.recruito_screened_at,
             created_at: candidate.created_at,
         }));
 

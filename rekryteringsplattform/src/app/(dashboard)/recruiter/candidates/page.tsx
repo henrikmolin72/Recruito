@@ -41,7 +41,9 @@ export default async function RecruiterCandidatesPage() {
                         <h3 className="font-semibold">{candidate.first_name} {candidate.last_name}</h3>
                         <StatusBadge status={candidate.status} />
                       </div>
-                      <p className="text-sm text-muted-foreground">{candidate.current_title || dict.common.noTitle}</p>
+                      {candidate.current_title && (
+                        <p className="text-sm text-muted-foreground">{candidate.current_title}</p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {candidate.job?.title || dict.common.unknownJob} — {company?.company_name || dict.common.unknownCompany} — {r.presentedDate.replace("{date}", formatDate(candidate.created_at))}
                       </p>
