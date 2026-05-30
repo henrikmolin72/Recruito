@@ -13,9 +13,26 @@ import { formatCurrency, formatDate, calculateClientFee } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
+import { candidateInStage, isMandateStage, type MandateStage } from "@/lib/mandate-stages";
 
-export default async function RecruiterMandateDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+const STAGE_LABEL_KEY: Record<MandateStage, string> = {
+  in_review: "colInReview",
+  submitted: "colSubmitted",
+  interview: "colInInterview",
+  offer: "colJobOffer",
+  hired: "colHired",
+  rejected: "colRejected",
+};
+
+export default async function RecruiterMandateDetailsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ stage?: string }>;
+}) {
   const { id } = await params;
+  const { stage } = await searchParams;
   const mandate = await getRecruiterMandateById(id);
 
   if (!mandate) {
@@ -26,6 +43,13 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
 
   const dict = await getDictionary();
   const r = dict.recruiter;
+
+  // Optional stage filter, deep-linked from the count badges on the mandates list.
+  const activeStage: MandateStage | null = isMandateStage(stage) ? stage : null;
+  const visibleCandidates = activeStage
+    ? mandate.candidates.filter((c) => candidateInStage(c, activeStage))
+    : mandate.candidates;
+  const activeStageLabel = activeStage ? ((r as any)[STAGE_LABEL_KEY[activeStage]] || activeStage) : null;
 
   return (
     <div className="space-y-6">
@@ -124,13 +148,21 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
         </Card>
       )}
 
-      <Card>
+      <Card id="candidates" className="scroll-mt-6">
         <CardContent className="p-0 overflow-x-auto">
-          <div className="p-4 border-b border-border flex items-center justify-between">
-            <h2 className="font-semibold inline-flex items-center gap-2"><Users className="h-4 w-4" /> {r.candidatesHeader.replace("{count}", String(mandate.candidates.length))}</h2>
+          <div className="p-4 border-b border-border flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="font-semibold inline-flex items-center gap-2"><Users className="h-4 w-4" /> {r.candidatesHeader.replace("{count}", String(visibleCandidates.length))}</h2>
+            {activeStage && (
+              <div className="inline-flex items-center gap-2 text-xs">
+                <span className="inline-flex items-center rounded-full bg-brand-50 text-brand-700 px-3 py-1 font-medium">{activeStageLabel}</span>
+                <Link href={`/recruiter/mandates/${mandate.id}`} className="text-muted-foreground hover:text-foreground font-medium">
+                  {dict.common.clearFilters}
+                </Link>
+              </div>
+            )}
           </div>
 
-          {mandate.candidates.length === 0 ? (
+          {visibleCandidates.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">{r.noCandidatesPresentedTable}</div>
           ) : (
             <table className="w-full text-sm min-w-[620px]">
@@ -143,7 +175,7 @@ export default async function RecruiterMandateDetailsPage({ params }: { params: 
                 </tr>
               </thead>
               <tbody>
-                {mandate.candidates.map((candidate) => (
+                {visibleCandidates.map((candidate) => (
                   <tr key={candidate.id} className="border-b border-border last:border-0">
                     <td className="p-4 font-medium">{candidate.name}</td>
                     <td className="p-4"><StatusBadge status={candidate.status} /></td>

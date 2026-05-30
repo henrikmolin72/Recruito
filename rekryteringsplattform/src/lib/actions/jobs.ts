@@ -318,12 +318,12 @@ async function notifyMatchingRecruitersAboutJob(jobId: string) {
             const recruiterName = profile.full_name || "Recruiter";
             const jobUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/recruiter/jobs/${jobId}`;
 
-            await createNotification(
-                recruiter.user_id,
-                `New job: ${job.title}`,
-                `${job.title} at ${company?.company_name || "a company"}`,
-                `/recruiter/jobs/${jobId}`
-            );
+            await createNotification(recruiter.user_id, {
+                titleKey: "notif.newJobTitle",
+                bodyKey: "notif.newJobBody",
+                params: { jobTitle: job.title, company: company?.company_name || "—" },
+                link: `/recruiter/jobs/${jobId}`,
+            });
 
             const emailHtml = newJobNotificationEmail({
                 recruiterName,
@@ -672,12 +672,12 @@ export async function updatePipelineStages(jobId: string, stages: PipelineStage[
         for (const mandate of mandates) {
             const userId = (mandate.recruiter as any)?.user_id;
             if (userId) {
-                await createNotification(
-                    userId,
-                    "Rekryteringsprocess uppdaterad",
-                    `Processen för "${job?.title}" har ändrats. Kontrollera de nya stegen.`,
-                    `/recruiter/mandates`
-                );
+                await createNotification(userId, {
+                    titleKey: "notif.pipelineUpdatedTitle",
+                    bodyKey: "notif.pipelineUpdatedBody",
+                    params: { jobTitle: job?.title },
+                    link: `/recruiter/mandates`,
+                });
             }
         }
     }
@@ -715,12 +715,12 @@ export async function createJobAnnouncement(jobId: string, message: string) {
             const userId = (m.recruiter as any)?.user_id;
             const jobTitle = (m.job as any)?.title;
             if (userId) {
-                await createNotification(
-                    userId,
-                    "New announcement",
-                    `New update for "${jobTitle}": ${message.slice(0, 100)}${message.length > 100 ? "…" : ""}`,
-                    `/recruiter/mandates`
-                );
+                await createNotification(userId, {
+                    titleKey: "notif.newAnnouncementTitle",
+                    bodyKey: "notif.newAnnouncementBody",
+                    params: { jobTitle, message: `${message.slice(0, 100)}${message.length > 100 ? "…" : ""}` },
+                    link: `/recruiter/mandates`,
+                });
             }
         }
     }

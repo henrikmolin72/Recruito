@@ -405,11 +405,15 @@ export async function getAvailableJobsForRecruiter() {
         return [];
     }
 
+    // Slots taken = actual active mandate rows (single source of truth, matches
+    // the company-side "X / Y slots filled"). The denormalized
+    // jobs.current_recruiter_count is not maintained on claim and would read 0.
+    const mandateCountOf = (job: any): number => job.mandates?.[0]?.count ?? 0;
+
     const availableJobs = jobs.filter(job => {
         if (job.status !== "active") return true;
         const isClaimed = activeClaimedJobIds.has(job.id);
-        const recruitersCount = job.current_recruiter_count || 0;
-        const isFull = recruitersCount >= job.max_recruiters;
+        const isFull = mandateCountOf(job) >= job.max_recruiters;
         return !isClaimed && !isFull;
     });
 
@@ -423,7 +427,7 @@ export async function getAvailableJobsForRecruiter() {
     return availableJobs.map(job => ({
         ...job,
         company_name: job.company?.company_name || 'Okänt företag',
-        recruiters_count: job.current_recruiter_count || 0,
+        recruiters_count: mandateCountOf(job),
         worked_previously: everClaimedJobIds.has(job.id),
         pending_candidates_count: (job.candidates || []).filter(
             (c: { status: string | null }) => c.status && !TERMINAL_STATUSES.has(c.status),
@@ -455,7 +459,7 @@ export async function claimMandate(jobId: string) {
 
     const { data: job } = await supabase
         .from("jobs")
-        .select("status, current_recruiter_count, max_recruiters")
+        .select("status, max_recruiters")
         .eq("id", jobId)
         .single();
 
@@ -463,7 +467,14 @@ export async function claimMandate(jobId: string) {
         return { error: "Jobbet är inte tillgängligt" };
     }
 
-    if ((job.current_recruiter_count || 0) >= job.max_recruiters) {
+    // Capacity from actual mandate rows (single source of truth), not the
+    // denormalized current_recruiter_count which isn't maintained on claim.
+    const { count: mandateCount } = await supabase
+        .from("job_mandates")
+        .select("id", { count: "exact", head: true })
+        .eq("job_id", jobId);
+
+    if ((mandateCount ?? 0) >= job.max_recruiters) {
         return { error: "Uppdraget är redan fullsatt" };
     }
 
@@ -503,12 +514,12 @@ export async function claimMandate(jobId: string) {
         const targetUserId = company?.user_id;
 
         if (targetUserId) {
-            await createNotification(
-                targetUserId,
-                "Ny rekryterare på uppdraget!",
-                `En rekryterare har tagit ditt uppdrag: ${jobInfo.title}`,
-                `/company/jobs/${jobId}`
-            );
+            await createNotification(targetUserId, {
+                titleKey: "notif.newRecruiterTitle",
+                bodyKey: "notif.newRecruiterBody",
+                params: { jobTitle: jobInfo.title },
+                link: `/company/jobs/${jobId}`,
+            });
         }
     }
 
@@ -640,6 +651,7 @@ export async function getRecruiterMandateById(mandateId: string) {
         last_name,
         status,
         current_pipeline_stage,
+        recruito_screened_at,
         created_at
       )
     `)
@@ -664,6 +676,7 @@ export async function getRecruiterMandateById(mandateId: string) {
             last_name: candidate.last_name,
             status: candidate.status,
             current_pipeline_stage: candidate.current_pipeline_stage,
+            recruito_screened_at: candidate.recruito_screened_at,
             created_at: candidate.created_at,
         }));
 

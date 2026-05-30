@@ -6,42 +6,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, UserPlus } from "lucide-react";
 import { formatDateShort, cn } from "@/lib/utils";
+import { candidateInStage, type MandateStage } from "@/lib/mandate-stages";
 
 // Mandate auto-expires this many days after claim if no candidate has been
 // submitted to the client (i.e. screened by Recruito). Display-only.
 const MANDATE_EXPIRY_DAYS = 10;
 
-// "In Review" = candidate is still in Recruito's internal review, not yet
-// screened/submitted to the client. The recruito_screened_at timestamp is the
-// divider: empty => internal review; set => submitted to client.
-const IN_REVIEW_STATUSES = new Set([
-    "submitted", "reviewing",
-]);
-const SUBMITTED_STATUSES = new Set([
-    "under_client_review", "info_requested", "resubmitted",
-    "submitted_to_client", "client_already_engaged", "duplicate_rejected",
-]);
-const INTERVIEW_STATUSES = new Set([
-    "interview", "interview_stage_1", "interview_stage_2",
-    "interview_stage_3", "final_interview",
-]);
-const OFFER_STATUSES = new Set([
-    "offer_in_progress", "offer_accepted", "offer_declined",
-]);
-const HIRED_STATUSES = new Set([
-    "hired", "invoice_enabled", "guarantee_tracking", "completed",
-    "guarantee_active", "payout_released", "guarantee_period",
-]);
-const REJECTED_STATUSES = new Set([
-    "rejected", "declined", "rejected_client", "rejected_interview",
-    "candidate_withdrawn", "guarantee_failed", "recruiter_rejected",
-]);
-
-function CountBadge({ count, colorClass }: { count: number; colorClass: string }) {
+// A count badge that links through to the mandate's candidate list, filtered
+// to the matching stage.
+function CountBadge({ count, colorClass, href }: { count: number; colorClass: string; href: string }) {
     return (
-        <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold mx-auto ${count > 0 ? colorClass : "bg-slate-100 text-slate-400"}`}>
+        <Link
+            href={href}
+            className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold mx-auto transition-transform hover:scale-110 ${count > 0 ? colorClass : "bg-slate-100 text-slate-400"}`}
+        >
             {count}
-        </div>
+        </Link>
     );
 }
 
@@ -87,7 +67,7 @@ interface Props {
 }
 
 function classifyMandate(m: Mandate): TabKey {
-    const hasHired = (m.candidates || []).some((c) => HIRED_STATUSES.has(c.status));
+    const hasHired = (m.candidates || []).some((c) => candidateInStage(c, "hired"));
     if (hasHired) return "hired";
 
     // Active/closed is driven by the recruiter's own mandate (claimed_at + 10d),
@@ -159,11 +139,21 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
 
             {visibleMandates.length === 0 ? (
                 <div className="text-center py-12 bg-muted/30 rounded-lg border border-border border-dashed">
-                    <h3 className="text-lg font-medium">{r.noMandatesTitle}</h3>
-                    <p className="text-muted-foreground mb-4">{r.noMandatesDesc}</p>
-                    <Link href="/recruiter/jobs">
-                        <Button>{r.findJobs}</Button>
-                    </Link>
+                    <h3 className="text-lg font-medium">
+                        {tab === "closed" ? (r.noClosedMandatesTitle || "No closed mandates")
+                            : tab === "hired" ? (r.noHiredMandatesTitle || "No hires yet")
+                            : r.noMandatesTitle}
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                        {tab === "closed" ? (r.noClosedMandatesDesc || "Mandates that expired or were closed will appear here.")
+                            : tab === "hired" ? (r.noHiredMandatesDesc || "Mandates where you've made a hire will appear here.")
+                            : r.noMandatesDesc}
+                    </p>
+                    {tab === "active" && (
+                        <Link href="/recruiter/jobs">
+                            <Button>{r.findJobs}</Button>
+                        </Link>
+                    )}
                 </div>
             ) : (
                 <Card>
@@ -220,13 +210,14 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                 </thead>
                                 <tbody>
                                     {visibleMandates.map((mandate) => {
-                                        const inReview = mandate.candidates.filter((c) => IN_REVIEW_STATUSES.has(c.status) && !c.recruito_screened_at).length;
-                                        const submitted = mandate.candidates.filter((c) => SUBMITTED_STATUSES.has(c.status)).length;
-                                        const interview = mandate.candidates.filter((c) => INTERVIEW_STATUSES.has(c.status)).length;
-                                        const offer = mandate.candidates.filter((c) => OFFER_STATUSES.has(c.status)).length;
-                                        const hired = mandate.candidates.filter((c) => HIRED_STATUSES.has(c.status)).length;
-                                        const rejected = mandate.candidates.filter((c) => REJECTED_STATUSES.has(c.status)).length;
+                                        const inReview = mandate.candidates.filter((c) => candidateInStage(c, "in_review")).length;
+                                        const submitted = mandate.candidates.filter((c) => candidateInStage(c, "submitted")).length;
+                                        const interview = mandate.candidates.filter((c) => candidateInStage(c, "interview")).length;
+                                        const offer = mandate.candidates.filter((c) => candidateInStage(c, "offer")).length;
+                                        const hired = mandate.candidates.filter((c) => candidateInStage(c, "hired")).length;
+                                        const rejected = mandate.candidates.filter((c) => candidateInStage(c, "rejected")).length;
                                         const expiryDays = mandateExpiryDays(mandate);
+                                        const stageHref = (stage: MandateStage) => `/recruiter/mandates/${mandate.id}?stage=${stage}#candidates`;
 
                                         return (
                                             <tr key={mandate.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors align-middle">
@@ -248,22 +239,22 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                 </td>
 
                                                 <td className="px-3 py-3 text-center border-l border-border">
-                                                    <CountBadge count={inReview} colorClass="bg-sky-100 text-sky-700" />
+                                                    <CountBadge count={inReview} colorClass="bg-sky-100 text-sky-700" href={stageHref("in_review")} />
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
-                                                    <CountBadge count={submitted} colorClass="bg-blue-100 text-blue-700" />
+                                                    <CountBadge count={submitted} colorClass="bg-blue-100 text-blue-700" href={stageHref("submitted")} />
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
-                                                    <CountBadge count={interview} colorClass="bg-purple-100 text-purple-700" />
+                                                    <CountBadge count={interview} colorClass="bg-purple-100 text-purple-700" href={stageHref("interview")} />
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
-                                                    <CountBadge count={offer} colorClass="bg-amber-100 text-amber-700" />
+                                                    <CountBadge count={offer} colorClass="bg-amber-100 text-amber-700" href={stageHref("offer")} />
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
-                                                    <CountBadge count={hired} colorClass="bg-green-100 text-green-700" />
+                                                    <CountBadge count={hired} colorClass="bg-green-100 text-green-700" href={stageHref("hired")} />
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
-                                                    <CountBadge count={rejected} colorClass="bg-red-100 text-red-700" />
+                                                    <CountBadge count={rejected} colorClass="bg-red-100 text-red-700" href={stageHref("rejected")} />
                                                 </td>
 
                                                 <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap border-l border-border">

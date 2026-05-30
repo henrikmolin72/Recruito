@@ -65,12 +65,12 @@ export async function GET(request: NextRequest) {
 
         const jobTitle = (Array.isArray(m.job) ? m.job[0]?.title : m.job?.title) || "Uppdraget";
 
-        await createNotification(
-            recruiterUserId,
-            "Uppdrag utgånget",
-            `${jobTitle}: 10 dagar har passerat utan att en kandidat skickats till kunden. Uppdraget visas nu som utgånget.`,
-            "/recruiter/mandates",
-        );
+        await createNotification(recruiterUserId, {
+            titleKey: "notif.mandateExpiredTitle",
+            bodyKey: "notif.mandateExpiredBody",
+            params: { jobTitle },
+            link: "/recruiter/mandates",
+        });
         notified++;
     }
 

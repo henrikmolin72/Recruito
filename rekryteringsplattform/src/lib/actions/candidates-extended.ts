@@ -249,12 +249,12 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
             const company = Array.isArray(jobInfo.company) ? jobInfo.company[0] : jobInfo.company;
             const targetUserId = (company as any)?.user_id;
             if (targetUserId) {
-                await createNotification(
-                    targetUserId,
-                    "New candidate presented!",
-                    `A candidate (${firstName} ${lastName}) has been presented for: ${(jobInfo as any).title}`,
-                    `/company/jobs/${mandate.job_id}`
-                );
+                await createNotification(targetUserId, {
+                    titleKey: "notif.candidatePresentedTitle",
+                    bodyKey: "notif.candidatePresentedBody",
+                    params: { firstName, lastName, jobTitle: (jobInfo as any).title },
+                    link: `/company/jobs/${mandate.job_id}`,
+                });
             }
         }
     }

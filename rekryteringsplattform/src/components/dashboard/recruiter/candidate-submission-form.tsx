@@ -470,7 +470,11 @@ export function CandidateSubmissionForm({
                                     accept=".pdf,.doc,.docx"
                                     className="hidden"
                                     onChange={async (e) => {
-                                        const f = e.target.files?.[0];
+                                        const input = e.currentTarget;
+                                        const f = input.files?.[0];
+                                        // Clear the native value so picking a file again — even the
+                                        // same one — always re-fires onChange (fixes re-upload).
+                                        input.value = "";
                                         if (!f || f.size > 5 * 1024 * 1024) return;
                                         setCvFile(f);
                                         const isPdf = f.type === "application/pdf" || f.name.endsWith(".pdf");

@@ -1258,12 +1258,11 @@ export async function requestClientFeeReconfirm(
             const reasonLabel =
                 (dict as any)?.feeReconfirm?.reason?.[reason] ?? reasonI18nKey(reason);
             const jobUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/company/jobs/${jobId}`;
-            await createNotification(
-                company.user_id,
-                (dict as any)?.feeReconfirm?.cardTitle ?? "Fee re-confirmation needed",
-                job.title,
-                `/company/jobs/${jobId}`,
-            );
+            await createNotification(company.user_id, {
+                titleKey: "feeReconfirm.cardTitle",
+                body: job.title,
+                link: `/company/jobs/${jobId}`,
+            });
             const { data: profile } = await supabaseAdmin
                 .from("profiles")
                 .select("email")

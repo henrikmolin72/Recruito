@@ -351,12 +351,12 @@ export async function createCandidate(mandateId: string, formData: FormData) {
         const targetUserId = company?.user_id;
 
         if (targetUserId) {
-            await createNotification(
-                targetUserId,
-                "Ny kandidat presenterad!",
-                `En kandidat (${parsed.data.first_name} ${parsed.data.last_name}) har presenterats för: ${jobInfo.title}`,
-                `/company/jobs/${mandate.job_id}`
-            );
+            await createNotification(targetUserId, {
+                titleKey: "notif.candidatePresentedTitle",
+                bodyKey: "notif.candidatePresentedBody",
+                params: { firstName: parsed.data.first_name, lastName: parsed.data.last_name, jobTitle: jobInfo.title },
+                link: `/company/jobs/${mandate.job_id}`,
+            });
         }
     }
 
@@ -442,15 +442,14 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
 
     const { candidate, recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
     const targetUserId = access.companyUserId;
-    const actorLabel = "Rekryteraren";
 
     if (targetUserId) {
-        await createNotification(
-            targetUserId,
-            "Statusuppdatering på kandidat",
-            `${actorLabel} uppdaterade ${candidateName || "kandidaten"} till status: ${status} för ${access.job?.title || "uppdraget"}.`,
-            `/company/jobs/${jobId}/candidates/${candidateId}`
-        );
+        await createNotification(targetUserId, {
+            titleKey: "notif.candidateStatusUpdateTitle",
+            bodyKey: "notif.candidateStatusUpdateBody",
+            params: { candidate: candidateName || "kandidaten", status, jobTitle: access.job?.title || "uppdraget" },
+            link: `/company/jobs/${jobId}/candidates/${candidateId}`,
+        });
     }
 
     // Send email notification when candidate is submitted
@@ -553,15 +552,14 @@ export async function moveCandidateToPipelineStage(
 
     const { recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
     const targetUserId = access.companyUserId;
-    const actorLabel = "Rekryteraren";
 
     if (targetUserId) {
-        await createNotification(
-            targetUserId,
-            "Kandidat flyttad till nytt steg",
-            `${actorLabel} flyttade ${candidateName || "kandidaten"} till "${targetStage.title}" för ${job?.title || "uppdraget"}.`,
-            `/company/jobs/${jobId}/candidates/${candidateId}`
-        );
+        await createNotification(targetUserId, {
+            titleKey: "notif.candidateStageMovedTitle",
+            bodyKey: "notif.candidateStageMovedBody",
+            params: { candidate: candidateName || "kandidaten", stage: targetStage.title, jobTitle: job?.title || "uppdraget" },
+            link: `/company/jobs/${jobId}/candidates/${candidateId}`,
+        });
     }
 
     // Send email notification to recruiter when candidate progresses
@@ -651,14 +649,14 @@ export async function requestCandidateNextStep(
 
     if (recruiterUserId) {
         const requestLabel = mapCompanyNextStepLabel(nextStep);
-        await createNotification(
-            recruiterUserId,
-            "Nytt nästa steg från beställaren",
-            `${requestLabel} för ${candidateName || "kandidaten"} (${access.job?.title || "uppdrag"}).${trimmedNote ? ` Kommentar: ${trimmedNote}` : ""}`,
-            mandateId
+        await createNotification(recruiterUserId, {
+            titleKey: "notif.nextStepRequestTitle",
+            bodyKey: trimmedNote ? "notif.nextStepRequestBodyNote" : "notif.nextStepRequestBody",
+            params: { request: requestLabel, candidate: candidateName || "kandidaten", jobTitle: access.job?.title || "uppdrag", note: trimmedNote },
+            link: mandateId
                 ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}`
-                : "/recruiter/mandates"
-        );
+                : "/recruiter/mandates",
+        });
     }
 
     revalidatePath(`/company/jobs/${jobId}`);
@@ -741,14 +739,14 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
             const { recruiterUserId, mandateId, candidateName } =
                 await getCandidateMessagingContext(supabase, candidateId);
             if (recruiterUserId) {
-                await createNotification(
-                    recruiterUserId,
-                    "The client viewed your candidate",
-                    `${access.job?.title || "The client"} opened ${candidateName || "your candidate"}'s profile. A 5-day response window has started.`,
-                    mandateId
+                await createNotification(recruiterUserId, {
+                    titleKey: "notif.clientViewedCandidateTitle",
+                    bodyKey: "notif.clientViewedCandidateBody",
+                    params: { subject: access.job?.title || "—", candidate: candidateName || "—" },
+                    link: mandateId
                         ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}`
-                        : "/recruiter/mandates"
-                );
+                        : "/recruiter/mandates",
+                });
             }
         } catch (err) {
             console.error("[updateCompanyStage first-view notify]", err);

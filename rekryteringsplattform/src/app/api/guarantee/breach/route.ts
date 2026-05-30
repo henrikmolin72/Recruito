@@ -85,12 +85,12 @@ export async function POST(request: NextRequest) {
     // Notify admins
     const { data: admins } = await admin.from("profiles").select("id").eq("role", "admin");
     for (const adm of (admins ?? [])) {
-        await createNotification(
-            adm.id,
-            "Nytt garantibrott rapporterat",
-            `${name} (${jobTitle}) — möjlig återbetalning: ${refundAmount} ${placement.salary_currency ?? "SEK"}. Granska och godkänn.`,
-            "/admin/placements"
-        );
+        await createNotification(adm.id, {
+            titleKey: "notif.newBreachReportedTitle",
+            bodyKey: "notif.newBreachReportedBody",
+            params: { name, jobTitle, amount: refundAmount, currency: placement.salary_currency ?? "SEK" },
+            link: "/admin/placements",
+        });
     }
 
     return NextResponse.json({ ok: true, reportId: report.id, refundAmount });

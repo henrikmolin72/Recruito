@@ -12,14 +12,33 @@ type Notification = {
     id: string;
     title: string;
     body: string;
+    title_key: string | null;
+    body_key: string | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    params: Record<string, any> | null;
     link: string | null;
     is_read: boolean;
     created_at: string;
     user_id: string;
 };
 
-// Helper for type-specific icons
-const getNotificationIcon = (title: string) => {
+// Interpolate {token} placeholders in a translated string with notification params.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const format = (str: string, params?: Record<string, any> | null): string =>
+    params ? str.replace(/\{(\w+)\}/g, (_, k) => (params[k] == null ? "" : String(params[k]))) : str;
+
+// Pick an icon from the (language-stable) translation key, falling back to
+// keyword-matching the stored Swedish title for legacy notifications.
+const getNotificationIcon = (titleKey: string | null, title: string) => {
+    const k = (titleKey || "").toLowerCase();
+    if (k) {
+        if (k.includes("message")) return <MessageSquare className="h-4 w-4 text-blue-500" />;
+        if (k.includes("invoice") || k.includes("payment")) return <CreditCard className="h-4 w-4 text-success-500" />;
+        if (k.includes("rejected") || k.includes("failed") || k.includes("expired")) return <XCircle className="h-4 w-4 text-danger-500" />;
+        if (k.includes("approved") || k.includes("completed") || k.includes("released") || k.includes("ended")) return <CheckCircle2 className="h-4 w-4 text-success-500" />;
+        if (k.includes("candidate") || k.includes("clientviewed") || k.includes("nextstep")) return <UserPlus className="h-4 w-4 text-purple-500" />;
+        return <Briefcase className="h-4 w-4 text-brand-500" />;
+    }
     const t = title.toLowerCase();
     if (t.includes('meddelande')) return <MessageSquare className="h-4 w-4 text-blue-500" />;
     if (t.includes('nytt jobb') || t.includes('uppdrag')) return <Briefcase className="h-4 w-4 text-brand-500" />;
@@ -129,20 +148,20 @@ export function NotificationsDropdown() {
                                         <div className="flex gap-4">
                                             <div className="mt-1 flex-shrink-0">
                                                 <div className="h-8 w-8 rounded-full bg-white border border-border/50 shadow-sm flex items-center justify-center">
-                                                    {getNotificationIcon(notification.title)}
+                                                    {getNotificationIcon(notification.title_key, notification.title)}
                                                 </div>
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start mb-0.5">
                                                     <p className={cn("text-sm leading-tight", !notification.is_read ? "font-bold text-foreground" : "font-medium text-muted-foreground")}>
-                                                        {notification.title}
+                                                        {notification.title_key ? format(t(notification.title_key), notification.params) : notification.title}
                                                     </p>
                                                     <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
                                                         {new Date(notification.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                                                     </span>
                                                 </div>
                                                 <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                                                    {notification.body}
+                                                    {notification.body_key ? format(t(notification.body_key), notification.params) : notification.body}
                                                 </p>
                                             </div>
                                         </div>
