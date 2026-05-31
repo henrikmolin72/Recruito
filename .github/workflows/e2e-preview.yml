@@ -34,20 +34,56 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: rekryteringsplattform
 
-      - name: Wait for Vercel preview
+      # Vercel Preview deployments are protected (Vercel Authentication → 401),
+      # so the bare URL can't be polled. Resolve the READY preview for this PR's
+      # head SHA via the Vercel API, then confirm it's reachable using the
+      # Protection Bypass for Automation secret (sent as a header).
+      - name: Resolve & wait for Vercel preview
         id: vercel_preview
-        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          vercel_token: ${{ secrets.VERCEL_TOKEN }}
-          vercel_team_id: ${{ secrets.VERCEL_TEAM_ID }}
-          max_timeout: 300
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          api="https://api.vercel.com"
+          q="projectId=${VERCEL_PROJECT_ID}&teamId=${VERCEL_TEAM_ID}&target=preview&limit=20"
+
+          url=""
+          for i in $(seq 1 60); do
+            resp=$(curl -s -H "Authorization: Bearer ${VERCEL_TOKEN}" "${api}/v6/deployments?${q}")
+            url=$(echo "$resp" | jq -r --arg sha "$COMMIT_SHA" \
+              '(.deployments // [])[] | select(.meta.githubCommitSha==$sha and ((.state // .readyState)=="READY")) | .url' \
+              | head -n1)
+            if [ -n "$url" ] && [ "$url" != "null" ]; then break; fi
+            echo "waiting for a READY preview for ${COMMIT_SHA:0:7} … (${i}/60)"
+            sleep 10
+          done
+          if [ -z "$url" ] || [ "$url" = "null" ]; then
+            echo "::error::No READY Vercel preview found for ${COMMIT_SHA}"; exit 1
+          fi
+
+          full="https://${url}"
+          echo "preview: $full"
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "x-vercel-protection-bypass: ${BYPASS}" \
+              -H "x-vercel-set-bypass-cookie: true" "$full")
+            if [ "$code" = "200" ]; then echo "preview reachable (200)"; break; fi
+            echo "preview returned HTTP ${code} … (${i}/30)"
+            if [ "$i" = "30" ]; then echo "::error::Preview never returned 200 (last: ${code})"; exit 1; fi
+            sleep 10
+          done
+          echo "url=$full" >> "$GITHUB_OUTPUT"
 
       - name: Run E2E suite
         run: npx playwright test
         working-directory: rekryteringsplattform
         env:
           E2E_BASE_URL: ${{ steps.vercel_preview.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           E2E_COMPANY_EMAIL: ${{ secrets.E2E_COMPANY_EMAIL }}
           E2E_COMPANY_PASSWORD: ${{ secrets.E2E_COMPANY_PASSWORD }}
           E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
