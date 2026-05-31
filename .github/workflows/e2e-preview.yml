@@ -55,7 +55,7 @@ jobs:
           for i in $(seq 1 60); do
             resp=$(curl -s -H "Authorization: Bearer ${VERCEL_TOKEN}" "${api}/v6/deployments?${q}")
             url=$(echo "$resp" | jq -r --arg sha "$COMMIT_SHA" \
-              '.deployments[] | select(.meta.githubCommitSha==$sha and ((.state // .readyState)=="READY")) | .url' \
+              '(.deployments // [])[] | select(.meta.githubCommitSha==$sha and ((.state // .readyState)=="READY")) | .url' \
               | head -n1)
             if [ -n "$url" ] && [ "$url" != "null" ]; then break; fi
             echo "waiting for a READY preview for ${COMMIT_SHA:0:7} … (${i}/60)"
