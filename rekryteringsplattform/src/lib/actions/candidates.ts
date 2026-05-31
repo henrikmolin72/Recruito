@@ -22,6 +22,7 @@ import {
     sendPlacementInvoice,
     recalculateRecruiterMetrics,
 } from "@/lib/actions/placements";
+import { markJobFilledAndReject, maybeNudgeReopenForReview, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
 
 type CandidateNextStepRequest =
     | "request_tests"
@@ -360,6 +361,44 @@ export async function createCandidate(mandateId: string, formData: FormData) {
         }
     }
 
+    // Auto-pause when the candidate cap is reached: the submission that fills
+    // the last slot pauses the job and asks the client to review the batch.
+    try {
+        const { count: postCount } = await admin
+            .from("candidates")
+            .select("id", { count: "exact", head: true })
+            .eq("job_id", mandate.job_id);
+
+        if ((postCount ?? 0) >= maxCandidates) {
+            const { data: jobStatusRow } = await admin
+                .from("jobs")
+                .select("status")
+                .eq("id", mandate.job_id)
+                .single();
+
+            if ((jobStatusRow as any)?.status === "active") {
+                await admin
+                    .from("jobs")
+                    .update({ status: "paused", pause_reason: "Candidate Limit Reached" })
+                    .eq("id", mandate.job_id);
+
+                const company = Array.isArray(jobInfo?.company) ? jobInfo!.company[0] : jobInfo?.company;
+                if ((company as any)?.user_id) {
+                    await createNotification((company as any).user_id, {
+                        titleKey: "notif.candidateLimitReachedTitle",
+                        bodyKey: "notif.candidateLimitReachedBody",
+                        params: { jobTitle: jobInfo?.title || "Position", limit: maxCandidates },
+                        link: `/company/jobs/${mandate.job_id}`,
+                    });
+                }
+
+                await notifyRecruitersOfJobLifecycleChange(mandate.job_id, "paused", "Candidate Limit Reached");
+            }
+        }
+    } catch (e) {
+        console.error("[createCandidate auto-pause]", e);
+    }
+
     revalidatePath(`/recruiter/mandates`);
     revalidatePath(`/recruiter`); // Update stats
     redirect("/recruiter/mandates");
@@ -439,6 +478,14 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
             console.error("Metrics recalculation failed:", e);
         }
     }
+
+    // Hiring a candidate fills the position and auto-rejects the rest.
+    if (status === "hired") {
+        await markJobFilledAndReject(jobId, candidateId);
+    }
+    // If the client's review pool just dropped to the threshold on a paused
+    // job, nudge them once to reopen for more candidates.
+    await maybeNudgeReopenForReview(jobId);
 
     const { candidate, recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
     const targetUserId = access.companyUserId;
@@ -752,6 +799,14 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
             console.error("[updateCompanyStage first-view notify]", err);
         }
     }
+
+    // Company marking a candidate hired fills the position and rejects the rest.
+    if (stage === "hired") {
+        await markJobFilledAndReject(jobId, candidateId);
+    }
+    // Rejecting/advancing a candidate on a paused job may drop the review pool
+    // to the reopen-nudge threshold.
+    await maybeNudgeReopenForReview(jobId);
 
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
     return { success: true };

@@ -18,10 +18,18 @@ const CLOSE_REASONS = [
     "Other",
 ] as const;
 
+const PAUSE_REASONS = [
+    "Reviewing Candidates",
+    "Job On Hold",
+    "Other",
+] as const;
+
 export function JobActions({ jobId, status }: { jobId: string, status: string }) {
     const [loading, setLoading] = useState<string | null>(null);
     const [showCloseModal, setShowCloseModal] = useState(false);
     const [selectedReason, setSelectedReason] = useState<string>("");
+    const [showPauseModal, setShowPauseModal] = useState(false);
+    const [selectedPauseReason, setSelectedPauseReason] = useState<string>("");
     const router = useRouter();
     const { t } = useTranslations();
 
@@ -40,9 +48,11 @@ export function JobActions({ jobId, status }: { jobId: string, status: string })
     };
 
     const handlePause = async () => {
+        if (!selectedPauseReason) return;
         setLoading("pause");
         try {
-            await pauseJob(jobId);
+            await pauseJob(jobId, selectedPauseReason);
+            setShowPauseModal(false);
             router.refresh();
         } catch {
             // Server action failed silently
@@ -75,7 +85,12 @@ export function JobActions({ jobId, status }: { jobId: string, status: string })
                 )}
 
                 {status === 'active' && (
-                    <Button variant="outline" onClick={handlePause} disabled={loading !== null} className="gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => { setSelectedPauseReason(""); setShowPauseModal(true); }}
+                        disabled={loading !== null}
+                        className="gap-2"
+                    >
                         <PauseCircle className="h-4 w-4" />
                         {loading === "pause" ? t("components.jobActionsPausing") : t("components.jobActionsPauseRecruitment")}
                     </Button>
@@ -173,6 +188,83 @@ export function JobActions({ jobId, status }: { jobId: string, status: string })
                             >
                                 <Ban className="h-4 w-4" />
                                 {loading === "close" ? t("components.jobActionsClosing") : t("components.jobActionsCloseJob")}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Pause job modal */}
+            {showPauseModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/40"
+                        onClick={() => setShowPauseModal(false)}
+                    />
+                    {/* Modal */}
+                    <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-slate-900">
+                                {t("components.jobActionsPauseRecruitment")}
+                            </h2>
+                            <button
+                                onClick={() => setShowPauseModal(false)}
+                                className="text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        <p className="text-sm text-slate-500 mb-5">
+                            {t("components.pauseJobReasonPrompt") || "Please select a reason for pausing this job:"}
+                        </p>
+
+                        <div className="space-y-2 mb-6">
+                            {PAUSE_REASONS.map((reason) => (
+                                <label
+                                    key={reason}
+                                    className={`flex items-center gap-3 rounded-lg border px-4 py-3 cursor-pointer transition-all text-sm font-medium ${
+                                        selectedPauseReason === reason
+                                            ? "border-brand-500 bg-brand-50 text-brand-700"
+                                            : "border-slate-200 hover:bg-slate-50 text-slate-700"
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="pause_reason"
+                                        value={reason}
+                                        checked={selectedPauseReason === reason}
+                                        onChange={() => setSelectedPauseReason(reason)}
+                                        className="sr-only"
+                                    />
+                                    <span className={`h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                                        selectedPauseReason === reason ? "border-brand-500" : "border-slate-300"
+                                    }`}>
+                                        {selectedPauseReason === reason && (
+                                            <span className="h-2 w-2 rounded-full bg-brand-500" />
+                                        )}
+                                    </span>
+                                    {reason}
+                                </label>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowPauseModal(false)}
+                                disabled={loading !== null}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handlePause}
+                                disabled={!selectedPauseReason || loading !== null}
+                                className="gap-2"
+                            >
+                                <PauseCircle className="h-4 w-4" />
+                                {loading === "pause" ? t("components.jobActionsPausing") : t("components.jobActionsPauseRecruitment")}
                             </Button>
                         </div>
                     </div>

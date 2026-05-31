@@ -9,8 +9,9 @@ import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/notifications/create";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
-import { newJobNotificationEmail, jobLifecycleEmail } from "@/lib/email/email-templates";
+import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";
+import { rejectRemainingCandidates, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
 import type { PipelineStage } from "@/types/db-types";
 
 async function verifyJobOwnership(jobId: string) {
@@ -471,77 +472,8 @@ export async function updateJob(jobId: string, formData: FormData) {
     redirect(`/company/jobs/${jobId}`);
 }
 
-// Notifies all recruiters with an active mandate on a job when its lifecycle
-// state changes (closed / paused / reopened). Best-effort; failures swallowed
-// so the status change itself never rolls back. Honors email_opt_out.
-async function notifyRecruitersOfJobLifecycleChange(
-    jobId: string,
-    transition: "closed" | "paused" | "reopened"
-) {
-    try {
-        const { createAdminClient } = await import("@/lib/supabase/admin");
-        const supabase = createAdminClient();
-        const { data: jobRow } = await supabase
-            .from("jobs")
-            .select(`title, company:companies(company_name), mandates:job_mandates!inner(is_active, recruiter:recruiters(user_id))`)
-            .eq("id", jobId)
-            .eq("mandates.is_active", true)
-            .single();
-        if (!jobRow) return;
-
-        const jobTitle = (jobRow as any).title || "Position";
-        const companyName =
-            (Array.isArray((jobRow as any).company)
-                ? (jobRow as any).company[0]?.company_name
-                : (jobRow as any).company?.company_name) || "Partner Company";
-
-        const userIds: string[] = ((jobRow as any).mandates || [])
-            .map((m: any) => (Array.isArray(m.recruiter) ? m.recruiter[0]?.user_id : m.recruiter?.user_id))
-            .filter((id: string | null | undefined): id is string => !!id);
-
-        if (userIds.length === 0) return;
-
-        const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, email, full_name, email_opt_out")
-            .in("id", userIds);
-
-        const headline = transition === "closed" ? "Job closed" : transition === "paused" ? "Job paused" : "Job reopened";
-        const bodyLine =
-            transition === "closed"
-                ? "The company has closed this job. No further candidates are needed."
-                : transition === "paused"
-                    ? "The company has paused this job. Please hold candidate submissions until further notice."
-                    : "The company has reopened this job. You can resume submitting candidates.";
-
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com";
-
-        const results = await Promise.allSettled(
-            (profiles || [])
-                .filter((p: any) => p.email && !p.email_opt_out)
-                .map((p: any) =>
-                    sendUserEmail({
-                        to: p.email,
-                        subject: `${headline}: ${jobTitle}`,
-                        html: jobLifecycleEmail({
-                            recruiterName: p.full_name || "Recruiter",
-                            jobTitle,
-                            companyName,
-                            headline,
-                            bodyLine,
-                            jobUrl: `${baseUrl}/recruiter/jobs/${jobId}`,
-                        }),
-                    })
-                )
-        );
-        const failed = results.filter((r) => r.status === "rejected");
-        if (failed.length > 0) {
-            console.error(`[notifyRecruitersOfJobLifecycleChange] ${failed.length} send(s) failed`, failed.map((f) => (f as PromiseRejectedResult).reason));
-        }
-    } catch (err) {
-        console.error("[notifyRecruitersOfJobLifecycleChange]", err);
-    }
-}
+// notifyRecruitersOfJobLifecycleChange lives in "@/lib/job-fill" (a server-only,
+// non-"use server" module) so it is not exposed as a public RPC endpoint.
 
 export async function closeJob(jobId: string, reason?: string) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
@@ -565,13 +497,16 @@ export async function closeJob(jobId: string, reason?: string) {
         return { error: "Something went wrong. Please try again." };
     }
 
-    await notifyRecruitersOfJobLifecycleChange(jobId, "closed");
+    // Closing the job auto-rejects every remaining non-hired candidate.
+    await rejectRemainingCandidates(jobId);
+
+    await notifyRecruitersOfJobLifecycleChange(jobId, "closed", reason);
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
 }
 
-export async function pauseJob(jobId: string) {
+export async function pauseJob(jobId: string, reason?: string) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
 
@@ -582,7 +517,7 @@ export async function pauseJob(jobId: string) {
 
     const { error } = await supabase
         .from("jobs")
-        .update({ status: 'paused' })
+        .update({ status: 'paused', pause_reason: reason ?? null })
         .eq("id", jobId);
 
     if (error) {
@@ -590,7 +525,7 @@ export async function pauseJob(jobId: string) {
         return { error: "Something went wrong. Please try again." };
     }
 
-    await notifyRecruitersOfJobLifecycleChange(jobId, "paused");
+    await notifyRecruitersOfJobLifecycleChange(jobId, "paused", reason);
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -607,7 +542,8 @@ export async function resumeJob(jobId: string) {
 
     const { error } = await supabase
         .from("jobs")
-        .update({ status: 'active' })
+        // Clear the pause reason and re-arm the "consider reopening" nudge.
+        .update({ status: 'active', pause_reason: null, reopen_nudge_sent_at: null })
         .eq("id", jobId);
 
     if (error) {
