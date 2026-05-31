@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, UserPlus } from "lucide-react";
 import { formatDateShort, cn } from "@/lib/utils";
-import { candidateInStage, MANDATE_EXPIRY_DAYS, type MandateStage } from "@/lib/mandate-stages";
+import { candidateInStage, mandateExpiryDaysLeft, type MandateStage } from "@/lib/mandate-stages";
 
 // A count badge that links through to the mandate's candidate list, filtered
 // to the matching stage.
@@ -21,28 +21,26 @@ function CountBadge({ count, colorClass, href }: { count: number; colorClass: st
     );
 }
 
-type TabKey = "active" | "closed" | "hired";
+type TabKey = "active" | "closed" | "expired" | "hired";
 
 type Dict = Record<string, string>;
 
 interface MandateCandidate {
     status: string;
+    status_changed_at?: string | null;
     recruito_screened_at?: string | null;
 }
 
-// A mandate is "presented to client" once any candidate has been screened by
-// Recruito (recruito_screened_at set). That clears the 10-day expiry timer.
-function isPresentedToClient(m: Mandate): boolean {
-    return (m.candidates || []).some((c) => !!c.recruito_screened_at);
+// Days left on the mandate's no-delivery expiry (shared rule: a live candidate
+// suspends it; all-rejected restarts it from the last rejection). null = no
+// expiry applies.
+function mandateExpiryDays(m: Mandate): number | null {
+    return mandateExpiryDaysLeft({ claimedAt: m.claimed_at, candidates: m.candidates });
 }
 
-// Days left on the 10-day no-candidate expiry, or null if not applicable
-// (already presented to client, or no claim date).
-function mandateExpiryDays(m: Mandate): number | null {
-    if (!m.claimed_at || isPresentedToClient(m)) return null;
-    const expiry = new Date(m.claimed_at).getTime() + MANDATE_EXPIRY_DAYS * 86_400_000;
-    return Math.ceil((expiry - Date.now()) / 86_400_000);
-}
+// Job statuses that mean the client closed the mandate (vs. it expiring because
+// the recruiter delivered nothing). Paused (auto-pause on cap) stays Active.
+const CLIENT_CLOSED_JOB_STATUSES = new Set(["closed", "filled", "cancelled"]);
 
 interface Mandate {
     id: string;
@@ -66,13 +64,14 @@ function classifyMandate(m: Mandate): TabKey {
     const hasHired = (m.candidates || []).some((c) => candidateInStage(c, "hired"));
     if (hasHired) return "hired";
 
-    // Active/closed is driven by the recruiter's own mandate (claimed_at + 10d),
-    // not the job's original application_deadline — a freshly-taken mandate must
-    // show as Active even if the job's posting deadline has already passed.
+    // "Closed" = the client closed the job (or it was filled/cancelled).
+    if (m.status && CLIENT_CLOSED_JOB_STATUSES.has(m.status)) return "closed";
+
+    // "Expired" = the recruiter's own 10-day timer ran out (delivered nothing,
+    // or every candidate was rejected) while the job itself is still open.
     const exp = mandateExpiryDays(m);
-    const isExpired = exp !== null && exp <= 0;
-    const jobInactive = m.status && m.status !== "active";
-    if (isExpired || jobInactive) return "closed";
+    if (exp !== null && exp <= 0) return "expired";
+
     return "active";
 }
 
@@ -80,7 +79,7 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
     const [tab, setTab] = useState<TabKey>("active");
 
     const grouped = useMemo(() => {
-        const buckets: Record<TabKey, Mandate[]> = { active: [], closed: [], hired: [] };
+        const buckets: Record<TabKey, Mandate[]> = { active: [], closed: [], expired: [], hired: [] };
         for (const m of mandates) {
             buckets[classifyMandate(m)].push(m);
         }
@@ -100,6 +99,12 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
             key: "closed",
             label: `${r.tabClosed || "Closed"} (${grouped.closed.length})`,
             activeClass: "bg-pink-300 text-pink-900 border-pink-300",
+            inactiveClass: "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent",
+        },
+        {
+            key: "expired",
+            label: `${r.tabExpired || "Expired"} (${grouped.expired.length})`,
+            activeClass: "bg-amber-400 text-amber-950 border-amber-400",
             inactiveClass: "bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent",
         },
         {
@@ -137,11 +142,13 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                 <div className="text-center py-12 bg-muted/30 rounded-lg border border-border border-dashed">
                     <h3 className="text-lg font-medium">
                         {tab === "closed" ? (r.noClosedMandatesTitle || "No closed mandates")
+                            : tab === "expired" ? (r.noExpiredMandatesTitle || "No expired mandates")
                             : tab === "hired" ? (r.noHiredMandatesTitle || "No hires yet")
                             : r.noMandatesTitle}
                     </h3>
                     <p className="text-muted-foreground mb-4">
-                        {tab === "closed" ? (r.noClosedMandatesDesc || "Mandates that expired or were closed will appear here.")
+                        {tab === "closed" ? (r.noClosedMandatesDesc || "Mandates the client closed or filled will appear here.")
+                            : tab === "expired" ? (r.noExpiredMandatesDesc || "Mandates that expired without a delivered candidate will appear here.")
                             : tab === "hired" ? (r.noHiredMandatesDesc || "Mandates where you've made a hire will appear here.")
                             : r.noMandatesDesc}
                     </p>

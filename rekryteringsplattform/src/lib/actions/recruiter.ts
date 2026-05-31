@@ -8,6 +8,7 @@ import { Recruiter } from "@/types/db-types";
 import { createNotification } from "@/lib/notifications/create";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
+import { candidateInStage } from "@/lib/mandate-stages";
 
 function handleError(error: any) {
     const normalized = {
@@ -568,6 +569,7 @@ export async function getRecruiterMandates() {
         first_name,
         last_name,
         status,
+        status_changed_at,
         recruito_screened_at
       )
     `)
@@ -602,9 +604,39 @@ export async function getRecruiterMandates() {
             id: c.id,
             name: `${c.first_name} ${c.last_name}`,
             status: c.status,
+            status_changed_at: c.status_changed_at,
             recruito_screened_at: c.recruito_screened_at,
         })) || []
     }));
+}
+
+// Aggregate pipeline stats for a job across ALL recruiters' candidates, shown
+// to any recruiter who opens the job so they can judge whether more candidates
+// are needed. Counts only — no candidate PII. presented = process + interview + rejected.
+export async function getJobProcessStats(jobId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const admin = createAdminClient();
+    const { data, error } = await admin
+        .from("candidates")
+        .select("status, recruito_screened_at")
+        .eq("job_id", jobId);
+
+    if (error) {
+        console.error("[getJobProcessStats]", error);
+        return null;
+    }
+
+    const candidates = data || [];
+    const inInterview = candidates.filter((c) => candidateInStage(c, "interview")).length;
+    const rejected = candidates.filter((c) => candidateInStage(c, "rejected")).length;
+    const presented = candidates.length;
+    // Everything still in play that isn't an interview or a rejection.
+    const inProcess = presented - inInterview - rejected;
+
+    return { presented, inProcess, inInterview, rejected };
 }
 
 export async function getRecruiterMandateById(mandateId: string) {

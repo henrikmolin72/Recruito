@@ -584,6 +584,9 @@ export function CandidateSubmissionForm({
                                                     </li>
                                                 ))}
                                             </ul>
+                                            <p className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500 leading-relaxed">
+                                                <strong className="font-semibold text-slate-700">{r.aiMatchHintsNoteLabel}</strong>{" "}{r.aiMatchHintsNote}
+                                            </p>
                                         </div>
                                     )}
                                     {aiScore !== null && aiScore < 80 && aiHints.length === 0 && (

@@ -1183,6 +1183,51 @@ export async function getCandidatesForScreening() {
     });
 }
 
+// Full candidate detail for the admin screening page (name / AI-score click).
+// Admin-only; surfaces screening answers, recruiter note, salary, and AI score.
+export async function getCandidateScreeningDetail(candidateId: string) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const { data: c, error } = await supabaseAdmin
+        .from("candidates")
+        .select(`
+            id, first_name, last_name, email, phone, linkedin_url, portfolio_url,
+            current_title, current_company, years_experience,
+            location_city, location_country, location_status, work_authorization,
+            employment_status, employment_status_reason, other_processes, other_processes_stage,
+            current_salary, current_salary_currency, current_benefits,
+            desired_salary, desired_salary_currency, desired_benefits,
+            expected_salary, expected_salary_below_current_reason,
+            notice_period, notice_negotiable, first_contact_date, contact_method,
+            screening_answers, language_proficiency, assessment_summary, cover_note,
+            cv_file_path, ai_match_score, status, created_at,
+            recruito_screened_at, recruito_rejected_at, recruito_reject_reason,
+            job:jobs(title, company:companies(company_name)),
+            recruiter:recruiters(profile:profiles!recruiters_user_id_fkey(full_name))
+        `)
+        .eq("id", candidateId)
+        .single();
+
+    if (error || !c) {
+        console.error("[getCandidateScreeningDetail]", error);
+        return null;
+    }
+
+    const job = pickFirst((c as any).job);
+    const company = job ? pickFirst((job as any).company) : null;
+    const recruiter = pickFirst((c as any).recruiter);
+    const profile = recruiter ? pickFirst((recruiter as any).profile) : null;
+
+    return {
+        ...(c as any),
+        name: `${c.first_name || ""} ${c.last_name || ""}`.trim() || "Unknown",
+        jobTitle: job?.title || "—",
+        companyName: company?.company_name || "—",
+        recruiterName: profile?.full_name || "—",
+    };
+}
+
 // Called from the admin Approve modal when client_fee_amount is higher than
 // client_fee_amount_estimated. Atomic: validates, transitions status, writes
 // proposal columns, sends in-app notification + email. Status guard prevents
