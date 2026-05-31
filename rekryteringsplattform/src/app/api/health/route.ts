@@ -7,18 +7,22 @@ export const dynamic = "force-dynamic";
 
 type CheckResult = "ok" | "fail" | "skipped";
 
-async function checkSupabase(): Promise<{ status: CheckResult; latencyMs: number; error?: string }> {
+async function checkSupabase(): Promise<{ status: CheckResult; latencyMs: number }> {
     const started = Date.now();
     try {
         const admin = createAdminClient();
         // rate_limits is a small, always-present, service-role-only table — cheap probe.
         const { error } = await admin.from("rate_limits").select("key").limit(1);
         if (error) {
-            return { status: "fail", latencyMs: Date.now() - started, error: error.message };
+            // Log the raw error server-side only — never surface schema/SQL to the
+            // unauthenticated caller (CLAUDE.md §6).
+            console.error("[health] supabase probe failed:", error.message);
+            return { status: "fail", latencyMs: Date.now() - started };
         }
         return { status: "ok", latencyMs: Date.now() - started };
     } catch (err: any) {
-        return { status: "fail", latencyMs: Date.now() - started, error: err?.message ?? "unknown" };
+        console.error("[health] supabase probe threw:", err?.message ?? "unknown");
+        return { status: "fail", latencyMs: Date.now() - started };
     }
 }
 
@@ -44,7 +48,6 @@ export async function GET() {
                 supabase: {
                     status: supabase.status,
                     latencyMs: supabase.latencyMs,
-                    ...(supabase.error ? { error: supabase.error } : {}),
                 },
                 email: { status: email },
             },
