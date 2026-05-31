@@ -17,6 +17,7 @@ export const NEW_CANDIDATE_WORKFLOW_STATUSES = [
   "invoice_enabled",
   "guarantee_tracking",
   "candidate_withdrawn",
+  "recruito_rejected",
 ] as const;
 
 export const LEGACY_CANDIDATE_STATUSES = [
@@ -86,15 +87,17 @@ export const TERMINAL_CANDIDATE_STATUSES = new Set<string>([
   "candidate_withdrawn",
   "completed",
   "declined",
+  "recruito_rejected",
 ]);
 
 const TRANSITIONS: Record<string, string[]> = {
-  submitted: ["duplicate_rejected", "client_already_engaged", "under_client_review"],
+  submitted: ["duplicate_rejected", "client_already_engaged", "under_client_review", "recruito_rejected"],
   duplicate_rejected: [],
   client_already_engaged: [],
-  under_client_review: ["info_requested", "rejected_client", "interview_stage_1", "on_hold", "candidate_withdrawn", "offer_in_progress"],
-  info_requested: ["resubmitted", "rejected_client", "on_hold", "candidate_withdrawn"],
-  resubmitted: ["under_client_review", "rejected_client", "info_requested"],
+  recruito_rejected: [],
+  under_client_review: ["info_requested", "rejected_client", "interview_stage_1", "on_hold", "candidate_withdrawn", "offer_in_progress", "recruito_rejected"],
+  info_requested: ["resubmitted", "rejected_client", "on_hold", "candidate_withdrawn", "recruito_rejected"],
+  resubmitted: ["under_client_review", "rejected_client", "info_requested", "recruito_rejected"],
   interview_stage_1: ["interview_stage_2", "rejected_interview", "on_hold", "offer_in_progress", "candidate_withdrawn"],
   interview_stage_2: ["interview_stage_3", "final_interview", "rejected_interview", "on_hold", "offer_in_progress", "candidate_withdrawn"],
   interview_stage_3: ["final_interview", "rejected_interview", "on_hold", "offer_in_progress", "candidate_withdrawn"],

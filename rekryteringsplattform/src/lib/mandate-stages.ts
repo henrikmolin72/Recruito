@@ -45,7 +45,55 @@ const HIRED_STATUSES = new Set([
 const REJECTED_STATUSES = new Set([
     "rejected", "declined", "rejected_client", "rejected_interview",
     "candidate_withdrawn", "guarantee_failed", "recruiter_rejected",
+    "recruito_rejected",
 ]);
+
+// Statuses that make a candidate "not live" for the mandate-expiry timer.
+// Per product rule: a submitted candidate suspends the expiry; the 10-day timer
+// only (re)starts once EVERY candidate has been explicitly rejected. Only hard
+// rejections count here — a withdrawal/duplicate does NOT restart the clock.
+const EXPIRY_REJECTED_STATUSES = new Set([
+    "rejected_client", "rejected_interview", "recruito_rejected", "declined", "rejected",
+]);
+
+export interface ExpiryCandidate {
+    status: string | null;
+    status_changed_at?: string | null;
+}
+
+// Days left on the mandate's no-delivery expiry, or null when no expiry applies
+// (at least one live candidate exists). Single source of truth shared by the
+// recruiter mandates view and the expiry cron.
+//   - 0 candidates           → 10 days from claim.
+//   - any live candidate      → no expiry (null).
+//   - all candidates rejected → 10 days from the most recent rejection.
+export function mandateExpiryDaysLeft(opts: {
+    claimedAt: string | null;
+    candidates: ExpiryCandidate[];
+    now?: number;
+}): number | null {
+    const { claimedAt, candidates } = opts;
+    const now = opts.now ?? Date.now();
+    if (!claimedAt) return null;
+
+    const hasLive = candidates.some((c) => !EXPIRY_REJECTED_STATUSES.has(c.status ?? ""));
+    if (hasLive) return null;
+
+    let baseMs: number;
+    if (candidates.length === 0) {
+        baseMs = new Date(claimedAt).getTime();
+    } else {
+        // All candidates rejected → restart from the last rejection date.
+        const lastRejectionMs = candidates.reduce((max, c) => {
+            const t = c.status_changed_at ? new Date(c.status_changed_at).getTime() : 0;
+            return t > max ? t : max;
+        }, 0);
+        baseMs = lastRejectionMs || new Date(claimedAt).getTime();
+    }
+
+    const expiryMs = baseMs + MANDATE_EXPIRY_DAYS * 86_400_000;
+    return Math.ceil((expiryMs - now) / 86_400_000);
+}
 
 export interface StageCandidate {
     status: string | null;

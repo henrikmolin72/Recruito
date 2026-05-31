@@ -898,3 +898,83 @@ export async function markCandidateRecruitoScreened(candidateId: string) {
     revalidatePath("/admin/candidates");
     return { success: true };
 }
+
+// Step 7 "Take action" → Reject: admin rejects a submission before the client
+// sees it. Sets a terminal status + reason and notifies the submitting
+// recruiter. The candidate is never recruito_screened, so it stays out of the
+// client's view (recruito_screened_at is the visibility divider).
+export async function rejectCandidateAtScreening(candidateId: string, reason: string) {
+    const { user } = await requireAdmin();
+    const admin = createAdminClient();
+
+    const trimmedReason = (reason || "").trim();
+    if (trimmedReason.length < 3) {
+        return { error: "Please provide a reason for rejecting this candidate." };
+    }
+    if (trimmedReason.length > 1000) {
+        return { error: "Reason is too long (max 1000 characters)." };
+    }
+
+    const { data: candidate, error: fetchError } = await admin
+        .from("candidates")
+        .select(`
+            id,
+            first_name,
+            last_name,
+            recruito_screened_at,
+            recruito_rejected_at,
+            job:jobs(title),
+            recruiter:recruiters(user_id)
+        `)
+        .eq("id", candidateId)
+        .single();
+
+    if (fetchError || !candidate) {
+        return { error: "Candidate could not be found." };
+    }
+    if (candidate.recruito_screened_at) {
+        return { error: "This candidate has already been submitted to the client and cannot be rejected here." };
+    }
+    if (candidate.recruito_rejected_at) {
+        return { error: "This candidate has already been rejected." };
+    }
+
+    const { error: updateError } = await admin
+        .from("candidates")
+        .update({
+            status: "recruito_rejected",
+            status_changed_at: new Date().toISOString(),
+            recruito_rejected_at: new Date().toISOString(),
+            recruito_rejected_by: user.id,
+            recruito_reject_reason: trimmedReason,
+        })
+        .eq("id", candidateId)
+        .is("recruito_screened_at", null)
+        .is("recruito_rejected_at", null);
+
+    if (updateError) {
+        console.error("[rejectCandidateAtScreening]", updateError);
+        return { error: "Could not reject the candidate. Please try again." };
+    }
+
+    // Notify the submitting recruiter so they know the candidate was not passed on.
+    const job = Array.isArray((candidate as any).job) ? (candidate as any).job[0] : (candidate as any).job;
+    const recruiter = Array.isArray((candidate as any).recruiter) ? (candidate as any).recruiter[0] : (candidate as any).recruiter;
+    const recruiterUserId = recruiter?.user_id;
+    if (recruiterUserId) {
+        await createNotification(recruiterUserId, {
+            titleKey: "notif.candidateRejectedScreeningTitle",
+            bodyKey: "notif.candidateRejectedScreeningBody",
+            params: {
+                firstName: candidate.first_name || "",
+                lastName: candidate.last_name || "",
+                jobTitle: job?.title || "the position",
+                reason: trimmedReason,
+            },
+            link: "/recruiter/mandates",
+        });
+    }
+
+    revalidatePath("/admin/candidates");
+    return { success: true };
+}
