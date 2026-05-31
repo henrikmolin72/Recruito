@@ -12,10 +12,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/lib/notifications/create";
+import { MANDATE_EXPIRY_DAYS } from "@/lib/mandate-stages";
 
 export const runtime = "nodejs";
-
-const MANDATE_EXPIRY_DAYS = 10;
 
 export async function GET(request: NextRequest) {
     // Header-only auth: Vercel Cron sends Authorization: Bearer <CRON_SECRET>.
@@ -34,6 +33,7 @@ export async function GET(request: NextRequest) {
         .select(`
             id,
             claimed_at,
+            mandate_expiry_notified_at,
             recruiter:recruiters(user_id),
             job:jobs(title),
             candidates:candidates(recruito_screened_at)
@@ -48,6 +48,10 @@ export async function GET(request: NextRequest) {
     for (const m of mandates as any[]) {
         if (!m.claimed_at) continue;
 
+        // Fire at most once per mandate — survives missed daily runs (a single
+        // skipped run must not permanently silence the notification).
+        if (m.mandate_expiry_notified_at) continue;
+
         // Presented to client = any candidate screened by Recruito. Clears expiry.
         const presented = (m.candidates || []).some((c: any) => !!c.recruito_screened_at);
         if (presented) continue;
@@ -55,8 +59,9 @@ export async function GET(request: NextRequest) {
         const daysSinceClaim = Math.floor(
             (Date.now() - new Date(m.claimed_at).getTime()) / 86_400_000
         );
-        // Fire once, on the daily run after the 10-day boundary is crossed.
-        if (daysSinceClaim !== MANDATE_EXPIRY_DAYS) continue;
+        // Fire on the first run at or after the expiry boundary, not only the
+        // exact day — `>=` so a missed run still notifies on the next run.
+        if (daysSinceClaim < MANDATE_EXPIRY_DAYS) continue;
 
         const recruiterUserId = Array.isArray(m.recruiter)
             ? m.recruiter[0]?.user_id
@@ -71,6 +76,13 @@ export async function GET(request: NextRequest) {
             params: { jobTitle },
             link: "/recruiter/mandates",
         });
+
+        // Stamp so the next run skips this mandate (dedupe). Done after the
+        // notification so a send failure leaves it eligible for retry.
+        await admin
+            .from("job_mandates")
+            .update({ mandate_expiry_notified_at: new Date().toISOString() })
+            .eq("id", m.id);
         notified++;
     }
 

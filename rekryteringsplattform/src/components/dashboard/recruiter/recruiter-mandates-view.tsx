@@ -6,11 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, UserPlus } from "lucide-react";
 import { formatDateShort, cn } from "@/lib/utils";
-import { candidateInStage, type MandateStage } from "@/lib/mandate-stages";
-
-// Mandate auto-expires this many days after claim if no candidate has been
-// submitted to the client (i.e. screened by Recruito). Display-only.
-const MANDATE_EXPIRY_DAYS = 10;
+import { candidateInStage, MANDATE_EXPIRY_DAYS, type MandateStage } from "@/lib/mandate-stages";
 
 // A count badge that links through to the mandate's candidate list, filtered
 // to the matching stage.

@@ -19,6 +19,11 @@ export const MANDATE_STAGE_KEYS: MandateStage[] = [
     "rejected",
 ];
 
+// Days after a mandate is claimed before it is considered expired (no candidate
+// screened to the client). Single source of truth shared by the recruiter
+// mandates view and the expiry cron, so the UI and the notification never drift.
+export const MANDATE_EXPIRY_DAYS = 10;
+
 // "In Review" = still in Recruito's internal review, not yet screened/submitted
 // to the client. recruito_screened_at is the divider (empty => internal review).
 const IN_REVIEW_STATUSES = new Set(["submitted", "reviewing"]);
@@ -55,7 +60,10 @@ export function candidateInStage(c: StageCandidate, stage: MandateStage): boolea
         case "in_review":
             return IN_REVIEW_STATUSES.has(s) && !c.recruito_screened_at;
         case "submitted":
-            return SUBMITTED_STATUSES.has(s);
+            // A candidate still at a raw submitted/reviewing status but already
+            // screened to the client belongs in "submitted", not nowhere — the
+            // screen step sets recruito_screened_at without advancing status.
+            return SUBMITTED_STATUSES.has(s) || (IN_REVIEW_STATUSES.has(s) && !!c.recruito_screened_at);
         case "interview":
             return INTERVIEW_STATUSES.has(s);
         case "offer":
