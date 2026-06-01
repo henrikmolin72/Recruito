@@ -395,7 +395,6 @@ export async function getAvailableJobsForRecruiter() {
         .select(`
       *,
       company:companies(company_name),
-      mandates:job_mandates(count),
       candidates:candidates(status)
     `)
         .in("status", ["active", "closed", "paused"])
@@ -406,16 +405,28 @@ export async function getAvailableJobsForRecruiter() {
         return [];
     }
 
-    // Slots taken = actual active mandate rows (single source of truth, matches
-    // the company-side "X / Y slots filled"). The denormalized
-    // jobs.current_recruiter_count is not maintained on claim and would read 0.
-    const mandateCountOf = (job: any): number => job.mandates?.[0]?.count ?? 0;
+    // Slots taken = ACTIVE mandate rows only. Released rows (expired past cycles)
+    // accumulate as history and must not count against capacity, so an embedded
+    // job_mandates(count) — which counts every row — would over-report. Count
+    // active rows per job in one pass instead.
+    const { data: activeMandateRows } = await adminClient
+        .from("job_mandates")
+        .select("job_id")
+        .eq("is_active", true)
+        .in("job_id", (jobs || []).map((j: any) => j.id));
+
+    const activeMandateCount = new Map<string, number>();
+    for (const row of activeMandateRows || []) {
+        activeMandateCount.set(row.job_id, (activeMandateCount.get(row.job_id) ?? 0) + 1);
+    }
+    const mandateCountOf = (job: any): number => activeMandateCount.get(job.id) ?? 0;
 
     const availableJobs = jobs.filter(job => {
         if (job.status !== "active") return true;
-        const isClaimed = activeClaimedJobIds.has(job.id);
-        const isFull = mandateCountOf(job) >= job.max_recruiters;
-        return !isClaimed && !isFull;
+        // Full jobs stay visible (the card renders them as "Fullsatt" with no
+        // claim action); only hide jobs this recruiter has already claimed —
+        // those live under "My Mandates".
+        return !activeClaimedJobIds.has(job.id);
     });
 
     // Candidates "in process" — exclude terminal/rejected statuses.
@@ -460,7 +471,7 @@ export async function claimMandate(jobId: string) {
 
     const { data: job } = await supabase
         .from("jobs")
-        .select("status, max_recruiters")
+        .select("status, max_recruiters, max_candidates")
         .eq("id", jobId)
         .single();
 
@@ -468,15 +479,29 @@ export async function claimMandate(jobId: string) {
         return { error: "Jobbet är inte tillgängligt" };
     }
 
-    // Capacity from actual mandate rows (single source of truth), not the
-    // denormalized current_recruiter_count which isn't maintained on claim.
+    // Capacity from ACTIVE mandate rows only — released rows (expired past
+    // cycles) are history and must not count against the slot cap.
     const { count: mandateCount } = await supabase
         .from("job_mandates")
         .select("id", { count: "exact", head: true })
-        .eq("job_id", jobId);
+        .eq("job_id", jobId)
+        .eq("is_active", true);
 
     if ((mandateCount ?? 0) >= job.max_recruiters) {
         return { error: "Uppdraget är redan fullsatt" };
+    }
+
+    // Submission-capacity gate (covers retaking an expired job): there must be
+    // room to submit at least one more candidate. Mirrors the submission cap in
+    // createCandidate (all candidates count toward max_candidates, default 8).
+    const maxCandidates = (job as any).max_candidates ?? 8;
+    const { count: candidateCount } = await supabase
+        .from("candidates")
+        .select("id", { count: "exact", head: true })
+        .eq("job_id", jobId);
+
+    if ((candidateCount ?? 0) >= maxCandidates) {
+        return { error: "Uppdraget har nått sin kandidatgräns och kan inte tas just nu" };
     }
 
     const { error: mandateError } = await supabase

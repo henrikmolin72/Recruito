@@ -5,8 +5,10 @@
  * candidate is rejected the 10-day window restarts from the last rejection
  * (shared rule: mandateExpiryDaysLeft).
  *
- * Display-only policy: we do NOT auto-release the mandate here — the UI shows
- * "Expired". This job only sends a one-time heads-up notification.
+ * On expiry this job (a) sends a one-time heads-up notification and (b) releases
+ * the mandate (is_active=false, released_at set). Releasing frees the recruiter
+ * slot and returns the job to the recruiter's available list with the "Already
+ * Worked" tag, where it can be retaken as a fresh cycle (see claimMandate).
  *
  * Secure with CRON_SECRET (Bearer header). Schedule daily via Vercel Cron.
  */
@@ -78,11 +80,18 @@ export async function GET(request: NextRequest) {
             link: "/recruiter/mandates",
         });
 
-        // Stamp so the next run skips this mandate (dedupe). Done after the
-        // notification so a send failure leaves it eligible for retry.
+        // Release the expired mandate and stamp the notification time. Setting
+        // is_active=false frees the recruiter slot, drops the row from the
+        // is_active=true scan (so it won't re-fire), and returns the job to the
+        // available list for a retake. Done after the notification so a send
+        // failure leaves the mandate active and eligible for retry next run.
         await admin
             .from("job_mandates")
-            .update({ mandate_expiry_notified_at: new Date().toISOString() })
+            .update({
+                is_active: false,
+                released_at: new Date().toISOString(),
+                mandate_expiry_notified_at: new Date().toISOString(),
+            })
             .eq("id", m.id);
         notified++;
     }
