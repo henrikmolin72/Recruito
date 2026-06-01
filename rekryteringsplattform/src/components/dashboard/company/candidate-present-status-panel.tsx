@@ -95,11 +95,23 @@ export function CandidatePresentStatusPanel({
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2">
                     <div className="flex items-start gap-2">
                         <Eye className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                        <p className="text-xs text-blue-900 leading-relaxed">
-                            By viewing this candidate profile, the recruiter will be notified that
-                            the profile has been viewed and a <strong>{VIEW_COUNTDOWN_DAYS}-day
-                            response window</strong> will start.
-                        </p>
+                        <div className="text-xs text-blue-900 leading-relaxed space-y-1.5">
+                            <p>
+                                Viewing this candidate profile will notify the recruiter that
+                                the profile has been viewed.
+                            </p>
+                            <ol className="list-decimal pl-4 space-y-1">
+                                <li>
+                                    A <strong>{VIEW_COUNTDOWN_DAYS}-day response window</strong> will
+                                    begin for you to provide an initial response to the recruiter.
+                                </li>
+                                <li>
+                                    To ensure a positive recruiter experience, we recommend completing
+                                    the interview and hiring process within <strong>45 days</strong>,
+                                    where possible.
+                                </li>
+                            </ol>
+                        </div>
                     </div>
                 </div>
                 <button
@@ -118,10 +130,12 @@ export function CandidatePresentStatusPanel({
                         <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
                             <h2 className="text-base font-bold text-slate-900 mb-2">View Candidate?</h2>
                             <p className="text-sm text-slate-600 mb-2">
-                                The recruiter will be notified that this profile has been viewed.
+                                The recruiter will be notified that this profile has been viewed, and a{" "}
+                                <strong>{VIEW_COUNTDOWN_DAYS}-day response window</strong> will begin for your initial response.
                             </p>
                             <p className="text-sm text-slate-600 mb-6">
-                                A <strong>{VIEW_COUNTDOWN_DAYS}-day countdown</strong> will start so the recruiter knows when to expect feedback.
+                                We also recommend completing the interview and hiring process within{" "}
+                                <strong>45 days</strong>, where possible.
                             </p>
                             <div className="flex justify-end gap-3">
                                 <button
