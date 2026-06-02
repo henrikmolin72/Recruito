@@ -27,6 +27,7 @@ import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { JobActions } from "@/components/dashboard/company/job-actions";
 import { CompanyCandidatesOverview } from "@/components/dashboard/company/company-candidates-overview";
+import { getCandidateProfileNoticeAccepted } from "@/lib/actions/company";
 import { PipelineEditor } from "@/components/dashboard/company/pipeline-editor";
 import { AnnouncementsTab } from "@/components/dashboard/company/announcements-tab";
 import { getDictionary } from "@/i18n/server";
@@ -87,6 +88,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
     const announcements = await getJobAnnouncements(id);
     const dict = await getDictionary();
     const c = dict.company;
+    const noticeAccepted = await getCandidateProfileNoticeAccepted();
 
     return (
         <div className="space-y-8 max-w-6xl mx-auto py-2">
@@ -180,6 +182,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                             candidates={job.candidates || []}
                             jobId={job.id}
                             pipelineStages={job.pipeline_stages || DEFAULT_PIPELINE_STAGES}
+                            noticeAccepted={noticeAccepted}
                         />
                     </div>
                 </TabsContent>

@@ -6,7 +6,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { updateCandidateStatus } from "@/lib/actions/candidates";
-import Link from "next/link";
+import { CandidateAccessGate } from "@/components/dashboard/company/candidate-access-gate";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "@/i18n/client";
@@ -25,9 +25,10 @@ function getColumnKey(status: string) {
 
 interface CandidatePipelineProps {
   candidates: any[];
+  noticeAccepted: boolean;
 }
 
-export function CandidatePipeline({ candidates }: CandidatePipelineProps) {
+export function CandidatePipeline({ candidates, noticeAccepted }: CandidatePipelineProps) {
   const [view, setView] = useState<"pipeline" | "list">("pipeline");
   const { t } = useTranslations();
 
@@ -59,15 +60,15 @@ export function CandidatePipeline({ candidates }: CandidatePipelineProps) {
       </div>
 
       {view === "pipeline" ? (
-        <PipelineView candidates={candidates} />
+        <PipelineView candidates={candidates} noticeAccepted={noticeAccepted} />
       ) : (
-        <ListView candidates={candidates} />
+        <ListView candidates={candidates} noticeAccepted={noticeAccepted} />
       )}
     </div>
   );
 }
 
-function PipelineView({ candidates }: { candidates: any[] }) {
+function PipelineView({ candidates, noticeAccepted }: { candidates: any[]; noticeAccepted: boolean }) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const { t } = useTranslations();
@@ -152,12 +153,13 @@ function PipelineView({ candidates }: { candidates: any[] }) {
                       <div className="flex items-start gap-3">
                         <Avatar initials={(candidate.first_name?.[0] || "") + (candidate.last_name?.[0] || "")} />
                         <div className="flex-1 min-w-0">
-                          <Link
+                          <CandidateAccessGate
                             href={`/company/jobs/${candidate.job_id}/candidates/${candidate.id}`}
+                            noticeAccepted={noticeAccepted}
                             className="font-semibold text-sm hover:text-brand-600 transition-colors"
                           >
                             {candidate.first_name} {candidate.last_name}
-                          </Link>
+                          </CandidateAccessGate>
                           <p className="text-xs text-muted-foreground truncate">
                             {candidate.current_title || t("common.noTitle")}
                           </p>
@@ -180,7 +182,7 @@ function PipelineView({ candidates }: { candidates: any[] }) {
   );
 }
 
-function ListView({ candidates }: { candidates: any[] }) {
+function ListView({ candidates, noticeAccepted }: { candidates: any[]; noticeAccepted: boolean }) {
   const { t } = useTranslations();
 
   return (
@@ -208,9 +210,12 @@ function ListView({ candidates }: { candidates: any[] }) {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Link href={`/company/jobs/${candidate.job_id}/candidates/${candidate.id}`}>
+                <CandidateAccessGate
+                  href={`/company/jobs/${candidate.job_id}/candidates/${candidate.id}`}
+                  noticeAccepted={noticeAccepted}
+                >
                   <Button variant="outline" size="sm">{t("common.showProfile")}</Button>
-                </Link>
+                </CandidateAccessGate>
               </div>
             </div>
           </CardContent>

@@ -77,6 +77,39 @@ export async function updateCompanyProfile(formData: FormData) {
     return { success: true };
 }
 
+/** Whether the current user's company has accepted the candidate-view notice. */
+export async function getCandidateProfileNoticeAccepted(): Promise<boolean> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data } = await supabase
+        .from("companies")
+        .select("candidate_profile_notice_accepted")
+        .eq("user_id", user.id)
+        .single();
+
+    return (data as any)?.candidate_profile_notice_accepted === true;
+}
+
+/** Record one-time acceptance of the candidate-view notice for the company. */
+export async function acceptCandidateProfileNotice(): Promise<{ success: true } | { error: string }> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Ej inloggad" };
+
+    const { error } = await supabase
+        .from("companies")
+        .update({ candidate_profile_notice_accepted: true })
+        .eq("user_id", user.id);
+
+    if (error) {
+        console.error("[acceptCandidateProfileNotice]", error);
+        return { error: "Något gick fel. Försök igen." };
+    }
+    return { success: true };
+}
+
 export async function getCompanyDashboard() {
     const supabase = await createClient();
 

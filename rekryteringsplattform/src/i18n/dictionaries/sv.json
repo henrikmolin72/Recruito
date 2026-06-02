@@ -1358,7 +1358,7 @@
     "nextStepRequestBody": "{request} för {candidate} ({jobTitle}).",
     "nextStepRequestBodyNote": "{request} för {candidate} ({jobTitle}). Kommentar: {note}",
     "clientViewedCandidateTitle": "Beställaren visade din kandidat",
-    "clientViewedCandidateBody": "{subject} öppnade {candidate}s profil. Ett 5-dagars svarsfönster har startat.",
+    "clientViewedCandidateBody": "{subject} öppnade {candidate}s profil. En 45-dagars rekryteringstidslinje gäller.",
     "newRecruiterTitle": "Ny rekryterare på uppdraget!",
     "newRecruiterBody": "En rekryterare har tagit ditt uppdrag: {jobTitle}",
     "newMessageTitle": "Nytt meddelande från {sender}",

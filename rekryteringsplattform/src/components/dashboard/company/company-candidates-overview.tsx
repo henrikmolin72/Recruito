@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { CandidateAccessGate } from "@/components/dashboard/company/candidate-access-gate";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import type { PipelineStage } from "@/types/db-types";
@@ -95,10 +95,12 @@ export function CompanyCandidatesOverview({
     candidates,
     jobId,
     pipelineStages,
+    noticeAccepted,
 }: {
     candidates: CandidateItem[];
     jobId: string;
     pipelineStages: PipelineStage[];
+    noticeAccepted: boolean;
 }) {
     const sortedStages = sortStages(pipelineStages);
 
@@ -214,12 +216,15 @@ export function CompanyCandidatesOverview({
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <Link href={`/company/jobs/${jobId}/candidates/${candidate.id}`}>
+                                            <CandidateAccessGate
+                                                href={`/company/jobs/${jobId}/candidates/${candidate.id}`}
+                                                noticeAccepted={noticeAccepted}
+                                            >
                                                 <Button variant="outline" size="sm" className="gap-1.5">
                                                     Följ kandidat
                                                     <ArrowRight className="h-4 w-4" />
                                                 </Button>
-                                            </Link>
+                                            </CandidateAccessGate>
                                         </div>
                                     </div>
                                 </CardContent>

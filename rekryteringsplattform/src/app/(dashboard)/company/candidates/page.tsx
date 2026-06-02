@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { CandidatePipeline } from "@/components/dashboard/company/candidate-pipeline";
+import { getCandidateProfileNoticeAccepted } from "@/lib/actions/company";
 import { getDictionary } from "@/i18n/server";
 
 async function getCompanyCandidates() {
@@ -51,6 +52,7 @@ async function getCompanyCandidates() {
 
 export default async function CompanyCandidatesPage() {
   const candidates = await getCompanyCandidates();
+  const noticeAccepted = await getCandidateProfileNoticeAccepted();
   const dict = await getDictionary();
   const c = dict.company;
 
@@ -66,7 +68,7 @@ export default async function CompanyCandidatesPage() {
           <p className="text-muted-foreground">{c.noCandidatesPresented}</p>
         </div>
       ) : (
-        <CandidatePipeline candidates={candidates} />
+        <CandidatePipeline candidates={candidates} noticeAccepted={noticeAccepted} />
       )}
     </div>
   );

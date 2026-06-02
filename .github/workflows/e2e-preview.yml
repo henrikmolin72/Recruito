@@ -49,13 +49,18 @@ jobs:
         run: |
           set -euo pipefail
           api="https://api.vercel.com"
-          q="projectId=${VERCEL_PROJECT_ID}&teamId=${VERCEL_TEAM_ID}&target=preview&limit=20"
+          # NOTE: do NOT filter by target=preview here. Git-push preview
+          # deployments are returned with target=null (only production deploys
+          # have target="production"), so target=preview would exclude the very
+          # deployment we're after. Match on the PR head SHA + READY instead,
+          # and exclude production defensively in jq.
+          q="projectId=${VERCEL_PROJECT_ID}&teamId=${VERCEL_TEAM_ID}&limit=20"
 
           url=""
           for i in $(seq 1 60); do
             resp=$(curl -s -H "Authorization: Bearer ${VERCEL_TOKEN}" "${api}/v6/deployments?${q}")
             url=$(echo "$resp" | jq -r --arg sha "$COMMIT_SHA" \
-              '(.deployments // [])[] | select(.meta.githubCommitSha==$sha and ((.state // .readyState)=="READY")) | .url' \
+              '(.deployments // [])[] | select(.meta.githubCommitSha==$sha and ((.state // .readyState)=="READY") and (.target != "production")) | .url' \
               | head -n1)
             if [ -n "$url" ] && [ "$url" != "null" ]; then break; fi
             echo "waiting for a READY preview for ${COMMIT_SHA:0:7} … (${i}/60)"
