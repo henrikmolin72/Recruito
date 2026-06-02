@@ -1358,7 +1358,7 @@
     "nextStepRequestBody": "{request} for {candidate} ({jobTitle}).",
     "nextStepRequestBodyNote": "{request} for {candidate} ({jobTitle}). Kommentar: {note}",
     "clientViewedCandidateTitle": "Kunden så din kandidat",
-    "clientViewedCandidateBody": "{subject} åbnede {candidate}s profil. Et svarvindue på 5 dage er startet.",
+    "clientViewedCandidateBody": "{subject} åbnede {candidate}s profil. En ansættelsestidslinje på 45 dage gælder.",
     "newRecruiterTitle": "Ny rekrutteringskonsulent på opgaven!",
     "newRecruiterBody": "En rekrutteringskonsulent har taget din opgave: {jobTitle}",
     "newMessageTitle": "Ny besked fra {sender}",

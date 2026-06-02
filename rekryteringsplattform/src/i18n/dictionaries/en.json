@@ -1358,7 +1358,7 @@
     "nextStepRequestBody": "{request} for {candidate} ({jobTitle}).",
     "nextStepRequestBodyNote": "{request} for {candidate} ({jobTitle}). Comment: {note}",
     "clientViewedCandidateTitle": "The client viewed your candidate",
-    "clientViewedCandidateBody": "{subject} opened {candidate}'s profile. A 5-day response window has started.",
+    "clientViewedCandidateBody": "{subject} opened {candidate}'s profile. A 45-day hiring timeline applies.",
     "newRecruiterTitle": "New recruiter on the mandate!",
     "newRecruiterBody": "A recruiter has taken your mandate: {jobTitle}",
     "newMessageTitle": "New message from {sender}",

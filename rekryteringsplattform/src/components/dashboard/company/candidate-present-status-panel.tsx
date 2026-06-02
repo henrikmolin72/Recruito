@@ -1,17 +1,20 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect, useRef } from "react";
 import { updateCompanyStage, markOfferAccepted } from "@/lib/actions/candidates";
-import { CheckCircle2, XCircle, Handshake, Eye, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, Handshake, Clock } from "lucide-react";
 
-const VIEW_COUNTDOWN_DAYS = 5;
+// Hiring-timeline window shown to the client after they open a candidate. The
+// previous 5-day response-window counter was replaced by this 45-day hiring
+// timeline, which better reflects the overall recruitment process.
+const HIRING_TIMELINE_DAYS = 45;
 
 function daysRemaining(viewedAt: string | null): number | null {
     if (!viewedAt) return null;
     const start = new Date(viewedAt).getTime();
     if (Number.isNaN(start)) return null;
     const elapsed = Date.now() - start;
-    const remainingMs = VIEW_COUNTDOWN_DAYS * 86_400_000 - elapsed;
+    const remainingMs = HIRING_TIMELINE_DAYS * 86_400_000 - elapsed;
     return Math.max(0, Math.ceil(remainingMs / 86_400_000));
 }
 
@@ -44,8 +47,25 @@ export function CandidatePresentStatusPanel({
     const [offerAccepted, setOfferAccepted] = useState(initialOfferAccepted);
     const [offerError, setOfferError] = useState<string | null>(null);
     const [viewedAt, setViewedAt] = useState<string | null>(initialViewedAt);
-    const [showViewConfirm, setShowViewConfirm] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const autoViewFired = useRef(false);
+
+    // Opening the candidate profile IS the view event: on first open, mark the
+    // candidate viewed, which notifies the recruiter and starts the 45-day
+    // hiring timeline. The one-time access-confirmation popup (shown before
+    // navigation, once per company) is the client's consent gate for this.
+    useEffect(() => {
+        if (currentStage || autoViewFired.current) return;
+        autoViewFired.current = true;
+        startTransition(async () => {
+            const result = await updateCompanyStage(candidateId, jobId, "viewed");
+            if (!result.error) {
+                setCurrentStage("viewed");
+                setViewedAt(new Date().toISOString());
+            }
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleMarkOfferAccepted = () => {
         setOfferError(null);
@@ -71,94 +91,7 @@ export function CandidatePresentStatusPanel({
         });
     };
 
-    const confirmViewCandidate = () => {
-        setShowViewConfirm(false);
-        startTransition(async () => {
-            const result = await updateCompanyStage(candidateId, jobId, "viewed");
-            if (!result.error) {
-                setCurrentStage("viewed");
-                setViewedAt(new Date().toISOString());
-            }
-        });
-    };
-
     const remaining = daysRemaining(viewedAt);
-
-    // Pre-view gate: show a "View Candidate" CTA + a clear disclosure of the
-    // consequences (recruiter is notified; 5-day window starts). The previous
-    // implementation auto-fired the viewed transition on mount, which gave the
-    // client no chance to bail out of the recruiter ping.
-    if (!currentStage) {
-        return (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Present Status</p>
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2">
-                    <div className="flex items-start gap-2">
-                        <Eye className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                        <div className="text-xs text-blue-900 leading-relaxed space-y-1.5">
-                            <p>
-                                Viewing this candidate profile will notify the recruiter that
-                                the profile has been viewed.
-                            </p>
-                            <ol className="list-decimal pl-4 space-y-1">
-                                <li>
-                                    A <strong>{VIEW_COUNTDOWN_DAYS}-day response window</strong> will
-                                    begin for you to provide an initial response to the recruiter.
-                                </li>
-                                <li>
-                                    To ensure a positive recruiter experience, we recommend completing
-                                    the interview and hiring process within <strong>45 days</strong>,
-                                    where possible.
-                                </li>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
-                <button
-                    type="button"
-                    onClick={() => setShowViewConfirm(true)}
-                    disabled={isPending}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 disabled:opacity-60"
-                >
-                    <Eye className="h-4 w-4" />
-                    {isPending ? "Saving…" : "View Candidate"}
-                </button>
-
-                {showViewConfirm && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center">
-                        <div className="absolute inset-0 bg-black/40" onClick={() => setShowViewConfirm(false)} />
-                        <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
-                            <h2 className="text-base font-bold text-slate-900 mb-2">View Candidate?</h2>
-                            <p className="text-sm text-slate-600 mb-2">
-                                The recruiter will be notified that this profile has been viewed, and a{" "}
-                                <strong>{VIEW_COUNTDOWN_DAYS}-day response window</strong> will begin for your initial response.
-                            </p>
-                            <p className="text-sm text-slate-600 mb-6">
-                                We also recommend completing the interview and hiring process within{" "}
-                                <strong>45 days</strong>, where possible.
-                            </p>
-                            <div className="flex justify-end gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowViewConfirm(false)}
-                                    className="px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={confirmViewCandidate}
-                                    className="px-4 py-2 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-700"
-                                >
-                                    View Candidate
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    }
 
     return (
         <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
@@ -169,16 +102,16 @@ export function CandidatePresentStatusPanel({
                         className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
                             remaining === 0
                                 ? "bg-slate-100 text-slate-500 border-slate-200"
-                                : remaining <= 1
+                                : remaining <= 5
                                     ? "bg-red-50 text-red-700 border-red-200"
-                                    : remaining <= 2
+                                    : remaining <= 14
                                         ? "bg-amber-50 text-amber-700 border-amber-200"
                                         : "bg-blue-50 text-blue-700 border-blue-200"
                         }`}
-                        title={`Viewed ${viewedAt ? new Date(viewedAt).toLocaleString() : ""}`}
+                        title={`Viewed ${viewedAt ? new Date(viewedAt).toLocaleString() : ""} · ${HIRING_TIMELINE_DAYS}-day hiring timeline`}
                     >
                         <Clock className="h-3 w-3" />
-                        {remaining === 0 ? "Window closed" : `${remaining}d left`}
+                        {remaining === 0 ? "Timeline ended" : `${remaining}d left`}
                     </span>
                 )}
             </div>
