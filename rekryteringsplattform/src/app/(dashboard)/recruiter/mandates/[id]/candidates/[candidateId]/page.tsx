@@ -29,6 +29,8 @@ import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { cn } from "@/lib/utils";
 import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
+import { EvaluationPromptPanel } from "@/components/screening/evaluation-prompt-panel";
+import { getMandateEvalConfig, getLatestEvaluation } from "@/lib/actions/screening";
 
 type CandidatePipelineNode = {
     id: string;
@@ -296,6 +298,10 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
     const recruitorMessages = (recruitorConversation as any)?.messages || [];
     const dict = await getDictionary();
     const r = dict.recruiter;
+    const [evalConfig, latestEvaluation] = await Promise.all([
+        getMandateEvalConfig(mandateId),
+        getLatestEvaluation(candidateId, mandateId),
+    ]);
 
     return (
         <div className="space-y-8 max-w-5xl mx-auto py-2">
@@ -362,6 +368,13 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                 </div>
 
                 <div className="space-y-6">
+                    <EvaluationPromptPanel
+                        candidateId={candidateId}
+                        mandateId={mandateId}
+                        initialConfig={evalConfig}
+                        initialReport={latestEvaluation}
+                    />
+
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
                         <CardHeader className="pb-2">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">{r.profileOverview}</h3>
