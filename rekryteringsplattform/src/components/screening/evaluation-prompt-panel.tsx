@@ -212,7 +212,7 @@ export function EvaluationPromptPanel({ candidateId, mandateId, initialConfig, i
 
           <p className="text-[11px] text-slate-400 leading-relaxed flex items-start gap-1.5">
             <Download className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            "Kopiera prompt" är ett manuellt alternativ — prompten kopieras och CV:t öppnas i ny flik att bifoga i ditt AI-verktyg.
+            &quot;Kopiera prompt&quot; är ett manuellt alternativ — prompten kopieras och CV:t öppnas i ny flik att bifoga i ditt AI-verktyg.
           </p>
         </CardContent>
       )}
