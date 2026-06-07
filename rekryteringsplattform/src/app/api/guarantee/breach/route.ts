@@ -8,6 +8,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/lib/notifications/create";
+import { computeProportionalRefund } from "@/lib/guarantee";
 
 export const runtime = "nodejs";
 
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const { data: placement } = await admin
         .from("placements")
-        .select("id, company_id, total_fee, salary_currency, guarantee_end_date, status, candidate:candidates(first_name, last_name), job:jobs(title)")
+        .select("id, company_id, total_fee, salary_currency, start_date, guarantee_end_date, status, candidate:candidates(first_name, last_name), job:jobs(title)")
         .eq("id", placementId)
         .eq("company_id", company.id)
         .single();
@@ -45,20 +46,15 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Placement is not in an active guarantee period" }, { status: 400 });
     }
 
-    // Calculate proportional refund
-    let refundAmount = placement.total_fee;
-    if (placement.guarantee_end_date) {
-        const today = new Date();
-        const end = new Date(placement.guarantee_end_date);
-        // Assume guarantee started total_fee days before end (approximation)
-        // More accurate: start = hired_at, but we use end - 30d as fallback
-        const start = new Date(end);
-        start.setDate(start.getDate() - 30);
-        const totalDays = Math.max(1, (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-        const remainingDays = Math.max(0, (end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        const remainingFraction = remainingDays / totalDays;
-        refundAmount = Math.round(placement.total_fee * remainingFraction);
-    }
+    // Calculate proportional refund over the real start_date → guarantee_end_date
+    // window (company picks a 1–2 month guarantee). Fraction is clamped to [0,1].
+    const refundAmount = placement.guarantee_end_date
+        ? computeProportionalRefund(
+            placement.total_fee,
+            (placement as { start_date?: string | null }).start_date ?? null,
+            placement.guarantee_end_date,
+        )
+        : placement.total_fee;
 
     // Insert breach report
     const { data: report, error } = await admin.from("guarantee_breach_reports").insert({

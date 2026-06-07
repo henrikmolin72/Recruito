@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { verifyCvFileContent } from "@/lib/file-magic";
@@ -312,7 +313,23 @@ export async function reviewApplication(
   action: "approve" | "reject",
   recruiterId: string
 ): Promise<{ success: boolean; error?: string }> {
+  // Authenticate the caller and bind the action to their own recruiter row.
+  // recruiterId is caller-supplied, so without this an attacker could act as
+  // any recruiter by passing someone else's id (CLAUDE.md §6: auth + IDOR).
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Du måste vara inloggad." };
+
   const admin = createAdminClient();
+
+  const { data: recruiter } = await admin
+    .from("recruiters")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+  if (!recruiter || recruiter.id !== recruiterId) {
+    return { success: false, error: "Behörighet saknas." };
+  }
 
   if (action === "approve") {
     // Use atomic Postgres function to prevent race condition on max-7 limit

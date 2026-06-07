@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { csvEscapeCell } from "@/lib/csv";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
             f.jobTitle, f.status, f.submitted, f.aiScreened, `${f.aiScreenedPct}%`,
             f.interviewed, `${f.interviewedPct}%`, f.offered, `${f.offeredPct}%`,
             f.hired, `${f.hiredPct}%`,
-        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
+        ].map(csvEscapeCell).join(","));
     }
     sections.push("");
 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
     for (const c of (data.costs ?? [])) {
         sections.push([
             c.jobTitle, c.annualSalary, c.recruiToCost, c.traditionalCost, c.saving, `${c.savingPct}%`, c.currency,
-        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
+        ].map(csvEscapeCell).join(","));
     }
     sections.push("");
 
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
         sections.push([
             r.name, r.jobCount, r.candidateCount, r.hiredCount,
             `${r.conversionRate}%`, r.avgAiScore ?? "-", r.avgDaysToFirstCandidate ?? "-",
-        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
+        ].map(csvEscapeCell).join(","));
     }
 
     const csv = sections.join("\n");

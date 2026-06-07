@@ -79,6 +79,31 @@ export async function POST(request: NextRequest) {
 
     if (!company) return NextResponse.json({ error: "Company not found" }, { status: 403 });
 
+    // IDOR guard: the candidate/application must belong to one of this company's
+    // jobs before it can be added to the company's talent pool.
+    if (candidateId) {
+        const { data: cand } = await admin
+            .from("candidates")
+            .select("id, job:jobs(company_id)")
+            .eq("id", candidateId)
+            .single();
+        const candJob = Array.isArray(cand?.job) ? cand.job[0] : cand?.job;
+        if (!cand || (candJob as { company_id?: string } | undefined)?.company_id !== company.id) {
+            return NextResponse.json({ error: "Candidate not found" }, { status: 403 });
+        }
+    }
+    if (applicationId) {
+        const { data: app } = await admin
+            .from("applications")
+            .select("id, job:jobs(company_id)")
+            .eq("id", applicationId)
+            .single();
+        const appJob = Array.isArray(app?.job) ? app.job[0] : app?.job;
+        if (!app || (appJob as { company_id?: string } | undefined)?.company_id !== company.id) {
+            return NextResponse.json({ error: "Application not found" }, { status: 403 });
+        }
+    }
+
     const { data, error } = await admin
         .from("talent_pool_entries")
         .insert({

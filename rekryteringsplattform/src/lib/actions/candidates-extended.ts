@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications/create";
+import { verifyCvFileContent } from "@/lib/file-magic";
 
 function toString(value: FormDataEntryValue | null) {
     return typeof value === "string" ? value : "";
@@ -144,6 +145,10 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         }
         if (mimeType && !ALLOWED_CV_MIME_TYPES.has(mimeType)) {
             return { error: "Allowed file types: PDF, DOC, DOCX, TXT, RTF." };
+        }
+        // Validate by content, not just extension/declared MIME (CLAUDE.md §6).
+        if (!(await verifyCvFileContent(cvFile, fileExt))) {
+            return { error: "Filinnehåll matchar inte filtypen. Ladda upp en giltig CV-fil." };
         }
 
         const safeName = cvFile.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
