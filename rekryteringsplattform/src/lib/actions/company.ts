@@ -131,7 +131,7 @@ export async function getCompanyDashboard() {
         console.error("No company profile found:", companyError);
         // If user has role company but no profile, maybe redirect to onboarding?
         return {
-            company: { company_name: user.user_metadata.full_name || "Mitt Företag" } as Company,
+            company: { company_name: user.user_metadata?.full_name || "Mitt Företag" } as Company,
             jobs: [],
             stats: { activeJobs: 0, candidates: 0, interviews: 0, placements: 0, recentPlacements: 0 },
             recentActivity: []
