@@ -146,7 +146,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "No active mandate for this job" }, { status: 403 });
       }
 
-      if ((application as any).recruiter_id && (application as any).recruiter_id !== recruiterId) {
+      // Recruiters may only screen their own submissions — not unassigned/public
+      // applicants (null recruiter_id). Admins bypass this entire block.
+      if ((application as any).recruiter_id !== recruiterId) {
         return NextResponse.json({ error: "Application belongs to another recruiter" }, { status: 403 });
       }
     }

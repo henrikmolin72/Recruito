@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const { data: report } = await admin
         .from("guarantee_breach_reports")
         .select(`
-            id, placement_id, refund_amount, refund_currency, company_id,
+            id, placement_id, refund_amount, refund_currency, company_id, admin_status,
             placement:placements(
                 id, recruiter_id, total_fee, salary_currency,
                 candidate:candidates(first_name, last_name),
@@ -41,6 +41,12 @@ export async function POST(request: NextRequest) {
         .single();
 
     if (!report) return NextResponse.json({ error: "Report not found" }, { status: 404 });
+
+    // Idempotency: a report can only be reviewed once. Without this, a duplicate
+    // request re-fires refund notifications and resets an already-processed payout.
+    if (report.admin_status !== "pending") {
+        return NextResponse.json({ error: "Report has already been reviewed" }, { status: 409 });
+    }
 
     // Update report status
     await admin.from("guarantee_breach_reports").update({

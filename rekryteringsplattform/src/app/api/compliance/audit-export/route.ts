@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { csvEscapeCell } from "@/lib/csv";
 
 export const runtime = "nodejs";
 
@@ -81,11 +82,7 @@ export async function GET(request: NextRequest) {
             input.cv_chars ?? "",
             r.created_at,
         ]
-            .map((v) => {
-                let s = String(v ?? "");
-                if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
-                return `"${s.replace(/"/g, '""')}"`;
-            })
+            .map(csvEscapeCell)
             .join(",");
     });
 

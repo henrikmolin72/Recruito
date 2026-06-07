@@ -9,6 +9,7 @@ import { createNotification } from "@/lib/notifications/create";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
 import { candidateInStage } from "@/lib/mandate-stages";
+import { verifyImageFileContent } from "@/lib/file-magic";
 
 function handleError(error: any) {
     const normalized = {
@@ -105,7 +106,18 @@ export async function completeRecruiterOnboarding(formData: FormData) {
     let avatarUrl: string | null = null;
     const photo = formData.get("photo");
     if (photo instanceof File && photo.size > 0) {
-        const ext = photo.name.split(".").pop() || "jpg";
+        // Validate profile photo: size, extension, declared MIME, and content
+        // (CLAUDE.md §6). Blocks SVG/script payloads in the shared cvs bucket.
+        if (photo.size > 5 * 1024 * 1024) return { error: "Profilfoto får vara högst 5 MB." };
+        const ext = (photo.name.split(".").pop() || "").toLowerCase();
+        const ALLOWED_IMG_EXT = new Set(["jpg", "jpeg", "png", "webp"]);
+        const ALLOWED_IMG_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+        const photoMime = (photo.type || "").toLowerCase();
+        if (!ALLOWED_IMG_EXT.has(ext)) return { error: "Tillåtna bildformat: JPG, PNG, WEBP." };
+        if (photoMime && !ALLOWED_IMG_MIME.has(photoMime)) return { error: "Tillåtna bildformat: JPG, PNG, WEBP." };
+        if (!(await verifyImageFileContent(photo, ext))) {
+            return { error: "Bildfilen är ogiltig eller skadad." };
+        }
         const fileName = `recruiters/${recruiter.id}/avatar-${Date.now()}.${ext}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from("cvs")
@@ -286,47 +298,48 @@ export async function getRecruiterDashboard() {
             mandates: [],
             stats: { activeMandates: 0, revenue: 0, candidates: 0, availableJobs: 0 },
             recentActivity: [],
-            userName: user.user_metadata.full_name
+            userName: user.user_metadata?.full_name
         };
     }
 
-    // 2. Get active mandates (jobs claimed by recruiter)
-    const { data: mandates, error: mandatesError } = await supabase
-        .from("job_mandates")
-        .select(`
+    // 2-5. Independent reads run in parallel: mandates, candidate count,
+    // placements/revenue, and available-jobs count.
+    const [
+        { data: mandates, error: mandatesError },
+        { count: candidatesCount },
+        { data: placements },
+        { count: availableJobsCount },
+    ] = await Promise.all([
+        supabase
+            .from("job_mandates")
+            .select(`
       *,
       job:jobs(
         *,
         company:companies(company_name)
       )
     `)
-        .eq("recruiter_id", recruiter.id)
-        .eq("is_active", true);
+            .eq("recruiter_id", recruiter.id)
+            .eq("is_active", true),
+        supabase
+            .from("candidates")
+            .select("*", { count: 'exact', head: true })
+            .eq("recruiter_id", recruiter.id),
+        supabase
+            .from("placements")
+            .select("recruiter_fee")
+            .eq("recruiter_id", recruiter.id),
+        supabase
+            .from("jobs")
+            .select("*", { count: 'exact', head: true })
+            .eq("status", "active"),
+    ]);
 
     if (mandatesError) {
         handleError(mandatesError);
     }
 
-    // 3. Get candidates submitted by this recruiter
-    const { count: candidatesCount } = await supabase
-        .from("candidates")
-        .select("*", { count: 'exact', head: true })
-        .eq("recruiter_id", recruiter.id);
-
-    // 4. Get total placements/revenue
-    const { data: placements } = await supabase
-        .from("placements")
-        .select("recruiter_fee")
-        .eq("recruiter_id", recruiter.id);
-
-    const totalRevenue = placements?.reduce((sum, p) => sum + p.recruiter_fee, 0) || 0;
-
-    // 5. Get count of available jobs (active jobs not yet claimed by max recruiters)
-    // This is a bit complex in one query, so we'll just get count of all active jobs for now
-    const { count: availableJobsCount } = await supabase
-        .from("jobs")
-        .select("*", { count: 'exact', head: true })
-        .eq("status", "active");
+    const totalRevenue = placements?.reduce((sum, p) => sum + (p.recruiter_fee || 0), 0) || 0;
 
     // Format mandates for easier usage
     const formattedMandates = mandates?.map((mandate: any) => ({
@@ -335,22 +348,29 @@ export async function getRecruiterDashboard() {
         company: mandate.job?.company?.company_name || "Okänt företag",
         location: mandate.job?.location || "",
         status: mandate.job?.status || "active",
-        candidates: 0 // Ideally we fetch count of candidates for this mandate
+        candidates: 0
     })) || [];
 
-    // Fetch candidates count for each mandate separately to keep it simple, or leave as 0 for initial
-    // Or do a joined query above. Let's do a simple loop for now as mandates are few per recruiter usually
-    for (const m of formattedMandates) {
-        const { count } = await supabase
+    // Candidate counts per mandate in a single query, tallied in memory
+    // (replaces a per-mandate N+1 loop).
+    if (formattedMandates.length > 0) {
+        const mandateIds = formattedMandates.map((m) => m.id);
+        const { data: mandateCandidates } = await supabase
             .from("candidates")
-            .select("*", { count: 'exact', head: true })
-            .eq("mandate_id", m.id);
-        m.candidates = count || 0;
+            .select("mandate_id")
+            .in("mandate_id", mandateIds);
+        const countByMandate = new Map<string, number>();
+        for (const row of mandateCandidates || []) {
+            countByMandate.set(row.mandate_id, (countByMandate.get(row.mandate_id) ?? 0) + 1);
+        }
+        for (const m of formattedMandates) {
+            m.candidates = countByMandate.get(m.id) ?? 0;
+        }
     }
 
     return {
         recruiter: recruiter,
-        userName: user.user_metadata.full_name,
+        userName: user.user_metadata?.full_name,
         mandates: formattedMandates,
         stats: {
             activeMandates: mandates?.length || 0,

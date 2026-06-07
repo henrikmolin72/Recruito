@@ -8,15 +8,15 @@ export async function getSidebarData() {
 
     if (!user) return null;
 
-    const initials = user.user_metadata.full_name
+    const initials = user.user_metadata?.full_name
         ?.split(" ")
         .map((n: string) => n[0])
         .join("")
         .toUpperCase() || "U";
 
     return {
-        fullName: user.user_metadata.full_name || "Användare",
+        fullName: user.user_metadata?.full_name || "Användare",
         initials,
-        role: user.user_metadata.role || "company"
+        role: user.user_metadata?.role || "company"
     };
 }

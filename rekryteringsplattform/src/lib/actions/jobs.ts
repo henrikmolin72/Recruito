@@ -136,8 +136,8 @@ export async function createJob(formData: FormData) {
     const d = parsed.data ?? {} as Record<string, unknown>;
     const raw = (key: string) => formData.get(key)?.toString() || "";
     const rawOrNull = (key: string) => formData.get(key)?.toString() || null;
-    const rawInt = (key: string) => { const v = formData.get(key)?.toString(); return v ? parseInt(v, 10) || null : null; };
-    const rawFloat = (key: string) => { const v = formData.get(key)?.toString(); return v ? parseFloat(v) || null : null; };
+    const rawInt = (key: string) => { const v = formData.get(key)?.toString(); if (!v) return null; const n = parseInt(v, 10); return Number.isNaN(n) ? null : n; };
+    const rawFloat = (key: string) => { const v = formData.get(key)?.toString(); if (!v) return null; const n = parseFloat(v); return Number.isNaN(n) ? null : n; };
     const rawBool = (key: string) => formData.get(key) === "on" || formData.get(key) === "true";
     const rawJson = (key: string) => { try { const v = formData.get(key)?.toString(); return v ? JSON.parse(v) : null; } catch { return null; } };
 
@@ -696,10 +696,18 @@ export async function deleteDraftJob(jobId: string) {
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const admin = createAdminClient();
 
-    // Clean up dependent records first; ignore "table doesn't exist" noise.
-    await admin.from("candidates").delete().eq("job_id", jobId);
-    await admin.from("job_announcements").delete().eq("job_id", jobId);
-    await admin.from("job_mandates").delete().eq("job_id", jobId);
+    // Clean up dependent records first. Abort if any cascade delete fails so we
+    // don't leave a half-wiped draft (candidates/announcements gone, job kept).
+    const cascade = await Promise.all([
+        admin.from("candidates").delete().eq("job_id", jobId),
+        admin.from("job_announcements").delete().eq("job_id", jobId),
+        admin.from("job_mandates").delete().eq("job_id", jobId),
+    ]);
+    const cascadeError = cascade.find((r) => r.error)?.error;
+    if (cascadeError) {
+        console.error("[deleteDraftJob] cascade", cascadeError);
+        return { error: "Could not delete draft. Please try again." };
+    }
 
     const { error } = await admin.from("jobs").delete().eq("id", jobId);
 
