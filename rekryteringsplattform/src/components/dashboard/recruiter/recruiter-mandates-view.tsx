@@ -174,7 +174,7 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                         <th className="px-4 py-3 text-left font-semibold text-foreground" rowSpan={2}>
                                             {r.tableLocation || "Location"}
                                         </th>
-                                        <th className="px-4 py-3 text-center font-semibold text-foreground border-l border-border" colSpan={6}>
+                                        <th className="px-4 py-3 text-center font-semibold text-foreground border-l border-border" colSpan={7}>
                                             {r.myCandidates || "My candidates"}
                                         </th>
                                         <th className="px-4 py-3 text-left font-semibold text-foreground border-l border-border" rowSpan={2}>
@@ -192,6 +192,9 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                     </tr>
                                     <tr className="border-b border-border bg-muted/10">
                                         <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground border-l border-border">
+                                            {(r as any).colDraft || "Draft"}
+                                        </th>
+                                        <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground">
                                             {r.colInReview || "In Review"}
                                         </th>
                                         <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground">
@@ -213,6 +216,7 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                 </thead>
                                 <tbody>
                                     {visibleMandates.map((mandate) => {
+                                        const draft = mandate.candidates.filter((c) => candidateInStage(c, "draft")).length;
                                         const inReview = mandate.candidates.filter((c) => candidateInStage(c, "in_review")).length;
                                         const submitted = mandate.candidates.filter((c) => candidateInStage(c, "submitted")).length;
                                         const interview = mandate.candidates.filter((c) => candidateInStage(c, "interview")).length;
@@ -242,6 +246,9 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                 </td>
 
                                                 <td className="px-3 py-3 text-center border-l border-border">
+                                                    <CountBadge count={draft} colorClass="bg-slate-100 text-slate-700" href={stageHref("draft")} />
+                                                </td>
+                                                <td className="px-3 py-3 text-center">
                                                     <CountBadge count={inReview} colorClass="bg-sky-100 text-sky-700" href={stageHref("in_review")} />
                                                 </td>
                                                 <td className="px-3 py-3 text-center">

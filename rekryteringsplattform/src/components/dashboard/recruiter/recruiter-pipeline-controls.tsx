@@ -2,8 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { moveCandidateToPipelineStage, updateCandidateStatus } from "@/lib/actions/candidates";
-import { getAllowedCandidateTransitions } from "@/lib/candidate-workflow";
+import { moveCandidateToPipelineStage, updateCandidateStatus, withdrawCandidate } from "@/lib/actions/candidates";
+import { getRecruiterAllowedTransitions, CANDIDATE_WITHDRAW_REASONS } from "@/lib/candidate-workflow";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -76,10 +76,11 @@ export function RecruiterPipelineControls({
     const nextStageId = currentIndex >= 0 ? stages[currentIndex + 1]?.id : stages[0]?.id;
     const prevStageId = currentIndex > 0 ? stages[currentIndex - 1]?.id : undefined;
     const allowedStatusTransitions = useMemo(
-        () => getAllowedCandidateTransitions(candidateStatus),
+        () => getRecruiterAllowedTransitions(candidateStatus),
         [candidateStatus]
     );
     const [selectedStatus, setSelectedStatus] = useState<string>(allowedStatusTransitions[0] || "");
+    const [withdrawReason, setWithdrawReason] = useState<string>(CANDIDATE_WITHDRAW_REASONS[0].key);
 
     const run = (action: () => Promise<any>, okMessage: string) => {
         setError(null);
@@ -110,6 +111,13 @@ export function RecruiterPipelineControls({
         run(
             () => updateCandidateStatus(candidateId, jobId, status),
             `Kandidaten markerades som ${label}.`
+        );
+    };
+
+    const withdraw = () => {
+        run(
+            () => withdrawCandidate(candidateId, jobId, withdrawReason),
+            "Kandidaten drogs tillbaka."
         );
     };
 
@@ -231,6 +239,39 @@ export function RecruiterPipelineControls({
                             Inga fler tillåtna steg från nuvarande status.
                         </p>
                     )}
+                </div>
+
+                <div className="pt-1 border-t border-slate-100">
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
+                        Dra tillbaka kandidat
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <Select
+                            value={withdrawReason}
+                            onValueChange={setWithdrawReason}
+                            disabled={isPending}
+                        >
+                            <SelectTrigger className="sm:flex-1">
+                                <SelectValue placeholder="Välj anledning" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {CANDIDATE_WITHDRAW_REASONS.map((reason) => (
+                                    <SelectItem key={reason.key} value={reason.key}>
+                                        {reason.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={isPending || !withdrawReason}
+                            onClick={withdraw}
+                            className="sm:min-w-[220px] text-rose-700 border-rose-200 hover:bg-rose-50"
+                        >
+                            {isPending ? "Uppdaterar..." : "Dra tillbaka kandidat"}
+                        </Button>
+                    </div>
                 </div>
 
                 {error && <p className="text-xs text-rose-600 font-medium">{error}</p>}

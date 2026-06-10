@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createCandidateExtended } from "@/lib/actions/candidates-extended";
+import { createCandidateExtended, saveDraftCandidate, deleteDraftCandidate } from "@/lib/actions/candidates-extended";
 import { EUROPEAN_LANGUAGE_OPTIONS } from "@/lib/job-form-options";
 import { toast } from "sonner";
 
@@ -33,6 +33,8 @@ interface Props {
     companyName: string;
     screeningQuestions?: string[];
     dict: Dict;
+    initialDraftId?: string | null;
+    initialDraftText?: Record<string, string>;
 }
 
 const CURRENCIES = ["EUR", "SEK", "NOK", "DKK", "GBP", "USD", "CHF", "PLN"];
@@ -75,11 +77,13 @@ export function CandidateSubmissionForm({
     companyName,
     screeningQuestions = [],
     dict: r,
+    initialDraftId = null,
+    initialDraftText,
 }: Props) {
     const router = useRouter();
 
     // --- Email (shared between Verify tool and Personal Details) ---
-    const [email, setEmail] = useState("");
+    const [email, setEmail] = useState(initialDraftText?.email || "");
     const [verifyStatus, setVerifyStatus] = useState<"idle" | "checking" | "ok" | "blocked">("idle");
 
     // --- Section 2: AI score ---
@@ -138,9 +142,13 @@ export function CandidateSubmissionForm({
         "linkedin_url","portfolio_url","current_title","current_company",
         "years_experience","current_salary","expected_salary","cover_note",
         "notice_period","first_contact_date","assessment_summary"];
-    const [draftTextFields, setDraftTextFields] = useState<Record<string, string>>({});
+    const [draftTextFields, setDraftTextFields] = useState<Record<string, string>>(initialDraftText || {});
+    const [draftId, setDraftId] = useState<string | null>(initialDraftId);
 
     useEffect(() => {
+        // When resuming a server-side draft, its values are passed in via props;
+        // don't let a stale localStorage draft override them.
+        if (initialDraftId) return;
         try {
             const saved = localStorage.getItem(DRAFT_KEY);
             if (saved) {
@@ -198,32 +206,20 @@ export function CandidateSubmissionForm({
         setLanguages(updated);
     }
 
-    function handleSaveDraft(e: React.MouseEvent) {
+    async function handleSaveDraft(e: React.MouseEvent) {
         e.preventDefault();
         const form = (e.currentTarget as HTMLElement).closest("form") as HTMLFormElement;
         const fd = new FormData(form);
-        const draft: Record<string, any> = {
-            languages,
-            locationStatus,
-            workAuth,
-            employmentStatus,
-            otherProcesses,
-            otherProcessesStage,
-            noticeNegotiable,
-            contactMethod,
-            screeningAnswers,
-            aiScore,
-        };
-        ["first_name","last_name","email","phone","location_city","location_country",
-         "linkedin_url","portfolio_url","current_title","current_company",
-         "years_experience","current_salary","expected_salary","cover_note",
-         "notice_period","first_contact_date","assessment_summary"].forEach((key) => {
-            const val = fd.get(key);
-            if (val) draft[key] = val;
-        });
         try {
-            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-            toast.success("Draft saved. Return to this page to continue.");
+            const result = await saveDraftCandidate(mandateId, fd, draftId);
+            if (result?.error) {
+                toast.error(result.error);
+                return;
+            }
+            if (result?.draftId) setDraftId(result.draftId);
+            // The server is now the source of truth; clear any stale local copy.
+            try { localStorage.removeItem(DRAFT_KEY); } catch { }
+            toast.success("Utkast sparat. Du hittar det under kolumnen Draft.");
         } catch {
             toast.error("Could not save draft");
         }
@@ -266,6 +262,8 @@ export function CandidateSubmissionForm({
                 setSubmitting(false);
             } else {
                 localStorage.removeItem(DRAFT_KEY);
+                // Submitting a resumed draft promotes it: remove the draft row.
+                if (draftId) { try { await deleteDraftCandidate(draftId); } catch { } }
                 setDraftTextFields({});
                 router.push("/recruiter/mandates");
             }

@@ -3,6 +3,7 @@
 // filter) so the two stay in sync.
 
 export type MandateStage =
+    | "draft"
     | "in_review"
     | "submitted"
     | "interview"
@@ -11,6 +12,7 @@ export type MandateStage =
     | "rejected";
 
 export const MANDATE_STAGE_KEYS: MandateStage[] = [
+    "draft",
     "in_review",
     "submitted",
     "interview",
@@ -72,7 +74,9 @@ export function mandateExpiryDaysLeft(opts: {
     candidates: ExpiryCandidate[];
     now?: number;
 }): number | null {
-    const { claimedAt, candidates } = opts;
+    const { claimedAt } = opts;
+    // Drafts are not real submissions — they never suspend the expiry timer.
+    const candidates = opts.candidates.filter((c) => (c.status ?? "") !== "draft");
     const now = opts.now ?? Date.now();
     if (!claimedAt) return null;
 
@@ -105,6 +109,8 @@ export interface StageCandidate {
 export function candidateInStage(c: StageCandidate, stage: MandateStage): boolean {
     const s = c.status ?? "";
     switch (stage) {
+        case "draft":
+            return s === "draft";
         case "in_review":
             return IN_REVIEW_STATUSES.has(s) && !c.recruito_screened_at;
         case "submitted":

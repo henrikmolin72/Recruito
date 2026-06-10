@@ -21,6 +21,7 @@ export const NEW_CANDIDATE_WORKFLOW_STATUSES = [
 ] as const;
 
 export const LEGACY_CANDIDATE_STATUSES = [
+  "draft",
   "submitted",
   "reviewing",
   "interview",
@@ -91,6 +92,7 @@ export const TERMINAL_CANDIDATE_STATUSES = new Set<string>([
 ]);
 
 const TRANSITIONS: Record<string, string[]> = {
+  draft: ["reviewing", "under_client_review"],
   submitted: ["duplicate_rejected", "client_already_engaged", "under_client_review", "recruito_rejected"],
   duplicate_rejected: [],
   client_already_engaged: [],
@@ -137,6 +139,45 @@ export function getAllowedCandidateTransitions(currentStatus: string | null | un
   if (!currentStatus) return TRANSITIONS.submitted;
   return TRANSITIONS[currentStatus] || [];
 }
+
+// Statuses a RECRUITER may no longer set directly. Recruiters cannot reject a
+// candidate (that is the client's / Recruito's decision) and they withdraw via
+// the dedicated reason-coded flow, not the generic status dropdown.
+export const RECRUITER_BLOCKED_TRANSITIONS = new Set<string>([
+  "rejected_client",
+  "rejected_interview",
+  "recruito_rejected",
+  "rejected",
+  "declined",
+  "duplicate_rejected",
+  "client_already_engaged",
+  "offer_declined",
+  "candidate_withdrawn",
+]);
+
+// Allowed next statuses the recruiter may pick from the generic workflow control.
+export function getRecruiterAllowedTransitions(currentStatus: string | null | undefined): string[] {
+  return getAllowedCandidateTransitions(currentStatus).filter(
+    (s) => !RECRUITER_BLOCKED_TRANSITIONS.has(s),
+  );
+}
+
+// Structured reasons a recruiter must pick when withdrawing a candidate.
+export const CANDIDATE_WITHDRAW_REASONS = [
+  { key: "no_suitable_candidates", label: "No More Suitable Candidates Available" },
+  { key: "process_already_advanced", label: "Hiring Process Already Advanced" },
+  { key: "requirements_too_difficult", label: "Requirements Too Difficult to Source" },
+  { key: "focusing_other_opportunities", label: "Focusing on Other Opportunities" },
+  { key: "client_not_responsive", label: "Client Not Responsive" },
+  { key: "client_expectations_too_high", label: "Client Expectations Too High" },
+  { key: "low_confidence_filling_role", label: "Low Confidence in Filling the Role" },
+  { key: "limited_candidate_interest", label: "Limited Candidate Interest in the Position" },
+  { key: "other", label: "Other" },
+] as const;
+
+export const CANDIDATE_WITHDRAW_REASON_KEYS = new Set<string>(
+  CANDIDATE_WITHDRAW_REASONS.map((r) => r.key),
+);
 
 export function canTransitionCandidateStatus(currentStatus: string | null | undefined, nextStatus: string): boolean {
   if (!isCandidateStatusValue(nextStatus)) return false;

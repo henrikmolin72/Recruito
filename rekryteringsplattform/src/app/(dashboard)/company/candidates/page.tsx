@@ -40,6 +40,9 @@ async function getCompanyCandidates() {
       )
     `)
     .in("job_id", jobIds)
+    // Visibility gate: the company only sees candidates Recruito has approved.
+    // recruito_screened_at is the divider; rejected candidates never get it set.
+    .not("recruito_screened_at", "is", null)
     .order("created_at", { ascending: false });
 
   if (error) {

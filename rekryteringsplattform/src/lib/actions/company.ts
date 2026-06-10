@@ -156,11 +156,14 @@ export async function getCompanyDashboard() {
     // The above join gives counts per job.
 
     // Let's get total candidates across all jobs
+    // Company-facing counts only include candidates Recruito has approved
+    // (recruito_screened_at set) — in-review/rejected candidates stay hidden.
     const { count: totalCandidates } = jobIds.length > 0
         ? await supabase
             .from("candidates")
             .select("*", { count: 'exact', head: true })
             .in("job_id", jobIds)
+            .not("recruito_screened_at", "is", null)
         : { count: 0 };
 
     const { count: activeInterviews } = jobIds.length > 0
@@ -169,6 +172,7 @@ export async function getCompanyDashboard() {
             .select("*", { count: 'exact', head: true })
             .in("job_id", jobIds)
             .eq("status", "interview")
+            .not("recruito_screened_at", "is", null)
         : { count: 0 };
 
     const { data: candidateJobRows, error: candidateJobRowsError } = jobIds.length > 0
@@ -176,6 +180,7 @@ export async function getCompanyDashboard() {
             .from("candidates")
             .select("job_id")
             .in("job_id", jobIds)
+            .not("recruito_screened_at", "is", null)
         : { data: [], error: null as any };
 
     if (candidateJobRowsError) {

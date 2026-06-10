@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createNotification } from "@/lib/notifications/create";
 import { verifyCvFileContent } from "@/lib/file-magic";
 
 function toString(value: FormDataEntryValue | null) {
@@ -80,7 +79,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
     const normalizedLinkedIn = normalizeIdentity(toString(formData.get("linkedin_url")));
 
     // --- Duplicate detection ---
-    let initialStatus = "under_client_review";
+    let initialStatus = "reviewing";
 
     if (normalizedEmail || normalizedLinkedIn) {
         const { data: jobRow } = await admin
@@ -96,6 +95,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
             .eq("job_id", mandate.job_id);
 
         const duplicate = (sameJobCandidates || []).some((c: any) =>
+            c.status !== "draft" &&
             candidateMatchesIdentity(c, normalizedEmail, normalizedLinkedIn)
         );
 
@@ -242,27 +242,9 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         return { error: "Något gick fel. Försök igen." };
     }
 
-    // --- Notify company ---
-    if (initialStatus === "under_client_review") {
-        const { data: jobInfo } = await supabase
-            .from("jobs")
-            .select("title, company:companies!inner(user_id)")
-            .eq("id", mandate.job_id)
-            .single();
-
-        if (jobInfo?.company) {
-            const company = Array.isArray(jobInfo.company) ? jobInfo.company[0] : jobInfo.company;
-            const targetUserId = (company as any)?.user_id;
-            if (targetUserId) {
-                await createNotification(targetUserId, {
-                    titleKey: "notif.candidatePresentedTitle",
-                    bodyKey: "notif.candidatePresentedBody",
-                    params: { firstName, lastName, jobTitle: (jobInfo as any).title },
-                    link: `/company/jobs/${mandate.job_id}`,
-                });
-            }
-        }
-    }
+    // No client-facing notification at creation: the candidate is in internal
+    // review and invisible to the client until Recruito approval
+    // (markCandidateRecruitoScreened) fires the "presented" notification.
 
     revalidatePath("/recruiter/mandates");
     revalidatePath("/recruiter");
@@ -275,4 +257,104 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
       console.error("createCandidateExtended unexpected error:", err);
       return { error: err?.message || "An unexpected error occurred. Please try again." };
   }
+}
+
+// Save (or update) a candidate as a draft: status='draft', partial data allowed,
+// no validation/duplicate/cap checks, never queued to Recruito or shown to the
+// client. Returns the draftId so the form can keep editing the same row.
+export async function saveDraftCandidate(mandateId: string, formData: FormData, draftId?: string | null) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Du måste vara inloggad." };
+
+    const { data: mandate } = await supabase
+        .from("job_mandates")
+        .select("job_id, recruiter_id")
+        .eq("id", mandateId)
+        .single();
+    if (!mandate) return { error: "Mandate not found." };
+
+    const { data: recruiter } = await supabase
+        .from("recruiters")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+    if (!recruiter || recruiter.id !== mandate.recruiter_id) return { error: "Unauthorized." };
+
+    const admin = createAdminClient();
+    const fields = {
+        first_name: toString(formData.get("first_name")).trim() || "",
+        last_name: toString(formData.get("last_name")).trim() || "",
+        email: toString(formData.get("email")).trim() || null,
+        phone: toString(formData.get("phone")).trim() || null,
+        linkedin_url: toString(formData.get("linkedin_url")).trim() || null,
+        current_title: toString(formData.get("current_title")).trim() || null,
+        current_company: toString(formData.get("current_company")).trim() || null,
+        cover_note: toString(formData.get("cover_note")).trim() || null,
+    };
+
+    if (draftId) {
+        const { data: existing } = await admin
+            .from("candidates")
+            .select("id, status, recruiter_id")
+            .eq("id", draftId)
+            .single();
+        if (!existing || existing.recruiter_id !== recruiter.id || existing.status !== "draft") {
+            return { error: "Utkastet kunde inte hittas." };
+        }
+        const { error } = await admin.from("candidates").update(fields).eq("id", draftId);
+        if (error) {
+            console.error("[saveDraftCandidate update]", error);
+            return { error: "Kunde inte spara utkast." };
+        }
+        revalidatePath("/recruiter/mandates");
+        return { success: true, draftId };
+    }
+
+    const { data: inserted, error } = await admin
+        .from("candidates")
+        .insert({
+            job_id: mandate.job_id,
+            recruiter_id: recruiter.id,
+            mandate_id: mandateId,
+            status: "draft",
+            status_changed_at: new Date().toISOString(),
+            ...fields,
+        })
+        .select("id")
+        .single();
+    if (error) {
+        console.error("[saveDraftCandidate insert]", error);
+        return { error: "Kunde inte spara utkast." };
+    }
+    revalidatePath("/recruiter/mandates");
+    return { success: true, draftId: inserted.id };
+}
+
+// Delete a draft the recruiter owns (only draft rows can be deleted this way).
+export async function deleteDraftCandidate(candidateId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Du måste vara inloggad." };
+
+    const { data: recruiter } = await supabase
+        .from("recruiters")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+    if (!recruiter) return { error: "Unauthorized." };
+
+    const admin = createAdminClient();
+    const { error } = await admin
+        .from("candidates")
+        .delete()
+        .eq("id", candidateId)
+        .eq("recruiter_id", recruiter.id)
+        .eq("status", "draft");
+    if (error) {
+        console.error("[deleteDraftCandidate]", error);
+        return { error: "Kunde inte ta bort utkast." };
+    }
+    revalidatePath("/recruiter/mandates");
+    return { success: true };
 }
