@@ -35,13 +35,18 @@ export function CandidatePresentStatusPanel({
     initialStage,
     initialOfferAccepted = false,
     initialViewedAt = null,
+    candidateStatus = null,
 }: {
     candidateId: string;
     jobId: string;
     initialStage: string | null;
     initialOfferAccepted?: boolean;
     initialViewedAt?: string | null;
+    candidateStatus?: string | null;
 }) {
+    // Withdrawn is set by the recruiter, never by the client — shown here
+    // read-only, and it locks the panel (no further progression).
+    const isWithdrawn = candidateStatus === "candidate_withdrawn";
     const [currentStage, setCurrentStage] = useState<CompanyStage | null>(initialStage as CompanyStage | null);
     const [pendingStage, setPendingStage] = useState<CompanyStage | null>(null);
     const [offerAccepted, setOfferAccepted] = useState(initialOfferAccepted);
@@ -55,7 +60,7 @@ export function CandidatePresentStatusPanel({
     // hiring timeline. The one-time access-confirmation popup (shown before
     // navigation, once per company) is the client's consent gate for this.
     useEffect(() => {
-        if (currentStage || autoViewFired.current) return;
+        if (isWithdrawn || currentStage || autoViewFired.current) return;
         autoViewFired.current = true;
         startTransition(async () => {
             const result = await updateCompanyStage(candidateId, jobId, "viewed");
@@ -77,7 +82,7 @@ export function CandidatePresentStatusPanel({
     };
 
     const handleStageClick = (stage: CompanyStage) => {
-        if (stage === currentStage || isPending) return;
+        if (isWithdrawn || stage === currentStage || isPending) return;
         setPendingStage(stage);
     };
 
@@ -123,7 +128,7 @@ export function CandidatePresentStatusPanel({
                             key={stage.value}
                             type="button"
                             onClick={() => handleStageClick(stage.value)}
-                            disabled={isPending}
+                            disabled={isPending || isWithdrawn}
                             className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
                                 isActive
                                     ? stage.activeClass
@@ -139,9 +144,26 @@ export function CandidatePresentStatusPanel({
                         </button>
                     );
                 })}
+                {/* Withdrawn is recruiter-triggered; read-only on the client side. */}
+                <div
+                    className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg border text-sm font-semibold ${
+                        isWithdrawn
+                            ? "bg-red-600 text-white border-red-600"
+                            : "bg-slate-50 text-slate-400 border-slate-200"
+                    }`}
+                    title="Set by the recruiter when the candidate is withdrawn from the process"
+                >
+                    <span>Withdrawn</span>
+                    {isWithdrawn && <XCircle className="h-4 w-4" />}
+                </div>
             </div>
+            {isWithdrawn && (
+                <p className="text-[11px] text-slate-500">
+                    The recruiter has withdrawn this candidate. The process is closed and can only be reopened by an administrator.
+                </p>
+            )}
 
-            {currentStage === "job_offer" && (
+            {currentStage === "job_offer" && !isWithdrawn && (
                 <div className="pt-2 border-t border-slate-100">
                     {offerAccepted ? (
                         <div className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 rounded-lg py-2">

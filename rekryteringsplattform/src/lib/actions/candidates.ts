@@ -723,6 +723,11 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
     const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
     if (access.actorRole !== "company") return { error: "Obehörig" };
 
+    // A withdrawn candidate can no longer progress; only an admin can reopen.
+    if ((access.candidate as any)?.status === "candidate_withdrawn") {
+        return { error: "Kandidaten har dragits tillbaka och kan inte flyttas." };
+    }
+
     const patch: Record<string, any> = { company_stage: stage };
     const isFirstView = stage === "viewed" && !(access.candidate as any)?.company_viewed_at;
     if (isFirstView) {
