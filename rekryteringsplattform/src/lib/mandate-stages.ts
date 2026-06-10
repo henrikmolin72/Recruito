@@ -7,18 +7,22 @@ export type MandateStage =
     | "in_review"
     | "submitted"
     | "interview"
+    | "final_interview"
     | "offer"
     | "hired"
-    | "rejected";
+    | "rejected"
+    | "withdrawn";
 
 export const MANDATE_STAGE_KEYS: MandateStage[] = [
     "draft",
     "in_review",
     "submitted",
     "interview",
+    "final_interview",
     "offer",
     "hired",
     "rejected",
+    "withdrawn",
 ];
 
 // Days after a mandate is claimed before it is considered expired (no candidate
@@ -35,8 +39,9 @@ const SUBMITTED_STATUSES = new Set([
 ]);
 const INTERVIEW_STATUSES = new Set([
     "interview", "interview_stage_1", "interview_stage_2",
-    "interview_stage_3", "final_interview",
+    "interview_stage_3",
 ]);
+const FINAL_INTERVIEW_STATUSES = new Set(["final_interview"]);
 const OFFER_STATUSES = new Set([
     "offer_in_progress", "offer_accepted", "offer_declined",
 ]);
@@ -46,9 +51,11 @@ const HIRED_STATUSES = new Set([
 ]);
 const REJECTED_STATUSES = new Set([
     "rejected", "declined", "rejected_client", "rejected_interview",
-    "candidate_withdrawn", "guarantee_failed", "recruiter_rejected",
+    "guarantee_failed", "recruiter_rejected",
     "recruito_rejected",
 ]);
+// Withdrawn is its own tab per the workflow spec — not a kind of rejection.
+const WITHDRAWN_STATUSES = new Set(["candidate_withdrawn"]);
 
 // Statuses that make a candidate "not live" for the mandate-expiry timer.
 // Per product rule: a submitted candidate suspends the expiry; the 10-day timer
@@ -120,12 +127,16 @@ export function candidateInStage(c: StageCandidate, stage: MandateStage): boolea
             return SUBMITTED_STATUSES.has(s) || (IN_REVIEW_STATUSES.has(s) && !!c.recruito_screened_at);
         case "interview":
             return INTERVIEW_STATUSES.has(s);
+        case "final_interview":
+            return FINAL_INTERVIEW_STATUSES.has(s);
         case "offer":
             return OFFER_STATUSES.has(s);
         case "hired":
             return HIRED_STATUSES.has(s);
         case "rejected":
             return REJECTED_STATUSES.has(s);
+        case "withdrawn":
+            return WITHDRAWN_STATUSES.has(s);
         default:
             return false;
     }

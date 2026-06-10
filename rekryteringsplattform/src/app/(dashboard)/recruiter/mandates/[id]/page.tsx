@@ -21,9 +21,11 @@ const STAGE_LABEL_KEY: Record<MandateStage, string> = {
   in_review: "colInReview",
   submitted: "colSubmitted",
   interview: "colInInterview",
+  final_interview: "colFinalInterview",
   offer: "colJobOffer",
   hired: "colHired",
   rejected: "colRejected",
+  withdrawn: "colWithdrawn",
 };
 
 export default async function RecruiterMandateDetailsPage({

@@ -675,7 +675,9 @@ export async function getJobProcessStats(jobId: string) {
     }
 
     const candidates = data || [];
-    const inInterview = candidates.filter((c) => candidateInStage(c, "interview")).length;
+    const inInterview = candidates.filter(
+        (c) => candidateInStage(c, "interview") || candidateInStage(c, "final_interview"),
+    ).length;
     const rejected = candidates.filter((c) => candidateInStage(c, "rejected")).length;
     const presented = candidates.length;
     // Everything still in play that isn't an interview or a rejection.

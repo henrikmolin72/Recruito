@@ -17,7 +17,7 @@ import {
     isCandidateStatusValue,
     statusChangeTimestampPatch,
     CANDIDATE_WITHDRAW_REASON_KEYS,
-    TERMINAL_CANDIDATE_STATUSES,
+    CANDIDATE_WITHDRAW_BLOCKED_STATUSES,
 } from "@/lib/candidate-workflow";
 import {
     getPlacementByCandidateId,
@@ -510,7 +510,9 @@ export async function withdrawCandidate(candidateId: string, jobId: string, reas
     if (!access.candidate || access.actorRole !== "recruiter") {
         return { error: "Obehörig åtgärd." };
     }
-    if (TERMINAL_CANDIDATE_STATUSES.has((access.candidate as any).status)) {
+    // Withdrawal is allowed from Draft through Offer, never from Hired or
+    // Rejected (or another terminal state).
+    if (CANDIDATE_WITHDRAW_BLOCKED_STATUSES.has((access.candidate as any).status)) {
         return { error: "Kandidaten är redan avslutad och kan inte dras tillbaka." };
     }
 

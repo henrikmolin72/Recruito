@@ -174,7 +174,7 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                         <th className="px-4 py-3 text-left font-semibold text-foreground" rowSpan={2}>
                                             {r.tableLocation || "Location"}
                                         </th>
-                                        <th className="px-4 py-3 text-center font-semibold text-foreground border-l border-border" colSpan={7}>
+                                        <th className="px-4 py-3 text-center font-semibold text-foreground border-l border-border" colSpan={9}>
                                             {r.myCandidates || "My candidates"}
                                         </th>
                                         <th className="px-4 py-3 text-left font-semibold text-foreground border-l border-border" rowSpan={2}>
@@ -204,6 +204,9 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                             {r.colInInterview || "In Interview"}
                                         </th>
                                         <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground">
+                                            {(r as any).colFinalInterview || "Final Interview"}
+                                        </th>
+                                        <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground">
                                             {r.colJobOffer || "Job Offer"}
                                         </th>
                                         <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground">
@@ -211,6 +214,9 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                         </th>
                                         <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground">
                                             {r.colRejected || "Rejected"}
+                                        </th>
+                                        <th className="px-2 py-1.5 text-center text-[11px] font-medium text-muted-foreground">
+                                            {(r as any).colWithdrawn || "Withdrawn"}
                                         </th>
                                     </tr>
                                 </thead>
@@ -220,9 +226,11 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                         const inReview = mandate.candidates.filter((c) => candidateInStage(c, "in_review")).length;
                                         const submitted = mandate.candidates.filter((c) => candidateInStage(c, "submitted")).length;
                                         const interview = mandate.candidates.filter((c) => candidateInStage(c, "interview")).length;
+                                        const finalInterview = mandate.candidates.filter((c) => candidateInStage(c, "final_interview")).length;
                                         const offer = mandate.candidates.filter((c) => candidateInStage(c, "offer")).length;
                                         const hired = mandate.candidates.filter((c) => candidateInStage(c, "hired")).length;
                                         const rejected = mandate.candidates.filter((c) => candidateInStage(c, "rejected")).length;
+                                        const withdrawn = mandate.candidates.filter((c) => candidateInStage(c, "withdrawn")).length;
                                         const expiryDays = mandateExpiryDays(mandate);
                                         const stageHref = (stage: MandateStage) => `/recruiter/mandates/${mandate.id}?stage=${stage}#candidates`;
 
@@ -258,6 +266,9 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                     <CountBadge count={interview} colorClass="bg-purple-100 text-purple-700" href={stageHref("interview")} />
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
+                                                    <CountBadge count={finalInterview} colorClass="bg-violet-100 text-violet-700" href={stageHref("final_interview")} />
+                                                </td>
+                                                <td className="px-3 py-3 text-center">
                                                     <CountBadge count={offer} colorClass="bg-amber-100 text-amber-700" href={stageHref("offer")} />
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
@@ -265,6 +276,9 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                 </td>
                                                 <td className="px-3 py-3 text-center">
                                                     <CountBadge count={rejected} colorClass="bg-red-100 text-red-700" href={stageHref("rejected")} />
+                                                </td>
+                                                <td className="px-3 py-3 text-center">
+                                                    <CountBadge count={withdrawn} colorClass="bg-zinc-100 text-zinc-600" href={stageHref("withdrawn")} />
                                                 </td>
 
                                                 <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap border-l border-border">
