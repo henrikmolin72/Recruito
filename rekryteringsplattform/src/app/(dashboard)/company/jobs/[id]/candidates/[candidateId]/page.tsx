@@ -51,6 +51,11 @@ async function getCandidate(candidateId: string, jobId: string) {
         console.error("Candidate fetch error:", candidateError);
     }
 
+    // Visibility gate: a company cannot open a candidate Recruito hasn't approved.
+    if (candidate && !(candidate as any).recruito_screened_at) {
+        return null;
+    }
+
     return candidate;
 }
 

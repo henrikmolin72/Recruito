@@ -15,10 +15,12 @@ import { normalizeCandidateStatusForWorkflow } from "@/lib/candidate-workflow";
 function getColumnKey(status: string) {
   const normalized = normalizeCandidateStatusForWorkflow(status);
   if (["submitted", "under_client_review", "info_requested", "resubmitted"].includes(normalized)) return "reviewing";
-  if (["interview_stage_1", "interview_stage_2", "interview_stage_3", "final_interview"].includes(normalized)) return "interview";
+  if (["interview_stage_1", "interview_stage_2", "interview_stage_3"].includes(normalized)) return "interview";
+  if (normalized === "final_interview") return "final_interview";
   if (["offer_in_progress", "offer_accepted"].includes(normalized)) return "offered";
   if (["on_hold"].includes(normalized)) return "paused";
-  if (["duplicate_rejected", "client_already_engaged", "rejected_client", "rejected_interview", "offer_declined", "candidate_withdrawn"].includes(normalized)) return "rejected";
+  if (normalized === "candidate_withdrawn") return "withdrawn";
+  if (["duplicate_rejected", "client_already_engaged", "rejected_client", "rejected_interview", "offer_declined"].includes(normalized)) return "rejected";
   if (["invoice_enabled", "guarantee_tracking"].includes(normalized)) return "hired";
   return normalized;
 }
@@ -77,10 +79,12 @@ function PipelineView({ candidates, noticeAccepted }: { candidates: any[]; notic
     { key: "submitted", label: t("components.pipelinePresented"), color: "bg-blue-500" },
     { key: "reviewing", label: t("components.pipelineUnderReview"), color: "bg-yellow-500" },
     { key: "interview", label: t("components.pipelineInterview"), color: "bg-purple-500" },
+    { key: "final_interview", label: t("components.pipelineFinalInterview"), color: "bg-violet-500" },
     { key: "offered", label: t("components.pipelineOffer"), color: "bg-brand-500" },
     { key: "hired", label: t("components.pipelineHired"), color: "bg-success-500" },
     { key: "paused", label: t("components.pipelinePaused"), color: "bg-orange-400" },
     { key: "rejected", label: t("components.pipelineRejected"), color: "bg-slate-400" },
+    { key: "withdrawn", label: t("components.pipelineWithdrawn"), color: "bg-zinc-400" },
   ] as const;
 
   type TransitionAction = { label: string; next: string; variant?: "default" | "outline" | "danger" | "ghost" };

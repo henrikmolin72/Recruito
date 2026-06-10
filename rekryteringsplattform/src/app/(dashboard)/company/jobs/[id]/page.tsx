@@ -53,6 +53,7 @@ async function getJob(id: string) {
         last_name,
         current_title,
         status,
+        recruito_screened_at,
         current_pipeline_stage,
         recruiter:recruiters(
            headline,
@@ -73,6 +74,11 @@ async function getJob(id: string) {
     `)
         .eq("id", id)
         .single();
+
+    // Visibility gate: the company only sees candidates Recruito has approved.
+    if (job && Array.isArray((job as any).candidates)) {
+        (job as any).candidates = (job as any).candidates.filter((cand: any) => cand.recruito_screened_at);
+    }
 
     return job;
 }

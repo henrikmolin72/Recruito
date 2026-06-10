@@ -4,6 +4,7 @@ import { ArrowLeft, Building2, Briefcase, MapPin, Users, Plus, GitBranch, Megaph
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { DraftRowActions } from "@/components/dashboard/recruiter/draft-row-actions";
 import { DownloadJobDescription } from "@/components/dashboard/recruiter/download-job-description";
 import { PipelineFlowchart } from "@/components/dashboard/recruiter/pipeline-flowchart";
 import { ShortlistGenerator } from "@/components/screening/shortlist-generator";
@@ -16,12 +17,15 @@ import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 import { candidateInStage, isMandateStage, type MandateStage } from "@/lib/mandate-stages";
 
 const STAGE_LABEL_KEY: Record<MandateStage, string> = {
+  draft: "colDraft",
   in_review: "colInReview",
   submitted: "colSubmitted",
   interview: "colInInterview",
+  final_interview: "colFinalInterview",
   offer: "colJobOffer",
   hired: "colHired",
   rejected: "colRejected",
+  withdrawn: "colWithdrawn",
 };
 
 export default async function RecruiterMandateDetailsPage({
@@ -177,13 +181,17 @@ export default async function RecruiterMandateDetailsPage({
               <tbody>
                 {visibleCandidates.map((candidate) => (
                   <tr key={candidate.id} className="border-b border-border last:border-0">
-                    <td className="p-4 font-medium">{candidate.name}</td>
+                    <td className="p-4 font-medium">{candidate.name || "Namnlöst utkast"}</td>
                     <td className="p-4"><StatusBadge status={candidate.status} /></td>
                     <td className="p-4 text-muted-foreground">{formatDate(candidate.created_at)}</td>
                     <td className="p-4">
-                      <Link href={`/recruiter/mandates/${mandate.id}/candidates/${candidate.id}`} className="text-brand-600 hover:text-brand-700 font-medium">
-                        {r.openCandidate}
-                      </Link>
+                      {candidate.status === "draft" ? (
+                        <DraftRowActions mandateId={mandate.id} draftId={candidate.id} />
+                      ) : (
+                        <Link href={`/recruiter/mandates/${mandate.id}/candidates/${candidate.id}`} className="text-brand-600 hover:text-brand-700 font-medium">
+                          {r.openCandidate}
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}

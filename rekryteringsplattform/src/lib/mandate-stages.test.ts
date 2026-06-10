@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mandateExpiryDaysLeft, MANDATE_EXPIRY_DAYS } from "./mandate-stages";
+import { candidateInStage, mandateExpiryDaysLeft, MANDATE_EXPIRY_DAYS } from "./mandate-stages";
 
 const DAY = 86_400_000;
 const NOW = new Date("2026-05-31T12:00:00.000Z").getTime();
@@ -61,5 +61,22 @@ describe("mandateExpiryDaysLeft", () => {
             now: NOW,
         });
         expect(result).toBeNull();
+    });
+});
+
+// Workflow spec: Final Interview and Withdrawn are their own tabs.
+describe("candidateInStage", () => {
+    it("buckets final_interview into its own stage, not interview", () => {
+        expect(candidateInStage({ status: "final_interview" }, "final_interview")).toBe(true);
+        expect(candidateInStage({ status: "final_interview" }, "interview")).toBe(false);
+        expect(candidateInStage({ status: "interview_stage_2" }, "interview")).toBe(true);
+        expect(candidateInStage({ status: "interview_stage_2" }, "final_interview")).toBe(false);
+    });
+
+    it("buckets candidate_withdrawn into withdrawn, not rejected", () => {
+        expect(candidateInStage({ status: "candidate_withdrawn" }, "withdrawn")).toBe(true);
+        expect(candidateInStage({ status: "candidate_withdrawn" }, "rejected")).toBe(false);
+        expect(candidateInStage({ status: "rejected_client" }, "rejected")).toBe(true);
+        expect(candidateInStage({ status: "rejected_client" }, "withdrawn")).toBe(false);
     });
 });

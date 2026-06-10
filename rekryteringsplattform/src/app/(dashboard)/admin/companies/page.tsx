@@ -5,6 +5,7 @@ import { Building2 } from "lucide-react";
 import { getAdminCompanies } from "@/lib/actions/admin";
 import { getDictionary } from "@/i18n/server";
 import { formatDateShort } from "@/lib/utils";
+import { CompanyApproveButton } from "@/components/dashboard/admin/company-approve-button";
 
 export default async function AdminCompaniesPage() {
   const companies = await getAdminCompanies();
@@ -28,13 +29,15 @@ export default async function AdminCompaniesPage() {
                 <th className="p-4 font-medium text-muted-foreground">{a.tableContact}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableIndustry}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJoiningDate}</th>
+                <th className="p-4 font-medium text-muted-foreground">{(a as any).tableHired || "Hired"}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableActiveJobs}</th>
+                <th className="p-4 font-medium text-muted-foreground">{(a as any).tableApprove || "Approve"}</th>
               </tr>
             </thead>
             <tbody>
               {companies.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-muted-foreground">{a.noCompaniesRegistered}</td>
+                  <td colSpan={8} className="p-8 text-center text-muted-foreground">{a.noCompaniesRegistered}</td>
                 </tr>
               ) : (
                 companies.map((company) => (
@@ -56,7 +59,11 @@ export default async function AdminCompaniesPage() {
                       {company.industry ? <Badge variant="outline">{company.industry}</Badge> : dict.common.noDataDash}
                     </td>
                     <td className="p-4 text-muted-foreground">{company.joinedAt ? formatDateShort(company.joinedAt) : dict.common.noDataDash}</td>
+                    <td className="p-4">{company.hired}</td>
                     <td className="p-4">{company.jobs}</td>
+                    <td className="p-4">
+                      <CompanyApproveButton companyId={company.id} approvalStatus={company.approvalStatus} />
+                    </td>
                   </tr>
                 ))
               )}

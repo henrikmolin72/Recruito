@@ -16,6 +16,8 @@ import {
     inferInterviewWorkflowStatus,
     isCandidateStatusValue,
     statusChangeTimestampPatch,
+    CANDIDATE_WITHDRAW_REASON_KEYS,
+    CANDIDATE_WITHDRAW_BLOCKED_STATUSES,
 } from "@/lib/candidate-workflow";
 import {
     getPlacementByCandidateId,
@@ -217,7 +219,8 @@ export async function createCandidate(mandateId: string, formData: FormData) {
     const { count: currentCount } = await admin
         .from("candidates")
         .select("id", { count: "exact", head: true })
-        .eq("job_id", mandate.job_id);
+        .eq("job_id", mandate.job_id)
+        .neq("status", "draft");
 
     if ((currentCount ?? 0) >= maxCandidates) {
         return {
@@ -230,11 +233,13 @@ export async function createCandidate(mandateId: string, formData: FormData) {
         return { error: parsed.error };
     }
 
-    // Workflow validation before client review:
-    // submitted -> duplicate check -> duplicate_rejected / client_already_engaged / under_client_review
+    // Workflow: a new candidate enters Recruito's internal review ("reviewing",
+    // recruito_screened_at = null). It is NOT visible to the client and does not
+    // notify them until an admin approves it (markCandidateRecruitoScreened).
+    // Duplicate / client-already-engaged are auto-detected terminal exceptions.
     const normalizedEmail = normalizeIdentity(parsed.data.email);
     const normalizedLinkedIn = normalizeIdentity(parsed.data.linkedin_url);
-    let initialStatus = "under_client_review";
+    let initialStatus = "reviewing";
 
     if (normalizedEmail || normalizedLinkedIn) {
         const { data: jobRow } = await admin
@@ -251,6 +256,7 @@ export async function createCandidate(mandateId: string, formData: FormData) {
             .eq("job_id", mandate.job_id);
 
         const duplicate = (sameJobCandidates || []).some((candidate: any) =>
+            candidate.status !== "draft" &&
             candidateMatchesIdentity(candidate, normalizedEmail, normalizedLinkedIn)
         );
 
@@ -335,69 +341,11 @@ export async function createCandidate(mandateId: string, formData: FormData) {
         return { error: "Något gick fel. Försök igen." };
     }
 
-    // Notification: Notify Company Owner
-    const { data: jobInfo } = await supabase
-        .from("jobs")
-        .select(`
-            title,
-            company:companies!inner (
-                user_id
-            )
-        `)
-        .eq("id", mandate.job_id)
-        .single();
-
-    if (jobInfo?.company && initialStatus === "under_client_review") {
-        const company = Array.isArray(jobInfo.company) ? jobInfo.company[0] : jobInfo.company;
-        const targetUserId = company?.user_id;
-
-        if (targetUserId) {
-            await createNotification(targetUserId, {
-                titleKey: "notif.candidatePresentedTitle",
-                bodyKey: "notif.candidatePresentedBody",
-                params: { firstName: parsed.data.first_name, lastName: parsed.data.last_name, jobTitle: jobInfo.title },
-                link: `/company/jobs/${mandate.job_id}`,
-            });
-        }
-    }
-
-    // Auto-pause when the candidate cap is reached: the submission that fills
-    // the last slot pauses the job and asks the client to review the batch.
-    try {
-        const { count: postCount } = await admin
-            .from("candidates")
-            .select("id", { count: "exact", head: true })
-            .eq("job_id", mandate.job_id);
-
-        if ((postCount ?? 0) >= maxCandidates) {
-            const { data: jobStatusRow } = await admin
-                .from("jobs")
-                .select("status")
-                .eq("id", mandate.job_id)
-                .single();
-
-            if ((jobStatusRow as any)?.status === "active") {
-                await admin
-                    .from("jobs")
-                    .update({ status: "paused", pause_reason: "Candidate Limit Reached" })
-                    .eq("id", mandate.job_id);
-
-                const company = Array.isArray(jobInfo?.company) ? jobInfo!.company[0] : jobInfo?.company;
-                if ((company as any)?.user_id) {
-                    await createNotification((company as any).user_id, {
-                        titleKey: "notif.candidateLimitReachedTitle",
-                        bodyKey: "notif.candidateLimitReachedBody",
-                        params: { jobTitle: jobInfo?.title || "Position", limit: maxCandidates },
-                        link: `/company/jobs/${mandate.job_id}`,
-                    });
-                }
-
-                await notifyRecruitersOfJobLifecycleChange(mandate.job_id, "paused", "Candidate Limit Reached");
-            }
-        }
-    } catch (e) {
-        console.error("[createCandidate auto-pause]", e);
-    }
+    // No client-facing side effects at creation: the candidate is in internal
+    // review and invisible to the client. The "presented" notification and the
+    // candidate-cap auto-pause now fire on Recruito approval
+    // (markCandidateRecruitoScreened), when the candidate actually reaches the
+    // client.
 
     revalidatePath(`/recruiter/mandates`);
     revalidatePath(`/recruiter`); // Update stats
@@ -544,6 +492,52 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
         revalidatePath(`/recruiter/mandates/${mandateId}`);
         revalidatePath(`/recruiter/mandates/${mandateId}/candidates/${candidateId}`);
     }
+    return { success: true };
+}
+
+// Recruiter withdraws their own candidate with a structured reason. Recruiters
+// can no longer reject candidates; withdrawal is their only exit action.
+export async function withdrawCandidate(candidateId: string, jobId: string, reason: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Du måste vara inloggad." };
+
+    if (!CANDIDATE_WITHDRAW_REASON_KEYS.has(reason)) {
+        return { error: "Ogiltig anledning för tillbakadragande." };
+    }
+
+    const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
+    if (!access.candidate || access.actorRole !== "recruiter") {
+        return { error: "Obehörig åtgärd." };
+    }
+    // Withdrawal is allowed from Draft through Offer, never from Hired or
+    // Rejected (or another terminal state).
+    if (CANDIDATE_WITHDRAW_BLOCKED_STATUSES.has((access.candidate as any).status)) {
+        return { error: "Kandidaten är redan avslutad och kan inte dras tillbaka." };
+    }
+
+    const admin = createAdminClient();
+    const { error } = await admin
+        .from("candidates")
+        .update({
+            status: "candidate_withdrawn",
+            status_changed_at: new Date().toISOString(),
+            withdrawn_at: new Date().toISOString(),
+            withdraw_reason: reason,
+        })
+        .eq("id", candidateId);
+
+    if (error) {
+        console.error("[withdrawCandidate]", error);
+        return { error: "Kunde inte dra tillbaka kandidaten." };
+    }
+
+    revalidatePath(`/company/jobs/${jobId}`);
+    if (access.mandateId) {
+        revalidatePath(`/recruiter/mandates/${access.mandateId}`);
+        revalidatePath(`/recruiter/mandates/${access.mandateId}/candidates/${candidateId}`);
+    }
+    revalidatePath("/recruiter/mandates");
     return { success: true };
 }
 
@@ -895,7 +889,64 @@ export async function markCandidateRecruitoScreened(candidateId: string) {
         return { error: "Kunde inte markera kandidat som screenad." };
     }
 
+    // Now that the candidate is approved and visible to the client, fire the
+    // client-facing side effects that used to run at submission time: notify the
+    // company, and auto-pause the job once the approved-candidate cap is reached.
+    try {
+        const admin = createAdminClient();
+        const { data: cand } = await admin
+            .from("candidates")
+            .select("first_name, last_name, job_id")
+            .eq("id", candidateId)
+            .single();
+
+        if (cand?.job_id) {
+            const { data: job } = await admin
+                .from("jobs")
+                .select("title, status, max_candidates, company:companies!inner(user_id)")
+                .eq("id", cand.job_id)
+                .single();
+            const company = Array.isArray((job as any)?.company) ? (job as any).company[0] : (job as any)?.company;
+            const companyUserId = company?.user_id as string | undefined;
+
+            if (companyUserId) {
+                await createNotification(companyUserId, {
+                    titleKey: "notif.candidatePresentedTitle",
+                    bodyKey: "notif.candidatePresentedBody",
+                    params: { firstName: cand.first_name, lastName: cand.last_name, jobTitle: (job as any)?.title },
+                    link: `/company/jobs/${cand.job_id}`,
+                });
+            }
+
+            const maxCandidates = (job as any)?.max_candidates ?? 8;
+            const { count: approvedCount } = await admin
+                .from("candidates")
+                .select("id", { count: "exact", head: true })
+                .eq("job_id", cand.job_id)
+                .not("recruito_screened_at", "is", null);
+
+            if ((approvedCount ?? 0) >= maxCandidates && (job as any)?.status === "active") {
+                await admin
+                    .from("jobs")
+                    .update({ status: "paused", pause_reason: "Candidate Limit Reached" })
+                    .eq("id", cand.job_id);
+                if (companyUserId) {
+                    await createNotification(companyUserId, {
+                        titleKey: "notif.candidateLimitReachedTitle",
+                        bodyKey: "notif.candidateLimitReachedBody",
+                        params: { jobTitle: (job as any)?.title || "Position", limit: maxCandidates },
+                        link: `/company/jobs/${cand.job_id}`,
+                    });
+                }
+                await notifyRecruitersOfJobLifecycleChange(cand.job_id, "paused", "Candidate Limit Reached");
+            }
+        }
+    } catch (e) {
+        console.error("[markCandidateRecruitoScreened side-effects]", e);
+    }
+
     revalidatePath("/admin/candidates");
+    revalidatePath("/company/candidates");
     return { success: true };
 }
 

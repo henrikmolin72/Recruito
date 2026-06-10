@@ -21,6 +21,7 @@ export const NEW_CANDIDATE_WORKFLOW_STATUSES = [
 ] as const;
 
 export const LEGACY_CANDIDATE_STATUSES = [
+  "draft",
   "submitted",
   "reviewing",
   "interview",
@@ -90,14 +91,18 @@ export const TERMINAL_CANDIDATE_STATUSES = new Set<string>([
   "recruito_rejected",
 ]);
 
+// Per workflow spec: Withdrawn can be triggered from Draft, In Review,
+// Submitted, Interview, Final Interview and Offer — but never from Hired
+// or Rejected.
 const TRANSITIONS: Record<string, string[]> = {
-  submitted: ["duplicate_rejected", "client_already_engaged", "under_client_review", "recruito_rejected"],
+  draft: ["reviewing", "under_client_review", "candidate_withdrawn"],
+  submitted: ["duplicate_rejected", "client_already_engaged", "under_client_review", "recruito_rejected", "candidate_withdrawn"],
   duplicate_rejected: [],
   client_already_engaged: [],
   recruito_rejected: [],
   under_client_review: ["info_requested", "rejected_client", "interview_stage_1", "on_hold", "candidate_withdrawn", "offer_in_progress", "recruito_rejected"],
   info_requested: ["resubmitted", "rejected_client", "on_hold", "candidate_withdrawn", "recruito_rejected"],
-  resubmitted: ["under_client_review", "rejected_client", "info_requested", "recruito_rejected"],
+  resubmitted: ["under_client_review", "rejected_client", "info_requested", "recruito_rejected", "candidate_withdrawn"],
   interview_stage_1: ["interview_stage_2", "rejected_interview", "on_hold", "offer_in_progress", "candidate_withdrawn"],
   interview_stage_2: ["interview_stage_3", "final_interview", "rejected_interview", "on_hold", "offer_in_progress", "candidate_withdrawn"],
   interview_stage_3: ["final_interview", "rejected_interview", "on_hold", "offer_in_progress", "candidate_withdrawn"],
@@ -116,14 +121,14 @@ const TRANSITIONS: Record<string, string[]> = {
   ],
   offer_in_progress: ["offer_declined", "offer_accepted", "hired", "candidate_withdrawn", "on_hold"],
   offer_declined: [],
-  offer_accepted: ["hired", "invoice_enabled", "guarantee_tracking"],
+  offer_accepted: ["hired", "invoice_enabled", "guarantee_tracking", "candidate_withdrawn"],
   hired: ["invoice_enabled", "guarantee_tracking", "completed"],
   invoice_enabled: ["guarantee_tracking", "completed"],
   guarantee_tracking: ["completed"],
   candidate_withdrawn: [],
 
   // Legacy transitions kept for older records / compatibility
-  reviewing: ["under_client_review", "rejected_client", "info_requested", "interview_stage_1"],
+  reviewing: ["under_client_review", "rejected_client", "info_requested", "interview_stage_1", "candidate_withdrawn"],
   interview: ["interview_stage_1", "interview_stage_2", "rejected_interview", "offer_in_progress"],
   offered: ["offer_in_progress", "offer_accepted", "offer_declined", "hired"],
   paused: ["on_hold", "under_client_review", "interview_stage_1"],
@@ -137,6 +142,57 @@ export function getAllowedCandidateTransitions(currentStatus: string | null | un
   if (!currentStatus) return TRANSITIONS.submitted;
   return TRANSITIONS[currentStatus] || [];
 }
+
+// Statuses a RECRUITER may no longer set directly. Recruiters cannot reject a
+// candidate (that is the client's / Recruito's decision) and they withdraw via
+// the dedicated reason-coded flow, not the generic status dropdown.
+export const RECRUITER_BLOCKED_TRANSITIONS = new Set<string>([
+  "rejected_client",
+  "rejected_interview",
+  "recruito_rejected",
+  "rejected",
+  "declined",
+  "duplicate_rejected",
+  "client_already_engaged",
+  "offer_declined",
+  "candidate_withdrawn",
+]);
+
+// Allowed next statuses the recruiter may pick from the generic workflow control.
+export function getRecruiterAllowedTransitions(currentStatus: string | null | undefined): string[] {
+  return getAllowedCandidateTransitions(currentStatus).filter(
+    (s) => !RECRUITER_BLOCKED_TRANSITIONS.has(s),
+  );
+}
+
+// Structured reasons a recruiter must pick when withdrawing a candidate.
+export const CANDIDATE_WITHDRAW_REASONS = [
+  { key: "candidate_no_longer_interested", label: "Candidate no longer interested" },
+  { key: "candidate_accepted_another_offer", label: "Candidate accepted another offer" },
+  { key: "candidate_unavailable_for_interviews", label: "Candidate unavailable for interviews" },
+  { key: "candidate_declined_offer", label: "Candidate declined the offer" },
+  { key: "candidate_withdrew_after_interview", label: "Candidate withdrew after interview" },
+  { key: "candidate_withdrew_during_notice_period", label: "Candidate withdrew during notice period" },
+  { key: "candidate_requested_profile_removal", label: "Candidate requested profile removal" },
+  { key: "recruiter_unable_to_continue", label: "Recruiter unable to continue representation" },
+  { key: "duplicate_candidate_submission", label: "Duplicate candidate submission" },
+  { key: "other", label: "Other" },
+] as const;
+
+// Statuses a candidate can NOT be withdrawn from. Per workflow spec the
+// recruiter may withdraw from Draft through Offer, but never once the
+// candidate is Hired or Rejected (or otherwise terminal).
+export const CANDIDATE_WITHDRAW_BLOCKED_STATUSES = new Set<string>([
+  ...TERMINAL_CANDIDATE_STATUSES,
+  "hired",
+  "invoice_enabled",
+  "guarantee_tracking",
+  "guarantee_period",
+]);
+
+export const CANDIDATE_WITHDRAW_REASON_KEYS = new Set<string>(
+  CANDIDATE_WITHDRAW_REASONS.map((r) => r.key),
+);
 
 export function canTransitionCandidateStatus(currentStatus: string | null | undefined, nextStatus: string): boolean {
   if (!isCandidateStatusValue(nextStatus)) return false;

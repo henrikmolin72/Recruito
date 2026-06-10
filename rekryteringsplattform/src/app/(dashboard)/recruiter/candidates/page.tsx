@@ -15,12 +15,15 @@ export default async function RecruiterCandidatesPage() {
   const r = dict.recruiter;
 
   // Lightweight pipeline summary, derived from the candidates already loaded.
-  const inInterview = candidates.filter((c: any) => candidateInStage(c, "interview")).length;
+  const inInterview = candidates.filter((c: any) =>
+    candidateInStage(c, "interview") || candidateInStage(c, "final_interview")
+  ).length;
   const hired = candidates.filter((c: any) => candidateInStage(c, "hired")).length;
   const active = candidates.filter((c: any) =>
     candidateInStage(c, "in_review") ||
     candidateInStage(c, "submitted") ||
     candidateInStage(c, "interview") ||
+    candidateInStage(c, "final_interview") ||
     candidateInStage(c, "offer")
   ).length;
 
