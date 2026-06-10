@@ -50,3 +50,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 src/i18n/dictionaries/.omc/
+
+# tooling state (never commit)
+graphify-out/
+src/**/graphify-out/
+src/**/.omc/

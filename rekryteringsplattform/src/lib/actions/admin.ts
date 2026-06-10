@@ -172,6 +172,32 @@ export async function approveRecruiter(
     return { success: true };
 }
 
+// Approve a company so it can access the platform. Companies register as
+// 'pending' and are blocked from the dashboard until an admin approves them.
+export async function approveCompany(companyId: string) {
+    const { user } = await requireAdmin();
+    const admin = createAdminClient();
+
+    const { error } = await admin
+        .from("companies")
+        .update({
+            approval_status: "approved",
+            approved_at: new Date().toISOString(),
+            approved_by: user.id,
+        })
+        .eq("id", companyId);
+
+    if (error) {
+        console.error("[approveCompany]", error);
+        return { error: "Något gick fel. Försök igen." };
+    }
+
+    revalidatePath("/admin/companies");
+    revalidatePath(`/admin/companies/${companyId}`);
+    revalidatePath("/company");
+    return { success: true };
+}
+
 // Re-activate a previously suspended or rejected recruiter without re-running
 // full KYC — admin's decision is the audit signal (approved_at/approved_by
 // timestamps update). For a fresh KYC pass, call approveRecruiter with a
@@ -268,11 +294,13 @@ export async function getAdminCompanies() {
             org_number,
             industry,
             created_at,
+            approval_status,
             profile:profiles!companies_user_id_fkey (
                 full_name,
                 email
             ),
-            jobs:jobs (count)
+            jobs:jobs (count),
+            placements:placements (count)
         `)
         .order("created_at", { ascending: false });
 
@@ -291,6 +319,8 @@ export async function getAdminCompanies() {
             contact: profile?.full_name || "",
             email: profile?.email || "",
             jobs: company.jobs?.[0]?.count || 0,
+            hired: company.placements?.[0]?.count || 0,
+            approvalStatus: company.approval_status || "approved",
             joinedAt: company.created_at,
         };
     });
@@ -1155,6 +1185,8 @@ export async function getCandidatesForScreening() {
             job:jobs(title, company:companies(company_name)),
             recruiter:recruiters(profile:profiles!recruiters_user_id_fkey(full_name))
         `)
+        // Drafts are not real submissions — keep them out of the screening queue.
+        .neq("status", "draft")
         .order("created_at", { ascending: false })
         .limit(200);
 

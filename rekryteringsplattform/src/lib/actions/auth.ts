@@ -84,6 +84,26 @@ export async function login(formData: FormData) {
         }
     }
 
+    // For companies: block access until an admin approves the company.
+    if (userRole === "company" && user) {
+        const t = await createTranslator();
+        const { data: company } = await supabase
+            .from("companies")
+            .select("approval_status")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+        const status = company?.approval_status;
+        if (status === "suspended" || status === "rejected") {
+            await supabase.auth.signOut();
+            return { error: t("auth.account_blocked") };
+        }
+        if (status === "pending") {
+            await supabase.auth.signOut();
+            return { error: t("auth.account_pending") };
+        }
+    }
+
     // Admin users can log in as company or admin
     if (requestedRole && userRole === "admin" && (requestedRole === "company" || requestedRole === "admin")) {
         redirect(`/${requestedRole}`);
@@ -126,6 +146,7 @@ export async function registerCompany(formData: FormData) {
             company_name: parsed.data.company_name,
             org_number: parsed.data.org_number,
             industry: parsed.data.industry,
+            approval_status: "pending",
         });
 
         if (companyError) {
