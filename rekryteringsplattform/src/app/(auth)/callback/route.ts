@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getSiteUrl } from "@/lib/site-url";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -27,16 +28,21 @@ export async function GET(request: Request) {
                 }
             }
 
-            const forwardedHost = request.headers.get("x-forwarded-host");
             const isLocalEnv = process.env.NODE_ENV === "development";
 
             if (isLocalEnv) {
                 return NextResponse.redirect(`${origin}${nextPath}`);
-            } else if (forwardedHost) {
-                return NextResponse.redirect(`https://${forwardedHost}${nextPath}`);
-            } else {
-                return NextResponse.redirect(`${origin}${nextPath}`);
             }
+            // Prefer the configured app URL — x-forwarded-host is client-
+            // influenced behind misconfigured proxies (open-redirect vector).
+            if (process.env.NEXT_PUBLIC_APP_URL) {
+                return NextResponse.redirect(`${getSiteUrl()}${nextPath}`);
+            }
+            const forwardedHost = request.headers.get("x-forwarded-host");
+            if (forwardedHost) {
+                return NextResponse.redirect(`https://${forwardedHost}${nextPath}`);
+            }
+            return NextResponse.redirect(`${origin}${nextPath}`);
         }
     }
 

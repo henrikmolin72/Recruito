@@ -45,13 +45,13 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => makeClient() }
 vi.mock("@/lib/notifications/create", () => ({ createNotification: vi.fn() }));
 vi.mock("@/lib/email/internal-notifications", () => ({ sendUserEmail: vi.fn() }));
 vi.mock("@/lib/email/email-templates", () => ({ jobLifecycleEmail: () => "<html></html>" }));
-vi.mock("@/lib/candidate-workflow", () => ({
-    statusChangeTimestampPatch: () => ({ status_changed_at: "2025-01-01T00:00:00.000Z" }),
-    TERMINAL_CANDIDATE_STATUSES: new Set([
-        "rejected_client", "declined", "candidate_withdrawn", "completed",
-        "offer_declined", "rejected_interview", "duplicate_rejected", "client_already_engaged",
-    ]),
-}));
+vi.mock("@/lib/candidate-workflow", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("@/lib/candidate-workflow")>();
+    return {
+        ...actual,
+        statusChangeTimestampPatch: () => ({ status_changed_at: "2025-01-01T00:00:00.000Z" }),
+    };
+});
 
 import { rejectRemainingCandidates, markJobFilledAndReject, maybeNudgeReopenForReview } from "./job-fill";
 import { createNotification } from "@/lib/notifications/create";
@@ -81,6 +81,21 @@ describe("rejectRemainingCandidates", () => {
         expect(candidateUpdates).toHaveLength(1);
         expect(candidateUpdates[0].patch.status).toBe("rejected_client");
         expect([...candidateUpdates[0].inIds].sort()).toEqual(["c1", "c2"]);
+    });
+
+    it("never overwrites terminal or hired-pipeline statuses", async () => {
+        candidateRows = [
+            { id: "c1", recruiter_id: "r1", status: "under_client_review" },
+            { id: "w1", recruiter_id: "r1", status: "candidate_withdrawn" }, // terminal
+            { id: "d1", recruiter_id: "r2", status: "duplicate_rejected" },  // terminal
+            { id: "g1", recruiter_id: "r2", status: "guarantee_tracking" },  // hired pipeline
+        ];
+
+        const count = await rejectRemainingCandidates("j1");
+
+        expect(count).toBe(1);
+        expect(candidateUpdates).toHaveLength(1);
+        expect(candidateUpdates[0].inIds).toEqual(["c1"]);
     });
 
     it("writes nothing when only hired/already-rejected candidates remain", async () => {

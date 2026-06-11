@@ -18,7 +18,7 @@ import {
   ChevronDown,
   SlidersHorizontal,
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, floorToHundreds } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
@@ -276,10 +276,13 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
         ) : (
           filteredJobs.map((job: any) => {
             const recruiterFeePct = job.recruiter_fee_percentage ?? 7;
+            // Fallback estimate uses the same rounding as the locked fee
+            // (calculateRecruiterFee floors to hundreds) so the card never
+            // shows more than what would actually be locked on the row.
             const potentialCommission = job.recruiter_fee_amount != null
               ? Number(job.recruiter_fee_amount)
               : (job.salary_max || job.salary_min)
-                ? Math.round((job.salary_max || job.salary_min) * (recruiterFeePct / 100))
+                ? floorToHundreds((job.salary_max || job.salary_min) * (recruiterFeePct / 100))
                 : null;
 
             return (

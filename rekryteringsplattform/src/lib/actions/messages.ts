@@ -195,7 +195,9 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
         return { error: "Kunde inte skicka meddelande." };
     }
 
-    const isCompany = user.user_metadata.role === 'company';
+    // Derive the sender's side from the DB-resolved conversation participants
+    // (user_metadata is client-writable and must not drive routing).
+    const isCompany = user.id === companyUserId;
     const link = isCompany ? '/recruiter/messages' : '/company/messages';
     const senderName = user.user_metadata?.full_name || user.email || "okänd användare";
 

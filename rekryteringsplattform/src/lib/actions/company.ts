@@ -7,6 +7,7 @@ import { Job, Company } from "@/types/db-types";
 import { revalidatePath } from "next/cache";
 import { validateCompanyProfileForm } from "@/lib/validation/forms";
 import { TIER_WINDOW_MONTHS } from "@/lib/pricing";
+import { INTERVIEW_WORKFLOW_STATUSES } from "@/lib/candidate-workflow";
 
 // Helper to handle errors or redirect
 function handleError(error: any) {
@@ -36,8 +37,10 @@ export async function getCompanyProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect("/login");
 
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-    const { data: company } = await supabase.from("companies").select("*").eq("user_id", user.id).single();
+    const [{ data: profile }, { data: company }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase.from("companies").select("*").eq("user_id", user.id).single(),
+    ]);
 
     return { profile, company };
 }
@@ -158,30 +161,31 @@ export async function getCompanyDashboard() {
     // Let's get total candidates across all jobs
     // Company-facing counts only include candidates Recruito has approved
     // (recruito_screened_at set) — in-review/rejected candidates stay hidden.
-    const { count: totalCandidates } = jobIds.length > 0
-        ? await supabase
-            .from("candidates")
-            .select("*", { count: 'exact', head: true })
-            .in("job_id", jobIds)
-            .not("recruito_screened_at", "is", null)
-        : { count: 0 };
-
-    const { count: activeInterviews } = jobIds.length > 0
-        ? await supabase
-            .from("candidates")
-            .select("*", { count: 'exact', head: true })
-            .in("job_id", jobIds)
-            .eq("status", "interview")
-            .not("recruito_screened_at", "is", null)
-        : { count: 0 };
-
-    const { data: candidateJobRows, error: candidateJobRowsError } = jobIds.length > 0
-        ? await supabase
-            .from("candidates")
-            .select("job_id")
-            .in("job_id", jobIds)
-            .not("recruito_screened_at", "is", null)
-        : { data: [], error: null as any };
+    const [
+        { count: totalCandidates },
+        { count: activeInterviews },
+        { data: candidateJobRows, error: candidateJobRowsError },
+    ] = jobIds.length > 0
+        ? await Promise.all([
+            supabase
+                .from("candidates")
+                .select("*", { count: 'exact', head: true })
+                .in("job_id", jobIds)
+                .not("recruito_screened_at", "is", null),
+            supabase
+                .from("candidates")
+                .select("*", { count: 'exact', head: true })
+                .in("job_id", jobIds)
+                // New workflow interview stages + legacy 'interview' status.
+                .in("status", [...INTERVIEW_WORKFLOW_STATUSES, "interview"])
+                .not("recruito_screened_at", "is", null),
+            supabase
+                .from("candidates")
+                .select("job_id")
+                .in("job_id", jobIds)
+                .not("recruito_screened_at", "is", null),
+        ])
+        : [{ count: 0 }, { count: 0 }, { data: [], error: null as any }];
 
     if (candidateJobRowsError) {
         handleError(candidateJobRowsError);

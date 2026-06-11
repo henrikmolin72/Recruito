@@ -103,6 +103,7 @@ export default async function CompanyBillingPage() {
                                 candidateName={candidate ? `${candidate.first_name} ${candidate.last_name}` : ""}
                                 jobTitle={job?.title ?? ""}
                                 guaranteeEndDate={p.guarantee_end_date}
+                                guaranteeStartDate={p.payment_received_at ?? p.created_at ?? null}
                                 status={p.status}
                                 currency={p.salary_currency ?? "SEK"}
                               />

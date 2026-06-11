@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 interface GuaranteeTimerProps {
     guaranteeEndDate: string;
+    /** Guarantee start (e.g. payment date) — used to size the progress bar. */
+    guaranteeStartDate?: string | null;
     candidateName: string;
     jobTitle: string;
     className?: string;
@@ -19,12 +21,15 @@ function daysUntil(dateStr: string): number {
     return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function daysTotal(dateStr: string): number {
-    // Approximate guarantee period from end date (assumes 30 days)
-    return 30;
+function daysBetween(startStr: string, endStr: string): number {
+    const start = new Date(startStr);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endStr);
+    end.setHours(0, 0, 0, 0);
+    return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function GuaranteeTimer({ guaranteeEndDate, candidateName, jobTitle, className }: GuaranteeTimerProps) {
+export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidateName, jobTitle, className }: GuaranteeTimerProps) {
     const [days, setDays] = useState(() => daysUntil(guaranteeEndDate));
 
     useEffect(() => {
@@ -38,7 +43,10 @@ export function GuaranteeTimer({ guaranteeEndDate, candidateName, jobTitle, clas
     const warning = days > 7 && days <= 14;
     const safe = days > 14;
 
-    const totalDays = 30; // assumption
+    // Derive the period length from the real start date when available
+    // (guarantees run 1–3 months); fall back to 30 days otherwise.
+    const derivedTotal = guaranteeStartDate ? daysBetween(guaranteeStartDate, guaranteeEndDate) : 0;
+    const totalDays = derivedTotal > 0 ? derivedTotal : 30;
     const elapsed = totalDays - days;
     const progressPct = Math.min(100, Math.max(0, Math.round((elapsed / totalDays) * 100)));
 

@@ -9,6 +9,7 @@ import { createNotification } from "@/lib/notifications/create";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
 import { candidateInStage } from "@/lib/mandate-stages";
+import { isCandidateInProcess } from "@/lib/candidate-workflow";
 import { verifyImageFileContent } from "@/lib/file-magic";
 
 function handleError(error: any) {
@@ -37,8 +38,10 @@ export async function getRecruiterProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect("/login");
 
-    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-    const { data: recruiter } = await supabase.from("recruiters").select("*").eq("user_id", user.id).single();
+    const [{ data: profile }, { data: recruiter }] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase.from("recruiters").select("*").eq("user_id", user.id).single(),
+    ]);
 
     return { profile, recruiter };
 }
@@ -449,20 +452,15 @@ export async function getAvailableJobsForRecruiter() {
         return !activeClaimedJobIds.has(job.id);
     });
 
-    // Candidates "in process" — exclude terminal/rejected statuses.
-    const TERMINAL_STATUSES = new Set([
-        "hired", "rejected", "declined", "rejected_client", "rejected_interview",
-        "candidate_withdrawn", "duplicate_rejected", "client_already_engaged",
-        "guarantee_failed", "recruiter_rejected", "completed",
-    ]);
-
     return availableJobs.map(job => ({
         ...job,
         company_name: job.company?.company_name || 'Okänt företag',
         recruiters_count: mandateCountOf(job),
         worked_previously: everClaimedJobIds.has(job.id),
+        // Candidates "in process" — shared predicate excludes terminal AND
+        // hired-pipeline statuses (invoice_enabled etc. are not pending).
         pending_candidates_count: (job.candidates || []).filter(
-            (c: { status: string | null }) => c.status && !TERMINAL_STATUSES.has(c.status),
+            (c: { status: string | null }) => isCandidateInProcess(c.status),
         ).length,
     }));
 }

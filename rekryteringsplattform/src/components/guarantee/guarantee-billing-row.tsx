@@ -10,6 +10,7 @@ interface GuaranteeBillingRowProps {
     candidateName: string;
     jobTitle: string;
     guaranteeEndDate: string | null;
+    guaranteeStartDate?: string | null;
     status: string;
     currency?: string;
 }
@@ -19,6 +20,7 @@ export function GuaranteeBillingRow({
     candidateName,
     jobTitle,
     guaranteeEndDate,
+    guaranteeStartDate,
     status,
     currency = "SEK",
 }: GuaranteeBillingRowProps) {
@@ -31,6 +33,7 @@ export function GuaranteeBillingRow({
         <div className="mt-3 space-y-3">
             <GuaranteeTimer
                 guaranteeEndDate={guaranteeEndDate}
+                guaranteeStartDate={guaranteeStartDate}
                 candidateName={candidateName}
                 jobTitle={jobTitle}
             />

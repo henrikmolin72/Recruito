@@ -91,6 +91,31 @@ export const TERMINAL_CANDIDATE_STATUSES = new Set<string>([
   "recruito_rejected",
 ]);
 
+// Candidate statuses on the hired/payment pipeline — secured by a recruiter,
+// no longer "in process", and never auto-rejected when a job closes/fills.
+// ("guarantee_period" is the legacy spelling of guarantee_tracking.)
+export const HIRED_PIPELINE_CANDIDATE_STATUSES = new Set<string>([
+  "hired",
+  "invoice_enabled",
+  "guarantee_tracking",
+  "guarantee_period",
+]);
+
+/**
+ * True while the candidate is still actively moving through the workflow:
+ * not terminal and not on the hired/payment pipeline. Single source of truth
+ * for "pending/remaining candidates" counts and auto-reject cascades.
+ */
+export function isCandidateInProcess(status: string | null | undefined): boolean {
+  if (!status) return false;
+  if (HIRED_PIPELINE_CANDIDATE_STATUSES.has(status)) return false;
+  const normalized = normalizeCandidateStatusForWorkflow(status);
+  return (
+    !TERMINAL_CANDIDATE_STATUSES.has(normalized) &&
+    !HIRED_PIPELINE_CANDIDATE_STATUSES.has(normalized)
+  );
+}
+
 // Per workflow spec: Withdrawn can be triggered from Draft, In Review,
 // Submitted, Interview, Final Interview and Offer — but never from Hired
 // or Rejected.

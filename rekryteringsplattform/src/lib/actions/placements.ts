@@ -155,13 +155,19 @@ export async function recordPlacementPayment(placementId: string) {
 
     // If entering guarantee, update candidate status
     if (nextStatus === "guarantee_active") {
-        await admin
+        const { error: candidateError } = await admin
             .from("candidates")
             .update({
                 status: "guarantee_tracking",
                 status_changed_at: new Date().toISOString(),
             })
             .eq("id", placement.candidate_id);
+        if (candidateError) {
+            console.error(
+                `[recordPlacementPayment] candidate ${placement.candidate_id} not moved to guarantee_tracking:`,
+                candidateError
+            );
+        }
     }
 
     // Notify recruiter
@@ -267,13 +273,19 @@ export async function processGuaranteeExpirations() {
         }
 
         // Update candidate to completed
-        await admin
+        const { error: candidateError } = await admin
             .from("candidates")
             .update({
                 status: "completed",
                 status_changed_at: new Date().toISOString(),
             })
             .eq("id", placement.candidate_id);
+        if (candidateError) {
+            console.error(
+                `[processGuaranteeExpirations] candidate ${placement.candidate_id} not moved to completed:`,
+                candidateError
+            );
+        }
 
         // Notify recruiter
         const { data: recruiter } = await admin
@@ -360,13 +372,19 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
     }
 
     // Update candidate
-    await admin
+    const { error: candidateError } = await admin
         .from("candidates")
         .update({
             status: "completed",
             status_changed_at: new Date().toISOString(),
         })
         .eq("id", placement.candidate_id);
+    if (candidateError) {
+        console.error(
+            `[reportGuaranteeFailure] candidate ${placement.candidate_id} not moved to completed:`,
+            candidateError
+        );
+    }
 
     const candidateData = Array.isArray(placement.candidate) ? placement.candidate[0] : placement.candidate;
     const candidateName = candidateData

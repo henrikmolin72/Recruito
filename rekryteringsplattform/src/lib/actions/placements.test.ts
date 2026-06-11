@@ -13,6 +13,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 let placementRow: any;
 let recruiterRow: any;
 let profileRow: any;
+// Per-table error injected into awaited update chains (simulates RLS/constraint failures).
+let updateErrorByTable: Record<string, any> = {};
 const writes: Array<{ table: string; patch: any }> = [];
 
 // Minimal chainable Supabase mock. select chains resolve via single()/maybeSingle()
@@ -41,7 +43,8 @@ function makeClient() {
       // Awaiting an update/insert chain records the write.
       then: (resolve: any, reject: any) => {
         if (op === "update" || op === "insert") writes.push({ table, patch });
-        return Promise.resolve({ data: null, error: null }).then(resolve, reject);
+        const error = op === "update" ? updateErrorByTable[table] ?? null : null;
+        return Promise.resolve({ data: null, error }).then(resolve, reject);
       },
     };
     return chain;
@@ -65,6 +68,7 @@ const placementWrites = () => writes.filter((w) => w.table === "placements");
 
 beforeEach(() => {
   writes.length = 0;
+  updateErrorByTable = {};
   recruiterRow = { user_id: "user-1" };
   // email_opt_out short-circuits the email branch (keeps the test focused).
   profileRow = { email: "r@example.com", full_name: "Rec", email_opt_out: true };
@@ -109,6 +113,28 @@ describe("recordPlacementPayment — payment branch", () => {
     expect(upd.completed_at).toBeTruthy();
     // No guarantee tracking when released outright.
     expect(writes.some((w) => w.table === "candidates")).toBe(false);
+  });
+
+  it("logs (not swallows) a failed candidate update while keeping the recorded payment", async () => {
+    const future = new Date(Date.now() + 30 * 86_400_000).toISOString();
+    placementRow = {
+      id: "p1", status: "invoice_sent", guarantee_end_date: future,
+      recruiter_id: "r1", candidate_id: "c1",
+      candidate: { first_name: "Cand", last_name: "Idate" },
+    };
+    updateErrorByTable["candidates"] = { message: "RLS violation" };
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await recordPlacementPayment("p1");
+
+    // Placement update succeeded → action reports success…
+    expect(res).toEqual({ success: true });
+    // …but the candidate failure is surfaced in the logs, not swallowed.
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("candidate c1 not moved to guarantee_tracking"),
+      expect.objectContaining({ message: "RLS violation" }),
+    );
+    errSpy.mockRestore();
   });
 
   it("rejects payment from a non-invoice_sent status without writing", async () => {

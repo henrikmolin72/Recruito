@@ -49,7 +49,7 @@ export function CandidateStatusActions({
                     <SelectItem value="submitted">{t("components.candidateStatusSubmitted")}</SelectItem>
                     <SelectItem value="reviewing">{t("components.candidateStatusReviewing")}</SelectItem>
                     <SelectItem value="interview">{t("components.candidateStatusInterview")}</SelectItem>
-                    <SelectItem value="offer">{t("components.candidateStatusOffer")}</SelectItem>
+                    <SelectItem value="offered">{t("components.candidateStatusOffer")}</SelectItem>
                     <SelectItem value="hired">{t("components.candidateStatusHired")}</SelectItem>
                     <SelectItem value="rejected">{t("components.candidateStatusRejected")}</SelectItem>
                 </SelectContent>

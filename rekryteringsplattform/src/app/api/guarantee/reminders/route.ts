@@ -96,6 +96,7 @@ export async function GET(request: NextRequest) {
         if (days <= 0 && !sentSet.has(`${p.id}:expired`)) {
             await admin.from("placements").update({
                 status: "payout_released",
+                payout_released_at: now,
                 completed_at: now,
                 updated_at: now,
             }).eq("id", p.id);

@@ -2,15 +2,24 @@
 
 import { useState, useMemo } from "react";
 import { TrendingDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+    cn,
+    CLIENT_FEE_MIN,
+    CLIENT_FEE_BASE_PCT,
+    CLIENT_FEE_GUARANTEE_PCT,
+    CLIENT_FEE_EXCLUSIVE_DISCOUNT,
+    RECRUITER_FEE_DEFAULT_PCT,
+} from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 
-const MIN_FEE = 3_500;          // EUR
-const BASE_COMMISSION = 0.11;   // 11%
-const GUARANTEE_ADJ = 0.01;     // +1% per guarantee month
-const EXCLUSIVE_DISCOUNT = 0.10; // 10% off for Exclusive
-const RECRUITER_PCT = 0.07;     // 7% of annual salary (default, manually adjusted by Recruito)
-const TRADITIONAL_FEE_PCT = 25; // for savings comparison
+// Canonical fee constants live in lib/utils.ts (same formula that locks fees
+// on job rows) — aliased here to the calculator's display vocabulary.
+const MIN_FEE = CLIENT_FEE_MIN;                       // EUR
+const BASE_COMMISSION = CLIENT_FEE_BASE_PCT;          // 11%
+const GUARANTEE_ADJ = CLIENT_FEE_GUARANTEE_PCT;       // +1% per guarantee month
+const EXCLUSIVE_DISCOUNT = CLIENT_FEE_EXCLUSIVE_DISCOUNT; // 10% off for Exclusive
+const RECRUITER_PCT = RECRUITER_FEE_DEFAULT_PCT;      // 7% of annual salary (default, manually adjusted by Recruito)
+const TRADITIONAL_FEE_PCT = 25; // for savings comparison (marketing-only)
 
 const GUARANTEE_OPTIONS = [0, 1, 2] as const;
 

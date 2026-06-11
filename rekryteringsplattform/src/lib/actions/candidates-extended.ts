@@ -5,6 +5,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { verifyCvFileContent } from "@/lib/file-magic";
+import {
+    normalizeIdentity,
+    candidateMatchesIdentity,
+    isClientEngagementActiveStatus,
+} from "@/lib/candidate-identity";
 
 function toString(value: FormDataEntryValue | null) {
     return typeof value === "string" ? value : "";
@@ -15,26 +20,6 @@ function toOptionalInt(value: FormDataEntryValue | null) {
     if (!raw) return null;
     const parsed = Number.parseInt(raw, 10);
     return Number.isNaN(parsed) ? null : parsed;
-}
-
-function normalizeIdentity(value: string | null | undefined) {
-    return value?.trim().toLowerCase() || null;
-}
-
-function candidateMatchesIdentity(candidate: any, email: string | null, linkedinUrl: string | null) {
-    const candidateEmail = normalizeIdentity(candidate?.email);
-    const candidateLinkedIn = normalizeIdentity(candidate?.linkedin_url);
-    const emailMatch = !!email && candidateEmail === email;
-    const linkedInMatch = !!linkedinUrl && candidateLinkedIn === linkedinUrl;
-    return emailMatch || linkedInMatch;
-}
-
-function isActiveStatus(status: string | null | undefined) {
-    const TERMINAL = new Set([
-        "hired", "rejected", "declined", "completed", "duplicate_rejected",
-        "candidate_withdrawn", "guarantee_failed",
-    ]);
-    return !TERMINAL.has(status || "");
 }
 
 export async function createCandidateExtended(mandateId: string, formData: FormData) {
@@ -115,7 +100,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
                     (c: any) =>
                         c.job_id !== mandate.job_id &&
                         candidateMatchesIdentity(c, normalizedEmail, normalizedLinkedIn) &&
-                        isActiveStatus(c.status)
+                        isClientEngagementActiveStatus(c.status)
                 );
                 if (clientEngaged) initialStatus = "client_already_engaged";
             }

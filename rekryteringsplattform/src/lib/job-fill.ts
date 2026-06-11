@@ -3,20 +3,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/lib/notifications/create";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { jobLifecycleEmail } from "@/lib/email/email-templates";
-import { statusChangeTimestampPatch, TERMINAL_CANDIDATE_STATUSES } from "@/lib/candidate-workflow";
+import { statusChangeTimestampPatch, isCandidateInProcess } from "@/lib/candidate-workflow";
 
-// Won/hired candidates — never auto-rejected when a job is closed or filled.
-const HIRED_PROTECTED_STATUSES = [
-    "hired", "invoice_enabled", "guarantee_tracking", "completed",
-    "guarantee_active", "payout_released", "guarantee_period",
-];
+// Only candidates still in process are auto-rejected: hired-pipeline candidates
+// are protected, and terminal statuses (withdrawn, duplicate, already rejected…)
+// must never be overwritten with rejected_client.
 const REJECT_TARGET_STATUS = "rejected_client";
-
-// Candidates that no longer count as "remaining for the client to review".
-const REVIEW_DONE_STATUSES = new Set<string>([
-    ...TERMINAL_CANDIDATE_STATUSES,
-    ...HIRED_PROTECTED_STATUSES,
-]);
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 type JobNotifyContext = { title: string; status: string | null; reopenNudgeSentAt: string | null; companyUserId: string | null };
@@ -59,8 +51,7 @@ export async function rejectRemainingCandidates(jobId: string, opts: { exceptCan
     const targets = rows.filter(
         (c: any) =>
             c.id !== opts.exceptCandidateId &&
-            !HIRED_PROTECTED_STATUSES.includes(c.status) &&
-            c.status !== REJECT_TARGET_STATUS
+            isCandidateInProcess(c.status)
     );
     if (targets.length === 0) return 0;
 
@@ -120,7 +111,7 @@ export async function maybeNudgeReopenForReview(jobId: string, threshold = 3): P
         if (!ctx || ctx.status !== "paused" || ctx.reopenNudgeSentAt || !ctx.companyUserId) return;
 
         const { data: rows } = await admin.from("candidates").select("status").eq("job_id", jobId);
-        const remaining = (rows || []).filter((c: any) => !REVIEW_DONE_STATUSES.has(c.status)).length;
+        const remaining = (rows || []).filter((c: any) => isCandidateInProcess(c.status)).length;
         if (remaining > threshold) return;
 
         // Stamp first so concurrent status changes don't double-fire the nudge.
