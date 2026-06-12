@@ -26,6 +26,17 @@ type JobWithCompany = Omit<Partial<Job>, "company"> & {
 interface JobPreviewCardProps {
     job: JobWithCompany;
     variant: "company" | "recruiter";
+    /** Hide "take mandate" CTAs, e.g. when the recruiter already holds the mandate. */
+    showMandateCta?: boolean;
+}
+
+// "full_time" → "Full Time"
+function formatEnumLabel(value: string | null | undefined): string | null {
+    if (!value) return null;
+    return value
+        .split("_")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
 }
 
 const BENEFIT_LABELS: Record<string, string> = {
@@ -50,8 +61,9 @@ const BENEFIT_ICONS: Record<string, LucideIcon> = {
     company_car: Car,
 };
 
-export function JobPreviewCard({ job, variant }: JobPreviewCardProps) {
+export function JobPreviewCard({ job, variant, showMandateCta = true }: JobPreviewCardProps) {
     const isRecruiter = variant === "recruiter";
+    const showCta = isRecruiter && showMandateCta;
     const company = job.company;
     const seatsLeft = job.max_recruiters - job.current_recruiter_count;
     const languages = job.language_requirements ?? [];
@@ -111,7 +123,7 @@ export function JobPreviewCard({ job, variant }: JobPreviewCardProps) {
                     </p>
                 )}
 
-                {isRecruiter && (
+                {showCta && (
                     <div className="flex gap-3 pt-2">
                         <div className={seatsLeft <= 0 ? "opacity-50 pointer-events-none" : ""} title={seatsLeft <= 0 ? "No seats left for recruiters" : undefined}>
                             <TakeMandateButton jobId={job.id} />
@@ -124,7 +136,7 @@ export function JobPreviewCard({ job, variant }: JobPreviewCardProps) {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                 <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Job Overview</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <OverviewItem label="Employment Type" value={job.employment_type?.replace("_", " ")} />
+                    <OverviewItem label="Employment Type" value={formatEnumLabel(job.employment_type)} />
                     <OverviewItem
                         label="Work Permits"
                         value={job.visa_sponsorship ? "Visa Sponsorship Offered" : job.work_permit_accepted ? "Work Permits Accepted" : null}
@@ -136,7 +148,7 @@ export function JobPreviewCard({ job, variant }: JobPreviewCardProps) {
                             ? `${formatCurrency(job.salary_max ?? job.salary_min ?? 0, job.salary_currency ?? "EUR")} / ${job.salary_period ?? "year"}`
                             : null}
                     />
-                    <OverviewItem label="Contract" value={job.employment_type} />
+                    <OverviewItem label="Contract" value={formatEnumLabel(job.employment_type)} />
                     <OverviewItem label="Experience" value={job.experience_bracket} />
                     <OverviewItem
                         label="Language"
@@ -269,7 +281,7 @@ export function JobPreviewCard({ job, variant }: JobPreviewCardProps) {
             </div>
 
             {/* Bottom recruiter CTA */}
-            {isRecruiter && (
+            {showCta && (
                 <div className="bg-brand-50 rounded-2xl border border-brand-100 p-6 flex items-center justify-between gap-4 flex-wrap">
                     <div>
                         <p className="font-bold text-slate-800">This job looks like a good fit?</p>

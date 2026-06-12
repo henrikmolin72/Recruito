@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ArrowLeft, Download, Mail, Phone, Linkedin } from "lucide-react";
 import { TabbedCandidateChat } from "@/components/shared/tabbed-candidate-chat";
-import { CandidateProcessFlowchart } from "@/components/shared/candidate-process-flowchart";
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
@@ -168,13 +167,6 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
-                    <CandidateProcessFlowchart
-                        candidate={candidate}
-                        dict={dict}
-                        eyebrow="Kandidatens process"
-                        helperText="Uppdateras av rekryteraren när kandidaten flyttas i processen."
-                    />
-
                     {/* Profile */}
                     <Card>
                         <CardHeader>

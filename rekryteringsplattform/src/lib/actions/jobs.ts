@@ -373,7 +373,7 @@ export async function getCompanyJobs() {
 
     return jobs?.map((job) => ({
         ...job,
-        recruiters_count: job.current_recruiter_count || 0,
+        recruiters_count: job.mandates?.[0]?.count ?? job.current_recruiter_count ?? 0,
         candidates_count: job.candidates?.[0]?.count || 0,
     })) || [];
 }

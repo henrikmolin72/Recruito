@@ -10,6 +10,8 @@ import { PipelineFlowchart } from "@/components/dashboard/recruiter/pipeline-flo
 import { ShortlistGenerator } from "@/components/screening/shortlist-generator";
 import { getRecruiterMandateById } from "@/lib/actions/recruiter";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
 import { formatCurrency, formatDate, calculateClientFee } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
@@ -44,6 +46,22 @@ export default async function RecruiterMandateDetailsPage({
   }
 
   const announcements = mandate.job_id ? await getJobAnnouncements(mandate.job_id) : [];
+
+  // Full job row with every client-filled form field. Mandate ownership is
+  // already verified by getRecruiterMandateById; the admin client bypasses
+  // RLS that would otherwise hide job columns from the recruiter.
+  let fullJob: any = null;
+  if (mandate.job_id) {
+    const adminClient = createAdminClient();
+    const { data } = await adminClient
+      .from("jobs")
+      .select("*, company:companies(company_name, website, logo_url, linkedin_url)")
+      .eq("id", mandate.job_id)
+      .maybeSingle();
+    if (data) {
+      fullJob = { ...data, company: Array.isArray(data.company) ? data.company[0] ?? null : data.company };
+    }
+  }
 
   const dict = await getDictionary();
   const r = dict.recruiter;
@@ -111,17 +129,6 @@ export default async function RecruiterMandateDetailsPage({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{r.roleDescription}</p>
-          {mandate.description ? (
-            <div className="prose max-w-none text-sm text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeRichText(mandate.description) }} />
-          ) : (
-            <p className="text-sm text-muted-foreground">{r.noDescriptionAvailable}</p>
-          )}
-        </CardContent>
-      </Card>
-
       {announcements.length > 0 && (
         <Card>
           <CardContent className="p-6 space-y-3">
@@ -136,6 +143,21 @@ export default async function RecruiterMandateDetailsPage({
             ))}
           </CardContent>
         </Card>
+      )}
+
+      {fullJob && <JobPreviewCard job={fullJob} variant="recruiter" showMandateCta={false} />}
+
+      {!fullJob && (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{r.roleDescription}</p>
+          {mandate.description ? (
+            <div className="prose max-w-none text-sm text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: sanitizeRichText(mandate.description) }} />
+          ) : (
+            <p className="text-sm text-muted-foreground">{r.noDescriptionAvailable}</p>
+          )}
+        </CardContent>
+      </Card>
       )}
 
       {mandate.pipeline_stages && mandate.pipeline_stages.length > 0 && (

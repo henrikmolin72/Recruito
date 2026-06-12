@@ -6,6 +6,7 @@ import type { PipelineStage } from "@/types/db-types";
 import { ArrowRight, GitBranch, Users, UserCheck, CircleDot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { normalizeCandidateStatusForWorkflow, TERMINAL_CANDIDATE_STATUSES } from "@/lib/candidate-workflow";
+import { getDictionary } from "@/i18n/server";
 
 type CandidateItem = {
     id: string;
@@ -25,41 +26,16 @@ function sortStages(stages: PipelineStage[] | null | undefined): PipelineStage[]
     return [...(stages || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
-function getStepLabel(candidate: CandidateItem, pipelineStages: PipelineStage[]) {
+function getStepLabel(
+    candidate: CandidateItem,
+    pipelineStages: PipelineStage[],
+    labels: Record<string, string>,
+    fallback: string,
+) {
     const stage = pipelineStages.find((s) => s.id === candidate.current_pipeline_stage);
     if (stage) return stage.title;
     const status = normalizeCandidateStatusForWorkflow(candidate.status);
-
-    const labels: Record<string, string> = {
-        submitted: "Presenterad",
-        reviewing: "Under granskning",
-        under_client_review: "Under kundgranskning",
-        info_requested: "Mer info begärd",
-        resubmitted: "Återinskickad",
-        interview: "Intervju",
-        interview_stage_1: "Intervju steg 1",
-        interview_stage_2: "Intervju steg 2",
-        interview_stage_3: "Intervju steg 3",
-        final_interview: "Slutintervju",
-        offered: "Erbjudande",
-        offer_in_progress: "Erbjudande pågår",
-        offer_accepted: "Erbjudande accepterat",
-        invoice_enabled: "Faktura aktiv",
-        guarantee_tracking: "Garantispårning",
-        hired: "Anställd",
-        completed: "Avslutad",
-        rejected: "Avböjd",
-        duplicate_rejected: "Dublett avvisad",
-        client_already_engaged: "Kunden redan engagerad",
-        rejected_client: "Avvisad av kund",
-        rejected_interview: "Avvisad i intervju",
-        offer_declined: "Erbjudande avböjt",
-        candidate_withdrawn: "Kandidat drog sig ur",
-        declined: "Avböjd",
-        paused: "Pausad",
-        on_hold: "On hold",
-    };
-    return labels[status] || labels[candidate.status] || "Pågår";
+    return labels[status] || labels[candidate.status] || fallback;
 }
 
 function getProgress(candidate: CandidateItem, pipelineStages: PipelineStage[]) {
@@ -91,7 +67,7 @@ function getProgress(candidate: CandidateItem, pipelineStages: PipelineStage[]) 
     return { value: 0.1, tone: "default" as const };
 }
 
-export function CompanyCandidatesOverview({
+export async function CompanyCandidatesOverview({
     candidates,
     jobId,
     pipelineStages,
@@ -102,6 +78,9 @@ export function CompanyCandidatesOverview({
     pipelineStages: PipelineStage[];
     noticeAccepted: boolean;
 }) {
+    const dict = await getDictionary();
+    const c = dict.company;
+    const stageLabels: Record<string, string> = c.pipelineStageLabels;
     const sortedStages = sortStages(pipelineStages);
 
     const total = candidates.length;
@@ -131,7 +110,7 @@ export function CompanyCandidatesOverview({
                             <Users className="h-4 w-4" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Kandidater</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{c.pipelineStatCandidates}</p>
                             <p className="text-lg font-bold text-slate-900">{total}</p>
                         </div>
                     </CardContent>
@@ -142,7 +121,7 @@ export function CompanyCandidatesOverview({
                             <GitBranch className="h-4 w-4" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aktiva processer</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{c.pipelineStatActiveProcesses}</p>
                             <p className="text-lg font-bold text-slate-900">{active}</p>
                         </div>
                     </CardContent>
@@ -153,7 +132,7 @@ export function CompanyCandidatesOverview({
                             <UserCheck className="h-4 w-4" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aktiva rekryterare</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{c.pipelineStatActiveRecruiters}</p>
                             <p className="text-lg font-bold text-slate-900">{uniqueRecruiters}</p>
                         </div>
                     </CardContent>
@@ -164,7 +143,7 @@ export function CompanyCandidatesOverview({
                 {sortedCandidates.length === 0 ? (
                     <Card className="border-dashed border-slate-300 bg-slate-50/60">
                         <CardContent className="p-10 text-center text-slate-500">
-                            Inga kandidater ännu.
+                            {c.pipelineNoCandidates}
                         </CardContent>
                     </Card>
                 ) : (
@@ -191,10 +170,10 @@ export function CompanyCandidatesOverview({
                                                 <StatusBadge status={candidate.status} />
                                             </div>
                                             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                                                <span>{candidate.current_title || "Ingen titel angiven"}</span>
+                                                <span>{candidate.current_title || c.pipelineNoTitle}</span>
                                                 <span className="text-slate-300">•</span>
                                                 <span>
-                                                    Rekryterare: <span className="font-semibold text-slate-700">{candidate.recruiter?.profile?.full_name || "Okänd"}</span>
+                                                    {dict.common.recruiter}: <span className="font-semibold text-slate-700">{candidate.recruiter?.profile?.full_name || c.pipelineRecruiterUnknown}</span>
                                                 </span>
                                             </div>
 
@@ -202,9 +181,9 @@ export function CompanyCandidatesOverview({
                                                 <div className="flex items-center justify-between gap-3 text-xs">
                                                     <span className="font-semibold text-slate-700 flex items-center gap-1.5">
                                                         <CircleDot className="h-3.5 w-3.5 text-brand-500" />
-                                                        {getStepLabel(candidate, sortedStages)}
+                                                        {getStepLabel(candidate, sortedStages, stageLabels, c.pipelineInProgress)}
                                                     </span>
-                                                    <span className="text-slate-400">Uppdateras av rekryteraren</span>
+                                                    <span className="text-slate-400">{c.pipelineUpdatedByRecruiter}</span>
                                                 </div>
                                                 <div className="mt-1.5 h-2 rounded-full bg-slate-100 overflow-hidden">
                                                     <div
@@ -221,7 +200,7 @@ export function CompanyCandidatesOverview({
                                                 noticeAccepted={noticeAccepted}
                                             >
                                                 <Button variant="outline" size="sm" className="gap-1.5">
-                                                    Följ kandidat
+                                                    {c.pipelineFollowCandidate}
                                                     <ArrowRight className="h-4 w-4" />
                                                 </Button>
                                             </CandidateAccessGate>

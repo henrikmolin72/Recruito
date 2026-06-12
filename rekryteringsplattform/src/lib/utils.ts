@@ -19,7 +19,7 @@ export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return "—";
   const d = new Date(date);
   if (isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("sv-SE", {
+  return new Intl.DateTimeFormat("en-GB", {
     year: "numeric",
     month: "long",
     day: "numeric",

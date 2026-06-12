@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -17,7 +17,6 @@ import {
     LayoutDashboard,
     FileText,
     Users2,
-    Settings2,
     Megaphone,
     ShieldCheck,
 } from "lucide-react";
@@ -28,7 +27,6 @@ import { sanitizeRichText } from "@/lib/sanitize";
 import { JobActions } from "@/components/dashboard/company/job-actions";
 import { CompanyCandidatesOverview } from "@/components/dashboard/company/company-candidates-overview";
 import { getCandidateProfileNoticeAccepted } from "@/lib/actions/company";
-import { PipelineEditor } from "@/components/dashboard/company/pipeline-editor";
 import { AnnouncementsTab } from "@/components/dashboard/company/announcements-tab";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
@@ -78,6 +76,37 @@ async function getJob(id: string) {
     // Visibility gate: the company only sees candidates Recruito has approved.
     if (job && Array.isArray((job as any).candidates)) {
         (job as any).candidates = (job as any).candidates.filter((cand: any) => cand.recruito_screened_at);
+    }
+
+    // RLS hides recruiter profiles from company users, so the joined
+    // profile.full_name comes back null. Fetch display names only via the
+    // admin client for recruiters already attached to this job.
+    if (job) {
+        const recruiterUserIds = new Set<string>();
+        for (const m of (job as any).mandates || []) {
+            if (m.recruiter?.user_id) recruiterUserIds.add(m.recruiter.user_id);
+        }
+        for (const cand of (job as any).candidates || []) {
+            if (cand.recruiter?.user_id) recruiterUserIds.add(cand.recruiter.user_id);
+        }
+        if (recruiterUserIds.size > 0) {
+            const admin = createAdminClient();
+            const { data: names } = await admin
+                .from("profiles")
+                .select("id, full_name")
+                .in("id", [...recruiterUserIds]);
+            const nameById = new Map((names || []).map((n: any) => [n.id, n.full_name]));
+            for (const m of (job as any).mandates || []) {
+                if (m.recruiter?.user_id && nameById.get(m.recruiter.user_id)) {
+                    m.recruiter.profile = { ...(m.recruiter.profile || {}), full_name: nameById.get(m.recruiter.user_id) };
+                }
+            }
+            for (const cand of (job as any).candidates || []) {
+                if (cand.recruiter?.user_id && nameById.get(cand.recruiter.user_id)) {
+                    cand.recruiter.profile = { ...(cand.recruiter.profile || {}), full_name: nameById.get(cand.recruiter.user_id) };
+                }
+            }
+        }
     }
 
     return job;
@@ -153,9 +182,6 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         <TabsTrigger value="recruiters" className="gap-2 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                             <Users2 className="h-4 w-4" /> {c.jobDetailsRecruiters}
                         </TabsTrigger>
-                        <TabsTrigger value="process" className="gap-2 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                            <Settings2 className="h-4 w-4" /> {c.jobDetailsProcess || "Process"}
-                        </TabsTrigger>
                         <TabsTrigger value="announcements" className="gap-2 px-6 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
                             <Megaphone className="h-4 w-4" /> Announcements
                         </TabsTrigger>
@@ -182,7 +208,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                     <div className="space-y-4">
                         <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-slate-700">
                             <span className="font-semibold text-brand-700">Info:</span>{" "}
-                            Rekryterarna uppdaterar kandidaternas pipeline. Företagssidan visar processen visuellt och används för uppföljning, chat och nästa steg-begäran.
+                            {c.pipelineInfoBanner}
                         </div>
                         <CompanyCandidatesOverview
                             candidates={job.candidates || []}
@@ -201,10 +227,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
                         <CardContent className="p-0">
                             <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                                <h3 className="text-lg font-bold">{c.activeRecruiters}</h3>
-                                <Badge variant="outline" className="bg-brand-50 text-brand-700 border-brand-100 font-bold">
-                                    {c.slotsFilledBadge.replace("{count}", String(job.mandates?.length || 0)).replace("{max}", String(job.max_recruiters))}
-                                </Badge>
+                                <h3 className="text-lg font-bold">{job.mandates?.length || 0} {c.activeRecruiters}</h3>
                             </div>
 
                             <div className="divide-y divide-slate-50">
@@ -224,12 +247,9 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-right">
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{c.ratingLabel}</p>
-                                                    <p className="text-sm font-bold text-slate-700">⭐ {mandate.recruiter?.rating || 'N/A'}</p>
-                                                </div>
-                                                <Button variant="outline" size="sm" className="rounded-full">{dict.common.showProfile}</Button>
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{c.ratingLabel}</p>
+                                                <p className="text-sm font-bold text-slate-700">⭐ {mandate.recruiter?.rating || 'N/A'}</p>
                                             </div>
                                         </div>
                                     ))
@@ -242,14 +262,6 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                             </div>
                         </CardContent>
                     </Card>
-                </TabsContent>
-
-                <TabsContent value="process" className="mt-0">
-                    <PipelineEditor
-                        jobId={job.id}
-                        initialStages={job.pipeline_stages || DEFAULT_PIPELINE_STAGES}
-                        hasCandidates={(job.candidates?.length || 0) > 0}
-                    />
                 </TabsContent>
 
                 <TabsContent value="announcements" className="mt-0">
