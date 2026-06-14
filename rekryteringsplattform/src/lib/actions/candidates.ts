@@ -25,6 +25,8 @@ import {
     recalculateRecruiterMetrics,
 } from "@/lib/actions/placements";
 import { markJobFilledAndReject, maybeNudgeReopenForReview, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
+import { canTransition, canReopenTo } from "@/lib/candidate-stage-rules";
+import { logCandidateStageChange } from "@/lib/candidate-stage-history";
 
 type CandidateNextStepRequest =
     | "request_tests"
@@ -118,7 +120,7 @@ async function getActorRoleForCandidateAction(
 
     const { data: candidate } = await supabase
         .from("candidates")
-        .select("id, status, current_pipeline_stage, job_id, recruiter:recruiters(user_id), mandate_id")
+        .select("id, status, company_stage, company_viewed_at, current_pipeline_stage, job_id, recruiter:recruiters(user_id), mandate_id")
         .eq("id", candidateId)
         .single();
 
@@ -728,6 +730,14 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         return { error: "Kandidaten har dragits tillbaka och kan inte flyttas." };
     }
 
+    // Enforce the stage-progression matrix before writing: single forward step
+    // or reject from each active rung; null (unviewed) -> only "viewed". A no-op
+    // (stage === current) is allowed and skips the matrix check.
+    const current = (access.candidate as any)?.company_stage ?? null;
+    if (stage !== current && !canTransition(current, stage)) {
+        return { error: "Ogiltigt stegbyte" };
+    }
+
     const patch: Record<string, any> = { company_stage: stage };
     const isFirstView = stage === "viewed" && !(access.candidate as any)?.company_viewed_at;
     if (isFirstView) {
@@ -799,15 +809,140 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         }
     }
 
-    // Company marking a candidate hired fills the position and rejects the rest.
-    if (stage === "hired") {
-        await markJobFilledAndReject(jobId, candidateId);
-    }
+    // Append the stage-progression audit row (best-effort). Hiring no longer
+    // auto-closes the job — closing the position is a separate explicit company
+    // action (closeJobAfterHire).
+    await logCandidateStageChange({
+        candidateId,
+        jobId,
+        fromStage: current,
+        toStage: stage,
+        action: stage === "rejected" ? "reject" : stage === "hired" ? "hire" : "move",
+        changedBy: user.id,
+        changedByRole: "company",
+    });
+
     // Rejecting/advancing a candidate on a paused job may drop the review pool
     // to the reopen-nudge threshold.
     await maybeNudgeReopenForReview(jobId);
 
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
+    return { success: true };
+}
+
+// Restore status when a rejected candidate is reopened into a given stage. All
+// targets are in-process per isCandidateInProcess() (under_client_review and
+// offer_in_progress are both non-terminal, non-hired-pipeline workflow states),
+// so the candidate re-enters the active review pool.
+const REOPEN_STAGE_TO_STATUS: Record<string, string> = {
+    interview: "under_client_review",
+    final_interview: "under_client_review",
+    job_offer: "offer_in_progress",
+};
+
+// Company reopens a previously-rejected candidate back into an active stage.
+// Mirrors updateCompanyStage's auth/authorize; only the owning company may act.
+export async function reopenCandidate(
+    candidateId: string,
+    jobId: string,
+    targetStage: string,
+    reason?: string,
+) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Utloggad!" };
+
+    const access = await getActorRoleForCandidateAction(supabase, user.id, candidateId, jobId);
+    if (access.actorRole !== "company") return { error: "Obehörig" };
+
+    const candidate = access.candidate as any;
+    if (candidate?.company_stage !== "rejected" && candidate?.status !== "rejected_client") {
+        return { error: "Endast avvisade kandidater kan återupptas." };
+    }
+
+    if (!canReopenTo(targetStage)) {
+        return { error: "Ogiltigt steg för återupptagning." };
+    }
+
+    const restoredStatus = REOPEN_STAGE_TO_STATUS[targetStage];
+    const { error } = await supabase
+        .from("candidates")
+        .update({
+            company_stage: targetStage,
+            status: restoredStatus,
+            ...statusChangeTimestampPatch(restoredStatus),
+        })
+        .eq("id", candidateId)
+        .eq("job_id", jobId);
+
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Något gick fel. Försök igen." };
+    }
+
+    await logCandidateStageChange({
+        candidateId,
+        jobId,
+        fromStage: "rejected",
+        toStage: targetStage,
+        action: "reopen",
+        changedBy: user.id,
+        changedByRole: "company",
+        reason: reason ?? null,
+    });
+
+    // Notify the recruiter their candidate is back in play (best-effort).
+    try {
+        const { recruiterUserId, mandateId, candidateName } =
+            await getCandidateMessagingContext(supabase, candidateId);
+        if (recruiterUserId) {
+            await createNotification(recruiterUserId, {
+                titleKey: "notif.candidateReopenedTitle",
+                bodyKey: "notif.candidateReopenedBody",
+                params: { subject: access.job?.title || "—", candidate: candidateName || "—" },
+                link: mandateId
+                    ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}`
+                    : "/recruiter/mandates",
+            });
+        }
+    } catch (err) {
+        console.error("[reopenCandidate notify]", err);
+    }
+
+    revalidatePath(`/company/jobs/${jobId}`);
+    revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
+    if (access.mandateId) {
+        revalidatePath(`/recruiter/mandates/${access.mandateId}`);
+        revalidatePath(`/recruiter/mandates/${access.mandateId}/candidates/${candidateId}`);
+    }
+
+    return { success: true };
+}
+
+// Explicit "close the position now that we've hired" action. Hiring no longer
+// auto-closes the job (see updateCompanyStage); the company decides separately.
+// Fills the job (active/paused -> filled), rejects the remaining candidates, and
+// notifies the affected recruiters.
+export async function closeJobAfterHire(jobId: string, hiredCandidateId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Utloggad!" };
+
+    // Company-ownership check (IDOR guard): the actor must own the job the hired
+    // candidate belongs to. Reuses the shared access helper.
+    const access = await getActorRoleForCandidateAction(supabase, user.id, hiredCandidateId, jobId);
+    if (access.actorRole !== "company") return { error: "Obehörig" };
+
+    try {
+        await markJobFilledAndReject(jobId, hiredCandidateId);
+        await notifyRecruitersOfJobLifecycleChange(jobId, "closed");
+    } catch (err) {
+        console.error("[closeJobAfterHire]", err);
+        return { error: "Något gick fel. Försök igen." };
+    }
+
+    revalidatePath(`/company/jobs/${jobId}`);
+    revalidatePath(`/company/jobs/${jobId}/candidates/${hiredCandidateId}`);
     return { success: true };
 }
 

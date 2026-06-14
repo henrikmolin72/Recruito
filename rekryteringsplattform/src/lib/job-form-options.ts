@@ -6,6 +6,7 @@ export const EMPLOYMENT_TYPE_OPTIONS = [
   "full_time",
   "part_time",
   "consultant",
+  "contract",
   "freelance",
   "internship",
 ] as const;
@@ -15,6 +16,7 @@ export const EMPLOYMENT_TYPE_DICT_KEY: Record<string, string> = {
   full_time: "fullTime",
   part_time: "partTime",
   consultant: "consultant",
+  contract: "contract",
   freelance: "freelance",
   internship: "internship",
 };
@@ -193,7 +195,6 @@ export const EXPERIENCE_BRACKET_OPTIONS = [
 
 export const WORKING_HOURS_OPTIONS = [
   "Standard Business Hours",
-  "Flexible Hours",
   "Shift-Based",
   "Rotational Shifts",
   "Night Shift",

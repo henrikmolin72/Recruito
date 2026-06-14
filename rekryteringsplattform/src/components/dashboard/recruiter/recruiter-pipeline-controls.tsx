@@ -50,12 +50,14 @@ export function RecruiterPipelineControls({
     candidateStatus,
     currentPipelineStage,
     pipelineStages,
+    dict: r,
 }: {
     candidateId: string;
     jobId: string;
     candidateStatus: string;
     currentPipelineStage?: string | null;
     pipelineStages?: PipelineStage[] | null;
+    dict: Record<string, string>;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -88,7 +90,7 @@ export function RecruiterPipelineControls({
         startTransition(async () => {
             const result = await action();
             if (!result?.success) {
-                setError(result?.error || "Kunde inte uppdatera kandidaten.");
+                setError(result?.error || r.pipelineUpdateError || "Kunde inte uppdatera kandidaten.");
                 return;
             }
             setSuccess(okMessage);
@@ -98,26 +100,26 @@ export function RecruiterPipelineControls({
 
     const moveToStage = (targetStageId?: string) => {
         if (!targetStageId) {
-            setError("Välj ett steg först.");
+            setError(r.pipelineSelectStepFirst || "Välj ett steg först.");
             return;
         }
         run(
             () => moveCandidateToPipelineStage(candidateId, jobId, targetStageId),
-            "Kandidaten flyttades i pipelinen."
+            r.pipelineMovedSuccess || "Kandidaten flyttades i pipelinen."
         );
     };
 
     const setStatus = (status: string, label: string) => {
         run(
             () => updateCandidateStatus(candidateId, jobId, status),
-            `Kandidaten markerades som ${label}.`
+            (r.pipelineMarkedAs || "Kandidaten markerades som {label}.").replace("{label}", label)
         );
     };
 
     const withdraw = () => {
         run(
             () => withdrawCandidate(candidateId, jobId, withdrawReason),
-            "Kandidaten drogs tillbaka."
+            r.pipelineWithdrawnSuccess || "Kandidaten drogs tillbaka."
         );
     };
 
@@ -130,13 +132,13 @@ export function RecruiterPipelineControls({
                     </div>
                     <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-widest text-brand-700/70">
-                            Rekryterarens pipelinekontroll
+                            {r.pipelineControlTitle || "Rekryterarens pipelinekontroll"}
                         </p>
                         <p className="mt-1 text-sm font-bold text-slate-900">
-                            Flytta kandidaten i processen och uppdatera företaget visuellt
+                            {r.pipelineControlSubtitle || "Flytta kandidaten i processen och uppdatera företaget visuellt"}
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
-                            Företagets sida är read-only och speglar ändringar härifrån.
+                            {r.pipelineControlReadOnlyNote || "Företagets sida är read-only och speglar ändringar härifrån."}
                         </p>
                     </div>
                 </div>
@@ -147,7 +149,7 @@ export function RecruiterPipelineControls({
                     <>
                         <div className="grid gap-2">
                             <label className="text-xs font-black uppercase tracking-widest text-slate-400">
-                                Välj steg i pipeline
+                                {r.pipelineSelectStageLabel || "Välj steg i pipeline"}
                             </label>
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Select
@@ -156,7 +158,7 @@ export function RecruiterPipelineControls({
                                     disabled={isPending}
                                 >
                                     <SelectTrigger className="sm:flex-1">
-                                        <SelectValue placeholder="Välj steg..." />
+                                        <SelectValue placeholder={r.pipelineSelectStagePlaceholder || "Välj steg..."} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {stages.map((stage) => (
@@ -171,7 +173,7 @@ export function RecruiterPipelineControls({
                                     disabled={isPending || !selectedStageId}
                                     className="sm:min-w-[180px]"
                                 >
-                                    {isPending ? "Uppdaterar..." : "Flytta till valt steg"}
+                                    {isPending ? (r.updating || "Uppdaterar...") : (r.moveToSelectedStage || "Flytta till valt steg")}
                                 </Button>
                             </div>
                         </div>
@@ -183,7 +185,7 @@ export function RecruiterPipelineControls({
                                 onClick={() => moveToStage(prevStageId)}
                                 disabled={isPending || !prevStageId}
                             >
-                                Föregående steg
+                                {r.previousStep || "Föregående steg"}
                             </Button>
                             <Button
                                 type="button"
@@ -192,19 +194,19 @@ export function RecruiterPipelineControls({
                                 disabled={isPending || !nextStageId}
                             >
                                 <FastForward className="h-4 w-4 mr-1" />
-                                Nästa steg
+                                {r.nextStep || "Nästa steg"}
                             </Button>
                         </div>
                     </>
                 ) : (
                     <p className="text-xs text-slate-500">
-                        Detta jobb saknar custom pipeline-steg. Använd statusknapparna nedan.
+                        {r.pipelineNoCustomStages || "Detta jobb saknar custom pipeline-steg. Använd statusknapparna nedan."}
                     </p>
                 )}
 
                 <div className="pt-1 border-t border-slate-100">
                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
-                        Workflow nästa steg
+                        {r.workflowNextStep || "Workflow nästa steg"}
                     </p>
                     {allowedStatusTransitions.length > 0 ? (
                         <div className="flex flex-col sm:flex-row gap-2">
@@ -214,7 +216,7 @@ export function RecruiterPipelineControls({
                                 disabled={isPending}
                             >
                                 <SelectTrigger className="sm:flex-1">
-                                    <SelectValue placeholder="Välj nästa workflow-steg" />
+                                    <SelectValue placeholder={r.pipelineSelectWorkflowStep || "Välj nästa workflow-steg"} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {allowedStatusTransitions.map((status) => (
@@ -231,19 +233,19 @@ export function RecruiterPipelineControls({
                                 onClick={() => setStatus(selectedStatus, STATUS_LABELS[selectedStatus] || selectedStatus)}
                                 className="sm:min-w-[220px]"
                             >
-                                {isPending ? "Uppdaterar..." : "Applicera workflow-status"}
+                                {isPending ? (r.updating || "Uppdaterar...") : (r.applyWorkflowStatus || "Applicera workflow-status")}
                             </Button>
                         </div>
                     ) : (
                         <p className="text-xs text-slate-500">
-                            Inga fler tillåtna steg från nuvarande status.
+                            {r.pipelineNoMoreSteps || "Inga fler tillåtna steg från nuvarande status."}
                         </p>
                     )}
                 </div>
 
                 <div className="pt-1 border-t border-slate-100">
                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
-                        Dra tillbaka kandidat
+                        {r.withdrawCandidate || "Dra tillbaka kandidat"}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-2">
                         <Select
@@ -252,7 +254,7 @@ export function RecruiterPipelineControls({
                             disabled={isPending}
                         >
                             <SelectTrigger className="sm:flex-1">
-                                <SelectValue placeholder="Välj anledning" />
+                                <SelectValue placeholder={r.pipelineSelectReason || "Välj anledning"} />
                             </SelectTrigger>
                             <SelectContent>
                                 {CANDIDATE_WITHDRAW_REASONS.map((reason) => (
@@ -269,7 +271,7 @@ export function RecruiterPipelineControls({
                             onClick={withdraw}
                             className="sm:min-w-[220px] text-rose-700 border-rose-200 hover:bg-rose-50"
                         >
-                            {isPending ? "Uppdaterar..." : "Dra tillbaka kandidat"}
+                            {isPending ? (r.updating || "Uppdaterar...") : (r.withdrawCandidate || "Dra tillbaka kandidat")}
                         </Button>
                     </div>
                 </div>

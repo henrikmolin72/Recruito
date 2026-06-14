@@ -4,6 +4,7 @@ import { createNotification } from "@/lib/notifications/create";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { jobLifecycleEmail } from "@/lib/email/email-templates";
 import { statusChangeTimestampPatch, isCandidateInProcess } from "@/lib/candidate-workflow";
+import { logCandidateStageChange } from "@/lib/candidate-stage-history";
 
 // Only candidates still in process are auto-rejected: hired-pipeline candidates
 // are protected, and terminal statuses (withdrawn, duplicate, already rejected…)
@@ -63,6 +64,23 @@ export async function rejectRemainingCandidates(jobId: string, opts: { exceptCan
         console.error("[rejectRemainingCandidates] update", updErr.message);
         return 0;
     }
+
+    // Audit row per system-rejected candidate (best-effort; never aborts the
+    // cascade). action "reject", reason "position_filled", changed_by null.
+    await Promise.allSettled(
+        targets.map((c: any) =>
+            logCandidateStageChange({
+                candidateId: c.id,
+                jobId,
+                fromStage: null,
+                toStage: "rejected",
+                action: "reject",
+                changedBy: null,
+                changedByRole: "system",
+                reason: "position_filled",
+            })
+        )
+    );
 
     // Notify each affected recruiter once that their candidate(s) were rejected.
     try {

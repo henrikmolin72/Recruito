@@ -83,6 +83,12 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
         for (const m of mandates) {
             buckets[classifyMandate(m)].push(m);
         }
+        // Latest mandate (by joined/claimed date) on top within each bucket.
+        const byClaimedDesc = (a: Mandate, b: Mandate) =>
+            (b.claimed_at ? Date.parse(b.claimed_at) : 0) - (a.claimed_at ? Date.parse(a.claimed_at) : 0);
+        for (const key of Object.keys(buckets) as TabKey[]) {
+            buckets[key].sort(byClaimedDesc);
+        }
         return buckets;
     }, [mandates]);
 

@@ -10,17 +10,19 @@ export function DraftRowActions({
     draftId,
     resumeLabel = "Återuppta",
     deleteLabel = "Ta bort",
+    confirmLabel = "Ta bort detta utkast?",
 }: {
     mandateId: string;
     draftId: string;
     resumeLabel?: string;
     deleteLabel?: string;
+    confirmLabel?: string;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
 
     const onDelete = () => {
-        if (!confirm("Ta bort detta utkast?")) return;
+        if (!confirm(confirmLabel)) return;
         startTransition(async () => {
             await deleteDraftCandidate(draftId);
             router.refresh();

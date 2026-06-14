@@ -339,6 +339,7 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                         candidateStatus={candidate.status}
                         currentPipelineStage={candidate.current_pipeline_stage}
                         pipelineStages={(candidate.job as any)?.pipeline_stages || []}
+                        dict={r as any}
                     />
 
                     <CompanyNextStepPanel

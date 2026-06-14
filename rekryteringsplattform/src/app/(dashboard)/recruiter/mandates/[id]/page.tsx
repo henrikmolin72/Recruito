@@ -16,7 +16,7 @@ import { formatCurrency, formatDate, calculateClientFee } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
-import { candidateInStage, isMandateStage, type MandateStage } from "@/lib/mandate-stages";
+import { candidateInStage, isMandateStage, mandateExpiryDaysLeft, type MandateStage } from "@/lib/mandate-stages";
 
 const STAGE_LABEL_KEY: Record<MandateStage, string> = {
   draft: "colDraft",
@@ -45,18 +45,24 @@ export default async function RecruiterMandateDetailsPage({
     notFound();
   }
 
-  const announcements = mandate.job_id ? await getJobAnnouncements(mandate.job_id) : [];
+  // Source the job id from whatever the action actually exposes. The select
+  // nests the job as `job:jobs(...)`, so depending on the mapping the id may
+  // surface as a top-level `job_id` or as `job.id` — fall back so the
+  // JobPreviewCard fetch below never silently no-ops.
+  const jobId: string | undefined = (mandate as any).job_id ?? (mandate as any).job?.id;
+
+  const announcements = jobId ? await getJobAnnouncements(jobId) : [];
 
   // Full job row with every client-filled form field. Mandate ownership is
   // already verified by getRecruiterMandateById; the admin client bypasses
   // RLS that would otherwise hide job columns from the recruiter.
   let fullJob: any = null;
-  if (mandate.job_id) {
+  if (jobId) {
     const adminClient = createAdminClient();
     const { data } = await adminClient
       .from("jobs")
       .select("*, company:companies(company_name, website, logo_url, linkedin_url)")
-      .eq("id", mandate.job_id)
+      .eq("id", jobId)
       .maybeSingle();
     if (data) {
       fullJob = { ...data, company: Array.isArray(data.company) ? data.company[0] ?? null : data.company };
@@ -72,6 +78,17 @@ export default async function RecruiterMandateDetailsPage({
     ? mandate.candidates.filter((c) => candidateInStage(c, activeStage))
     : mandate.candidates;
   const activeStageLabel = activeStage ? ((r as any)[STAGE_LABEL_KEY[activeStage]] || activeStage) : null;
+
+  // "Present candidate" gating — mirrors the mandates list view: a new
+  // candidate can only be presented while the mandate is active, not expired,
+  // and below the submission cap.
+  const expiryDays = mandateExpiryDaysLeft({ claimedAt: mandate.claimed_at, candidates: mandate.candidates });
+  const isExpired = expiryDays !== null && expiryDays <= 0;
+  const cap = (mandate as any).max_candidates ?? 8;
+  const capReached = mandate.candidates.length >= cap;
+  const isInactive = new Set(["closed", "filled", "cancelled"]).has(mandate.status ?? "");
+  const presentBlocked = isExpired || capReached || isInactive;
+  const presentBlockedLabel = isExpired ? (r.expiredLabel || "Expired") : (r.capReachedLabel || "Cap reached");
 
   return (
     <div className="space-y-6">
@@ -92,14 +109,24 @@ export default async function RecruiterMandateDetailsPage({
         </div>
 
         <div className="flex items-center gap-2">
-          {mandate.job_id ? <ShortlistGenerator jobId={mandate.job_id} /> : null}
+          {jobId ? <ShortlistGenerator jobId={jobId} /> : null}
           <DownloadJobDescription mandate={mandate} />
-          <Link href={`/recruiter/mandates/${mandate.id}/candidates/new`}>
-            <Button size="sm" className="bg-success-500 hover:bg-success-700 gap-1">
-              <Plus className="h-4 w-4" /> {r.presentCandidate}
+          {presentBlocked ? (
+            <Button size="sm" disabled className="bg-success-500 gap-1 opacity-60 cursor-not-allowed">
+              <Plus className="h-4 w-4" /> {presentBlockedLabel}
             </Button>
-          </Link>
+          ) : (
+            <Link href={`/recruiter/mandates/${mandate.id}/candidates/new`}>
+              <Button size="sm" className="bg-success-500 hover:bg-success-700 gap-1">
+                <Plus className="h-4 w-4" /> {r.presentCandidate}
+              </Button>
+            </Link>
+          )}
         </div>
+      </div>
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">
+        <p className="text-sm text-amber-800">{r.confidentialNote}</p>
       </div>
 
       <Card>
@@ -145,7 +172,7 @@ export default async function RecruiterMandateDetailsPage({
         </Card>
       )}
 
-      {fullJob && <JobPreviewCard job={fullJob} variant="recruiter" showMandateCta={false} />}
+      {fullJob && <JobPreviewCard job={fullJob} variant="recruiter" showMandateCta={false} shiftWorkLabel={(r as any).shiftWork || "Shift Work"} />}
 
       {!fullJob && (
       <Card>
@@ -208,7 +235,13 @@ export default async function RecruiterMandateDetailsPage({
                     <td className="p-4 text-muted-foreground">{formatDate(candidate.created_at)}</td>
                     <td className="p-4">
                       {candidate.status === "draft" ? (
-                        <DraftRowActions mandateId={mandate.id} draftId={candidate.id} />
+                        <DraftRowActions
+                          mandateId={mandate.id}
+                          draftId={candidate.id}
+                          resumeLabel={(r as any).resume || "Återuppta"}
+                          deleteLabel={(r as any).remove || "Ta bort"}
+                          confirmLabel={(r as any).removeDraftConfirm || "Ta bort detta utkast?"}
+                        />
                       ) : (
                         <Link href={`/recruiter/mandates/${mandate.id}/candidates/${candidate.id}`} className="text-brand-600 hover:text-brand-700 font-medium">
                           {r.openCandidate}

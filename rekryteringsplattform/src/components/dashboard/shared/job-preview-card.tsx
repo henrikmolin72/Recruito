@@ -28,6 +28,9 @@ interface JobPreviewCardProps {
     variant: "company" | "recruiter";
     /** Hide "take mandate" CTAs, e.g. when the recruiter already holds the mandate. */
     showMandateCta?: boolean;
+    /** Localized label for the "Shift Work" info row. Defaults to English to
+     * match the card's other hardcoded labels when no dict is wired in. */
+    shiftWorkLabel?: string;
 }
 
 // "full_time" → "Full Time"
@@ -61,7 +64,7 @@ const BENEFIT_ICONS: Record<string, LucideIcon> = {
     company_car: Car,
 };
 
-export function JobPreviewCard({ job, variant, showMandateCta = true }: JobPreviewCardProps) {
+export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkLabel = "Shift Work" }: JobPreviewCardProps) {
     const isRecruiter = variant === "recruiter";
     const showCta = isRecruiter && showMandateCta;
     const company = job.company;
@@ -259,6 +262,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true }: JobPrevi
                         {job.industry && <InfoItem label="Industry" value={job.industry} />}
                         {job.reporting_to && <InfoItem label="Reports To" value={job.reporting_to} />}
                         {job.working_hours && <InfoItem label="Working Hours" value={job.working_hours} />}
+                        {job.shift_work && <InfoItem label={shiftWorkLabel} value={job.shift_work} />}
                         {job.team_size && <InfoItem label="Team Size" value={job.team_size} />}
                         <InfoItem label="Travel Required" value={job.travel_required ? "Yes" : "No"} />
                         <InfoItem label="Flexible Hours" value={job.flexible_hours ? "Yes" : "No"} />

@@ -32,7 +32,6 @@ import {
     INDUSTRY_OPTIONS,
     REPORTING_TO_OPTIONS,
     TEAM_SIZE_OPTIONS,
-    EXPERIENCE_BRACKET_OPTIONS,
     WORKING_HOURS_OPTIONS,
 } from "@/lib/job-form-options";
 
@@ -56,7 +55,6 @@ interface InitialJobData {
     work_permit_accepted?: boolean;
     visa_sponsorship?: boolean;
     description?: string;
-    experience_bracket?: string;
     team_size?: string | null;
     reporting_to?: string;
     position_type?: string;
@@ -158,6 +156,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         full_time: t("jobForm.empFullTime"),
         part_time: t("jobForm.empPartTime"),
         consultant: t("jobForm.empConsultant"),
+        contract: t("jobForm.empContract"),
         freelance: t("jobForm.empFreelance"),
         internship: t("jobForm.empInternship"),
     };
@@ -211,7 +210,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         visa_sponsorship: initialData?.visa_sponsorship ?? false,
         // Step 3
         description: initialData?.description ?? "",
-        experience_bracket: initialData?.experience_bracket ?? "",
         team_size: initialData?.team_size ?? "",
         reporting_to: initialData?.reporting_to ?? "",
         position_type: initialData?.position_type ?? "",
@@ -409,6 +407,11 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
             } else {
                 toast.error(t("jobForm.fillAllRequired") || "Please fill all required fields before publishing.");
             }
+            return;
+        }
+        // Soft warning (not a hard block) if no complete language requirement was added.
+        const hasLanguage = languageRequirements.some(lr => lr.language && lr.level);
+        if (!hasLanguage && !window.confirm(t("jobForm.noLanguageWarning") || "No language requirements added — publish anyway?")) {
             return;
         }
         setLoading(true);
@@ -647,7 +650,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                                 {EMPLOYMENT_TYPE_OPTIONS.map(et => <option key={et} value={et}>{EMPLOYMENT_TYPE_LABELS[et]}</option>)}
                                             </select>
                                         </div>
-                                        {(formData.employment_type === "consultant") && (
+                                        {(formData.employment_type === "consultant" || formData.employment_type === "contract") && (
                                             <div className="space-y-2">
                                                 <label className={labelClass}>{t("jobForm.contractDuration")}</label>
                                                 <Input name="contract_duration" value={formData.contract_duration} onChange={handleInputChange}
@@ -717,15 +720,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                                 <Plus className="h-3.5 w-3.5" /> {t("jobForm.addRequirement")}
                                             </button>
                                         )}
-                                    </div>
-
-                                    {/* Experience requirements */}
-                                    <div className="space-y-2">
-                                        <label className={labelClass}>{t("jobForm.experienceRequirements")}</label>
-                                        <select name="experience_bracket" value={formData.experience_bracket} onChange={handleInputChange} className={selectClass}>
-                                            <option value="">{t("jobForm.selectExperience")}</option>
-                                            {EXPERIENCE_BRACKET_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                                        </select>
                                     </div>
 
                                     {/* Role description */}
@@ -948,7 +942,10 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                     <div className="pt-2">
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.desiredStartDate")}</label>
-                                            <Input type="date" name="desired_start_date" value={formData.desired_start_date} onChange={handleInputChange} />
+                                            <Input type="date" name="desired_start_date" value={formData.desired_start_date} onChange={handleInputChange}
+                                                className="cursor-pointer"
+                                                onClick={(e) => e.currentTarget.showPicker?.()}
+                                                onFocus={(e) => e.currentTarget.showPicker?.()} />
                                         </div>
                                     </div>
                                     <div className="space-y-3 pt-2 border-t border-slate-100">

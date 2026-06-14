@@ -497,18 +497,6 @@ export async function claimMandate(jobId: string) {
         return { error: "Jobbet är inte tillgängligt" };
     }
 
-    // Capacity from ACTIVE mandate rows only — released rows (expired past
-    // cycles) are history and must not count against the slot cap.
-    const { count: mandateCount } = await supabase
-        .from("job_mandates")
-        .select("id", { count: "exact", head: true })
-        .eq("job_id", jobId)
-        .eq("is_active", true);
-
-    if ((mandateCount ?? 0) >= job.max_recruiters) {
-        return { error: "Uppdraget är redan fullsatt" };
-    }
-
     // Submission-capacity gate (covers retaking an expired job): there must be
     // room to submit at least one more candidate. Mirrors the submission cap in
     // createCandidate (all candidates count toward max_candidates, default 8).
@@ -522,20 +510,27 @@ export async function claimMandate(jobId: string) {
         return { error: "Uppdraget har nått sin kandidatgräns och kan inte tas just nu" };
     }
 
-    const { error: mandateError } = await supabase
-        .from("job_mandates")
-        .insert({
-            job_id: jobId,
-            recruiter_id: recruiter.id,
-            is_active: true
-        });
+    // Atomic slot-cap claim: the claim_mandate RPC locks the job row, recounts
+    // active mandates under the lock, and inserts — closing the check-then-insert
+    // race where two recruiters could both exceed max_recruiters.
+    const { data: result, error: claimError } = await supabase.rpc("claim_mandate", {
+        p_job_id: jobId,
+        p_recruiter_id: recruiter.id,
+    });
 
-    if (mandateError) {
-        if (mandateError.code === '23505') {
-            return { error: "Du har redan tagit detta uppdrag" };
-        }
-        console.error("Error claiming mandate:", mandateError);
+    if (claimError) {
+        console.error("Error claiming mandate:", claimError);
         return { error: "Something went wrong. Please try again." };
+    }
+    if (result === "full") {
+        return { error: "Uppdraget är redan fullsatt" };
+    }
+    if (result === "already") {
+        return { error: "Du har redan tagit detta uppdrag" };
+    }
+    if (result !== "ok") {
+        // "notfound" or any unexpected value — surface a generic message.
+        return { error: "Jobbet är inte tillgängligt" };
     }
 
     revalidatePath("/recruiter/jobs");
@@ -718,6 +713,7 @@ export async function getRecruiterMandateById(mandateId: string) {
         client_fee_amount,
         is_exclusive,
         guarantee_period_months,
+        max_candidates,
         status,
         pipeline_stages,
         company:companies(company_name)
@@ -727,6 +723,7 @@ export async function getRecruiterMandateById(mandateId: string) {
         first_name,
         last_name,
         status,
+        status_changed_at,
         current_pipeline_stage,
         recruito_screened_at,
         created_at
@@ -752,6 +749,7 @@ export async function getRecruiterMandateById(mandateId: string) {
             first_name: candidate.first_name,
             last_name: candidate.last_name,
             status: candidate.status,
+            status_changed_at: candidate.status_changed_at,
             current_pipeline_stage: candidate.current_pipeline_stage,
             recruito_screened_at: candidate.recruito_screened_at,
             created_at: candidate.created_at,
@@ -777,6 +775,7 @@ export async function getRecruiterMandateById(mandateId: string) {
         is_exclusive: !!(job as any)?.is_exclusive,
         guarantee_period_months: (job as any)?.guarantee_period_months ?? 0,
         status: job?.status || "active",
+        max_candidates: (job as any)?.max_candidates ?? 8,
         pipeline_stages: (job as any)?.pipeline_stages || [],
         candidates,
     };

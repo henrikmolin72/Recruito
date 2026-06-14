@@ -10,6 +10,8 @@ import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
 import { CandidatePresentStatusPanel } from "@/components/dashboard/company/candidate-present-status-panel";
+import { CandidateStageHistoryTimeline } from "@/components/dashboard/company/candidate-stage-history-timeline";
+import type { CandidateStageHistory } from "@/types/db-types";
 
 async function getCandidate(candidateId: string, jobId: string) {
     const supabase = await createClient();
@@ -126,6 +128,29 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
     const screeningAnswers: Array<{ question: string; answer: string }> =
         Array.isArray(candidate.screening_answers) ? candidate.screening_answers : [];
 
+    // IMG-18: muted placeholder for empty detail fields. Reuses the existing
+    // common.notSpecified key rather than introducing a duplicate.
+    const notProvided = <span className="text-muted-foreground italic">{dict.common.notSpecified}</span>;
+
+    // Stage-progression audit trail (migration 052). RLS lets the owning company
+    // read its own candidates' rows; most-recent-first for the timeline.
+    const { data: stageHistoryRows } = await supabase
+        .from("candidate_stage_history")
+        .select("*")
+        .eq("candidate_id", candidateId)
+        .order("created_at", { ascending: false });
+    const stageHistory: CandidateStageHistory[] = (stageHistoryRows as CandidateStageHistory[]) ?? [];
+
+    const stageNames: Record<string, string> = {
+        viewed: c.stageNameViewed,
+        interview: c.stageNameInterview,
+        final_interview: c.stageNameFinalInterview,
+        job_offer: c.stageNameJobOffer,
+        hired: c.stageNameHired,
+        rejected: c.stageNameRejected,
+        withdrawn: c.stageNameWithdrawn,
+    };
+
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -212,50 +237,56 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                         </CardHeader>
                         <CardContent className="space-y-4 text-sm">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {candidate.current_salary && (
-                                    <div>
-                                        <p className="text-muted-foreground">Current Salary</p>
-                                        <p className="font-semibold">
-                                            {candidate.current_salary_currency || ''} {candidate.current_salary?.toLocaleString()}
-                                            <span className="text-muted-foreground font-normal"> / year</span>
+                                <div>
+                                    <p className="text-muted-foreground">Current Salary</p>
+                                    <p className="font-semibold">
+                                        {candidate.current_salary ? (
+                                            <>
+                                                {candidate.current_salary_currency || ''} {candidate.current_salary?.toLocaleString()}
+                                                <span className="text-muted-foreground font-normal"> / year</span>
+                                            </>
+                                        ) : notProvided}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground">Expected Salary</p>
+                                    <p className="font-semibold">
+                                        {candidate.desired_salary ? (
+                                            <>
+                                                {candidate.desired_salary_currency || ''} {candidate.desired_salary?.toLocaleString()}
+                                                <span className="text-muted-foreground font-normal"> / year</span>
+                                            </>
+                                        ) : notProvided}
+                                    </p>
+                                    {candidate.expected_salary_below_current_reason && (
+                                        <p className="mt-1 text-xs text-muted-foreground italic">
+                                            Reason expected is below current: {candidate.expected_salary_below_current_reason}
                                         </p>
-                                    </div>
-                                )}
-                                {candidate.desired_salary && (
-                                    <div>
-                                        <p className="text-muted-foreground">Expected Salary</p>
-                                        <p className="font-semibold">
-                                            {candidate.desired_salary_currency || ''} {candidate.desired_salary?.toLocaleString()}
-                                            <span className="text-muted-foreground font-normal"> / year</span>
-                                        </p>
-                                        {candidate.expected_salary_below_current_reason && (
-                                            <p className="mt-1 text-xs text-muted-foreground italic">
-                                                Reason expected is below current: {candidate.expected_salary_below_current_reason}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                                {candidate.notice_period && (
-                                    <div>
-                                        <p className="text-muted-foreground">Notice Period</p>
-                                        <p className="font-semibold">
-                                            {formatNoticePeriod(candidate.notice_period)}
-                                            {candidate.notice_negotiable && <span className="ml-2 text-xs text-emerald-600 font-medium">(Negotiable)</span>}
-                                        </p>
-                                    </div>
-                                )}
-                                {candidate.first_contact_date && (
-                                    <div>
-                                        <p className="text-muted-foreground">Date of First Contact</p>
-                                        <p className="font-semibold">{new Date(candidate.first_contact_date).toLocaleDateString()}</p>
-                                    </div>
-                                )}
-                                {candidate.contact_method && (
-                                    <div>
-                                        <p className="text-muted-foreground">Contact Method</p>
-                                        <p className="font-semibold">{formatContactMethod(candidate.contact_method)}</p>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground">Notice Period</p>
+                                    <p className="font-semibold">
+                                        {candidate.notice_period ? (
+                                            <>
+                                                {formatNoticePeriod(candidate.notice_period)}
+                                                {candidate.notice_negotiable && <span className="ml-2 text-xs text-emerald-600 font-medium">(Negotiable)</span>}
+                                            </>
+                                        ) : notProvided}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground">Date of First Contact</p>
+                                    <p className="font-semibold">
+                                        {candidate.first_contact_date ? new Date(candidate.first_contact_date).toLocaleDateString() : notProvided}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground">Contact Method</p>
+                                    <p className="font-semibold">
+                                        {candidate.contact_method ? formatContactMethod(candidate.contact_method) : notProvided}
+                                    </p>
+                                </div>
                             </div>
                             {candidate.current_benefits && (
                                 <div>
@@ -280,18 +311,20 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {candidate.employment_status && (
-                                        <div>
-                                            <p className="text-muted-foreground">Employment Status</p>
-                                            <p className="font-semibold capitalize">{candidate.employment_status.replace('_', ' ')}</p>
-                                        </div>
-                                    )}
-                                    {candidate.other_processes !== null && (
-                                        <div>
-                                            <p className="text-muted-foreground">In Other Processes</p>
-                                            <p className="font-semibold">{candidate.other_processes ? `Yes${candidate.other_processes_stage ? ` — ${candidate.other_processes_stage.replace('_', ' ')}` : ''}` : 'No'}</p>
-                                        </div>
-                                    )}
+                                    <div>
+                                        <p className="text-muted-foreground">Employment Status</p>
+                                        <p className="font-semibold capitalize">
+                                            {candidate.employment_status ? candidate.employment_status.replace('_', ' ') : notProvided}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground">In Other Processes</p>
+                                        <p className="font-semibold">
+                                            {candidate.other_processes !== null
+                                                ? (candidate.other_processes ? `Yes${candidate.other_processes_stage ? ` — ${candidate.other_processes_stage.replace('_', ' ')}` : ''}` : 'No')
+                                                : notProvided}
+                                        </p>
+                                    </div>
                                 </div>
                                 {candidate.employment_status_reason && (
                                     <div>
@@ -360,7 +393,50 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                         initialOfferAccepted={candidate.status === 'offer_accepted'}
                         initialViewedAt={(candidate as any).company_viewed_at ?? null}
                         candidateStatus={candidate.status ?? null}
+                        dict={{
+                            closeJobTitle: c.closeJobTitle,
+                            closeJobBody: c.closeJobBody,
+                            closeJobYes: c.closeJobYes,
+                            closeJobNo: c.closeJobNo,
+                            closeJobDone: c.closeJobDone,
+                            reopenCandidate: c.reopenCandidate,
+                            reopenTitle: c.reopenTitle,
+                            reopenTargetLabel: c.reopenTargetLabel,
+                            reopenReasonLabel: c.reopenReasonLabel,
+                            reopenReasonPlaceholder: c.reopenReasonPlaceholder,
+                            reopenSubmit: c.reopenSubmit,
+                            reopenCancel: c.reopenCancel,
+                            stageNameInterview: c.stageNameInterview,
+                            stageNameFinalInterview: c.stageNameFinalInterview,
+                            stageNameJobOffer: c.stageNameJobOffer,
+                        }}
                     />
+
+                    {/* Stage history timeline */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">{c.stageHistoryTitle}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <CandidateStageHistoryTimeline
+                                rows={stageHistory}
+                                labels={{
+                                    title: c.stageHistoryTitle,
+                                    empty: c.stageHistoryEmpty,
+                                    by: c.stageHistoryBy,
+                                    reason: c.stageHistoryReason,
+                                    actions: {
+                                        move: c.stageActionMove,
+                                        reject: c.stageActionReject,
+                                        reopen: c.stageActionReopen,
+                                        withdraw: c.stageActionWithdraw,
+                                        hire: c.stageActionHire,
+                                    },
+                                    stageNames,
+                                }}
+                            />
+                        </CardContent>
+                    </Card>
 
                     {/* Contact Info */}
                     <Card>
@@ -410,7 +486,11 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                     recruitorMessages={recruitorMessages}
                     currentUserId={user?.id || ''}
                     candidate={candidate}
-                    clientTabLabel="Chat with Candidate"
+                    clientTabLabel={
+                        candidate.recruiter?.profile?.full_name
+                            ? `${(c as any).chatWithRecruiter || "Chat with Recruiter"} (${candidate.recruiter.profile.full_name})`
+                            : ((c as any).chatWithRecruiter || "Chat with Recruiter")
+                    }
                 />
             </div>
         </div>

@@ -198,6 +198,8 @@ export interface Candidate {
     job_id: string;
     recruiter_id: string;
     status: CandidateStatus;
+    company_stage: string | null;
+    company_viewed_at: string | null;
     current_pipeline_stage: string | null;
     company_requested_next_step?: CompanyCandidateNextStep | null;
     company_requested_next_step_note?: string | null;
@@ -210,4 +212,19 @@ export interface Candidate {
     // Join fields
     job?: Job;
     recruiter?: Recruiter;
+}
+
+export type CandidateStageHistoryAction = 'move' | 'reject' | 'reopen' | 'withdraw' | 'hire';
+
+export interface CandidateStageHistory {
+    id: string;
+    candidate_id: string;
+    job_id: string;
+    from_stage: string | null;
+    to_stage: string;
+    action: CandidateStageHistoryAction;
+    changed_by: string | null;
+    changed_by_role: string | null;
+    reason: string | null;
+    created_at: string;
 }

@@ -49,7 +49,6 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                 work_permit_accepted: job.work_permit_accepted ?? false,
                 visa_sponsorship: job.visa_sponsorship ?? false,
                 description: job.description ?? "",
-                experience_bracket: job.experience_bracket ?? "",
                 team_size: job.team_size ?? "",
                 reporting_to: job.reporting_to ?? "",
                 position_type: job.position_type ?? "",

@@ -1,8 +1,28 @@
 "use client";
 
 import { useTransition, useState, useEffect, useRef } from "react";
-import { updateCompanyStage, markOfferAccepted } from "@/lib/actions/candidates";
-import { CheckCircle2, XCircle, Handshake, Clock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { updateCompanyStage, markOfferAccepted, closeJobAfterHire, reopenCandidate } from "@/lib/actions/candidates";
+import { allowedNextStages, REOPEN_TARGETS } from "@/lib/candidate-stage-rules";
+import { CheckCircle2, XCircle, Handshake, Clock, RotateCcw } from "lucide-react";
+
+type PanelDict = {
+    closeJobTitle: string;
+    closeJobBody: string;
+    closeJobYes: string;
+    closeJobNo: string;
+    closeJobDone: string;
+    reopenCandidate: string;
+    reopenTitle: string;
+    reopenTargetLabel: string;
+    reopenReasonLabel: string;
+    reopenReasonPlaceholder: string;
+    reopenSubmit: string;
+    reopenCancel: string;
+    stageNameInterview: string;
+    stageNameFinalInterview: string;
+    stageNameJobOffer: string;
+};
 
 // Hiring-timeline window shown to the client after they open a candidate. The
 // previous 5-day response-window counter was replaced by this 45-day hiring
@@ -36,6 +56,7 @@ export function CandidatePresentStatusPanel({
     initialOfferAccepted = false,
     initialViewedAt = null,
     candidateStatus = null,
+    dict,
 }: {
     candidateId: string;
     jobId: string;
@@ -43,7 +64,9 @@ export function CandidatePresentStatusPanel({
     initialOfferAccepted?: boolean;
     initialViewedAt?: string | null;
     candidateStatus?: string | null;
+    dict: PanelDict;
 }) {
+    const router = useRouter();
     // Withdrawn is set by the recruiter, never by the client — shown here
     // read-only, and it locks the panel (no further progression).
     const isWithdrawn = candidateStatus === "candidate_withdrawn";
@@ -54,6 +77,20 @@ export function CandidatePresentStatusPanel({
     const [viewedAt, setViewedAt] = useState<string | null>(initialViewedAt);
     const [isPending, startTransition] = useTransition();
     const autoViewFired = useRef(false);
+
+    // Post-hire "close the position?" prompt + reopen-from-rejected UI.
+    const [showCloseJob, setShowCloseJob] = useState(false);
+    const [jobClosed, setJobClosed] = useState(false);
+    const [showReopen, setShowReopen] = useState(false);
+    const [reopenTarget, setReopenTarget] = useState<string>(REOPEN_TARGETS[0]);
+    const [reopenReason, setReopenReason] = useState("");
+    const [reopenError, setReopenError] = useState<string | null>(null);
+
+    const reopenStageLabels: Record<string, string> = {
+        interview: dict.stageNameInterview,
+        final_interview: dict.stageNameFinalInterview,
+        job_offer: dict.stageNameJobOffer,
+    };
 
     // Opening the candidate profile IS the view event: on first open, mark the
     // candidate viewed, which notifies the recruiter and starts the 45-day
@@ -83,6 +120,7 @@ export function CandidatePresentStatusPanel({
 
     const handleStageClick = (stage: CompanyStage) => {
         if (isWithdrawn || stage === currentStage || isPending) return;
+        if (!allowedNextStages(currentStage).includes(stage)) return;
         setPendingStage(stage);
     };
 
@@ -92,9 +130,47 @@ export function CandidatePresentStatusPanel({
         setPendingStage(null);
         startTransition(async () => {
             const result = await updateCompanyStage(candidateId, jobId, stage);
-            if (!result.error) setCurrentStage(stage);
+            if (!result.error) {
+                setCurrentStage(stage);
+                // After a successful hire, offer to close the position.
+                if (stage === "hired") setShowCloseJob(true);
+            }
         });
     };
+
+    const handleCloseJob = () => {
+        startTransition(async () => {
+            const result = await closeJobAfterHire(jobId, candidateId);
+            if (!result.error) {
+                setShowCloseJob(false);
+                setJobClosed(true);
+                router.refresh();
+            }
+        });
+    };
+
+    const handleReopen = () => {
+        setReopenError(null);
+        startTransition(async () => {
+            const result = await reopenCandidate(candidateId, jobId, reopenTarget, reopenReason.trim() || undefined);
+            if (result?.error) {
+                setReopenError(result.error);
+            } else {
+                setShowReopen(false);
+                setCurrentStage(reopenTarget as CompanyStage);
+                router.refresh();
+            }
+        });
+    };
+
+    // Mirror the server matrix so users can't attempt skips/backward/invalid
+    // moves: a button is enabled only if it's the current stage (no-op) or an
+    // allowed next stage. Withdrawn locks everything.
+    const nextStages = allowedNextStages(currentStage);
+    const isStageEnabled = (stage: CompanyStage) =>
+        !isWithdrawn && (stage === currentStage || nextStages.includes(stage));
+
+    const isRejected = currentStage === "rejected" || candidateStatus === "rejected_client";
 
     const remaining = daysRemaining(viewedAt);
 
@@ -123,16 +199,19 @@ export function CandidatePresentStatusPanel({
             <div className="space-y-2">
                 {STAGES.map((stage) => {
                     const isActive = currentStage === stage.value;
+                    const enabled = isStageEnabled(stage.value);
                     return (
                         <button
                             key={stage.value}
                             type="button"
                             onClick={() => handleStageClick(stage.value)}
-                            disabled={isPending || isWithdrawn}
+                            disabled={isPending || !enabled}
                             className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
                                 isActive
                                     ? stage.activeClass
-                                    : "bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300"
+                                    : enabled
+                                        ? "bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300 cursor-pointer"
+                                        : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
                             } disabled:opacity-60`}
                         >
                             <span>{stage.label}</span>
@@ -185,6 +264,24 @@ export function CandidatePresentStatusPanel({
                 </div>
             )}
 
+            {isRejected && !isWithdrawn && (
+                <div className="pt-2 border-t border-slate-100">
+                    {jobClosed ? (
+                        <p className="text-[11px] text-emerald-600 text-center font-semibold">{dict.closeJobDone}</p>
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => { setReopenError(null); setShowReopen(true); }}
+                            disabled={isPending}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-blue-200 bg-blue-50 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-60"
+                        >
+                            <RotateCcw className="h-4 w-4" />
+                            {dict.reopenCandidate}
+                        </button>
+                    )}
+                </div>
+            )}
+
             {pendingStage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
                     <div className="absolute inset-0 bg-black/40" onClick={() => setPendingStage(null)} />
@@ -207,6 +304,80 @@ export function CandidatePresentStatusPanel({
                                 className="px-4 py-2 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-700"
                             >
                                 Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showCloseJob && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40" onClick={() => !isPending && setShowCloseJob(false)} />
+                    <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
+                        <h2 className="text-base font-bold text-slate-900 mb-2">{dict.closeJobTitle}</h2>
+                        <p className="text-sm text-slate-500 mb-6">{dict.closeJobBody}</p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowCloseJob(false)}
+                                disabled={isPending}
+                                className="px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-60"
+                            >
+                                {dict.closeJobNo}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleCloseJob}
+                                disabled={isPending}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-60"
+                            >
+                                {dict.closeJobYes}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showReopen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40" onClick={() => !isPending && setShowReopen(false)} />
+                    <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
+                        <h2 className="text-base font-bold text-slate-900 mb-4">{dict.reopenTitle}</h2>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">{dict.reopenTargetLabel}</label>
+                        <select
+                            value={reopenTarget}
+                            onChange={(e) => setReopenTarget(e.target.value)}
+                            className="w-full mb-4 px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white"
+                        >
+                            {REOPEN_TARGETS.map((t) => (
+                                <option key={t} value={t}>{reopenStageLabels[t]}</option>
+                            ))}
+                        </select>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">{dict.reopenReasonLabel}</label>
+                        <textarea
+                            value={reopenReason}
+                            onChange={(e) => setReopenReason(e.target.value)}
+                            rows={3}
+                            placeholder={dict.reopenReasonPlaceholder}
+                            className="w-full mb-1 px-3 py-2 text-sm border border-slate-200 rounded-lg resize-none"
+                        />
+                        {reopenError && <p className="mb-2 text-[11px] text-red-600">{reopenError}</p>}
+                        <div className="flex justify-end gap-3 mt-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowReopen(false)}
+                                disabled={isPending}
+                                className="px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-60"
+                            >
+                                {dict.reopenCancel}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleReopen}
+                                disabled={isPending}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-60"
+                            >
+                                {dict.reopenSubmit}
                             </button>
                         </div>
                     </div>

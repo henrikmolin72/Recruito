@@ -43,6 +43,7 @@ function makeClient() {
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => makeClient() }));
 vi.mock("@/lib/notifications/create", () => ({ createNotification: vi.fn() }));
+vi.mock("@/lib/candidate-stage-history", () => ({ logCandidateStageChange: vi.fn() }));
 vi.mock("@/lib/email/internal-notifications", () => ({ sendUserEmail: vi.fn() }));
 vi.mock("@/lib/email/email-templates", () => ({ jobLifecycleEmail: () => "<html></html>" }));
 vi.mock("@/lib/candidate-workflow", async (importOriginal) => {

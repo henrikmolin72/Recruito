@@ -3,48 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Info } from "lucide-react";
 import { getCompanyJobs } from "@/lib/actions/jobs";
-import { formatCurrency, formatDateShort, calculateClientFee } from "@/lib/utils";
 import { getDictionary } from "@/i18n/server";
+import { CompanyJobsTable } from "./jobs-table";
 
 export default async function CompanyJobsPage() {
   const jobs = await getCompanyJobs();
   const dict = await getDictionary();
   const c = dict.company;
-
-  function formatGuarantee(months: number | null | undefined) {
-    if (!months) return "—";
-    return months === 1
-      ? (c.guaranteeMonths || "{count} month").replace("{count}", String(months))
-      : (c.guaranteeMonthsPlural || "{count} months").replace("{count}", String(months));
-  }
-
-  function formatSalaryRange(job: any) {
-    if (!job.salary_max && !job.salary_min) return "—";
-    const currency = job.salary_currency || "EUR";
-    return formatCurrency(job.salary_max || job.salary_min, currency);
-  }
-
-  function calculateJobFee(job: any) {
-    const currency = job.salary_currency || "EUR";
-    // Locked fee wins — set on creation/admin override and never recomputed.
-    if (job.client_fee_amount != null) {
-      return formatCurrency(Number(job.client_fee_amount), currency);
-    }
-    const baseSalary = job.salary_max || job.salary_min;
-    if (!baseSalary) return "—";
-    return formatCurrency(
-      calculateClientFee(baseSalary, job.guarantee_period_months ?? 0, !!job.is_exclusive),
-      currency,
-    );
-  }
-
-  function getStatusDisplay(status: string) {
-    if (status === "active") return { label: c.statusLive || "Live", color: "text-success-500" };
-    if (status === "paused") return { label: c.statusPaused || "Paused", color: "text-danger-500" };
-    if (status === "draft") return { label: "Draft", color: "text-amber-500" };
-    if (status === "closed") return { label: c.statusClosed || "Closed", color: "text-slate-500" };
-    return { label: status, color: "text-muted-foreground" };
-  }
 
   return (
     <div className="space-y-6">
@@ -69,63 +34,7 @@ export default async function CompanyJobsPage() {
           </Link>
         </div>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="px-4 py-3 text-left font-semibold text-foreground">{c.tableTitle || "Job"}</th>
-                    <th className="px-4 py-3 text-left font-semibold text-foreground">{c.tableCity || "City"}</th>
-                    <th className="px-4 py-3 text-left font-semibold text-foreground">{c.tableSalary || "Salary"}</th>
-                    <th className="px-4 py-3 text-center font-semibold text-foreground">{c.tableCandidates}</th>
-                    <th className="px-4 py-3 text-right font-semibold text-foreground">{c.tableFee || "Fee"}</th>
-                    <th className="px-4 py-3 text-center font-semibold text-foreground">{c.tableGuarantee || "Guarantee"}</th>
-                    <th className="px-4 py-3 text-center font-semibold text-foreground">{c.tableRecruiters}</th>
-                    <th className="px-4 py-3 text-center font-semibold text-foreground">{c.tableStatus}</th>
-                    <th className="px-4 py-3 text-left font-semibold text-foreground">{c.tablePublished || "Published"}</th>
-                    <th className="px-4 py-3 text-center font-semibold text-foreground">{c.tableEdit || "Edit"}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {jobs.map((job: any) => {
-                    const { label: statusLabel, color: statusColor } = getStatusDisplay(job.status);
-                    return (
-                      <tr key={job.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 font-medium">
-                          <Link href={`/company/jobs/${job.id}`} className="hover:text-brand-600 transition-colors">
-                            {job.title}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{job.city || job.location || "—"}</td>
-                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatSalaryRange(job)}</td>
-                        <td className="px-4 py-3 text-center">{job.candidates_count}</td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">{calculateJobFee(job)}</td>
-                        <td className="px-4 py-3 text-center text-muted-foreground">{formatGuarantee(job.guarantee_period_months)}</td>
-                        <td className="px-4 py-3 text-center">{job.recruiters_count}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`font-semibold ${statusColor}`}>{statusLabel}</span>
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatDateShort(job.published_at || job.created_at)}</td>
-                        <td className="px-4 py-3 text-center">
-                          {job.status === 'draft' ? (
-                            <Link href={`/company/jobs/${job.id}/edit`}>
-                              <Button variant="outline" size="sm">{c.tableEdit || "Edit"}</Button>
-                            </Link>
-                          ) : (
-                            <Link href={`/company/jobs/${job.id}`}>
-                              <Button variant="outline" size="sm">{c.tableView || "View"}</Button>
-                            </Link>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <CompanyJobsTable jobs={jobs} dict={c} />
       )}
 
       {/* Notifications & Important Notes */}
