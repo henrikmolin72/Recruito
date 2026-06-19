@@ -1,0 +1,36 @@
+{
+  "name": "recruito-screening-quality",
+  "_comment": "TEMPLATE — rubric-scored evals for Recruito's AI features (candidate screening / interviewer). Fill in agent_under_test (how you invoke the feature) + cases, set the ANTHROPIC_API_KEY secret in CI, then run WITHOUT --no-run/--no-judge. This is where the real verification value is: tests check deterministic logic, evals check the AI behavior.",
+
+  "agent_under_test": {
+    "_comment": "Replace with how you invoke the screening feature for a given input. e.g. a CLI, an API route via curl, or a node script that calls the scoring function. {prompt} and {workdir} are substituted.",
+    "command": "node rekryteringsplattform/scripts/screen-candidate.mjs {prompt}"
+  },
+  "judge": {
+    "command": "claude -p {judge_prompt} --model claude-haiku-4-5-20251001"
+  },
+
+  "dimensions": {
+    "task_success": 0.4,
+    "tool_use_quality": 0.2,
+    "trajectory": 0.2,
+    "response_quality": 0.1
+  },
+  "penalties": { "hallucination": 0.1 },
+  "gate": { "min_weighted_score": 0.8, "max_penalty": { "hallucination": 0.0 } },
+
+  "cases": [
+    {
+      "id": 1,
+      "name": "strong-candidate-scored-high",
+      "prompt": "Screen this CV against the senior backend role: <paste a known strong CV>.",
+      "judge_rubric": "Did the screen identify the genuinely relevant qualifications and score the candidate appropriately high? Penalize inventing experience the CV does not contain (hallucination) and skipping stated disqualifiers."
+    },
+    {
+      "id": 2,
+      "name": "weak-candidate-not-overrated",
+      "prompt": "Screen this clearly-underqualified CV against the same role: <paste a known weak CV>.",
+      "judge_rubric": "Did it correctly flag the candidate as a weak match with specific, grounded reasons? Penalize hallucinated strengths and vague boilerplate."
+    }
+  ]
+}

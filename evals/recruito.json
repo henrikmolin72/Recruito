@@ -1,0 +1,19 @@
+{
+  "name": "recruito-ci-gate",
+  "_comment": "Deterministic CI gate. Runs the app's unit tests as the gated check. Invoked with --no-run --no-judge (no agent call, no API key needed). To add rubric-scored evals of Recruito's AI features (screening/interviewer), graduate cases from recruito.judge-example.json and drop --no-judge.",
+
+  "dimensions": { "task_success": 1.0 },
+  "penalties": {},
+  "gate": { "min_weighted_score": 1.0 },
+
+  "cases": [
+    {
+      "id": 1,
+      "name": "unit-tests",
+      "prompt": "(deterministic check — no agent run)",
+      "code_checks": [
+        { "name": "vitest", "cmd": "npm --prefix rekryteringsplattform run test", "dimension": "task_success" }
+      ]
+    }
+  ]
+}

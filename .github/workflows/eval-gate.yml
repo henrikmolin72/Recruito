@@ -1,0 +1,51 @@
+name: Eval Gate
+
+# Production-ready eval gate (AGENTIC-SDLC §4/§5): the bar is the eval, not the demo.
+# Starter form runs the app's unit tests as a deterministic gate (no agent call, no
+# API key). To gate on AI-feature quality, graduate cases from
+# evals/recruito.judge-example.json, add the ANTHROPIC_API_KEY secret, and drop
+# --no-judge so the LM-judge dimensions are scored.
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  eval-gate:
+    name: Eval gate (unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: rekryteringsplattform/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix rekryteringsplattform
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run gated evals
+        # Placeholder env mirrors ci.yml so app code can import during tests.
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_PUBLIC_APP_URL: https://placeholder.recruito.eu
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+          # ANTHROPIC_API_KEY: secret  # uncomment + set when using judge evals
+        run: |
+          python tools/eval-harness/run_evals.py \
+            evals/recruito.json --no-run --no-judge --out eval-runs/ci
+          # run_evals.py exits non-zero when the gate fails -> PR blocked.
+
+      - name: Upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: eval-runs/ci/report.md

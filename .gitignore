@@ -8,3 +8,7 @@
 .omc/state/
 .omc/sessions/
 .omc/notepad.md
+
+# eval-harness
+eval-runs/
+tools/eval-harness/__pycache__/
