@@ -160,7 +160,7 @@ export function CandidateSubmissionForm({
     const TEXT_DRAFT_KEYS = ["first_name","last_name","email","phone","location_city","location_country",
         "linkedin_url","portfolio_url","current_title","current_company",
         "years_experience","current_salary","expected_salary","cover_note",
-        "notice_period","first_contact_date","assessment_summary"];
+        "notice_period","first_contact_date"];
     const [draftTextFields, setDraftTextFields] = useState<Record<string, string>>(() => {
         if (!draft) return {};
         const map: Record<string, string> = {};

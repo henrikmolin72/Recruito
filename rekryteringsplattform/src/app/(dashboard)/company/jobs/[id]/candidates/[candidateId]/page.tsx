@@ -368,18 +368,6 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                         </Card>
                     )}
 
-                    {/* Assessment Summary */}
-                    {candidate.assessment_summary && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Candidate Assessment Summary</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm whitespace-pre-wrap">{candidate.assessment_summary}</p>
-                            </CardContent>
-                        </Card>
-                    )}
-
                     {/* Screening Answers */}
                     {hasScreeningAnswers && (
                         <Card>

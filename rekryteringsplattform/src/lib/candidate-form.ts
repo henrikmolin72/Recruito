@@ -83,7 +83,6 @@ export function parseCandidateColumns(formData: FormData): Record<string, any> {
         contact_method: fdString(formData.get("contact_method")) || null,
         screening_answers: screeningAnswers.length > 0 ? screeningAnswers : null,
         language_proficiency: languageProficiency.length > 0 ? languageProficiency : null,
-        assessment_summary: fdString(formData.get("assessment_summary")) || null,
     };
 }
 
