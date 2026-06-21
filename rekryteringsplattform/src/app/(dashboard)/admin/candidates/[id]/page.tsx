@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { getCandidateScreeningDetail } from "@/lib/actions/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getLatestEvaluation } from "@/lib/actions/screening";
+import { MarkdownReport } from "@/components/screening/markdown-report";
+import { RunScreeningButton } from "@/components/dashboard/admin/run-screening-button";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
     if (value === null || value === undefined || value === "") return null;
@@ -41,6 +44,9 @@ export default async function AdminCandidateDetailPage({
     const { id } = await params;
     const c = await getCandidateScreeningDetail(id);
     if (!c) notFound();
+
+    // Latest full AI screening report (admin-scoped read; null if none run yet).
+    const report = c.mandate_id ? await getLatestEvaluation(id, c.mandate_id) : null;
 
     const score: number | null = c.ai_match_score ?? null;
     const tier = score === null ? null : score >= 80 ? "strong" : score >= 60 ? "moderate" : "weak";
@@ -97,21 +103,41 @@ export default async function AdminCandidateDetailPage({
                 </div>
             )}
 
-            {/* Requirement #2 — AI Match report (score + tier) */}
+            {/* AI Match — score + full screening report (decision support: reject vs submit) */}
             <Section title="AI Match" id="ai-match">
-                {score === null ? (
-                    <p className="text-sm text-muted-foreground">No AI match score recorded for this candidate.</p>
-                ) : (
+                <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <span className={`text-4xl font-black tabular-nums ${scoreColor}`}>{score}%</span>
-                        {tierLabel && (
-                            <span className="text-xs font-bold uppercase tracking-wide text-slate-500">{tierLabel}</span>
+                        {score === null ? (
+                            <span className="text-sm text-muted-foreground">No AI match score yet.</span>
+                        ) : (
+                            <>
+                                <span className={`text-4xl font-black tabular-nums ${scoreColor}`}>{score}%</span>
+                                {tierLabel && (
+                                    <span className="text-xs font-bold uppercase tracking-wide text-slate-500">{tierLabel}</span>
+                                )}
+                            </>
                         )}
                     </div>
+                    {c.mandate_id && (
+                        <RunScreeningButton candidateId={c.id} mandateId={c.mandate_id} hasReport={Boolean(report)} />
+                    )}
+                </div>
+
+                {report ? (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                        <p className="mb-2 text-xs text-muted-foreground">
+                            Full screening report · {report.modelVersion} · {new Date(report.createdAt).toLocaleString()}
+                        </p>
+                        <MarkdownReport markdown={report.reportMarkdown} />
+                    </div>
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                        No screening report yet — run AI screening to generate the full evaluation.
+                    </p>
                 )}
+
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                    Decision support only — not an automated hiring decision. Detailed improvement hints are shown to
-                    the recruiter at submission time and are not stored on the candidate record.
+                    Decision support only — not an automated hiring decision.
                 </p>
             </Section>
 
