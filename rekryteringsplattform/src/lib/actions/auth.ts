@@ -13,6 +13,8 @@ import {
 import { mapExperienceBracketToYears } from "@/lib/recruiter-onboarding-options";
 import { sendInternalRecruiterEmail, sendUserEmail } from "@/lib/email/internal-notifications";
 import { createTranslator } from "@/i18n/server";
+import { headers } from "next/headers";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 function mapAuthError(message: string | undefined): string {
   if (!message) return "Tjänsten är otillgänglig just nu. Försök igen.";
@@ -20,6 +22,46 @@ function mapAuthError(message: string | undefined): string {
   if (/email not confirmed/i.test(message)) return "Bekräfta din e-post först.";
   if (/rate.*limit|too many|429/i.test(message)) return "För många försök. Vänta en stund och försök igen.";
   return "Tjänsten är otillgänglig just nu. Försök igen.";
+}
+
+const RATE_LIMITED_MESSAGE = "För många försök. Vänta en stund och försök igen.";
+
+// Best-effort client IP for pre-auth rate-limit keys. On Vercel the first
+// x-forwarded-for entry IS the real client (the platform sets it); behind a
+// different/untrusted ingress this header is spoofable, so the per-IP bucket
+// below assumes Vercel-style trusted forwarding. Missing-header requests pool
+// under "unknown" — acceptable on Vercel where the header is always present.
+async function getClientIp(): Promise<string> {
+  const h = await headers();
+  const forwarded = h.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]!.trim();
+  return h.get("x-real-ip") ?? "unknown";
+}
+
+// Two-bucket auth throttle: a tight per-(email+IP) bucket plus a coarser per-IP
+// bucket, so email rotation (credential stuffing across many accounts from one
+// source) still trips the per-IP cap. Returns true when EITHER bucket is
+// exhausted. consumeRateLimit fails open if its backing store is unavailable.
+async function authRateLimited(
+  action: string,
+  email: string,
+  perEmailIp: number,
+  perIp: number,
+): Promise<boolean> {
+  const ip = await getClientIp();
+  const windowMs = 15 * 60 * 1000;
+  const [byEmailIp, byIp] = await Promise.all([
+    consumeRateLimit({ key: `auth:${action}:${email.toLowerCase()}:${ip}`, limit: perEmailIp, windowMs }),
+    consumeRateLimit({ key: `auth:${action}:ip:${ip}`, limit: perIp, windowMs }),
+  ]);
+  return !byEmailIp.allowed || !byIp.allowed;
+}
+
+// Log only safe, non-PII fields from a Supabase/Postgres error — full error
+// objects can carry submitted column values (names, org numbers) into logs/Sentry.
+function logSafeError(scope: string, error: unknown) {
+  const e = error as { code?: string; status?: number; message?: string } | null;
+  console.error(`[auth:${scope}]`, { code: e?.code, status: e?.status, message: e?.message });
 }
 
 export async function login(formData: FormData) {
@@ -30,13 +72,19 @@ export async function login(formData: FormData) {
         return { error: parsed.error };
     }
 
+    // Throttle login: 10/15min per email+IP, plus 50/15min per IP to cap
+    // email-rotation credential stuffing from a single source.
+    if (await authRateLimited("login", parsed.data.email, 10, 50)) {
+        return { error: RATE_LIMITED_MESSAGE };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
         email: parsed.data.email,
         password: parsed.data.password,
     });
 
     if (error) {
-        console.error("Auth error:", error);
+        logSafeError("auth", error);
         return { error: mapAuthError(error.message) };
     }
 
@@ -135,7 +183,7 @@ export async function registerCompany(formData: FormData) {
     });
 
     if (error) {
-        console.error("Auth error:", error);
+        logSafeError("auth", error);
         return { error: mapAuthError(error.message) };
     }
 
@@ -150,7 +198,7 @@ export async function registerCompany(formData: FormData) {
         });
 
         if (companyError) {
-            console.error("Company creation failed:", companyError);
+            logSafeError("company-create", companyError);
             await supabaseAdmin.auth.admin.deleteUser(data.user.id);
             return { error: "Kunde inte skapa företagsprofil. Försök igen." };
         }
@@ -182,7 +230,7 @@ export async function registerRecruiter(formData: FormData) {
     });
 
     if (error) {
-        console.error("Auth error:", error);
+        logSafeError("auth", error);
         return { error: mapAuthError(error.message) };
     }
 
@@ -199,7 +247,7 @@ export async function registerRecruiter(formData: FormData) {
         });
 
         if (recruiterError) {
-            console.error("Recruiter creation failed:", recruiterError);
+            logSafeError("recruiter-create", recruiterError);
             await supabaseAdmin.auth.admin.deleteUser(data.user.id);
             return { error: "Kunde inte skapa rekryterarprofil. Försök igen." };
         }
@@ -267,12 +315,18 @@ export async function requestPasswordReset(formData: FormData) {
         return { error: parsed.error };
     }
 
+    // Throttle reset: 5/15min per email+IP, plus 20/15min per IP. These also
+    // trigger outbound email, so keep the caps tight.
+    if (await authRateLimited("password-reset", parsed.data.email, 5, 20)) {
+        return { error: RATE_LIMITED_MESSAGE };
+    }
+
     const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
         redirectTo: `${appUrl}/reset-password`,
     });
 
     if (error) {
-        console.error("Password reset request failed:", error);
+        logSafeError("password-reset", error);
         return { error: "Kunde inte skicka återställningslänk just nu" };
     }
 
