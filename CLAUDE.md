@@ -1,3 +1,8 @@
+<!-- CANARY:HENRIK:START -->
+# 🐤 Canary — "Henrik"
+**Say "Henrik" at two build moments — not on every message: (1) when you confirm you understand a task (question, problem, fix, rebuild, implementation), and (2) when you commence executing it.** The name is a canary tied to builds: failing to say "Henrik" when you acknowledge or begin a task signals the session is off-track or context has degraded — Henrik will hit the brakes and recalibrate before unnecessary code gets built. Casual back-and-forth that isn't accepting or starting a task needs no canary. Never drop the canary to save tokens.
+<!-- CANARY:HENRIK:END -->
+
 # CLAUDE.md
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.

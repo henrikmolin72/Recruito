@@ -32,6 +32,10 @@ ALTER TABLE public.candidate_stage_history ENABLE ROW LEVEL SECURITY;
 -- recruiter presenting the candidate (recruiter.user_id = auth.uid()). Mirrors
 -- the candidates SELECT policy via the same get_company_id()/get_recruiter_id()
 -- helpers (each is `SELECT id FROM <table> WHERE user_id = auth.uid()`).
+-- DROP-then-CREATE so re-applying this migration (e.g. pasting into the SQL
+-- editor, which doesn't consult migration tracking) doesn't fail with 42710.
+DROP POLICY IF EXISTS "Stage history visible to job company and candidate recruiter"
+  ON public.candidate_stage_history;
 CREATE POLICY "Stage history visible to job company and candidate recruiter"
   ON public.candidate_stage_history FOR SELECT USING (
     job_id IN (SELECT id FROM public.jobs WHERE company_id = public.get_company_id())
