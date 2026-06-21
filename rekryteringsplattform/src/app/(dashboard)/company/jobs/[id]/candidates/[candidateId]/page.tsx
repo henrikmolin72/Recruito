@@ -128,6 +128,16 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
     const screeningAnswers: Array<{ question: string; answer: string }> =
         Array.isArray(candidate.screening_answers) ? candidate.screening_answers : [];
 
+    // Collapse genuinely-empty sections so legacy / sparsely-presented candidates
+    // don't render rows of "Not specified". These fields are now required at
+    // presentation time, so new candidates always have data to show.
+    const hasCompensation = !!(
+        candidate.current_salary || candidate.desired_salary || candidate.notice_period ||
+        candidate.first_contact_date || candidate.contact_method ||
+        candidate.current_benefits || candidate.desired_benefits
+    );
+    const hasScreeningAnswers = screeningAnswers.some((qa) => qa.answer && qa.answer.trim());
+
     // IMG-18: muted placeholder for empty detail fields. Reuses the existing
     // common.notSpecified key rather than introducing a duplicate.
     const notProvided = <span className="text-muted-foreground italic">{dict.common.notSpecified}</span>;
@@ -199,12 +209,14 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <p className="text-muted-foreground">Location</p>
-                                    <p className="font-semibold">
-                                        {[candidate.location_city, candidate.location_country].filter(Boolean).join(", ") || '-'}
-                                    </p>
-                                </div>
+                                {(candidate.location_city || candidate.location_country) && (
+                                    <div>
+                                        <p className="text-muted-foreground">Location</p>
+                                        <p className="font-semibold">
+                                            {[candidate.location_city, candidate.location_country].filter(Boolean).join(", ")}
+                                        </p>
+                                    </div>
+                                )}
                                 {candidate.location_status && (
                                     <div>
                                         <p className="text-muted-foreground">Location Status</p>
@@ -231,6 +243,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                     </Card>
 
                     {/* Compensation & Availability */}
+                    {hasCompensation && (
                     <Card>
                         <CardHeader>
                             <CardTitle>Compensation & Availability</CardTitle>
@@ -302,9 +315,10 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                             )}
                         </CardContent>
                     </Card>
+                    )}
 
                     {/* Employment Status */}
-                    {(candidate.employment_status || candidate.other_processes !== null) && (
+                    {(candidate.employment_status || candidate.other_processes) && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Employment Status & Recruitment Activity</CardTitle>
@@ -367,7 +381,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                     )}
 
                     {/* Screening Answers */}
-                    {screeningAnswers.length > 0 && (
+                    {hasScreeningAnswers && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Screening Answers</CardTitle>

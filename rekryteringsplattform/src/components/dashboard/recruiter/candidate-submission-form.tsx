@@ -22,8 +22,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createCandidateExtended, saveDraftCandidate, deleteDraftCandidate } from "@/lib/actions/candidates-extended";
+import { getMissingRequiredFields } from "@/lib/candidate-form";
 import { EUROPEAN_LANGUAGE_OPTIONS } from "@/lib/job-form-options";
 import { toast } from "sonner";
+
+// Small red asterisk marking a field the recruiter must complete before presenting.
+const Req = () => <span className="text-red-500"> *</span>;
 
 type Dict = Record<string, string>;
 
@@ -34,7 +38,7 @@ interface Props {
     screeningQuestions?: string[];
     dict: Dict;
     initialDraftId?: string | null;
-    initialDraftText?: Record<string, string>;
+    initialDraft?: Record<string, any> | null;
 }
 
 const CURRENCIES = ["EUR", "SEK", "NOK", "DKK", "GBP", "USD", "CHF", "PLN"];
@@ -78,50 +82,65 @@ export function CandidateSubmissionForm({
     screeningQuestions = [],
     dict: r,
     initialDraftId = null,
-    initialDraftText,
+    initialDraft = null,
 }: Props) {
     const router = useRouter();
 
+    const draft = initialDraft;
+    // Coerce a draft column to a string for uncontrolled-input defaultValues.
+    const ds = (key: string) => {
+        const v = draft?.[key];
+        return v === null || v === undefined ? "" : String(v);
+    };
+
     // --- Email (shared between Verify tool and Personal Details) ---
-    const [email, setEmail] = useState(initialDraftText?.email || "");
+    const [email, setEmail] = useState(ds("email"));
     const [verifyStatus, setVerifyStatus] = useState<"idle" | "checking" | "ok" | "blocked">("idle");
 
     // --- Section 2: AI score ---
-    const [aiScore, setAiScore] = useState<number | null>(null);
+    const [aiScore, setAiScore] = useState<number | null>(draft?.ai_match_score ?? null);
     const [aiScoreLoading, setAiScoreLoading] = useState(false);
     const [aiHints, setAiHints] = useState<string[]>([]);
 
     // --- Section 2: location status & work auth ---
-    const [locationStatus, setLocationStatus] = useState("");
-    const [workAuth, setWorkAuth] = useState("");
+    const [locationStatus, setLocationStatus] = useState(ds("location_status"));
+    const [workAuth, setWorkAuth] = useState(ds("work_authorization"));
 
     // --- Section 3: employment ---
-    const [employmentStatus, setEmploymentStatus] = useState("");
-    const [otherProcesses, setOtherProcesses] = useState("");
-    const [otherProcessesStage, setOtherProcessesStage] = useState("");
+    const [employmentStatus, setEmploymentStatus] = useState(ds("employment_status"));
+    const [otherProcesses, setOtherProcesses] = useState(draft?.other_processes ? "yes" : "");
+    const [otherProcessesStage, setOtherProcessesStage] = useState(ds("other_processes_stage"));
 
     // --- Section 4: notice negotiable ---
-    const [noticeNegotiable, setNoticeNegotiable] = useState("");
+    const [noticeNegotiable, setNoticeNegotiable] = useState(draft?.notice_negotiable ? "yes" : "");
 
     // --- Section 4: compensation (linked currency + below-current reason) ---
-    const [currentCurrency, setCurrentCurrency] = useState("EUR");
-    const [expectedCurrency, setExpectedCurrency] = useState("EUR");
-    const [currentSalary, setCurrentSalary] = useState("");
-    const [expectedSalary, setExpectedSalary] = useState("");
+    const [currentCurrency, setCurrentCurrency] = useState(draft?.current_salary_currency || "EUR");
+    const [expectedCurrency, setExpectedCurrency] = useState(draft?.desired_salary_currency || "EUR");
+    const [currentSalary, setCurrentSalary] = useState(ds("current_salary"));
+    const [expectedSalary, setExpectedSalary] = useState(
+        draft?.desired_salary != null ? String(draft.desired_salary) : ""
+    );
     const expectedBelowCurrent =
         !!currentSalary &&
         !!expectedSalary &&
         Number(expectedSalary) < Number(currentSalary);
 
     // --- Section 5: contact method, languages ---
-    const [contactMethod, setContactMethod] = useState("");
-    const [languages, setLanguages] = useState<{ language: string; proficiency: string }[]>([
-        { language: "", proficiency: "" },
-    ]);
+    const [contactMethod, setContactMethod] = useState(ds("contact_method"));
+    const [languages, setLanguages] = useState<{ language: string; proficiency: string }[]>(
+        Array.isArray(draft?.language_proficiency) && draft.language_proficiency.length > 0
+            ? draft.language_proficiency
+            : [{ language: "", proficiency: "" }]
+    );
 
     // --- Screening ---
     const [screeningAnswers, setScreeningAnswers] = useState<string[]>(
-        screeningQuestions.map(() => "")
+        screeningQuestions.map((q, i) => {
+            const arr = Array.isArray(draft?.screening_answers) ? draft.screening_answers : [];
+            const match = arr.find((a: any) => a?.question === q);
+            return String(match?.answer ?? arr[i]?.answer ?? "");
+        })
     );
 
     // --- CV ---
@@ -142,7 +161,25 @@ export function CandidateSubmissionForm({
         "linkedin_url","portfolio_url","current_title","current_company",
         "years_experience","current_salary","expected_salary","cover_note",
         "notice_period","first_contact_date","assessment_summary"];
-    const [draftTextFields, setDraftTextFields] = useState<Record<string, string>>(initialDraftText || {});
+    const [draftTextFields, setDraftTextFields] = useState<Record<string, string>>(() => {
+        if (!draft) return {};
+        const map: Record<string, string> = {};
+        const cols = [
+            "first_name", "last_name", "email", "phone", "location_city", "location_country",
+            "linkedin_url", "portfolio_url", "cover_note", "notice_period", "first_contact_date",
+            "current_benefits", "desired_benefits", "expected_salary_below_current_reason",
+        ];
+        for (const k of cols) {
+            const v = draft[k];
+            if (v !== null && v !== undefined) map[k] = String(v);
+        }
+        // The "Reason / motivation" input is named employment_reason but stored in
+        // the employment_status_reason column.
+        if (draft.employment_status_reason != null) {
+            map["employment_reason"] = String(draft.employment_status_reason);
+        }
+        return map;
+    });
     const [draftId, setDraftId] = useState<string | null>(initialDraftId);
 
     useEffect(() => {
@@ -206,10 +243,32 @@ export function CandidateSubmissionForm({
         setLanguages(updated);
     }
 
+    // Fold the React-controlled state (toggles, selects, screening, languages)
+    // into the FormData. Used by BOTH submit and draft-save so a saved draft
+    // carries the same fields a direct present would — fixes the draft data-loss.
+    function injectDynamicFields(fd: FormData) {
+        fd.set("location_status", locationStatus);
+        fd.set("work_authorization", workAuth);
+        fd.set("employment_status", employmentStatus);
+        fd.set("other_processes", otherProcesses);
+        fd.set("other_processes_stage", otherProcessesStage);
+        fd.set("notice_negotiable", noticeNegotiable);
+        fd.set("contact_method", contactMethod);
+        fd.set("language_proficiency", JSON.stringify(languages.filter((l) => l.language)));
+        fd.set(
+            "screening_answers",
+            JSON.stringify(
+                screeningQuestions.map((q, i) => ({ question: q, answer: screeningAnswers[i] || "" }))
+            )
+        );
+        if (aiScore !== null) fd.set("ai_match_score", String(aiScore));
+    }
+
     async function handleSaveDraft(e: React.MouseEvent) {
         e.preventDefault();
         const form = (e.currentTarget as HTMLElement).closest("form") as HTMLFormElement;
         const fd = new FormData(form);
+        injectDynamicFields(fd);
         try {
             const result = await saveDraftCandidate(mandateId, fd, draftId);
             if (result?.error) {
@@ -236,24 +295,21 @@ export function CandidateSubmissionForm({
 
         const form = e.currentTarget;
         const fd = new FormData(form);
-
-        // Inject dynamic state values
-        fd.set("location_status", locationStatus);
-        fd.set("work_authorization", workAuth);
-        fd.set("employment_status", employmentStatus);
-        fd.set("other_processes", otherProcesses);
-        fd.set("other_processes_stage", otherProcessesStage);
-        fd.set("notice_negotiable", noticeNegotiable);
-        fd.set("contact_method", contactMethod);
-        fd.set("language_proficiency", JSON.stringify(languages.filter((l) => l.language)));
-        fd.set(
-            "screening_answers",
-            JSON.stringify(
-                screeningQuestions.map((q, i) => ({ question: q, answer: screeningAnswers[i] || "" }))
-            )
-        );
-        if (aiScore !== null) fd.set("ai_match_score", String(aiScore));
+        injectDynamicFields(fd);
         if (cvFile) fd.set("cv_file", cvFile);
+
+        // Required fields (mirrors the server) — a candidate can't be presented
+        // with empty compensation / employment / notice / contact / screening,
+        // so the company never sees rows of "Not specified".
+        if (getMissingRequiredFields(fd, screeningQuestions.length).length > 0) {
+            setFormError(
+                r.completeRequiredFields ||
+                "Please complete all required fields marked with * before presenting the candidate."
+            );
+            setSubmitting(false);
+            if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+        }
 
         try {
             const result = await createCandidateExtended(mandateId, fd);
@@ -382,11 +438,11 @@ export function CandidateSubmissionForm({
                         <FieldRow>
                             <div>
                                 <Label>{r.locationCityLabel || "City"}</Label>
-                                <Input name="location_city" placeholder="Stockholm" className="h-11 bg-slate-50 border-slate-200" />
+                                <Input name="location_city" placeholder="Stockholm" defaultValue={draftTextFields["location_city"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>
                                 <Label>{r.locationCountryLabel || "Country"}</Label>
-                                <Input name="location_country" placeholder="Sweden" className="h-11 bg-slate-50 border-slate-200" />
+                                <Input name="location_country" placeholder="Sweden" defaultValue={draftTextFields["location_country"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                         </FieldRow>
 
@@ -605,7 +661,7 @@ export function CandidateSubmissionForm({
 
                     <div className="space-y-5">
                         <div>
-                            <Label>Current Employment Status</Label>
+                            <Label>Current Employment Status<Req /></Label>
                             <div className="flex gap-3 mt-1">
                                 {[
                                     { value: "employed", label: r.employedLabel || "Employed" },
@@ -628,10 +684,11 @@ export function CandidateSubmissionForm({
 
                         {employmentStatus === "not_employed" && (
                             <div>
-                                <Label>{r.reasonLeavingLabel || "Reason for leaving last position"}</Label>
+                                <Label>{r.reasonLeavingLabel || "Reason for leaving last position"}<Req /></Label>
                                 <Input
                                     name="employment_reason"
                                     placeholder={r.reasonLeavingPlaceholder || "End of contract, resignation, etc."}
+                                    defaultValue={draftTextFields["employment_reason"] || ""}
                                     className="h-11 bg-slate-50 border-slate-200"
                                 />
                             </div>
@@ -639,10 +696,11 @@ export function CandidateSubmissionForm({
 
                         {employmentStatus === "employed" && (
                             <div>
-                                <Label>{r.motivationLabel || "Primary motivation for job change"}</Label>
+                                <Label>{r.motivationLabel || "Primary motivation for job change"}<Req /></Label>
                                 <Input
                                     name="employment_reason"
                                     placeholder={r.motivationPlaceholder || "Career growth, salary, relocation..."}
+                                    defaultValue={draftTextFields["employment_reason"] || ""}
                                     className="h-11 bg-slate-50 border-slate-200"
                                 />
                             </div>
@@ -722,7 +780,7 @@ export function CandidateSubmissionForm({
                                     </select>
                                 </div>
                                 <div>
-                                    <Label>{r.currentSalaryLabel || "Annual Gross Salary"}</Label>
+                                    <Label>{r.currentSalaryLabel || "Annual Gross Salary"}<Req /></Label>
                                     <Input
                                         type="number"
                                         name="current_salary"
@@ -735,7 +793,7 @@ export function CandidateSubmissionForm({
                             </FieldRow>
                             <div className="mt-3">
                                 <Label>{r.currentBenefitsLabel || "Current Benefits"}</Label>
-                                <Textarea name="current_benefits" rows={2} placeholder={r.currentBenefitsPlaceholder || "Describe current benefits..."} className="bg-slate-50 border-slate-200 rounded-xl resize-none" />
+                                <Textarea name="current_benefits" rows={2} placeholder={r.currentBenefitsPlaceholder || "Describe current benefits..."} defaultValue={draftTextFields["current_benefits"] || ""} className="bg-slate-50 border-slate-200 rounded-xl resize-none" />
                             </div>
                         </div>
 
@@ -755,7 +813,7 @@ export function CandidateSubmissionForm({
                                     </select>
                                 </div>
                                 <div>
-                                    <Label>{r.desiredSalaryLabel || "Desired Annual Salary"}</Label>
+                                    <Label>{r.desiredSalaryLabel || "Desired Annual Salary"}<Req /></Label>
                                     <Input
                                         type="number"
                                         name="expected_salary"
@@ -776,13 +834,14 @@ export function CandidateSubmissionForm({
                                         name="expected_salary_below_current_reason"
                                         rows={3}
                                         placeholder={r.expectedBelowCurrentPlaceholder || "Explain the reason..."}
+                                        defaultValue={draftTextFields["expected_salary_below_current_reason"] || ""}
                                         className="bg-slate-50 border-slate-200 rounded-xl resize-none"
                                     />
                                 </div>
                             )}
                             <div className="mt-3">
                                 <Label>{r.desiredBenefitsLabel || "Desired Benefits"}</Label>
-                                <Textarea name="desired_benefits" rows={2} placeholder={r.desiredBenefitsPlaceholder || "Describe desired benefits..."} className="bg-slate-50 border-slate-200 rounded-xl resize-none" />
+                                <Textarea name="desired_benefits" rows={2} placeholder={r.desiredBenefitsPlaceholder || "Describe desired benefits..."} defaultValue={draftTextFields["desired_benefits"] || ""} className="bg-slate-50 border-slate-200 rounded-xl resize-none" />
                             </div>
                         </div>
 
@@ -790,7 +849,7 @@ export function CandidateSubmissionForm({
                         <div>
                             <p className="text-sm font-bold text-slate-700 mb-3">{r.availabilityLabel || "Availability"}</p>
                             <div>
-                                <Label>{r.noticePeriodLabel || "Notice Period"}</Label>
+                                <Label>{r.noticePeriodLabel || "Notice Period"}<Req /></Label>
                                 <div className="flex flex-wrap gap-2 mt-1">
                                     {[
                                         { value: "immediately", label: r.noticeImmediate || "Immediately Available" },
@@ -800,7 +859,7 @@ export function CandidateSubmissionForm({
                                         { value: "3_months", label: r.notice3Months || "3 Months" },
                                     ].map((opt) => (
                                         <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="notice_period" value={opt.value} className="accent-brand-600 h-4 w-4" />
+                                            <input type="radio" name="notice_period" value={opt.value} defaultChecked={draftTextFields["notice_period"] === opt.value} className="accent-brand-600 h-4 w-4" />
                                             <span className="text-sm text-slate-700">{opt.label}</span>
                                         </label>
                                     ))}
@@ -838,11 +897,11 @@ export function CandidateSubmissionForm({
                     <div className="space-y-5">
                         <FieldRow>
                             <div>
-                                <Label>{r.firstContactLabel || "Date of First Contact"}</Label>
-                                <Input type="date" name="first_contact_date" className="h-11 bg-slate-50 border-slate-200" />
+                                <Label>{r.firstContactLabel || "Date of First Contact"}<Req /></Label>
+                                <Input type="date" name="first_contact_date" defaultValue={draftTextFields["first_contact_date"] || ""} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>
-                                <Label>{r.contactMethodLabel || "Method of Contact"}</Label>
+                                <Label>{r.contactMethodLabel || "Method of Contact"}<Req /></Label>
                                 <div className="flex flex-wrap gap-2 mt-1">
                                     {[
                                         { value: "in_person", label: r.contactInPerson || "In Person" },
@@ -870,7 +929,7 @@ export function CandidateSubmissionForm({
                         {/* Screening Questions */}
                         {screeningQuestions.length > 0 && (
                             <div>
-                                <p className="text-sm font-bold text-slate-700 mb-3">{r.screeningQuestionsTitle || "Screening Questions"}</p>
+                                <p className="text-sm font-bold text-slate-700 mb-3">{r.screeningQuestionsTitle || "Screening Questions"}<Req /></p>
                                 <div className="space-y-4">
                                     {screeningQuestions.map((q, i) => (
                                         <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-100">

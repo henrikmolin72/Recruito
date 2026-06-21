@@ -765,6 +765,7 @@
     "coverNotePlaceholder": "Beskriv kort hvorfor kandidaten passer til netop denne rolle...",
     "cvLabel": "Curriculum Vitae (PDF) *",
     "presentCandidateButton": "Præsenter kandidat",
+    "completeRequiredFields": "Udfyld alle påkrævede felter (markeret med *) før du præsenterer kandidaten.",
     "tipsTitle": "Tips til præsentation",
     "tip1": "Sørg for at CV'et er anonymiseret, hvis kunden kræver det.",
     "tip2": "En stærk motivering øger chancen for samtale med 40%.",

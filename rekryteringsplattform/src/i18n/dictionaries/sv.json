@@ -765,6 +765,7 @@
     "coverNotePlaceholder": "Beskriv briefly varför kandidaten passar för just denna roll...",
     "cvLabel": "Curriculum Vitae (PDF) *",
     "presentCandidateButton": "Presentera kandidat",
+    "completeRequiredFields": "Fyll i alla obligatoriska fält (markerade med *) innan du presenterar kandidaten.",
     "tipsTitle": "Tips för presentation",
     "tip1": "Se till att CV:t är avidentifierat om kunden kräver det.",
     "tip2": "En stark motivering ökar chansen för intervju med 40%.",

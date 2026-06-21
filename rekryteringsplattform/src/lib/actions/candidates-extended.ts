@@ -10,17 +10,11 @@ import {
     candidateMatchesIdentity,
     isClientEngagementActiveStatus,
 } from "@/lib/candidate-identity";
-
-function toString(value: FormDataEntryValue | null) {
-    return typeof value === "string" ? value : "";
-}
-
-function toOptionalInt(value: FormDataEntryValue | null) {
-    const raw = toString(value).trim();
-    if (!raw) return null;
-    const parsed = Number.parseInt(raw, 10);
-    return Number.isNaN(parsed) ? null : parsed;
-}
+import {
+    fdString as toString,
+    parseCandidateColumns,
+    getMissingRequiredFields,
+} from "@/lib/candidate-form";
 
 export async function createCandidateExtended(mandateId: string, formData: FormData) {
   try {
@@ -58,6 +52,27 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
 
     if (!firstName || !lastName || !email) {
         return { error: "First name, last name, and email are required." };
+    }
+
+    // --- Required presentation fields (server-authoritative; mirrors the client) ---
+    // These guarantee the company always receives real candidate data instead of
+    // rows of "Not specified". Screening answers are required only when the job
+    // actually defines questions.
+    const { data: jobForValidation } = await supabase
+        .from("jobs")
+        .select("screening_questions")
+        .eq("id", mandate.job_id)
+        .single();
+    const screeningCount = Array.isArray((jobForValidation as any)?.screening_questions)
+        ? (jobForValidation as any).screening_questions.length
+        : 0;
+    if (getMissingRequiredFields(formData, screeningCount).length > 0) {
+        return {
+            error:
+                "Please complete all required fields before presenting the candidate: " +
+                "employment status & reason, current and expected salary, notice period, " +
+                "date and method of first contact, and every screening answer.",
+        };
     }
 
     const normalizedEmail = normalizeIdentity(email);
@@ -146,37 +161,9 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         cvFilePath = data.path;
     }
 
-    // --- Parse extended fields ---
-    const aiScore = toOptionalInt(formData.get("ai_match_score"));
-    const firstContactDate = toString(formData.get("first_contact_date")) || null;
-
-    let screeningAnswers: any[] = [];
-    try {
-        const raw = toString(formData.get("screening_answers"));
-        if (raw) screeningAnswers = JSON.parse(raw);
-    } catch { }
-
-    let languageProficiency: any[] = [];
-    try {
-        const raw = toString(formData.get("language_proficiency"));
-        if (raw) languageProficiency = JSON.parse(raw);
-    } catch { }
-
-    const otherProcessesRaw = toString(formData.get("other_processes"));
-
-    // The "below current" reason is only meaningful when expected < current.
-    // Drop it otherwise so the field can't be set out-of-band by a hand-crafted POST.
-    const currentSalaryParsed = toOptionalInt(formData.get("current_salary"));
-    const expectedSalaryParsed = toOptionalInt(formData.get("expected_salary"));
-    const expectedBelowCurrent =
-        currentSalaryParsed !== null &&
-        expectedSalaryParsed !== null &&
-        expectedSalaryParsed < currentSalaryParsed;
-    const expectedBelowCurrentReason = expectedBelowCurrent
-        ? toString(formData.get("expected_salary_below_current_reason")) || null
-        : null;
-
     // --- Insert candidate ---
+    // Structured fields are parsed once in candidate-form.ts, shared with the
+    // draft path, so a resumed draft persists exactly what a direct present does.
     const { error: insertError } = await supabase.from("candidates").insert({
         job_id: mandate.job_id,
         recruiter_id: recruiter.id,
@@ -184,42 +171,11 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         first_name: firstName,
         last_name: lastName,
         email,
-        phone: toString(formData.get("phone")) || null,
-        linkedin_url: toString(formData.get("linkedin_url")) || null,
-        current_title: toString(formData.get("current_title")) || null,
-        current_company: toString(formData.get("current_company")) || null,
-        years_experience: toOptionalInt(formData.get("years_experience")),
-        expected_salary: expectedSalaryParsed,
-        cover_note: toString(formData.get("cover_note")) || null,
         cv_file_path: cvFilePath,
         status: initialStatus,
         status_changed_at: new Date().toISOString(),
-        // Extended fields
-        location_city: toString(formData.get("location_city")) || null,
-        location_country: toString(formData.get("location_country")) || null,
-        location_status: toString(formData.get("location_status")) || null,
-        portfolio_url: toString(formData.get("portfolio_url")) || null,
-        work_authorization: toString(formData.get("work_authorization")) || null,
-        ai_match_score: aiScore,
-        employment_status: toString(formData.get("employment_status")) || null,
-        employment_status_reason: toString(formData.get("employment_reason")) || null,
-        other_processes: otherProcessesRaw === "yes",
-        other_processes_stage: toString(formData.get("other_processes_stage")) || null,
-        current_salary: currentSalaryParsed,
-        current_salary_currency: toString(formData.get("current_salary_currency")) || "EUR",
-        current_benefits: toString(formData.get("current_benefits")) || null,
-        desired_salary: expectedSalaryParsed,
-        desired_salary_currency: toString(formData.get("desired_salary_currency")) || "EUR",
-        desired_benefits: toString(formData.get("desired_benefits")) || null,
-        expected_salary_below_current_reason: expectedBelowCurrentReason,
-        notice_period: toString(formData.get("notice_period")) || null,
-        notice_negotiable: toString(formData.get("notice_negotiable")) === "yes",
-        first_contact_date: firstContactDate || null,
-        contact_method: toString(formData.get("contact_method")) || null,
-        screening_answers: screeningAnswers.length > 0 ? screeningAnswers : null,
-        language_proficiency: languageProficiency.length > 0 ? languageProficiency : null,
-        assessment_summary: toString(formData.get("assessment_summary")) || null,
         recruiter_declaration: true,
+        ...parseCandidateColumns(formData),
     });
 
     if (insertError) {
@@ -267,15 +223,14 @@ export async function saveDraftCandidate(mandateId: string, formData: FormData, 
     if (!recruiter || recruiter.id !== mandate.recruiter_id) return { error: "Unauthorized." };
 
     const admin = createAdminClient();
+    // Persist the FULL structured column set (not just text fields) so resuming a
+    // draft restores compensation / employment / notice / contact / screening —
+    // the data that previously vanished between Save Draft and Present Candidate.
     const fields = {
         first_name: toString(formData.get("first_name")).trim() || "",
         last_name: toString(formData.get("last_name")).trim() || "",
         email: toString(formData.get("email")).trim() || null,
-        phone: toString(formData.get("phone")).trim() || null,
-        linkedin_url: toString(formData.get("linkedin_url")).trim() || null,
-        current_title: toString(formData.get("current_title")).trim() || null,
-        current_company: toString(formData.get("current_company")).trim() || null,
-        cover_note: toString(formData.get("cover_note")).trim() || null,
+        ...parseCandidateColumns(formData),
     };
 
     if (draftId) {
