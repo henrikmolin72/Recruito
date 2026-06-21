@@ -38,7 +38,7 @@ export async function getPlacementByCandidateId(candidateId: string) {
  * invoice. For now we record the transition and timestamps.
  */
 export async function sendPlacementInvoice(placementId: string) {
-    await requireAdmin();
+    const { user: adminUser } = await requireAdmin();
     const admin = createAdminClient();
 
     const { data: placement } = await admin
@@ -70,6 +70,18 @@ export async function sendPlacementInvoice(placementId: string) {
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
     }
+
+    // Audit trail: financial action on a placement (admin-performed). Best-effort —
+    // never fail the placement mutation on an audit-write error, but log it so a
+    // missing financial-trail entry is visible (e.g. a performed_by FK gap).
+    const { error: invoiceAuditError } = await admin.from("audit_log").insert({
+        action_type: "placement_invoice_sent",
+        target_type: "placement",
+        target_id: placementId,
+        performed_by: adminUser.id,
+        metadata: { total_fee: placement.total_fee, currency: placement.salary_currency },
+    });
+    if (invoiceAuditError) console.error("[audit:placement_invoice_sent]", { code: invoiceAuditError.code, message: invoiceAuditError.message });
 
     // Notify company about invoice
     const companyData = Array.isArray(placement.company) ? placement.company[0] : placement.company;
@@ -115,7 +127,7 @@ export async function sendPlacementInvoice(placementId: string) {
  * Record that payment has been received for a placement.
  */
 export async function recordPlacementPayment(placementId: string) {
-    await requireAdmin();
+    const { user: adminUser } = await requireAdmin();
     const admin = createAdminClient();
 
     const { data: placement } = await admin
@@ -152,6 +164,16 @@ export async function recordPlacementPayment(placementId: string) {
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
     }
+
+    // Audit trail: payment recorded (admin-performed). Best-effort; log on failure.
+    const { error: paymentAuditError } = await admin.from("audit_log").insert({
+        action_type: "placement_payment_recorded",
+        target_type: "placement",
+        target_id: placementId,
+        performed_by: adminUser.id,
+        metadata: { next_status: nextStatus },
+    });
+    if (paymentAuditError) console.error("[audit:placement_payment_recorded]", { code: paymentAuditError.code, message: paymentAuditError.message });
 
     // If entering guarantee, update candidate status
     if (nextStatus === "guarantee_active") {
@@ -340,7 +362,7 @@ export async function processGuaranteeExpirations() {
  * Initiates refund processing.
  */
 export async function reportGuaranteeFailure(placementId: string, reason?: string) {
-    await requireAdmin();
+    const { user: adminUser } = await requireAdmin();
     const admin = createAdminClient();
 
     const { data: placement } = await admin
@@ -370,6 +392,18 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
     }
+
+    // Audit trail: guarantee failure triggers refund — record it (admin-performed).
+    // Best-effort; log on failure so a missing refund-trail entry is visible.
+    const { error: guaranteeAuditError } = await admin.from("audit_log").insert({
+        action_type: "placement_guarantee_failed",
+        target_type: "placement",
+        target_id: placementId,
+        performed_by: adminUser.id,
+        reason: failureReason,
+        metadata: { refund_amount: placement.total_fee },
+    });
+    if (guaranteeAuditError) console.error("[audit:placement_guarantee_failed]", { code: guaranteeAuditError.code, message: guaranteeAuditError.message });
 
     // Update candidate
     const { error: candidateError } = await admin

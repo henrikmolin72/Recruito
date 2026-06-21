@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -113,7 +114,10 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
     let cvUrl = null;
     if (candidate.cv_file_path) {
         try {
-            const { data, error } = await supabase.storage
+            // Sign with the service-role client. Authorization is already enforced
+            // above by getCandidate() (company must own the job), so CVs no longer
+            // depend on a broad storage SELECT policy — see migration 054.
+            const { data, error } = await createAdminClient().storage
                 .from('cvs')
                 .createSignedUrl(candidate.cv_file_path, 3600);
 

@@ -49,7 +49,7 @@ function makeClient() {
     };
     return chain;
   }
-  return { from };
+  return { from, rpc: async () => ({ data: null, error: null }) };
 }
 
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => makeClient() }));
@@ -62,7 +62,7 @@ vi.mock("@/lib/email/internal-notifications", () => ({ sendUserEmail: vi.fn() })
 vi.mock("@/lib/email/email-templates", () => ({ paymentCompletedEmail: () => "<html></html>" }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
-import { sendPlacementInvoice, recordPlacementPayment } from "./placements";
+import { sendPlacementInvoice, recordPlacementPayment, reportGuaranteeFailure } from "./placements";
 
 const placementWrites = () => writes.filter((w) => w.table === "placements");
 
@@ -95,6 +95,12 @@ describe("recordPlacementPayment — payment branch", () => {
     // Candidate is moved into guarantee tracking.
     const candWrite = writes.find((w) => w.table === "candidates");
     expect(candWrite?.patch.status).toBe("guarantee_tracking");
+    // Audit trail: the admin payment-recording action is logged.
+    const audit = writes.find((w) => w.table === "audit_log");
+    expect(audit?.patch).toMatchObject({
+      action_type: "placement_payment_recorded",
+      target_id: "p1",
+    });
   });
 
   it("releases payout immediately when there is no open guarantee", async () => {
@@ -165,6 +171,14 @@ describe("sendPlacementInvoice — invoice transition", () => {
     const upd = placementWrites().at(0)?.patch;
     expect(upd.status).toBe("invoice_sent");
     expect(upd.invoice_sent_at).toBeTruthy();
+    // Audit trail: the admin invoice action is logged.
+    const audit = writes.find((w) => w.table === "audit_log");
+    expect(audit?.patch).toMatchObject({
+      action_type: "placement_invoice_sent",
+      target_type: "placement",
+      target_id: "p1",
+      performed_by: "admin-1",
+    });
   });
 
   it("refuses to re-invoice an already-invoiced placement", async () => {
@@ -183,5 +197,26 @@ describe("sendPlacementInvoice — invoice transition", () => {
 
     expect(res.error).toMatch(/status/i);
     expect(placementWrites()).toHaveLength(0);
+  });
+});
+
+describe("reportGuaranteeFailure — refund audit trail", () => {
+  it("records a guarantee-failure audit entry on success", async () => {
+    placementRow = {
+      id: "p1", status: "guarantee_active", total_fee: 1000,
+      recruiter_id: "r1", candidate_id: "c1", company_id: "co1",
+      candidate: { first_name: "Cand", last_name: "Idate" }, job: { title: "Developer" },
+    };
+
+    const res = await reportGuaranteeFailure("p1", "left early");
+
+    expect(res).toEqual({ success: true });
+    expect(placementWrites().at(0)?.patch.status).toBe("guarantee_failed");
+    const audit = writes.find((w) => w.table === "audit_log");
+    expect(audit?.patch).toMatchObject({
+      action_type: "placement_guarantee_failed",
+      target_id: "p1",
+      reason: "left early",
+    });
   });
 });
