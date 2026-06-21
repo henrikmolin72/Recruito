@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID, createHash } from "crypto";
 import { authorizeMandate, gatherEvalData } from "@/lib/screening/eval-data";
+import { extractMatchScore } from "@/lib/screening/extract-match-score";
 import { fillEvaluationPrompt } from "@/lib/screening/evaluation-prompt";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 
@@ -134,6 +135,22 @@ export async function POST(request: NextRequest) {
     });
     if (insertError) {
       console.error("[screening-report] store", insertError);
+    }
+
+    // Populate the candidate's queue score from the report (best-effort). The
+    // admin screening queue shows ai_match_score; deriving it here keeps that
+    // column current after any full screening run — admin or recruiter.
+    const matchScore = extractMatchScore(reportMarkdown);
+    if (matchScore !== null) {
+      // Only fill the queue score when it's currently blank — don't clobber a
+      // value the recruiter already set at submission (it's company-visible).
+      // The full report itself is always refreshed regardless of this guard.
+      const { error: scoreError } = await admin
+        .from("candidates")
+        .update({ ai_match_score: matchScore })
+        .eq("id", candidateId)
+        .is("ai_match_score", null);
+      if (scoreError) console.error("[screening-report] ai_match_score update", { code: scoreError.code, message: scoreError.message });
     }
 
     return NextResponse.json({

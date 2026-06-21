@@ -1233,7 +1233,7 @@ export async function getCandidateScreeningDetail(candidateId: string) {
             expected_salary, expected_salary_below_current_reason,
             notice_period, notice_negotiable, first_contact_date, contact_method,
             screening_answers, language_proficiency, assessment_summary, cover_note,
-            cv_file_path, ai_match_score, status, created_at,
+            cv_file_path, ai_match_score, mandate_id, status, created_at,
             recruito_screened_at, recruito_rejected_at, recruito_reject_reason,
             job:jobs(title, company:companies(company_name)),
             recruiter:recruiters(profile:profiles!recruiters_user_id_fkey(full_name))
