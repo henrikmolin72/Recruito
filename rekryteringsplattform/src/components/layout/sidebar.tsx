@@ -62,6 +62,7 @@ const ADMIN_NAV: NavItem[] = [
   { labelKey: "nav.companies", href: "/admin/companies", icon: Building2 },
   { labelKey: "nav.jobs", href: "/admin/jobs", icon: Briefcase },
   { labelKey: "nav.candidates", href: "/admin/candidates", icon: Users },
+  { labelKey: "nav.messages", href: "/admin/messages", icon: MessageSquare },
   { labelKey: "nav.placements", href: "/admin/placements", icon: Banknote },
   { labelKey: "nav.analytics", href: "/admin/analytics", icon: BarChart3 },
   { labelKey: "nav.guarantees", href: "/admin/guarantees", icon: ShieldCheck },
