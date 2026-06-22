@@ -42,6 +42,26 @@ export async function sendRecruitorMessage(candidateId: string, jobId: string, c
 
     const supabaseAdmin = createAdminClient();
 
+    // Authorize the sender against the candidate's recruiter/company (IDOR guard —
+    // required because we create the conversation + participants via service role).
+    const { data: candidate, error: candError } = await supabase
+        .from("candidates")
+        .select(`recruiter:recruiters(user_id), job:jobs(company:companies(user_id))`)
+        .eq("id", candidateId)
+        .single();
+    if (candError || !candidate) return { error: "Candidate not found" };
+
+    const recruiterRecord = (candidate as any).recruiter;
+    const recruiterUserId = Array.isArray(recruiterRecord) ? recruiterRecord[0]?.user_id : recruiterRecord?.user_id;
+    const jobRecord = (candidate as any).job;
+    const resolvedJob = Array.isArray(jobRecord) ? jobRecord[0] : jobRecord;
+    const companyRecord = resolvedJob?.company;
+    const companyUserId = Array.isArray(companyRecord) ? companyRecord[0]?.user_id : companyRecord?.user_id;
+
+    if (user.id !== recruiterUserId && user.id !== companyUserId) {
+        return { error: "Not allowed to message in this conversation" };
+    }
+
     const { data: existingConv } = await supabaseAdmin
         .from("conversations")
         .select("id")
@@ -52,16 +72,34 @@ export async function sendRecruitorMessage(candidateId: string, jobId: string, c
     let conversationId = existingConv?.id;
 
     if (!conversationId) {
-        const { data: newConv, error: convError } = await supabase
+        // Service role: the conversations SELECT policy hides the row from a
+        // non-participant, so an RLS insert().select() can't read it back.
+        const { data: newConv, error: convError } = await supabaseAdmin
             .from("conversations")
             .insert({ candidate_id: candidateId, job_id: jobId, conversation_type: "recruito" })
             .select("id")
             .single();
         if (convError || !newConv) {
-            if (convError) console.error("Failed to create conversation:", convError);
+            if (convError) console.error("Failed to create recruito conversation:", convError);
             return { error: "Kunde inte skapa konversation." };
         }
         conversationId = newConv.id;
+    }
+
+    // Seed participant rows so the message INSERT passes RLS and the human party
+    // can read the thread back (Recruito admins read via is_admin()). Previously
+    // missing entirely — which is why recruito messages never persisted.
+    const participantRows = [recruiterUserId, companyUserId]
+        .filter(Boolean)
+        .map((uid) => ({ conversation_id: conversationId as string, user_id: uid as string }));
+    if (participantRows.length) {
+        const { error: partErr } = await supabaseAdmin
+            .from("conversation_participants")
+            .upsert(participantRows, { onConflict: "conversation_id,user_id", ignoreDuplicates: true });
+        if (partErr) {
+            console.error("Failed to ensure recruito participants:", partErr);
+            return { error: "Kunde inte uppdatera konversation." };
+        }
     }
 
     const { error: msgError } = await supabase
@@ -125,6 +163,7 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
         .from("conversations")
         .select("id, job_id, candidate_id, created_at")
         .eq("candidate_id", candidateId)
+        .eq("conversation_type", "client")
         .order("created_at", { ascending: true })
         .limit(2);
 
@@ -140,11 +179,17 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
     let conversationData = (existingConversations || [])[0] as any;
 
     if (!conversationData) {
-        const { data: newConv, error: convError } = await supabase
+        // Create via service role: the conversations SELECT policy only exposes a
+        // row to its participants, but participants are seeded below — so an
+        // RLS-scoped insert().select() can't read back the row it just created
+        // (this was silently failing every first message). Authorization is
+        // already enforced above (user ∈ {recruiter, company}).
+        const { data: newConv, error: convError } = await supabaseAdmin
             .from("conversations")
             .insert({
                 candidate_id: candidateId,
-                job_id: resolvedJobId
+                job_id: resolvedJobId,
+                conversation_type: "client"
             })
             .select("id, job_id, candidate_id, created_at")
             .single();
