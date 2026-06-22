@@ -262,7 +262,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                         {job.industry && <InfoItem label="Industry" value={job.industry} />}
                         {job.reporting_to && <InfoItem label="Reports To" value={job.reporting_to} />}
                         {job.working_hours && <InfoItem label="Working Hours" value={job.working_hours} />}
-                        {job.shift_work && <InfoItem label={shiftWorkLabel} value={job.shift_work} />}
+                        {job.shift_work && <InfoItem label={shiftWorkLabel} value={job.shift_work.charAt(0).toUpperCase() + job.shift_work.slice(1)} />}
                         {job.team_size && <InfoItem label="Team Size" value={job.team_size} />}
                         <InfoItem label="Travel Required" value={job.travel_required ? "Yes" : "No"} />
                         <InfoItem label="Flexible Hours" value={job.flexible_hours ? "Yes" : "No"} />

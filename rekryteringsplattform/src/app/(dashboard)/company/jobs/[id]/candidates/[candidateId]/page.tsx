@@ -145,6 +145,15 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
     // IMG-18: muted placeholder for empty detail fields. Reuses the existing
     // common.notSpecified key rather than introducing a duplicate.
     const notProvided = <span className="text-muted-foreground italic">{dict.common.notSpecified}</span>;
+    // Legacy candidates (presented before structured fields became required) can
+    // have empty sections. Show an explicit "recruiter didn't provide this" note
+    // instead of silently hiding the section, so the client stays oriented.
+    const notProvidedByRecruiter = (
+        <p className="text-sm text-muted-foreground italic">{c.notProvidedByRecruiter}</p>
+    );
+    const hasEmployment = !!(
+        candidate.employment_status || candidate.other_processes !== null || candidate.employment_status_reason
+    );
 
     // Stage-progression audit trail (migration 052). RLS lets the owning company
     // read its own candidates' rows; most-recent-first for the timeline.
@@ -213,14 +222,14 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                {(candidate.location_city || candidate.location_country) && (
-                                    <div>
-                                        <p className="text-muted-foreground">Location</p>
+                                <div>
+                                    <p className="text-muted-foreground">Location</p>
+                                    {(candidate.location_city || candidate.location_country) ? (
                                         <p className="font-semibold">
                                             {[candidate.location_city, candidate.location_country].filter(Boolean).join(", ")}
                                         </p>
-                                    </div>
-                                )}
+                                    ) : notProvidedByRecruiter}
+                                </div>
                                 {candidate.location_status && (
                                     <div>
                                         <p className="text-muted-foreground">Location Status</p>
@@ -247,12 +256,13 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                     </Card>
 
                     {/* Compensation & Availability */}
-                    {hasCompensation && (
                     <Card>
                         <CardHeader>
                             <CardTitle>Compensation & Availability</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 text-sm">
+                            {hasCompensation ? (
+                            <>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-muted-foreground">Current Salary</p>
@@ -317,17 +327,19 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                                     <p className="text-sm">{candidate.desired_benefits}</p>
                                 </div>
                             )}
+                            </>
+                            ) : notProvidedByRecruiter}
                         </CardContent>
                     </Card>
-                    )}
 
                     {/* Employment Status */}
-                    {(candidate.employment_status || candidate.other_processes) && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Employment Status & Recruitment Activity</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm">
+                                {hasEmployment ? (
+                                <>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-muted-foreground">Employment Status</p>
@@ -350,9 +362,10 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                                         <p className="text-sm">{candidate.employment_status_reason}</p>
                                     </div>
                                 )}
+                                </>
+                                ) : notProvidedByRecruiter}
                             </CardContent>
                         </Card>
-                    )}
 
                     {/* Language Proficiency */}
                     {languageProficiency.length > 0 && (
@@ -373,21 +386,21 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                     )}
 
                     {/* Screening Answers */}
-                    {hasScreeningAnswers && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Screening Answers</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {screeningAnswers.map((qa, i) => (
+                                {hasScreeningAnswers ? (
+                                screeningAnswers.map((qa, i) => (
                                     <div key={i} className="bg-slate-50 rounded-lg p-4 border border-slate-100">
                                         <p className="text-xs font-bold text-slate-500 mb-1">Q{i + 1} — {qa.question}</p>
                                         <p className="text-sm text-slate-700">{qa.answer || <span className="italic text-slate-400">No answer provided</span>}</p>
                                     </div>
-                                ))}
+                                ))
+                                ) : notProvidedByRecruiter}
                             </CardContent>
                         </Card>
-                    )}
                 </div>
 
                 <div className="space-y-6">
@@ -415,6 +428,8 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                             stageNameInterview: c.stageNameInterview,
                             stageNameFinalInterview: c.stageNameFinalInterview,
                             stageNameJobOffer: c.stageNameJobOffer,
+                            rejectButtonLabel: c.rejectButtonLabel,
+                            stageNameRejected: c.stageNameRejected,
                         }}
                     />
 

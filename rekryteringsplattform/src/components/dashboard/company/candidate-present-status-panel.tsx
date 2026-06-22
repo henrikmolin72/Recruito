@@ -22,6 +22,8 @@ type PanelDict = {
     stageNameInterview: string;
     stageNameFinalInterview: string;
     stageNameJobOffer: string;
+    rejectButtonLabel: string;
+    stageNameRejected: string;
 };
 
 // Hiring-timeline window shown to the client after they open a candidate. The
@@ -200,6 +202,13 @@ export function CandidatePresentStatusPanel({
                 {STAGES.map((stage) => {
                     const isActive = currentStage === stage.value;
                     const enabled = isStageEnabled(stage.value);
+                    // The reject button reads as a call-to-action ("Reject") until
+                    // the candidate is actually rejected, then flips to the status
+                    // label ("Rejected"). Other stages keep their static label.
+                    const label =
+                        stage.value === "rejected"
+                            ? (isActive ? dict.stageNameRejected : dict.rejectButtonLabel)
+                            : stage.label;
                     return (
                         <button
                             key={stage.value}
@@ -214,7 +223,7 @@ export function CandidatePresentStatusPanel({
                                         : "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
                             } disabled:opacity-60`}
                         >
-                            <span>{stage.label}</span>
+                            <span>{label}</span>
                             {isActive && (
                                 stage.value === "rejected"
                                     ? <XCircle className="h-4 w-4" />

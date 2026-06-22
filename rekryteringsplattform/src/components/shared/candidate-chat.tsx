@@ -208,6 +208,7 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
                         disabled={isLoading}
+                        spellCheck
                         className="flex-1 border-none bg-transparent focus-visible:ring-0 shadow-none px-4 h-11 text-sm font-medium"
                     />
                     <Button
