@@ -365,7 +365,7 @@ export async function getCompanyJobs() {
         .from("jobs")
         .select(`
       *,
-      candidates:candidates(count),
+      candidates:candidates(recruito_screened_at),
       mandates:job_mandates(count)
     `)
         .eq("company_id", company.id)
@@ -374,7 +374,10 @@ export async function getCompanyJobs() {
     return jobs?.map((job) => ({
         ...job,
         recruiters_count: job.mandates?.[0]?.count ?? job.current_recruiter_count ?? 0,
-        candidates_count: job.candidates?.[0]?.count || 0,
+        // Only count candidates Recruito has presented & approved (recruito_screened_at
+        // set). Drafts and not-yet-approved submissions stay hidden from the company —
+        // same visibility gate the job-detail page applies.
+        candidates_count: (job.candidates || []).filter((cand: any) => cand.recruito_screened_at).length,
     })) || [];
 }
 

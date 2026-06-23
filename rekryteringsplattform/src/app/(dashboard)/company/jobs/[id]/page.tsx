@@ -30,7 +30,6 @@ import { getCandidateProfileNoticeAccepted } from "@/lib/actions/company";
 import { AnnouncementsTab } from "@/components/dashboard/company/announcements-tab";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
-import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { BiasReportCard } from "@/components/compliance/bias-report-card";
 
@@ -213,7 +212,6 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         <CompanyCandidatesOverview
                             candidates={job.candidates || []}
                             jobId={job.id}
-                            pipelineStages={job.pipeline_stages || DEFAULT_PIPELINE_STAGES}
                             noticeAccepted={noticeAccepted}
                         />
                     </div>
