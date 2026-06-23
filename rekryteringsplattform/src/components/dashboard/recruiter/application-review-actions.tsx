@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "@/i18n/client";
 
 type ApplicationReviewActionsProps = {
   applicationId: string;
@@ -28,15 +29,16 @@ export function ApplicationReviewActions({
   remainingSlots,
 }: ApplicationReviewActionsProps) {
   const router = useRouter();
+  const { t } = useTranslations();
   const [isPending, startTransition] = useTransition();
   const [currentAction, setCurrentAction] = useState<"approve" | "reject" | null>(null);
 
   if (status === "submitted_to_client") {
-    return <Badge variant="success" className="gap-1"><Check className="h-3 w-3" /> Skickad till kund</Badge>;
+    return <Badge variant="success" className="gap-1"><Check className="h-3 w-3" /> {t("recruiter.appReviewSentToClient")}</Badge>;
   }
 
   if (status === "recruiter_rejected") {
-    return <Badge variant="danger" className="gap-1"><X className="h-3 w-3" /> Avslagen</Badge>;
+    return <Badge variant="danger" className="gap-1"><X className="h-3 w-3" /> {t("recruiter.appReviewRejected")}</Badge>;
   }
 
   async function handleAction(action: "approve" | "reject") {
@@ -44,10 +46,10 @@ export function ApplicationReviewActions({
     startTransition(async () => {
       const result = await callReviewAction(applicationId, action);
       if (result.success) {
-        toast.success(action === "approve" ? "Kandidat skickad till kund" : "Kandidat avslagen");
+        toast.success(action === "approve" ? t("recruiter.appReviewSentToast") : t("recruiter.appReviewRejectedToast"));
         router.refresh();
       } else {
-        toast.error(result.error || "Något gick fel");
+        toast.error(result.error || t("recruiter.appReviewError"));
       }
       setCurrentAction(null);
     });
@@ -67,7 +69,7 @@ export function ApplicationReviewActions({
         ) : (
           <Send className="h-3.5 w-3.5" />
         )}
-        Skicka till kund
+        {t("recruiter.appReviewSendToClient")}
       </Button>
       <Button
         size="sm"
@@ -81,10 +83,10 @@ export function ApplicationReviewActions({
         ) : (
           <X className="h-3.5 w-3.5" />
         )}
-        Avslå
+        {t("recruiter.appReviewReject")}
       </Button>
       {remainingSlots <= 0 ? (
-        <span className="text-xs text-danger-600">Max antal nått</span>
+        <span className="text-xs text-danger-600">{t("recruiter.appReviewMaxReached")}</span>
       ) : null}
     </div>
   );

@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
-const REASON_LABELS: Record<string, string> = {
-    candidate_resigned: "Kandidaten sade upp sig",
-    performance: "Ej uppfyllda krav",
-    mutual_agreement: "Ömsesidig överenskommelse",
-    other: "Annat",
+const REASON_LABEL_KEYS: Record<string, string> = {
+    candidate_resigned: "components.breachReasonResigned",
+    performance: "components.breachReasonPerformance",
+    mutual_agreement: "components.breachReasonMutual",
+    other: "components.breachReasonOther",
 };
 
 interface BreachReport {
@@ -40,6 +41,7 @@ async function reviewBreach(reportId: string, action: "approve" | "reject", note
 }
 
 export function GuaranteeBreachReviewList({ reports }: BreachReviewListProps) {
+    const { t } = useTranslations();
     const [statuses, setStatuses] = useState<Record<string, string>>(
         Object.fromEntries(reports.map((r) => [r.id, r.admin_status]))
     );
@@ -81,7 +83,7 @@ export function GuaranteeBreachReviewList({ reports }: BreachReviewListProps) {
                                     <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
                                     <p className="font-semibold text-slate-800">{name}</p>
                                     <Badge variant={isPending ? "warning" : status === "approved" ? "success" : "outline"}>
-                                        {isPending ? "Väntar" : status === "approved" ? "Godkänd" : "Avvisad"}
+                                        {isPending ? t("components.breachPending") : status === "approved" ? t("components.guaranteeApproved") : t("components.breachRejected")}
                                     </Badge>
                                 </div>
                                 <p className="text-xs text-slate-500 mt-0.5">
@@ -93,25 +95,25 @@ export function GuaranteeBreachReviewList({ reports }: BreachReviewListProps) {
                                     <p className="text-sm font-black text-slate-800">
                                         {formatCurrency(report.refund_amount, report.refund_currency)}
                                     </p>
-                                    <p className="text-[10px] text-slate-400">återbetalning</p>
+                                    <p className="text-[10px] text-slate-400">{t("components.breachRefundWord")}</p>
                                 </div>
                             )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 text-xs text-slate-600">
                             <div>
-                                <span className="font-bold">Orsak:</span> {REASON_LABELS[report.reason] ?? report.reason}
+                                <span className="font-bold">{t("components.breachReasonColon")}</span> {REASON_LABEL_KEYS[report.reason] ? t(REASON_LABEL_KEYS[report.reason]) : report.reason}
                             </div>
                             <div>
-                                <span className="font-bold">Sista dag:</span> {formatDate(report.end_date)}
+                                <span className="font-bold">{t("components.breachLastDayColon")}</span> {formatDate(report.end_date)}
                             </div>
                             {report.notes && (
                                 <div className="col-span-2">
-                                    <span className="font-bold">Kommentar:</span> {report.notes}
+                                    <span className="font-bold">{t("components.breachCommentColon")}</span> {report.notes}
                                 </div>
                             )}
                             <div className="col-span-2 text-slate-400">
-                                Rapporterat: {formatDate(report.created_at)}
+                                {t("components.breachReportedColon")} {formatDate(report.created_at)}
                             </div>
                         </div>
 
@@ -126,7 +128,7 @@ export function GuaranteeBreachReviewList({ reports }: BreachReviewListProps) {
                                     {loading === report.id + "approve"
                                         ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                         : <CheckCircle className="h-3.5 w-3.5" />}
-                                    Godkänn återbetalning
+                                    {t("components.breachApproveRefund")}
                                 </Button>
                                 <Button
                                     size="sm"
@@ -138,7 +140,7 @@ export function GuaranteeBreachReviewList({ reports }: BreachReviewListProps) {
                                     {loading === report.id + "reject"
                                         ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                         : <XCircle className="h-3.5 w-3.5" />}
-                                    Avvisa
+                                    {t("components.breachReject")}
                                 </Button>
                             </div>
                         )}

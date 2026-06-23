@@ -3,8 +3,10 @@
 import { useState, useTransition } from "react";
 import { exportMyData, requestAccountErasure } from "@/lib/actions/data-rights";
 import { toast } from "sonner";
+import { useTranslations } from "@/i18n/client";
 
 export function DataRightsActions() {
+    const { t } = useTranslations();
     const [isExporting, startExport] = useTransition();
     const [isRequesting, startErasure] = useTransition();
     const [reason, setReason] = useState("");
@@ -28,7 +30,7 @@ export function DataRightsActions() {
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-            toast.success("Export klar — kontrollera dina nedladdningar.");
+            toast.success(t("components.dataRightsExportDone"));
         });
     }
 
@@ -42,18 +44,16 @@ export function DataRightsActions() {
             }
             setErasureDialogOpen(false);
             setReason("");
-            toast.success("Begäran skickad. En administratör hör av sig inom 30 dagar.");
+            toast.success(t("components.dataRightsRequestSent"));
         });
     }
 
     return (
         <div className="space-y-8">
             <section className="rounded-lg border border-gray-200 p-5">
-                <h2 className="text-lg font-semibold text-gray-900">Exportera mina data</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t("components.dataRightsExportTitle")}</h2>
                 <p className="mt-1 text-sm text-gray-600">
-                    Laddar ned en JSON-fil med alla uppgifter vi har om dig — profil, uppdrag,
-                    kandidater du registrerat, placeringar, meddelanden och notifikationer.
-                    Filen genereras direkt i webbläsaren, vi sparar ingen kopia.
+                    {t("components.dataRightsExportIntro")}
                 </p>
                 <button
                     type="button"
@@ -61,17 +61,14 @@ export function DataRightsActions() {
                     disabled={isExporting}
                     className="mt-4 inline-flex items-center rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                 >
-                    {isExporting ? "Förbereder export..." : "Ladda ned mina data"}
+                    {isExporting ? t("components.dataRightsPreparingExport") : t("components.dataRightsDownloadMyData")}
                 </button>
             </section>
 
             <section className="rounded-lg border border-red-200 bg-red-50 p-5">
-                <h2 className="text-lg font-semibold text-red-900">Radera mitt konto</h2>
+                <h2 className="text-lg font-semibold text-red-900">{t("components.dataRightsDeleteTitle")}</h2>
                 <p className="mt-1 text-sm text-red-800">
-                    Begär att vi raderar ditt konto och dina personuppgifter. Uppgifter
-                    kopplade till genomförda placeringar (faktura, anställningsbevis) sparas
-                    i 7 år enligt bokföringslagen — men kopplingen till dig anonymiseras.
-                    En administratör behandlar din begäran inom 30 dagar.
+                    {t("components.dataRightsDeleteIntro")}
                 </p>
 
                 {!erasureDialogOpen ? (
@@ -80,13 +77,13 @@ export function DataRightsActions() {
                         onClick={() => setErasureDialogOpen(true)}
                         className="mt-4 inline-flex items-center rounded border border-red-600 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
                     >
-                        Begär radering...
+                        {t("components.dataRightsRequestDeletion")}
                     </button>
                 ) : (
                     <form onSubmit={handleErasureSubmit} className="mt-4 space-y-3">
                         <label className="block">
                             <span className="text-sm font-medium text-red-900">
-                                Anledning (frivilligt — hjälper oss förbättra tjänsten):
+                                {t("components.dataRightsReasonLabel")}
                             </span>
                             <textarea
                                 value={reason}
@@ -102,14 +99,14 @@ export function DataRightsActions() {
                                 disabled={isRequesting}
                                 className="rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
                             >
-                                {isRequesting ? "Skickar..." : "Skicka begäran"}
+                                {isRequesting ? t("components.dataRightsSending") : t("components.dataRightsSendRequest")}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => { setErasureDialogOpen(false); setReason(""); }}
                                 className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                             >
-                                Avbryt
+                                {t("components.dataRightsCancel")}
                             </button>
                         </div>
                     </form>
@@ -117,10 +114,10 @@ export function DataRightsActions() {
             </section>
 
             <p className="text-xs text-gray-500">
-                Läs mer om hur vi behandlar personuppgifter i{" "}
-                <a href="/integritetspolicy" className="underline hover:text-gray-700">Integritetspolicy</a>
-                {" "}och{" "}
-                <a href="/gdpr" className="underline hover:text-gray-700">GDPR-rättigheter</a>.
+                {t("components.dataRightsLearnMore")}{" "}
+                <a href="/integritetspolicy" className="underline hover:text-gray-700">{t("components.dataRightsPrivacyPolicy")}</a>
+                {" "}{t("components.dataRightsAnd")}{" "}
+                <a href="/gdpr" className="underline hover:text-gray-700">{t("components.dataRightsGdprRights")}</a>.
             </p>
         </div>
     );

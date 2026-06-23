@@ -1,20 +1,23 @@
 import { getPendingDataRightsRequests } from "@/lib/actions/data-rights";
 import { AdminDataRightsRow } from "@/components/dashboard/admin-data-rights-row";
+import { createTranslator } from "@/i18n/server";
 
-export const metadata = { title: "DSR-kö — Recruito Admin" };
+export async function generateMetadata() {
+    const t = await createTranslator();
+    return { title: t("admin.dsrPageTitleMeta") };
+}
 export const dynamic = "force-dynamic";
 
 export default async function AdminDataRightsPage() {
     const rows = await getPendingDataRightsRequests();
+    const t = await createTranslator();
 
     return (
         <main className="px-6 py-8">
             <header className="space-y-2">
-                <h1 className="text-2xl font-bold text-gray-900">Data-rights-förfrågningar</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{t("admin.dsrPageHeading")}</h1>
                 <p className="text-sm text-gray-600">
-                    GDPR Art. 17 (radering) och Art. 20 (export). Måste behandlas inom 30 dagar
-                    från inkommen begäran. Att markera klar betyder att åtgärden är utförd —
-                    för raderingar måste du först köra anonymisering av kandidat/konto separat.
+                    {t("admin.dsrPageIntro")}
                 </p>
             </header>
 
@@ -22,18 +25,18 @@ export default async function AdminDataRightsPage() {
                 <table className="w-full text-left">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Inkommen</th>
-                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Typ</th>
-                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Subjekt</th>
-                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Anledning</th>
-                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Åtgärd</th>
+                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">{t("admin.dsrColReceived")}</th>
+                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">{t("admin.dsrColType")}</th>
+                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">{t("admin.dsrColSubject")}</th>
+                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">{t("admin.dsrColReason")}</th>
+                            <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">{t("admin.dsrColAction")}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {rows.length === 0 ? (
                             <tr>
                                 <td colSpan={5} className="px-3 py-8 text-center text-sm text-gray-500">
-                                    Inga öppna förfrågningar.
+                                    {t("admin.dsrNoOpenRequests")}
                                 </td>
                             </tr>
                         ) : (

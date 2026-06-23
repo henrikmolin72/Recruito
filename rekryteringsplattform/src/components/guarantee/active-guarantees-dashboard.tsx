@@ -3,6 +3,7 @@
 import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 interface ActiveGuarantee {
     id: string;
@@ -28,13 +29,15 @@ function daysUntil(dateStr: string): number {
 }
 
 function GuaranteeStatusDot({ days }: { days: number }) {
-    if (days <= 0) return <span className="h-2.5 w-2.5 rounded-full bg-slate-300 inline-block" title="Utgången" />;
-    if (days <= 7) return <span className="h-2.5 w-2.5 rounded-full bg-red-500 inline-block animate-pulse" title="Kritisk" />;
-    if (days <= 14) return <span className="h-2.5 w-2.5 rounded-full bg-amber-400 inline-block" title="Varning" />;
-    return <span className="h-2.5 w-2.5 rounded-full bg-success-500 inline-block" title="OK" />;
+    const { t } = useTranslations();
+    if (days <= 0) return <span className="h-2.5 w-2.5 rounded-full bg-slate-300 inline-block" title={t("components.guaranteeExpired")} />;
+    if (days <= 7) return <span className="h-2.5 w-2.5 rounded-full bg-red-500 inline-block animate-pulse" title={t("components.guaranteeCritical")} />;
+    if (days <= 14) return <span className="h-2.5 w-2.5 rounded-full bg-amber-400 inline-block" title={t("components.guaranteeWarning")} />;
+    return <span className="h-2.5 w-2.5 rounded-full bg-success-500 inline-block" title={t("components.guaranteeOk")} />;
 }
 
 function ProgressMini({ days, total = 30 }: { days: number; total?: number }) {
+    const { t } = useTranslations();
     const elapsed = Math.max(0, total - days);
     const pct = Math.min(100, Math.round((elapsed / total) * 100));
     const color = days <= 0 ? "bg-slate-300" : days <= 7 ? "bg-red-400" : days <= 14 ? "bg-amber-400" : "bg-success-400";
@@ -45,13 +48,14 @@ function ProgressMini({ days, total = 30 }: { days: number; total?: number }) {
                 <div className={cn("h-full rounded-full", color)} style={{ width: `${pct}%` }} />
             </div>
             <span className="text-[10px] text-slate-500">
-                Dag {elapsed}/{total}
+                {t("components.guaranteeDayShort").replace("{elapsed}", String(elapsed)).replace("{total}", String(total))}
             </span>
         </div>
     );
 }
 
 export function ActiveGuaranteesDashboard({ guarantees }: ActiveGuaranteesDashboardProps) {
+    const { t } = useTranslations();
     const sorted = [...guarantees].sort((a, b) => {
         return daysUntil(a.guaranteeEndDate) - daysUntil(b.guaranteeEndDate);
     });
@@ -64,7 +68,7 @@ export function ActiveGuaranteesDashboard({ guarantees }: ActiveGuaranteesDashbo
         return (
             <div className="py-12 text-center text-slate-400 flex flex-col items-center gap-3">
                 <ShieldCheck className="h-10 w-10 opacity-20" />
-                <p className="text-sm">Inga aktiva garantier just nu.</p>
+                <p className="text-sm">{t("components.guaranteeNoneActive")}</p>
             </div>
         );
     }
@@ -74,13 +78,13 @@ export function ActiveGuaranteesDashboard({ guarantees }: ActiveGuaranteesDashbo
             {/* Summary chips */}
             <div className="flex gap-3 flex-wrap">
                 <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border border-red-200 bg-red-50 text-red-700">
-                    <span className="h-2 w-2 rounded-full bg-red-500" /> {critical.length} kritisk
+                    <span className="h-2 w-2 rounded-full bg-red-500" /> {critical.length} {t("components.guaranteeCritical")}
                 </span>
                 <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border border-amber-200 bg-amber-50 text-amber-700">
-                    <span className="h-2 w-2 rounded-full bg-amber-400" /> {warning.length} varning
+                    <span className="h-2 w-2 rounded-full bg-amber-400" /> {warning.length} {t("components.guaranteeWarning")}
                 </span>
                 <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border border-success-200 bg-success-50 text-success-700">
-                    <span className="h-2 w-2 rounded-full bg-success-500" /> {safe.length} OK
+                    <span className="h-2 w-2 rounded-full bg-success-500" /> {safe.length} {t("components.guaranteeOk")}
                 </span>
             </div>
 
@@ -89,12 +93,12 @@ export function ActiveGuaranteesDashboard({ guarantees }: ActiveGuaranteesDashbo
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-slate-100 bg-slate-50">
-                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Kandidat</th>
-                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Företag</th>
-                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Progress</th>
-                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Dagar kvar</th>
-                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Avgift</th>
-                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Löper ut</th>
+                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("components.guaranteeColCandidate")}</th>
+                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("components.guaranteeColCompany")}</th>
+                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("components.guaranteeColProgress")}</th>
+                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("components.guaranteeColDaysLeft")}</th>
+                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("components.guaranteeColFee")}</th>
+                            <th className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">{t("components.guaranteeColExpires")}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -123,7 +127,7 @@ export function ActiveGuaranteesDashboard({ guarantees }: ActiveGuaranteesDashbo
                                             "font-bold",
                                             days <= 0 ? "text-slate-400" : days <= 7 ? "text-red-600" : days <= 14 ? "text-amber-600" : "text-success-700"
                                         )}>
-                                            {days <= 0 ? "Utgången" : `${days}d`}
+                                            {days <= 0 ? t("components.guaranteeExpired") : `${days}d`}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 font-semibold text-slate-700">

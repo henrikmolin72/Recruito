@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { FileText, CreditCard, AlertTriangle, Clock } from "lucide-react";
+import { useTranslations } from "@/i18n/client";
 
 interface PlacementActionButtonsProps {
     placementId: string;
@@ -19,6 +20,7 @@ interface PlacementActionButtonsProps {
 
 export function PlacementActionButtons({ placementId, status }: PlacementActionButtonsProps) {
     const router = useRouter();
+    const { t } = useTranslations();
     const [loading, setLoading] = useState<string | null>(null);
 
     async function handleAction(action: string) {
@@ -38,7 +40,7 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
                     break;
             }
         } catch {
-            toast.error("Ett fel uppstod");
+            toast.error(t("admin.placementErrorOccurred"));
             setLoading(null);
             return;
         }
@@ -46,7 +48,7 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
         if (result?.error) {
             toast.error(result.error);
         } else {
-            toast.success("Åtgärden utfördes");
+            toast.success(t("admin.placementActionDone"));
             router.refresh();
         }
         setLoading(null);
@@ -63,7 +65,7 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
                     onClick={() => handleAction("send_invoice")}
                 >
                     <FileText className="h-3 w-3" />
-                    {loading === "send_invoice" ? "..." : "Fakturera"}
+                    {loading === "send_invoice" ? "..." : t("admin.placementInvoice")}
                 </Button>
             )}
             {status === "invoice_sent" && (
@@ -75,7 +77,7 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
                     onClick={() => handleAction("record_payment")}
                 >
                     <CreditCard className="h-3 w-3" />
-                    {loading === "record_payment" ? "..." : "Betalning"}
+                    {loading === "record_payment" ? "..." : t("admin.placementPayment")}
                 </Button>
             )}
             {status === "guarantee_active" && (
@@ -87,7 +89,7 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
                     onClick={() => handleAction("guarantee_failure")}
                 >
                     <AlertTriangle className="h-3 w-3" />
-                    {loading === "guarantee_failure" ? "..." : "Misslyckad"}
+                    {loading === "guarantee_failure" ? "..." : t("admin.placementFailed")}
                 </Button>
             )}
         </div>
@@ -96,16 +98,17 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
 
 export function ProcessGuaranteeButton() {
     const router = useRouter();
+    const { t } = useTranslations();
     const [loading, setLoading] = useState(false);
 
     async function handleProcess() {
         setLoading(true);
         try {
             const result = await processGuaranteeExpirations();
-            toast.success(`${result?.processed || 0} garantier behandlade`);
+            toast.success(t("admin.placementGuaranteesProcessed").replace("{n}", String(result?.processed || 0)));
             router.refresh();
         } catch {
-            toast.error("Ett fel uppstod");
+            toast.error(t("admin.placementErrorOccurred"));
         }
         setLoading(false);
     }
@@ -119,7 +122,7 @@ export function ProcessGuaranteeButton() {
             onClick={handleProcess}
         >
             <Clock className="h-4 w-4" />
-            {loading ? "Behandlar..." : "Processera garantier"}
+            {loading ? t("admin.placementProcessing") : t("admin.placementProcessGuarantees")}
         </Button>
     );
 }

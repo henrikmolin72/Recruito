@@ -360,10 +360,10 @@ export default function LandingPage() {
                       <PlayCircle className="h-14 w-14 text-white/90 mb-3" />
                       <p className="text-white text-lg font-semibold">Demo video (YouTube)</p>
                       <p className="mt-2 text-sm text-slate-300 max-w-xl">
-                        Hållare för produktdemo. Lägg in er YouTube-video här för att visa onboarding, kandidatarbete och kundens flowchart-vy.
+                        Placeholder for the product demo. Add your YouTube video here to showcase onboarding, candidate work, and the client flowchart view.
                       </p>
                       <div className="mt-4 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-slate-200">
-                        Sätt `NEXT_PUBLIC_LANDING_DEMO_YOUTUBE_URL` i miljön
+                        Set `NEXT_PUBLIC_LANDING_DEMO_YOUTUBE_URL` in the environment
                       </div>
                     </div>
                   )}

@@ -1,5 +1,6 @@
 import { ReconfirmBanner } from "@/components/dashboard/company/reconfirm-banner";
 import { createClient } from "@/lib/supabase/server";
+import { createTranslator } from "@/i18n/server";
 
 export default async function CompanyLayout({ children }: { children: React.ReactNode }) {
     const supabase = await createClient();
@@ -17,13 +18,13 @@ export default async function CompanyLayout({ children }: { children: React.Reac
     }
 
     if (!approved) {
+        const t = await createTranslator();
         return (
             <div className="min-h-[60vh] flex items-center justify-center p-8">
                 <div className="max-w-md text-center space-y-3">
-                    <h1 className="text-2xl font-bold">Kontot väntar på godkännande</h1>
+                    <h1 className="text-2xl font-bold">{t("company.pendingApprovalTitle")}</h1>
                     <p className="text-muted-foreground">
-                        Ditt företagskonto granskas av Recruito. Du får tillgång till
-                        plattformen så snart kontot har godkänts.
+                        {t("company.pendingApprovalBody")}
                     </p>
                 </div>
             </div>

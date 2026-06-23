@@ -6,6 +6,7 @@ import { Loader2, Sparkles, X, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useTranslations } from "@/i18n/client";
 
 type ShortlistItem = {
   rank: number;
@@ -27,6 +28,7 @@ interface ShortlistGeneratorProps {
 }
 
 export function ShortlistGenerator({ jobId }: ShortlistGeneratorProps) {
+  const { t } = useTranslations();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,12 +51,12 @@ export function ShortlistGenerator({ jobId }: ShortlistGeneratorProps) {
       });
       const json = await response.json();
       if (!response.ok) {
-        throw new Error(json?.error || "Kunde inte generera shortlist");
+        throw new Error(json?.error || t("components.shortlistGenError"));
       }
       setData(json as ShortlistResponse);
       setOpen(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Okänt fel");
+      setError(e instanceof Error ? e.message : t("components.scoreCardUnknownError"));
       setOpen(true);
     } finally {
       setLoading(false);
@@ -68,7 +70,7 @@ export function ShortlistGenerator({ jobId }: ShortlistGeneratorProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      setError("Kunde inte kopiera till urklipp");
+      setError(t("components.shortlistCopyError"));
     }
   }
 
@@ -77,7 +79,7 @@ export function ShortlistGenerator({ jobId }: ShortlistGeneratorProps) {
       <div className="flex flex-col items-end gap-2">
         <Button onClick={generate} disabled={loading} className="gap-2">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {loading ? "Genererar..." : "✨ Generera Topp-5 Presentation"}
+          {loading ? t("components.shortlistGenerating") : t("components.shortlistGenerate")}
         </Button>
         {error && !open ? <p className="text-xs text-danger-600 font-medium">{error}</p> : null}
       </div>
@@ -89,17 +91,17 @@ export function ShortlistGenerator({ jobId }: ShortlistGeneratorProps) {
             <div className="border-b border-slate-100 bg-white px-6 py-4 flex items-start justify-between gap-4">
               <div>
                 <Dialog.Title className="text-lg font-bold text-slate-900">
-                  {data?.title || "Topp-5 presentation"}
+                  {data?.title || t("components.shortlistTitle")}
                 </Dialog.Title>
                 <Dialog.Description className="text-sm text-slate-500">
-                  Klar att dela med kund via mejl eller Slack.
+                  {t("components.shortlistSubtitle")}
                 </Dialog.Description>
               </div>
               <Dialog.Close asChild>
                 <button
                   type="button"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
-                  aria-label="Stäng"
+                  aria-label={t("components.shortlistClose")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -110,8 +112,8 @@ export function ShortlistGenerator({ jobId }: ShortlistGeneratorProps) {
               {loading ? (
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-8 text-center">
                   <Loader2 className="mx-auto h-6 w-6 animate-spin text-brand-600" />
-                  <p className="mt-3 text-sm font-medium text-slate-700">AI sammanställer toppkandidaterna...</p>
-                  <p className="text-xs text-slate-500 mt-1">Detta använder redan sparad screening-data för låg kostnad.</p>
+                  <p className="mt-3 text-sm font-medium text-slate-700">{t("components.shortlistCompiling")}</p>
+                  <p className="text-xs text-slate-500 mt-1">{t("components.shortlistLowCost")}</p>
                 </div>
               ) : error ? (
                 <div className="rounded-2xl border border-danger-200 bg-danger-50 p-4 text-sm text-danger-700">{error}</div>
@@ -139,7 +141,7 @@ export function ShortlistGenerator({ jobId }: ShortlistGeneratorProps) {
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Share text</p>
                       <Button type="button" size="sm" variant="outline" onClick={copyToClipboard} className="gap-2">
                         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                        {copied ? "Kopierad" : "Kopiera till urklipp"}
+                        {copied ? t("components.shortlistCopied") : t("components.shortlistCopyClipboard")}
                       </Button>
                     </div>
                     <pre className="whitespace-pre-wrap text-sm leading-6 text-slate-700 font-sans">{shareText}</pre>
@@ -147,7 +149,7 @@ export function ShortlistGenerator({ jobId }: ShortlistGeneratorProps) {
                 </>
               ) : (
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-sm text-slate-600">
-                  Ingen shortlist genererad ännu.
+                  {t("components.shortlistEmpty")}
                 </div>
               )}
             </CardContent>

@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 const REASONS = [
-    { value: "candidate_resigned", label: "Kandidaten sade upp sig" },
-    { value: "performance", label: "Ej uppfyllda krav / prestation" },
-    { value: "mutual_agreement", label: "Ömsesidig överenskommelse" },
-    { value: "other", label: "Annat" },
+    { value: "candidate_resigned", labelKey: "components.breachReasonResigned" },
+    { value: "performance", labelKey: "components.breachReasonPerformance" },
+    { value: "mutual_agreement", labelKey: "components.breachReasonMutual" },
+    { value: "other", labelKey: "components.breachReasonOther" },
 ] as const;
 
 interface BreachReportFormProps {
@@ -31,6 +32,7 @@ export function BreachReportForm({
     className,
     onSuccess,
 }: BreachReportFormProps) {
+    const { t } = useTranslations();
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState<number | null>(null);
@@ -43,7 +45,7 @@ export function BreachReportForm({
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        if (!form.endDate) { setError("Ange ett slutdatum."); return; }
+        if (!form.endDate) { setError(t("components.breachEndDateRequired")); return; }
         setLoading(true);
         setError(null);
         try {
@@ -53,11 +55,11 @@ export function BreachReportForm({
                 body: JSON.stringify({ placementId, ...form }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error ?? "Fel");
+            if (!res.ok) throw new Error(data.error ?? t("components.breachGenericError"));
             setSuccess(data.refundAmount);
             onSuccess?.(data.refundAmount);
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Okänt fel");
+            setError(e instanceof Error ? e.message : t("components.scoreCardUnknownError"));
         } finally {
             setLoading(false);
         }
@@ -66,9 +68,9 @@ export function BreachReportForm({
     if (success !== null) {
         return (
             <div className={cn("rounded-xl border border-success-200 bg-success-50 p-4 text-sm", className)}>
-                <p className="font-bold text-success-700">Garantibrott rapporterat ✓</p>
+                <p className="font-bold text-success-700">{t("components.breachReportedTitle")}</p>
                 <p className="text-success-600 mt-1">
-                    Möjlig återbetalning: <strong>{formatCurrency(success, currency)}</strong>. Admin granskar ärendet.
+                    {t("components.breachRefundNote").replace("{amount}", formatCurrency(success, currency))}
                 </p>
             </div>
         );
@@ -82,7 +84,7 @@ export function BreachReportForm({
                 className="flex items-center gap-2 text-xs font-semibold text-red-600 hover:text-red-700 transition-colors"
             >
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Rapportera garantibrott
+                {t("components.breachReportButton")}
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
             </button>
 
@@ -90,13 +92,13 @@ export function BreachReportForm({
                 <Card className="mt-3 border-red-200">
                     <CardContent className="p-5">
                         <p className="text-sm font-bold text-slate-800 mb-4">
-                            Garantibrott — {candidateName} ({jobTitle})
+                            {t("components.breachFormTitle").replace("{name}", candidateName).replace("{title}", jobTitle)}
                         </p>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-semibold text-slate-600 mb-1 block">
-                                        Kandidatens sista dag *
+                                        {t("components.breachLastDay")}
                                     </label>
                                     <input
                                         type="date"
@@ -108,7 +110,7 @@ export function BreachReportForm({
                                 </div>
                                 <div>
                                     <label className="text-xs font-semibold text-slate-600 mb-1 block">
-                                        Orsak *
+                                        {t("components.breachReasonLabel")}
                                     </label>
                                     <select
                                         value={form.reason}
@@ -116,7 +118,7 @@ export function BreachReportForm({
                                         className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-brand-400"
                                     >
                                         {REASONS.map((r) => (
-                                            <option key={r.value} value={r.value}>{r.label}</option>
+                                            <option key={r.value} value={r.value}>{t(r.labelKey)}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -124,14 +126,14 @@ export function BreachReportForm({
 
                             <div>
                                 <label className="text-xs font-semibold text-slate-600 mb-1 block">
-                                    Ytterligare kommentar (valfritt)
+                                    {t("components.breachNotesLabel")}
                                 </label>
                                 <textarea
                                     value={form.notes}
                                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                                     rows={3}
                                     maxLength={1000}
-                                    placeholder="Beskriv kort vad som hände..."
+                                    placeholder={t("components.breachNotesPlaceholder")}
                                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-brand-400 resize-none"
                                 />
                             </div>
@@ -141,10 +143,10 @@ export function BreachReportForm({
                             <div className="flex items-center gap-3">
                                 <Button type="submit" disabled={loading} className="gap-2 bg-red-600 hover:bg-red-700">
                                     {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                                    Skicka rapport
+                                    {t("components.breachSubmit")}
                                 </Button>
                                 <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                                    Avbryt
+                                    {t("components.breachCancel")}
                                 </Button>
                             </div>
                         </form>

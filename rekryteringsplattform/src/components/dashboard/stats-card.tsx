@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
+import { createTranslator } from "@/i18n/server";
 
 interface StatsCardProps {
   title: string;
@@ -10,7 +11,8 @@ interface StatsCardProps {
   trend?: { value: number; positive: boolean };
 }
 
-export function StatsCard({ title, value, description, icon: Icon, trend }: StatsCardProps) {
+export async function StatsCard({ title, value, description, icon: Icon, trend }: StatsCardProps) {
+  const t = await createTranslator();
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between">
@@ -19,7 +21,7 @@ export function StatsCard({ title, value, description, icon: Icon, trend }: Stat
           <p className="text-2xl font-bold mt-1">{value}</p>
           {trend && (
             <p className={cn("text-xs mt-1", trend.positive ? "text-success-500" : "text-danger-500")}>
-              {trend.positive ? "+" : ""}{trend.value}% denna månad
+              {trend.positive ? "+" : ""}{trend.value}% {t("components.statsThisMonth")}
             </p>
           )}
           {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}

@@ -4,13 +4,14 @@ import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { deleteDraftCandidate } from "@/lib/actions/candidates-extended";
+import { useTranslations } from "@/i18n/client";
 
 export function DraftRowActions({
     mandateId,
     draftId,
-    resumeLabel = "Återuppta",
-    deleteLabel = "Ta bort",
-    confirmLabel = "Ta bort detta utkast?",
+    resumeLabel,
+    deleteLabel,
+    confirmLabel,
 }: {
     mandateId: string;
     draftId: string;
@@ -19,10 +20,14 @@ export function DraftRowActions({
     confirmLabel?: string;
 }) {
     const router = useRouter();
+    const { t } = useTranslations();
     const [isPending, startTransition] = useTransition();
+    const resume = resumeLabel ?? t("recruiter.resume");
+    const del = deleteLabel ?? t("recruiter.remove");
+    const confirmText = confirmLabel ?? t("recruiter.removeDraftConfirm");
 
     const onDelete = () => {
-        if (!confirm(confirmLabel)) return;
+        if (!confirm(confirmText)) return;
         startTransition(async () => {
             await deleteDraftCandidate(draftId);
             router.refresh();
@@ -35,7 +40,7 @@ export function DraftRowActions({
                 href={`/recruiter/mandates/${mandateId}/candidates/new?draftId=${draftId}`}
                 className="text-brand-600 hover:text-brand-700 font-medium"
             >
-                {resumeLabel}
+                {resume}
             </Link>
             <button
                 type="button"
@@ -43,7 +48,7 @@ export function DraftRowActions({
                 disabled={isPending}
                 className="text-rose-600 hover:text-rose-700 font-medium disabled:opacity-50"
             >
-                {isPending ? "..." : deleteLabel}
+                {isPending ? "..." : del}
             </button>
         </div>
     );

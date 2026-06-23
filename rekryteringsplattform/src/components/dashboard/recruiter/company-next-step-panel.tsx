@@ -6,19 +6,20 @@ import { clearCandidateNextStepRequest, moveCandidateToPipelineStage, updateCand
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslations } from "@/i18n/client";
 import type { CompanyCandidateNextStep, PipelineStage } from "@/types/db-types";
 import { Beaker, PauseCircle, CheckCircle2, XCircle, Sparkles } from "lucide-react";
 
-function requestLabel(request: CompanyCandidateNextStep | null | undefined) {
+function requestLabel(request: CompanyCandidateNextStep | null | undefined, t: (key: string) => string) {
     switch (request) {
         case "request_tests":
-            return "Beställaren begär tester";
+            return t("recruiter.clientNextStepRequestTests");
         case "pause_candidate":
-            return "Beställaren vill pausa kandidaten";
+            return t("recruiter.clientNextStepPause");
         case "reject_candidate":
-            return "Beställaren vill avböja kandidaten";
+            return t("recruiter.clientNextStepReject");
         case "proceed_to_hire":
-            return "Beställaren vill gå vidare till anställning";
+            return t("recruiter.clientNextStepHire");
         default:
             return null;
     }
@@ -57,6 +58,7 @@ export function CompanyNextStepPanel({
     pipelineStages?: PipelineStage[] | null;
 }) {
     const router = useRouter();
+    const { t } = useTranslations();
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export function CompanyNextStepPanel({
         startTransition(async () => {
             const result = await action();
             if (!result?.success) {
-                setError(result?.error || "Kunde inte uppdatera kandidaten.");
+                setError(result?.error || t("recruiter.pipelineUpdateError"));
                 return;
             }
             setMessage(successText);
@@ -88,12 +90,12 @@ export function CompanyNextStepPanel({
     const applyPendingRequest = () => {
         if (pendingRequest === "request_tests") {
             if (!selectedTestStage) {
-                setError("Välj teststeg först.");
+                setError(t("recruiter.clientNextStepSelectTestFirst"));
                 return;
             }
             runAction(
                 () => moveCandidateToPipelineStage(candidateId, jobId, selectedTestStage),
-                "Kandidaten flyttades till teststeg och begäran markerades som hanterad."
+                t("recruiter.clientNextStepMovedToTest")
             );
             return;
         }
@@ -106,14 +108,14 @@ export function CompanyNextStepPanel({
 
         runAction(
             () => updateCandidateStatus(candidateId, jobId, statusMap[pendingRequest as Exclude<CompanyCandidateNextStep, "request_tests">]),
-            "Status uppdaterad och beställarens begäran markerades som hanterad."
+            t("recruiter.clientNextStepStatusUpdated")
         );
     };
 
     const clearRequestOnly = () => {
         runAction(
             () => clearCandidateNextStepRequest(candidateId, jobId),
-            "Begäran rensades."
+            t("recruiter.clientNextStepRequestCleared")
         );
     };
 
@@ -125,11 +127,11 @@ export function CompanyNextStepPanel({
                         {requestIcon(pendingRequest)}
                     </div>
                     <div className="min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-700/70">Beställarens nästa steg</p>
-                        <p className="mt-1 text-sm font-bold text-slate-900">{requestLabel(pendingRequest)}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-700/70">{t("recruiter.clientNextStepTitle")}</p>
+                        <p className="mt-1 text-sm font-bold text-slate-900">{requestLabel(pendingRequest, t)}</p>
                         <p className="mt-1 text-xs text-slate-500">
-                            Nuvarande kandidatstatus: <span className="font-semibold">{candidateStatus}</span>
-                            {pendingRequestAt && <span className="text-slate-400"> • {new Date(pendingRequestAt).toLocaleString("sv-SE")}</span>}
+                            {t("recruiter.clientNextStepCurrentStatus")} <span className="font-semibold">{candidateStatus}</span>
+                            {pendingRequestAt && <span className="text-slate-400"> • {new Date(pendingRequestAt).toLocaleString()}</span>}
                         </p>
                     </div>
                 </div>
@@ -137,14 +139,14 @@ export function CompanyNextStepPanel({
             <CardContent className="space-y-4">
                 {pendingRequestNote && (
                     <div className="rounded-xl border border-amber-200 bg-white px-3 py-2.5 text-sm text-slate-700">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Kommentar</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">{t("recruiter.clientNextStepComment")}</span>
                         {pendingRequestNote}
                     </div>
                 )}
 
                 {pendingRequest === "request_tests" && (
                     <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-widest text-slate-400">Välj teststeg i pipeline</label>
+                        <label className="text-xs font-black uppercase tracking-widest text-slate-400">{t("recruiter.clientNextStepSelectTestStage")}</label>
                         {testStages.length > 0 ? (
                             <Select
                                 value={selectedTestStage}
@@ -152,7 +154,7 @@ export function CompanyNextStepPanel({
                                 disabled={isPending}
                             >
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Välj test/bedömning..." />
+                                    <SelectValue placeholder={t("recruiter.clientNextStepSelectTestPlaceholder")} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {testStages.map((stage) => (
@@ -164,7 +166,7 @@ export function CompanyNextStepPanel({
                             </Select>
                         ) : (
                             <p className="text-xs text-rose-600">
-                                Inga test/bedömningssteg finns i pipelinen för detta jobb.
+                                {t("recruiter.clientNextStepNoTestStages")}
                             </p>
                         )}
                     </div>
@@ -181,10 +183,10 @@ export function CompanyNextStepPanel({
                             (pendingRequest === "request_tests" && (!selectedTestStage || testStages.length === 0))
                         }
                     >
-                        {isPending ? "Uppdaterar..." : "Applicera i pipeline/status"}
+                        {isPending ? t("recruiter.updating") : t("recruiter.clientNextStepApply")}
                     </Button>
                     <Button variant="outline" onClick={clearRequestOnly} disabled={isPending}>
-                        Rensa begäran
+                        {t("recruiter.clientNextStepClear")}
                     </Button>
                 </div>
             </CardContent>

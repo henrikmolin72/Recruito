@@ -22,15 +22,11 @@ const DEFAULT_CHECKLIST = {
 
 type ChecklistKey = keyof typeof DEFAULT_CHECKLIST;
 
-const CHECKLIST_LABELS: Record<ChecklistKey, string> = {
-    linkedin_verified:
-        "LinkedIn-profil besökt och bekräftad — profilen matchar ansökan och visar relevant rekryterings­erfarenhet.",
-    email_domain_match:
-        "E-postadress kontrollerad — antingen företags­domän som matchar LinkedIn eller verifierad personlig e-post.",
-    experience_credible:
-        "Erfarenhets­nivå trovärdig — uppgiven bracket stämmer med LinkedIn-profilens omfattning.",
-    agreement_signed:
-        "Frilansavtal påskrivet under signup (agreement_freelance_recruiter + agreement_commission_after_guarantee).",
+const CHECKLIST_LABEL_KEYS: Record<ChecklistKey, string> = {
+    linkedin_verified: "admin.kycChecklistLinkedin",
+    email_domain_match: "admin.kycChecklistEmail",
+    experience_credible: "admin.kycChecklistExperience",
+    agreement_signed: "admin.kycChecklistAgreement",
 };
 
 export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string }) {
@@ -46,7 +42,7 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
 
     function handleApprove() {
         if (!allChecked) {
-            toast.error("Bekräfta alla KYC-kriterier innan godkännande.");
+            toast.error(t("admin.kycConfirmAllBeforeApprove"));
             return;
         }
         startTransition(async () => {
@@ -62,14 +58,14 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
                 toast.error(result.error);
                 return;
             }
-            toast.success("Rekryterare godkänd.");
+            toast.success(t("admin.recruiterApproved"));
             router.refresh();
         });
     }
 
     function handleReject() {
         if (!rejectionReason.trim()) {
-            toast.error("Ange anledning för avslag.");
+            toast.error(t("admin.rejectReasonRequired"));
             return;
         }
         startTransition(async () => {
@@ -78,7 +74,7 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
                 toast.error(result.error);
                 return;
             }
-            toast.success("Rekryterare avslagen.");
+            toast.success(t("admin.recruiterRejected"));
             router.refresh();
         });
     }
@@ -108,9 +104,9 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
     if (mode === "approve") {
         return (
             <div className="w-full max-w-xl rounded-md border border-gray-200 bg-white p-4 text-sm shadow-sm">
-                <p className="font-semibold text-gray-900">KYC-checklista</p>
+                <p className="font-semibold text-gray-900">{t("admin.kycChecklistTitle")}</p>
                 <p className="mt-1 text-xs text-gray-600">
-                    Bekräfta alla fyra punkter innan godkännande. Checklistan sparas på rekryterarens profil och i audit-trail.
+                    {t("admin.kycChecklistIntro")}
                 </p>
                 <ul className="mt-3 space-y-2">
                     {(Object.keys(DEFAULT_CHECKLIST) as ChecklistKey[]).map((key) => (
@@ -124,13 +120,13 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
                                         setChecklist({ ...checklist, [key]: e.target.checked })
                                     }
                                 />
-                                <span className="text-xs text-gray-800">{CHECKLIST_LABELS[key]}</span>
+                                <span className="text-xs text-gray-800">{t(CHECKLIST_LABEL_KEYS[key])}</span>
                             </label>
                         </li>
                     ))}
                 </ul>
                 <label className="mt-3 block">
-                    <span className="text-xs font-medium text-gray-700">Anteckningar (frivilligt)</span>
+                    <span className="text-xs font-medium text-gray-700">{t("admin.notesOptional")}</span>
                     <textarea
                         rows={2}
                         maxLength={2000}
@@ -146,7 +142,7 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
                         onClick={handleApprove}
                         disabled={!allChecked || isPending}
                     >
-                        {isPending ? "Sparar..." : "Godkänn"}
+                        {isPending ? t("admin.saving") : t("admin.approveAction")}
                     </Button>
                     <Button
                         size="sm"
@@ -155,7 +151,7 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
                         onClick={() => { setMode("idle"); setChecklist(DEFAULT_CHECKLIST); setNotes(""); }}
                         disabled={isPending}
                     >
-                        Avbryt
+                        {t("admin.cancel")}
                     </Button>
                 </div>
             </div>
@@ -165,16 +161,16 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
     // mode === "reject"
     return (
         <div className="w-full max-w-xl rounded-md border border-red-200 bg-red-50 p-4 text-sm">
-            <p className="font-semibold text-red-900">Avslå ansökan</p>
+            <p className="font-semibold text-red-900">{t("admin.rejectApplicationTitle")}</p>
             <p className="mt-1 text-xs text-red-800">
-                Anledningen sparas på rekryterarens profil och syns för administratörer.
+                {t("admin.rejectReasonNote")}
             </p>
             <textarea
                 rows={3}
                 maxLength={1000}
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="T.ex. LinkedIn-profil saknar relevant rekryterings­erfarenhet"
+                placeholder={t("admin.rejectReasonPlaceholder")}
                 className="mt-3 block w-full rounded border border-red-300 bg-white px-2 py-1 text-xs"
             />
             <div className="mt-3 flex gap-2">
@@ -185,7 +181,7 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
                     onClick={handleReject}
                     disabled={isPending}
                 >
-                    {isPending ? "Sparar..." : "Avslå"}
+                    {isPending ? t("admin.saving") : t("admin.rejectAction")}
                 </Button>
                 <Button
                     size="sm"
@@ -194,7 +190,7 @@ export function RecruiterApprovalActions({ recruiterId }: { recruiterId: string 
                     onClick={() => { setMode("idle"); setRejectionReason(""); }}
                     disabled={isPending}
                 >
-                    Avbryt
+                    {t("admin.cancel")}
                 </Button>
             </div>
         </div>
@@ -214,7 +210,7 @@ export function RecruiterManageActions({ recruiterId, status }: { recruiterId: s
                 toast.error(result.error);
                 return;
             }
-            toast.success("Rekryterare avstängd.");
+            toast.success(t("admin.recruiterSuspended"));
             router.refresh();
         });
     };
@@ -226,7 +222,7 @@ export function RecruiterManageActions({ recruiterId, status }: { recruiterId: s
                 toast.error(result.error);
                 return;
             }
-            toast.success("Rekryterare återaktiverad.");
+            toast.success(t("admin.recruiterReactivated"));
             router.refresh();
         });
     };

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { GuaranteeTimer } from "./guarantee-timer";
 import { BreachReportForm } from "./breach-report-form";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 interface GuaranteeBillingRowProps {
     placementId: string;
@@ -24,6 +25,7 @@ export function GuaranteeBillingRow({
     status,
     currency = "SEK",
 }: GuaranteeBillingRowProps) {
+    const { t } = useTranslations();
     const isActive = status === "guarantee_active";
     const hasBreach = status === "refund_processing" || status === "guarantee_failed";
 
@@ -47,7 +49,7 @@ export function GuaranteeBillingRow({
             )}
             {hasBreach && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 font-semibold">
-                    Garantibrott rapporterat — väntar på admin-granskning
+                    {t("components.breachAwaitingReview")}
                 </div>
             )}
         </div>

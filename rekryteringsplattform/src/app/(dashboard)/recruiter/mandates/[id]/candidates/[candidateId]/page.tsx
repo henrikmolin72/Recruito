@@ -374,6 +374,7 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                         mandateId={mandateId}
                         initialConfig={evalConfig}
                         initialReport={latestEvaluation}
+                        dict={r as any}
                     />
 
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">

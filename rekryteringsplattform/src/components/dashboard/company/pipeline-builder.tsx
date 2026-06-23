@@ -19,12 +19,12 @@ interface PipelineBuilderProps {
     disabled?: boolean;
 }
 
-function getDefaultTitle(type: PipelineStageType, count: number): string {
+function getDefaultTitle(type: PipelineStageType, count: number, t: (key: string) => string): string {
     const titles: Record<PipelineStageType, string> = {
         screening: `Screening ${count > 1 ? count : ''}`.trim(),
-        interview: `Intervju ${count}`,
+        interview: `${t("company.pipelineTypeInterview")} ${count}`,
         test: `Test ${count > 1 ? count : ''}`.trim(),
-        assessment: `Bedömning ${count > 1 ? count : ''}`.trim(),
+        assessment: `${t("company.pipelineTypeAssessment")} ${count > 1 ? count : ''}`.trim(),
     };
     return titles[type];
 }
@@ -49,12 +49,12 @@ function getStageTypeColor(type: PipelineStageType): string {
     return colors[type];
 }
 
-function getStageTypeLabel(type: PipelineStageType): string {
+function getStageTypeLabel(type: PipelineStageType, t: (key: string) => string): string {
     const labels: Record<PipelineStageType, string> = {
         screening: "Screening",
-        interview: "Intervju",
+        interview: t("company.pipelineTypeInterview"),
         test: "Test",
-        assessment: "Bedömning",
+        assessment: t("company.pipelineTypeAssessment"),
     };
     return labels[type];
 }
@@ -75,7 +75,7 @@ export function PipelineBuilder({ stages, onChange, disabled }: PipelineBuilderP
         const newStage: PipelineStage = {
             id: `${type}-${count}-${Date.now()}`,
             type,
-            title: getDefaultTitle(type, count),
+            title: getDefaultTitle(type, count, t),
             order: stages.length,
         };
         onChange([...stages, newStage]);
@@ -183,6 +183,7 @@ function PipelineStageItem({
     canRemove: boolean;
     disabled?: boolean;
 }) {
+    const { t } = useTranslations();
     const dragControls = useDragControls();
 
     return (
@@ -216,7 +217,7 @@ function PipelineStageItem({
                         onChange={(e) => onUpdate(stage.id, { title: e.target.value })}
                         className="h-8 text-sm font-medium flex-1 border-transparent hover:border-slate-200 focus:border-brand-500 transition-colors"
                         disabled={disabled}
-                        placeholder="Stegnamn..."
+                        placeholder={t("components.pipelineStageNamePlaceholder")}
                     />
 
                     {/* Stage type badge */}
@@ -224,7 +225,7 @@ function PipelineStageItem({
                         "text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md flex-shrink-0",
                         getStageTypeColor(stage.type)
                     )}>
-                        {getStageTypeLabel(stage.type)}
+                        {getStageTypeLabel(stage.type, t)}
                     </span>
 
                     {/* Order indicator */}

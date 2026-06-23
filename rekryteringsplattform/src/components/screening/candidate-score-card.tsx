@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 import { AiTransparencyCard } from "./ai-transparency-card";
 
 type ComplianceData = {
@@ -37,7 +38,7 @@ function getScoreTone(score: number) {
       text: "text-success-700",
       bg: "from-success-50 to-white",
       badge: "success" as const,
-      label: "Stark match",
+      label: "components.scoreCardStrong",
     };
   }
   if (score >= 40) {
@@ -46,7 +47,7 @@ function getScoreTone(score: number) {
       text: "text-warning-700",
       bg: "from-warning-50 to-white",
       badge: "warning" as const,
-      label: "Mellanmatch",
+      label: "components.scoreCardMedium",
     };
   }
   return {
@@ -54,7 +55,7 @@ function getScoreTone(score: number) {
     text: "text-danger-700",
     bg: "from-danger-50 to-white",
     badge: "danger" as const,
-    label: "Låg match",
+    label: "components.scoreCardLow",
   };
 }
 
@@ -71,6 +72,7 @@ export function CandidateScoreCard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTransparency, setShowTransparency] = useState(false);
+  const { t } = useTranslations();
 
   const score = result?.score ?? 0;
   const tone = getScoreTone(score);
@@ -93,7 +95,7 @@ export function CandidateScoreCard({
 
       const json = await response.json();
       if (!response.ok) {
-        throw new Error(json?.error || "Screening misslyckades");
+        throw new Error(json?.error || t("components.scoreCardScreenFailed"));
       }
 
       const nextResult: ScreeningResult = {
@@ -109,7 +111,7 @@ export function CandidateScoreCard({
       setResult(nextResult);
       onAnalyzed?.(nextResult);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Okänt fel");
+      setError(e instanceof Error ? e.message : t("components.scoreCardUnknownError"));
     } finally {
       setLoading(false);
     }
@@ -123,10 +125,10 @@ export function CandidateScoreCard({
             <div>
               <p className="text-[11px] uppercase tracking-[0.16em] font-bold text-slate-500">AI Screening</p>
               <h3 className="mt-1 text-base font-semibold text-slate-900">
-                {candidateName ? `Matchscore för ${candidateName}` : "Kandidatmatch"}
+                {candidateName ? t("components.scoreCardMatchFor").replace("{name}", candidateName) : t("components.scoreCardCandidateMatch")}
               </h3>
             </div>
-            {result ? <Badge variant={tone.badge}>{tone.label}</Badge> : <Badge variant="outline">Ej analyserad</Badge>}
+            {result ? <Badge variant={tone.badge}>{t(tone.label)}</Badge> : <Badge variant="outline">{t("components.scoreCardNotAnalyzed")}</Badge>}
           </div>
 
           <div className="mt-4 flex items-center gap-5">
@@ -154,18 +156,18 @@ export function CandidateScoreCard({
             <div className="flex-1 min-w-0">
               <p className="text-sm text-slate-600">
                 {result
-                  ? "AI-analysen är sparad och kan användas i shortlist senare."
-                  : "Kör en snabb screening mot jobbannonsen och spara resultatet i databasen."}
+                  ? t("components.scoreCardSavedNote")
+                  : t("components.scoreCardRunNote")}
               </p>
               {result ? (
                 <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={loading} className="mt-3 gap-2">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {loading ? "Analyserar..." : "Re-analysera"}
+                  {loading ? t("components.scoreCardAnalyzing") : t("components.scoreCardReanalyze")}
                 </Button>
               ) : (
                 <Button onClick={handleAnalyze} disabled={loading} className="mt-3 gap-2">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {loading ? "Analyserar..." : "Analysera"}
+                  {loading ? t("components.scoreCardAnalyzing") : t("components.scoreCardAnalyze")}
                 </Button>
               )}
               {error ? <p className="mt-2 text-xs font-medium text-danger-600">{error}</p> : null}
@@ -175,9 +177,9 @@ export function CandidateScoreCard({
 
         <div className="p-5 space-y-4">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.16em] font-bold text-slate-500 mb-2">AI-motivering</p>
+            <p className="text-[11px] uppercase tracking-[0.16em] font-bold text-slate-500 mb-2">{t("components.scoreCardReasoning")}</p>
             {bulletPoints.length === 0 ? (
-              <p className="text-sm text-slate-500">Ingen analys ännu.</p>
+              <p className="text-sm text-slate-500">{t("components.scoreCardNoAnalysis")}</p>
             ) : (
               <ul className="space-y-2">
                 {bulletPoints.map((point, idx) => (
@@ -192,7 +194,7 @@ export function CandidateScoreCard({
 
           {missingSkills.length > 0 ? (
             <div>
-              <p className="text-[11px] uppercase tracking-[0.16em] font-bold text-slate-500 mb-2">Saknade skills</p>
+              <p className="text-[11px] uppercase tracking-[0.16em] font-bold text-slate-500 mb-2">{t("components.scoreCardMissingSkills")}</p>
               <div className="flex flex-wrap gap-2">
                 {missingSkills.map((skill) => (
                   <Badge key={skill} variant="outline" className="rounded-md px-2 py-1 text-[11px]">

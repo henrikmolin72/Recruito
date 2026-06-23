@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { markDataRightsRequestComplete } from "@/lib/actions/data-rights";
 import { toast } from "sonner";
+import { useTranslations } from "@/i18n/client";
 
 type Row = {
     id: string;
@@ -17,6 +18,7 @@ type Row = {
 };
 
 export function AdminDataRightsRow({ row }: { row: Row }) {
+    const { t } = useTranslations();
     const [isPending, startTransition] = useTransition();
     const [notes, setNotes] = useState("");
     const [decision, setDecision] = useState<"completed" | "rejected" | null>(null);
@@ -30,7 +32,7 @@ export function AdminDataRightsRow({ row }: { row: Row }) {
                 setDecision(null);
                 return;
             }
-            toast.success(d === "completed" ? "Markerad som klar." : "Markerad som avslagen.");
+            toast.success(d === "completed" ? t("admin.dsrMarkedComplete") : t("admin.dsrMarkedRejected"));
         });
     }
 
@@ -44,7 +46,7 @@ export function AdminDataRightsRow({ row }: { row: Row }) {
     return (
         <tr className="border-b border-gray-200">
             <td className="px-3 py-3 text-sm text-gray-600">
-                {new Date(row.created_at).toLocaleString("sv-SE")}
+                {new Date(row.created_at).toLocaleString()}
             </td>
             <td className="px-3 py-3 text-sm font-medium text-gray-900">{row.request_type}</td>
             <td className="px-3 py-3 text-sm text-gray-700">{subjectLabel}</td>
@@ -54,7 +56,7 @@ export function AdminDataRightsRow({ row }: { row: Row }) {
                     <textarea
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
-                        placeholder="Adminanteckningar (loggas i audit_log)"
+                        placeholder={t("admin.dsrAdminNotesPlaceholder")}
                         rows={2}
                         maxLength={2000}
                         className="block w-full rounded border border-gray-300 px-2 py-1 text-sm"
@@ -66,7 +68,7 @@ export function AdminDataRightsRow({ row }: { row: Row }) {
                             disabled={isPending}
                             className="rounded bg-green-600 px-3 py-1 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
                         >
-                            {isPending && decision === "completed" ? "Sparar..." : "Markera klar"}
+                            {isPending && decision === "completed" ? t("admin.saving") : t("admin.dsrMarkComplete")}
                         </button>
                         <button
                             type="button"
@@ -74,7 +76,7 @@ export function AdminDataRightsRow({ row }: { row: Row }) {
                             disabled={isPending}
                             className="rounded border border-gray-300 bg-white px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                         >
-                            {isPending && decision === "rejected" ? "Sparar..." : "Avslå"}
+                            {isPending && decision === "rejected" ? t("admin.saving") : t("admin.rejectAction")}
                         </button>
                     </div>
                 </div>

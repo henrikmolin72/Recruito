@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Shield, ShieldCheck, ShieldAlert, ShieldX, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/client";
 
 interface GuaranteeTimerProps {
     guaranteeEndDate: string;
@@ -30,6 +31,7 @@ function daysBetween(startStr: string, endStr: string): number {
 }
 
 export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidateName, jobTitle, className }: GuaranteeTimerProps) {
+    const { t } = useTranslations();
     const [days, setDays] = useState(() => daysUntil(guaranteeEndDate));
 
     useEffect(() => {
@@ -50,13 +52,14 @@ export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidate
     const elapsed = totalDays - days;
     const progressPct = Math.min(100, Math.max(0, Math.round((elapsed / totalDays) * 100)));
 
+    const daysLeftShort = t("components.guaranteeTimerDaysLeftShort").replace("{days}", String(days));
     const statusConfig = expired
-        ? { icon: ShieldCheck, color: "text-success-600", bg: "bg-success-50", border: "border-success-200", label: "Avslutad", bar: "bg-success-400" }
+        ? { icon: ShieldCheck, color: "text-success-600", bg: "bg-success-50", border: "border-success-200", label: t("components.guaranteeTimerCompleted"), bar: "bg-success-400" }
         : critical
-        ? { icon: ShieldAlert, color: "text-red-600", bg: "bg-red-50", border: "border-red-200", label: `${days}d kvar`, bar: "bg-red-400" }
+        ? { icon: ShieldAlert, color: "text-red-600", bg: "bg-red-50", border: "border-red-200", label: daysLeftShort, bar: "bg-red-400" }
         : warning
-        ? { icon: Shield, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", label: `${days}d kvar`, bar: "bg-amber-400" }
-        : { icon: Shield, color: "text-success-600", bg: "bg-success-50", border: "border-success-200", label: `${days}d kvar`, bar: "bg-success-400" };
+        ? { icon: Shield, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", label: daysLeftShort, bar: "bg-amber-400" }
+        : { icon: Shield, color: "text-success-600", bg: "bg-success-50", border: "border-success-200", label: daysLeftShort, bar: "bg-success-400" };
 
     const Icon = statusConfig.icon;
 
@@ -67,7 +70,7 @@ export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidate
                 <div className="flex items-center gap-2">
                     <Icon className={cn("h-4 w-4 shrink-0", statusConfig.color)} />
                     <div>
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">Garanti</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">{t("components.guaranteeLabel")}</p>
                         <p className="text-sm font-semibold text-slate-800">{candidateName}</p>
                     </div>
                 </div>
@@ -76,7 +79,7 @@ export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidate
                         {expired ? "✓" : days}
                     </p>
                     <p className="text-[10px] text-slate-500">
-                        {expired ? "Godkänd" : "dagar kvar"}
+                        {expired ? t("components.guaranteeApproved") : t("components.guaranteeDaysLeft")}
                     </p>
                 </div>
             </div>
@@ -91,9 +94,9 @@ export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidate
 
             <div className="flex justify-between text-[10px] text-slate-500">
                 <span className="flex items-center gap-1">
-                    <Clock className="h-2.5 w-2.5" /> Dag {Math.max(0, elapsed)} av {totalDays}
+                    <Clock className="h-2.5 w-2.5" /> {t("components.guaranteeDayOf").replace("{elapsed}", String(Math.max(0, elapsed))).replace("{total}", String(totalDays))}
                 </span>
-                <span>Löper ut: {new Date(guaranteeEndDate).toLocaleDateString("sv-SE")}</span>
+                <span>{t("components.guaranteeExpires")} {new Date(guaranteeEndDate).toLocaleDateString()}</span>
             </div>
         </div>
     );

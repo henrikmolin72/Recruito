@@ -32,9 +32,9 @@ export default async function AdminPlacementsPage() {
                 <th className="p-4 font-medium text-muted-foreground">{a.tablePlatformFee}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableRecruiterFee}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementStatus}</th>
-                <th className="p-4 font-medium text-muted-foreground">Garanti</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementGuarantee}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementDate}</th>
-                <th className="p-4 font-medium text-muted-foreground">Åtgärder</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tablePlacementActions}</th>
               </tr>
             </thead>
             <tbody>
