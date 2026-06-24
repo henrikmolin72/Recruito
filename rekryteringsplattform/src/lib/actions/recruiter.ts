@@ -10,6 +10,7 @@ import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } 
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
 import { candidateInStage } from "@/lib/mandate-stages";
 import { isCandidateInProcess } from "@/lib/candidate-workflow";
+import { releaseDueMandates } from "@/lib/mandate-expiry-release";
 import { verifyImageFileContent } from "@/lib/file-magic";
 
 function handleError(error: any) {
@@ -399,16 +400,6 @@ export async function getAvailableJobsForRecruiter() {
 
     if (!recruiter) return [];
 
-    const { data: claimedMandates } = await supabase
-        .from("job_mandates")
-        .select("job_id, is_active")
-        .eq("recruiter_id", recruiter.id);
-
-    const activeClaimedJobIds = new Set(
-        (claimedMandates || []).filter(m => m.is_active).map(m => m.job_id)
-    );
-    const everClaimedJobIds = new Set((claimedMandates || []).map(m => m.job_id));
-
     // Use admin client for the listing aggregate: recruiter is auth'd above and
     // we only expose non-PII counts (pending candidate count per job). RLS on
     // `candidates` would otherwise silently return [] and break the count.
@@ -428,15 +419,33 @@ export async function getAvailableJobsForRecruiter() {
         return [];
     }
 
-    // Slots taken = ACTIVE mandate rows only. Released rows (expired past cycles)
-    // accumulate as history and must not count against capacity, so an embedded
-    // job_mandates(count) — which counts every row — would over-report. Count
-    // active rows per job in one pass instead.
+    const jobIds = (jobs || []).map((j: any) => j.id);
+
+    // Free slots held by expired mandates BEFORE counting. Expiry normally flips
+    // is_active=false via the daily cron; reconciling here keeps the marketplace
+    // slot counts (and the claim_mandate capacity RPC) correct even when the cron
+    // lags or a mandate was notified-but-not-released. No-op when nothing is due.
+    await releaseDueMandates(adminClient, { jobIds });
+
+    // The current recruiter's own claims — fetched AFTER reconciliation so a
+    // just-released expired mandate correctly returns its job to the available list.
+    const { data: claimedMandates } = await supabase
+        .from("job_mandates")
+        .select("job_id, is_active")
+        .eq("recruiter_id", recruiter.id);
+
+    const activeClaimedJobIds = new Set(
+        (claimedMandates || []).filter(m => m.is_active).map(m => m.job_id)
+    );
+    const everClaimedJobIds = new Set((claimedMandates || []).map(m => m.job_id));
+
+    // Slots taken = ACTIVE mandate rows only (post-reconciliation). Released rows
+    // (expired past cycles) accumulate as history and must not count against capacity.
     const { data: activeMandateRows } = await adminClient
         .from("job_mandates")
         .select("job_id")
         .eq("is_active", true)
-        .in("job_id", (jobs || []).map((j: any) => j.id));
+        .in("job_id", jobIds);
 
     const activeMandateCount = new Map<string, number>();
     for (const row of activeMandateRows || []) {
