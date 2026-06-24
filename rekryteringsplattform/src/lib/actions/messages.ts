@@ -19,6 +19,43 @@ function firstOf<T>(rel: T | T[] | null | undefined): T | undefined {
     return rel ?? undefined;
 }
 
+// Resolve display names for a set of user ids via the service-role client.
+// `profiles.full_name` is the primary source, but it can be empty / out of sync
+// with the auth user's metadata (which is what the rest of the app — the sidebar,
+// notifications, etc. — actually displays). When it's blank we fall back to the
+// auth user's `user_metadata.full_name`, then email, so a counterpart (e.g. the
+// recruiter messaging a company) never renders as "Unknown".
+async function resolveUserDisplayNames(
+    supabaseAdmin: ReturnType<typeof createAdminClient>,
+    userIds: (string | null | undefined)[],
+): Promise<Record<string, { full_name: string; role: string }>> {
+    const ids = [...new Set(userIds.filter(Boolean) as string[])];
+    const map: Record<string, { full_name: string; role: string }> = {};
+    if (ids.length === 0) return map;
+
+    const { data: profiles } = await supabaseAdmin
+        .from("profiles")
+        .select("id, full_name, role")
+        .in("id", ids);
+    (profiles || []).forEach((p: any) => {
+        map[p.id] = { full_name: p.full_name || "", role: p.role || "" };
+    });
+
+    // Fall back to auth metadata for anyone whose profiles.full_name is blank.
+    const missing = ids.filter((id) => !map[id]?.full_name);
+    for (const id of missing) {
+        try {
+            const { data } = await supabaseAdmin.auth.admin.getUserById(id);
+            const u = data?.user;
+            const name = (u?.user_metadata as any)?.full_name || u?.email || "";
+            if (name) map[id] = { full_name: name, role: map[id]?.role || "" };
+        } catch (e) {
+            console.warn("Could not resolve display name for user", id, e);
+        }
+    }
+    return map;
+}
+
 // Resolve a candidate's recruiter + company user_ids (and the job id) via the
 // user-scoped client. Used by the send actions for the IDOR authorization check.
 async function resolveCandidateParties(
@@ -194,16 +231,7 @@ export async function getCandidateConversation(candidateId: string, conversation
     }
 
     const senderIds = [...new Set((messageRows || []).map((m: any) => m.sender_id).filter(Boolean))] as string[];
-    const profileMap: Record<string, { full_name: string; role: string }> = {};
-    if (senderIds.length > 0) {
-        const { data: profiles } = await supabaseAdmin
-            .from("profiles")
-            .select("id, full_name, role")
-            .in("id", senderIds);
-        (profiles || []).forEach((p: any) => {
-            profileMap[p.id] = { full_name: p.full_name || "", role: p.role || "" };
-        });
-    }
+    const profileMap = await resolveUserDisplayNames(supabaseAdmin, senderIds);
 
     const messages = (messageRows || []).map((m: any) => ({
         id: m.id,
@@ -460,20 +488,10 @@ export async function getConversations() {
     const profileMap: Record<string, string> = {};
     const profileDetailMap: Record<string, { full_name: string; role?: string }> = {};
     if (allProfileIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabaseAdmin
-            .from("profiles")
-            .select("id, full_name, role")
-            .in("id", allProfileIds);
-
-        if (profilesError) {
-            console.error("Error fetching conversation profiles:", JSON.stringify(profilesError));
-            return [];
-        }
-
-        (profiles || []).forEach((p: any) => {
-            const fullName = p.full_name || "";
-            profileMap[p.id] = fullName;
-            profileDetailMap[p.id] = { full_name: fullName, role: p.role || undefined };
+        const resolved = await resolveUserDisplayNames(supabaseAdmin, allProfileIds);
+        Object.entries(resolved).forEach(([id, v]) => {
+            profileMap[id] = v.full_name;
+            profileDetailMap[id] = { full_name: v.full_name, role: v.role || undefined };
         });
     }
 

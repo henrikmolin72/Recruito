@@ -175,6 +175,12 @@
       "type": "file"
     },
     {
+      "path": "rekryteringsplattform/src/lib/actions/messages.ts",
+      "accessCount": 20,
+      "lastAccessed": 1782326622538,
+      "type": "file"
+    },
+    {
       "path": "rekryteringsplattform/src/lib/candidate-workflow.ts",
       "accessCount": 19,
       "lastAccessed": 1781511939683,
@@ -190,12 +196,6 @@
       "path": "rekryteringsplattform/src/lib/actions/applications.ts",
       "accessCount": 15,
       "lastAccessed": 1782070366451,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/actions/messages.ts",
-      "accessCount": 15,
-      "lastAccessed": 1782318125927,
       "type": "file"
     },
     {
