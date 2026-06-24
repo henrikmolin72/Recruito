@@ -59,13 +59,35 @@ export default async function RecruiterMandateDetailsPage({
   let fullJob: any = null;
   if (jobId) {
     const adminClient = createAdminClient();
-    const { data } = await adminClient
+    // Fetch the job and its company in two queries rather than a single
+    // PostgREST embed. An embed (`company:companies(...)`) nulls the WHOLE row
+    // if the relationship can't be resolved at runtime, which silently dropped
+    // the recruiter back to the bare description fallback instead of the full
+    // job detail. Splitting the query loads the job independently of the
+    // company lookup, and we surface (not swallow) any error.
+    const { data: jobData, error: jobError } = await adminClient
       .from("jobs")
-      .select("*, company:companies(company_name, website, logo_url, linkedin_url)")
+      .select("*")
       .eq("id", jobId)
       .maybeSingle();
-    if (data) {
-      fullJob = { ...data, company: Array.isArray(data.company) ? data.company[0] ?? null : data.company };
+    if (jobError) {
+      console.error("[RecruiterMandate] full job fetch failed for job", jobId, jobError);
+    }
+    if (jobData) {
+      let company: any = null;
+      const companyId = (jobData as any).company_id;
+      if (companyId) {
+        const { data: companyData, error: companyError } = await adminClient
+          .from("companies")
+          .select("company_name, website, logo_url, linkedin_url")
+          .eq("id", companyId)
+          .maybeSingle();
+        if (companyError) {
+          console.error("[RecruiterMandate] company fetch failed for job", jobId, companyError);
+        }
+        company = companyData ?? null;
+      }
+      fullJob = { ...jobData, company };
     }
   }
 
