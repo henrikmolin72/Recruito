@@ -197,6 +197,10 @@ export async function sendAdminMessage(
     const mandateId = ((cand as any)?.mandate_id as string | null) ?? null;
     const partyUserId = (party === "company" ? company?.user_id : rec?.user_id) as string | undefined;
 
+    // If the target party can't be resolved (null user_id / unresolved row), do NOT
+    // create an orphan thread the party could never see — bail before any write.
+    if (!partyUserId) return { error: "Could not open conversation" };
+
     let { data: conv } = await sb
         .from("conversations")
         .select("id, job_id")

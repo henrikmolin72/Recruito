@@ -149,6 +149,22 @@ describe("getRecruitoConversationsForAdmin — per-party rows", () => {
     expect(recruiter?.conversationType).toBe("recruito_recruiter");
     expect(recruiter?.partyName).toBe("Recruiter Rita");
   });
+
+  it("returns a single row for a candidate with only one party thread", async () => {
+    conversationsStore.push(
+      { id: "conv-c", candidate_id: CANDIDATE_ID, job_id: JOB_ID, conversation_type: "recruito_company", created_at: new Date().toISOString() },
+    );
+    conversationsStore.forEach((c) => {
+      c.candidate = candidateRow;
+      c.messages = [{ content: `hi ${c.conversation_type}`, created_at: new Date().toISOString() }];
+    });
+
+    const rows = await getRecruitoConversationsForAdmin();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].party).toBe("company");
+    expect(rows[0].conversationType).toBe("recruito_company");
+    expect(rows[0].partyName).toBe("Acme Inc");
+  });
 });
 
 describe("sendAdminMessage — targets correct party thread + single notify", () => {
@@ -179,5 +195,56 @@ describe("sendAdminMessage — targets correct party thread + single notify", ()
 
     expect(notifications).toHaveLength(1);
     expect(notifications[0].userId).toBe(RECRUITER_USER);
+  });
+
+  it("reuses an existing party thread instead of creating a second one", async () => {
+    // Pre-seed the company thread + its participant (as if a prior message created it).
+    conversationsStore.push({
+      id: "conv-existing",
+      candidate_id: CANDIDATE_ID,
+      job_id: JOB_ID,
+      conversation_type: "recruito_company",
+      created_at: new Date().toISOString(),
+    });
+    participantsStore.push({ conversation_id: "conv-existing", user_id: COMPANY_USER });
+
+    const res = await sendAdminMessage(CANDIDATE_ID, JOB_ID, "second reply", "recruito_company");
+    expect(res).toEqual({ success: true });
+
+    // No new conversation created (the `if (!conv)` branch was skipped).
+    const convs = conversationsStore.filter((c) => c.candidate_id === CANDIDATE_ID && c.conversation_type === "recruito_company");
+    expect(convs).toHaveLength(1);
+    expect(inserts.some((i) => i.table === "conversations")).toBe(false);
+
+    // No participant re-seed; still exactly the one pre-seeded participant.
+    expect(inserts.some((i) => i.table === "conversation_participants")).toBe(false);
+    const parts = participantsStore.filter((p) => p.conversation_id === "conv-existing");
+    expect(parts.map((p) => p.user_id)).toEqual([COMPANY_USER]);
+
+    // Message landed in the existing thread; party notified.
+    const msg = messagesStore.find((m) => m.conversation_id === "conv-existing");
+    expect(msg.content).toBe("second reply");
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0].userId).toBe(COMPANY_USER);
+  });
+
+  it("returns a generic error and writes nothing when the target party has no user_id", async () => {
+    // Company row with null user_id → partyUserId unresolved.
+    const orig = candidateRow.job;
+    candidateRow.job = { id: JOB_ID, company: { user_id: null, company_name: "Acme Inc" } };
+    try {
+      const res = await sendAdminMessage(CANDIDATE_ID, JOB_ID, "reply to nobody", "recruito_company");
+      expect(res.success).toBeUndefined();
+      expect(typeof res.error).toBe("string");
+
+      // Nothing was written: no conversation, no message, no notification.
+      expect(inserts.some((i) => i.table === "conversations")).toBe(false);
+      expect(inserts.some((i) => i.table === "messages")).toBe(false);
+      expect(conversationsStore).toHaveLength(0);
+      expect(messagesStore).toHaveLength(0);
+      expect(notifications).toHaveLength(0);
+    } finally {
+      candidateRow.job = orig;
+    }
   });
 });
