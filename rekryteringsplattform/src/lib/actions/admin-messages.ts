@@ -239,7 +239,9 @@ export async function sendAdminMessage(
         const body = normalizedContent.length > 50 ? normalizedContent.slice(0, 50) + "…" : normalizedContent;
         const link =
             party === "company"
-                ? `/company/jobs/${conv.job_id}/candidates/${candidateId}`
+                ? conv.job_id
+                    ? `/company/jobs/${conv.job_id}/candidates/${candidateId}`
+                    : "/company/messages"
                 : mandateId
                     ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}`
                     : "/recruiter/messages";

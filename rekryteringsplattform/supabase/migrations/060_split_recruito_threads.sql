@@ -32,11 +32,24 @@
 --
 -- DEPLOYMENT NOTE
 -- ---------------
--- This migration is NOT auto-applied to production. Apply it manually after the
--- application code that reads/writes the two new thread types has shipped.
--- It is idempotent: safe to run on a fresh rebuild AND (once) against prod.
--- Production 'recruito' data is effectively empty (in-app messaging was broken
--- until 2026-06-22), but the logic below is written to be correct at any volume.
+-- This migration is NOT auto-applied to production; apply it manually.
+--
+-- RECOMMENDED ROLLOUT ORDER:
+--   1. Apply migration 060 to the database FIRST (it splits existing `recruito`
+--      rows into `recruito_company`/`recruito_recruiter` and adds the
+--      UNIQUE(candidate_id, conversation_type) index). This is safe while the OLD
+--      code is still live: old code only ever writes the legacy
+--      `conversation_type='recruito'`, which this migration is built to re-split.
+--   2. Deploy the new application code (which reads/writes the per-party types).
+--   3. RE-RUN migration 060 once more (it is idempotent) to mop up any legacy
+--      `recruito` rows the old code may have created during the deploy overlap
+--      window.
+--
+-- Rationale: applying the migration first means existing Recruito threads are
+-- split immediately (no window where users see empty per-party tabs), and the
+-- idempotent re-run cleans up the brief old-code/new-code overlap. Production
+-- `recruito` data is effectively empty (in-app messaging was broken until
+-- 2026-06-22), so impact is minimal either way, but this order is the safest.
 
 BEGIN;
 
