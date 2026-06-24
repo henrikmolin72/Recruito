@@ -979,6 +979,8 @@
   },
   "admin": {
     "dashboardTitle": "Admin Dashboard",
+    "messagesPartyCompany": "Virksomhed",
+    "messagesPartyRecruiter": "Rekrutterer",
     "platformOverview": "Platformoversigt",
     "companiesStat": "Virksomheder",
     "recruitersStat": "Rekrutterere",

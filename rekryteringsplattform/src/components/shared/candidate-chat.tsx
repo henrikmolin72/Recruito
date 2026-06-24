@@ -151,7 +151,7 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
                         </p>
                     </div>
                 ) : (
-                    messages.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map((msg) => {
+                    messages.map((msg) => {
                         const isMe = msg.sender_id === currentUserId;
 
                         if (msg.is_system_message) {
