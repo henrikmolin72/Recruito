@@ -37,6 +37,9 @@ let conversationsStore: any[] = []; // rows: { id, candidate_id, job_id, convers
 let participantsStore: Array<{ conversation_id: string; user_id: string }> = [];
 let messagesStore: any[] = []; // { id, conversation_id, sender_id, content, created_at, is_system_message }
 let profilesStore: Record<string, { id: string; full_name: string; role: string }> = {};
+// Auth user metadata, keyed by id — the canonical display-name source the app
+// falls back to when profiles.full_name has drifted/empty.
+let usersMetaStore: Record<string, { user_metadata?: { full_name?: string }; email?: string }> = {};
 const inserts: Array<{ table: string; payload: any }> = [];
 let convIdSeq = 0;
 
@@ -118,7 +121,14 @@ function makeClient(asService: boolean) {
   }
   return {
     from,
-    auth: { getUser: async () => ({ data: { user: currentUserId ? { id: currentUserId } : null } }) },
+    auth: {
+      getUser: async () => ({ data: { user: currentUserId ? { id: currentUserId } : null } }),
+      admin: {
+        getUserById: async (id: string) => ({
+          data: { user: usersMetaStore[id] ? { id, ...usersMetaStore[id] } : null },
+        }),
+      },
+    },
   };
 }
 
@@ -139,6 +149,7 @@ beforeEach(() => {
     [RECRUITER_USER]: { id: RECRUITER_USER, full_name: "Recruiter Rita", role: "recruiter" },
     [ADMIN_USER]: { id: ADMIN_USER, full_name: "Admin Alice", role: "admin" },
   };
+  usersMetaStore = {};
   inserts.length = 0;
   convIdSeq = 0;
 });
@@ -215,5 +226,25 @@ describe("getCandidateConversation — service-role sender resolution + IDOR gua
     const result = await getCandidateConversation(CANDIDATE_ID, "recruito_recruiter");
     expect(result).not.toBeNull();
     expect((result as any).messages[0].sender?.full_name).toBe("Recruiter Rita");
+  });
+
+  it("(e) falls back to auth user_metadata.full_name when profiles.full_name is blank (no 'Unknown')", async () => {
+    // The recruiter's profiles row has drifted: full_name is empty, but the auth
+    // user metadata (what the sidebar shows) still has the name. The company must
+    // see who is messaging them, not "Unknown".
+    profilesStore[RECRUITER_USER] = { id: RECRUITER_USER, full_name: "", role: "recruiter" };
+    usersMetaStore[RECRUITER_USER] = { user_metadata: { full_name: "Demo Rekryterare" }, email: "rita@example.com" };
+
+    const conv = { id: "conv-e", candidate_id: CANDIDATE_ID, job_id: JOB_ID, conversation_type: "client", created_at: new Date().toISOString() };
+    conversationsStore.push(conv);
+    participantsStore.push({ conversation_id: conv.id, user_id: COMPANY_USER });
+    participantsStore.push({ conversation_id: conv.id, user_id: RECRUITER_USER });
+    messagesStore.push({ id: "me", conversation_id: conv.id, sender_id: RECRUITER_USER, content: "Hi, by Recruiter", created_at: new Date().toISOString(), is_system_message: false });
+
+    currentUserId = COMPANY_USER; // company opens the client thread
+    const result = await getCandidateConversation(CANDIDATE_ID, "client");
+    const msg = (result as any).messages[0];
+    expect(msg.sender?.full_name).toBe("Demo Rekryterare");
+    expect(msg.sender?.full_name).not.toBe("");
   });
 });
