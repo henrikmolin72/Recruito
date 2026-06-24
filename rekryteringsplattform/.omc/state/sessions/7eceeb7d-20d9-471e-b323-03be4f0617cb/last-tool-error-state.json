@@ -1,0 +1,7 @@
+{
+  "tool_name": "Read",
+  "tool_input_preview": "{\"file_path\":\"/Users/henrikmolin/Desktop/Recruito/rekryteringsplattform/rekryteringsplattform/src/lib/actions/candidates.ts\",\"offset\":1020,\"limit\":90}",
+  "error": "File does not exist. Note: your current working directory is /Users/henrikmolin/Desktop/Recruito/rekryteringsplattform.",
+  "timestamp": "2026-06-22T19:11:30.512Z",
+  "retry_count": 1
+}

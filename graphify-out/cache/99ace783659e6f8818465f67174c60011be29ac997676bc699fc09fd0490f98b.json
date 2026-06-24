@@ -1,0 +1,1 @@
+{"nodes": [{"id": "placements-test_pinningTest", "label": "placements.test.ts pinning suite", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/actions/placements.test.ts", "summary": "Vitest pinning test mocking Supabase/requireAdmin; locks placement status state-machine for sendPlacementInvoice + recordPlacementPayment."}], "edges": [], "hyperedges": []}

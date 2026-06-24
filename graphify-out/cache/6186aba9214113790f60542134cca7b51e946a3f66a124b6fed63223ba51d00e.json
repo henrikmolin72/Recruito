@@ -1,0 +1,1 @@
+{"nodes": [{"id": "email-templates_templates", "label": "email-templates", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/email/email-templates.ts", "summary": "HTML email template builders (new job, candidate submission, progress, job lifecycle, payment, fee reconfirm) with HTML escaping."}], "edges": [], "hyperedges": []}

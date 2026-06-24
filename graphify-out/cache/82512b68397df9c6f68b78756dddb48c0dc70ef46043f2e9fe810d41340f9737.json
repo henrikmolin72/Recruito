@@ -1,0 +1,1 @@
+{"nodes": [{"id": "user_getSidebarData", "label": "getSidebarData", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/actions/user.ts", "summary": "Read: derives sidebar name/initials/role from auth user metadata."}], "edges": [], "hyperedges": []}

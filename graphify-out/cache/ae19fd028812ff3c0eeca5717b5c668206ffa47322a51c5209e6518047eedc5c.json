@@ -1,0 +1,1 @@
+{"nodes": [{"id": "notification-email_sendNotificationEmail", "label": "sendNotificationEmail", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/email/notification-email.ts", "summary": "Looks up profile email + opt-out, renders branded HTML/text template, dispatches via sendUserEmail; never throws."}], "edges": [], "hyperedges": []}

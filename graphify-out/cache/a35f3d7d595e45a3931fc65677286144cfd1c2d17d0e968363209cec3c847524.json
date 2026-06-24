@@ -1,0 +1,1 @@
+{"nodes": [{"id": "create_createNotification", "label": "createNotification", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/notifications/create.ts", "summary": "Server-internal notification creator: sanitizes input, inserts notifications row, schedules email via after()."}], "edges": [], "hyperedges": []}

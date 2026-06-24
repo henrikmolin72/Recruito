@@ -1,0 +1,1 @@
+{"nodes": [{"id": "server_createClient", "label": "createClient (server)", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/supabase/server.ts", "summary": "SSR Supabase client wired to Next.js cookies, anon key."}], "edges": [], "hyperedges": []}
