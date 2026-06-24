@@ -262,7 +262,7 @@ export async function recordPlacementPayment(placementId: string) {
  * the cron route with a CRON_SECRET header instead.
  */
 export async function processGuaranteeExpirations() {
-    await requireAdmin();
+    const { user: adminUser } = await requireAdmin();
     const admin = createAdminClient();
 
     // Find all guarantee_active placements past their end date
@@ -293,6 +293,16 @@ export async function processGuaranteeExpirations() {
             console.error(`Failed to complete placement ${placement.id}:`, error);
             continue;
         }
+
+        // Audit trail: guarantee period expired, payout auto-released.
+        const { error: auditError } = await admin.from("audit_log").insert({
+            action_type: "placement_payout_auto_released",
+            target_type: "placement",
+            target_id: placement.id,
+            performed_by: adminUser.id,
+            metadata: { recruiter_fee: placement.recruiter_fee, currency: placement.salary_currency },
+        });
+        if (auditError) console.error("[audit:placement_payout_auto_released]", { code: auditError.code, message: auditError.message });
 
         // Update candidate to completed
         const { error: candidateError } = await admin
