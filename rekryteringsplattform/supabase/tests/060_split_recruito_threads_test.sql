@@ -15,6 +15,11 @@
 -- message and an admin message, runs the EXACT split logic from migration 060,
 -- asserts the post-conditions via RAISE, prints "TEST PASSED", then ROLLBACKs so
 -- it leaves no trace. Any failed assertion RAISEs EXCEPTION and aborts.
+--
+-- ⚠️ DRIFT WARNING: the STEP 4 split SQL below ("RUN THE SPLIT") is DUPLICATED
+-- from migration 060's STEP 4 — it is NOT imported. If you change STEP 4 in the
+-- migration (any of 4a–4f), you MUST update the copy here in lockstep, or this
+-- test will silently validate stale logic. The two blocks must stay identical.
 
 BEGIN;
 
@@ -34,6 +39,7 @@ DECLARE
   mandate_id   uuid;
   candidate_id uuid := gen_random_uuid();
   conv_id      uuid := gen_random_uuid();
+  norecr_conv_id uuid := gen_random_uuid();
 BEGIN
   -- auth.users rows are required because profiles.id FKs auth.users(id).
   INSERT INTO auth.users (id, email) VALUES
@@ -78,12 +84,29 @@ BEGIN
     (conv_id, recr_uid,    'recruiter message'),
     (conv_id, admin_uid,   'admin message');
 
+  -- ---------------------------------------------------------------------------
+  -- SEED 2: the STEP 4f "no recruiter resolves" branch. The split resolves the
+  -- recruiter via the conversation's candidate -> recruiter chain. candidates
+  -- (and recruiters.user_id) are NOT NULL, so the schema-valid way to make the
+  -- migration's LEFT JOINs yield a NULL recruiter_user_id is a legacy
+  -- 'recruito' conversation with candidate_id IS NULL. STEP 4f must relabel it
+  -- to 'recruito_company' and create NO 'recruito_recruiter' thread.
+  -- ---------------------------------------------------------------------------
+  INSERT INTO public.conversations (id, candidate_id, conversation_type)
+  VALUES (norecr_conv_id, NULL, 'recruito');
+
+  INSERT INTO public.conversation_participants (conversation_id, user_id) VALUES
+    (norecr_conv_id, company_uid);
+
+  INSERT INTO public.messages (conversation_id, sender_id, content) VALUES
+    (norecr_conv_id, company_uid, 'norecr company message');
+
   -- Stash the ids so the split + assertions below can find them.
   CREATE TEMP TABLE _t (
     company_uid uuid, recr_uid uuid, admin_uid uuid,
-    candidate_id uuid, company_conv_id uuid
+    candidate_id uuid, company_conv_id uuid, norecr_conv_id uuid
   ) ON COMMIT DROP;
-  INSERT INTO _t VALUES (company_uid, recr_uid, admin_uid, candidate_id, conv_id);
+  INSERT INTO _t VALUES (company_uid, recr_uid, admin_uid, candidate_id, conv_id, norecr_conv_id);
 END $$;
 
 -- ---------------------------------------------------------------------------
@@ -199,6 +222,31 @@ BEGIN
   -- Admin message now exists in BOTH threads (original + copy) => 2 globally.
   SELECT count(*) INTO n FROM public.messages WHERE content = 'admin message';
   IF n <> 2 THEN RAISE EXCEPTION 'FAIL: admin message count is % (want 2: original + copy)', n; END IF;
+
+  -- STEP 4f (no recruiter resolves): the candidate-less 'recruito' conversation
+  -- must be relabelled to 'recruito_company' in place, with NO recruiter thread.
+  SELECT count(*) INTO n FROM public.conversations
+  WHERE id = t.norecr_conv_id AND conversation_type = 'recruito_company';
+  IF n <> 1 THEN RAISE EXCEPTION 'FAIL: 4f conv not relabelled to recruito_company'; END IF;
+
+  -- No 'recruito_recruiter' thread was created for the candidate-less branch.
+  -- Such a thread (if any) would carry the same NULL candidate_id; assert none
+  -- exists, and that the only recruiter thread is the seeded candidate's one.
+  SELECT count(*) INTO n FROM public.conversations
+  WHERE conversation_type = 'recruito_recruiter' AND candidate_id IS NULL;
+  IF n <> 0 THEN RAISE EXCEPTION 'FAIL: 4f branch created % recruito_recruiter thread(s) (want 0)', n; END IF;
+
+  SELECT count(*) INTO n FROM public.conversations
+  WHERE conversation_type = 'recruito_recruiter';
+  IF n <> 1 THEN RAISE EXCEPTION 'FAIL: expected exactly 1 recruito_recruiter thread total, got %', n; END IF;
+
+  -- The 4f company thread keeps its single company participant, no recruiter added.
+  SELECT count(*) INTO n FROM public.conversation_participants
+  WHERE conversation_id = t.norecr_conv_id;
+  IF n <> 1 THEN RAISE EXCEPTION 'FAIL: 4f thread has % participants (want 1)', n; END IF;
+  PERFORM 1 FROM public.conversation_participants
+  WHERE conversation_id = t.norecr_conv_id AND user_id = t.company_uid;
+  IF NOT FOUND THEN RAISE EXCEPTION 'FAIL: 4f thread missing company participant'; END IF;
 
   RAISE NOTICE 'TEST PASSED: recruito split is correct';
 END $$;

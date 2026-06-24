@@ -114,6 +114,9 @@ WHERE c.id = d.dup_id;
 -- migration 055 — do NOT drop it (it is a non-unique lookup index on the same
 -- columns and still serves the hot path).
 -- ---------------------------------------------------------------------------
+-- NOTE: built non-CONCURRENTLY. The conversations table is small enough that the
+-- brief SHARE write-lock from a plain index build is acceptable; CONCURRENTLY
+-- cannot run inside this transaction anyway. Reconsider if volume grows.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_conversations_candidate_type
   ON public.conversations (candidate_id, conversation_type);
 
@@ -198,11 +201,14 @@ WHERE c.id = s.company_conv_id;
 --   (1) Zero conversation_type = 'recruito' rows remain.
 --   (2) Every recruito_company / recruito_recruiter conversation has at most one
 --       HUMAN (non-admin) participant.
+--   (3) Every recruito_company / recruito_recruiter conversation has AT LEAST one
+--       HUMAN (non-admin) participant — no orphaned threads with zero humans.
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
   leftover_recruito INT;
   bad_party_count   INT;
+  orphan_count      INT;
 BEGIN
   SELECT count(*) INTO leftover_recruito
   FROM public.conversations
@@ -226,6 +232,24 @@ BEGIN
 
   IF bad_party_count <> 0 THEN
     RAISE EXCEPTION 'Split failed: % recruito thread(s) have more than one non-admin participant', bad_party_count;
+  END IF;
+
+  -- Every recruito_company / recruito_recruiter thread must have AT LEAST one
+  -- human (non-admin) participant; a thread with zero is an orphan. Scoped to
+  -- these two types only — 'client' and other types are not subject to this rule.
+  SELECT count(*) INTO orphan_count
+  FROM public.conversations c
+  WHERE c.conversation_type IN ('recruito_company', 'recruito_recruiter')
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.conversation_participants cp
+      JOIN public.profiles p ON p.id = cp.user_id
+      WHERE cp.conversation_id = c.id
+        AND p.role <> 'admin'
+    );
+
+  IF orphan_count <> 0 THEN
+    RAISE EXCEPTION 'Split failed: % recruito thread(s) have zero non-admin (human) participants', orphan_count;
   END IF;
 END $$;
 
