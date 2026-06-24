@@ -8,6 +8,7 @@ import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/notifications/create";
+import { countRecruitersWithoutDelivery } from "@/lib/recruiter-search-count";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";
@@ -365,7 +366,7 @@ export async function getCompanyJobs() {
         .from("jobs")
         .select(`
       *,
-      candidates:candidates(recruito_screened_at),
+      candidates:candidates(recruito_screened_at, recruiter_id),
       mandates:job_mandates(count)
     `)
         .eq("company_id", company.id)
@@ -373,7 +374,13 @@ export async function getCompanyJobs() {
 
     return jobs?.map((job) => ({
         ...job,
-        recruiters_count: job.mandates?.[0]?.count ?? job.current_recruiter_count ?? 0,
+        // "Recruiters" = recruiters working the job who have NOT delivered a
+        // candidate (delivered ones show up in the Candidates column). Expired-
+        // without-delivery recruiters still count. See countRecruitersWithoutDelivery.
+        recruiters_count: countRecruitersWithoutDelivery(
+            job.mandates?.[0]?.count ?? job.current_recruiter_count ?? 0,
+            job.candidates || [],
+        ),
         // Only count candidates Recruito has presented & approved (recruito_screened_at
         // set). Drafts and not-yet-approved submissions stay hidden from the company —
         // same visibility gate the job-detail page applies.
