@@ -1,0 +1,1 @@
+{"nodes": [{"id": "require-admin_requireAdmin", "label": "requireAdmin", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/actions/require-admin.ts", "summary": "Auth gate: validates app_metadata.role==='admin', redirects to /login otherwise. Returns {supabase,user}. Trusts only app_metadata, never user_metadata."}], "edges": [], "hyperedges": []}

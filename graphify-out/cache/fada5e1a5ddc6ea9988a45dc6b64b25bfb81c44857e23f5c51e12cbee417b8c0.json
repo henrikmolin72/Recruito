@@ -1,0 +1,1 @@
+{"nodes": [{"id": "fee-reconfirm_module", "label": "fee-reconfirm", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/fee-reconfirm.ts", "domain": "fee/pricing", "summary": "Client-fee uplift reason list/validation and requiresReconfirm gate (final > estimated) for the fee re-confirmation flow."}], "edges": [], "hyperedges": []}

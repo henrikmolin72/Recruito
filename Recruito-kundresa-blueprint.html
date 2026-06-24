@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recruito · Kundresa &amp; Service Blueprint</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --ink:#14181f; --ink-2:#3a414d; --ink-3:#6b7280;
+    --paper:#FAF8F4; --paper-2:#ffffff; --line:#e8e2d6; --line-2:#f0ece2;
+    --cand:#0F766E; --cand-soft:#E5F1EF;
+    --rec:#4338CA;  --rec-soft:#EBE9FB;
+    --co:#B45309;   --co-soft:#FAEFE0;
+    --fric:#DC2626; --fric-soft:#FBE8E8;
+    --star:#B7791F; --star-soft:#FBF1DC;
+    --shadow:0 1px 2px rgba(20,24,31,.04),0 6px 24px rgba(20,24,31,.06);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.fam{font-family:'Space Grotesk','Inter',sans-serif}
+
+  .wrap{max-width:1240px; margin:0 auto; padding:48px 32px 80px}
+
+  /* ---------- Header ---------- */
+  header.top{margin-bottom:40px}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:600;
+  }
+  .eyebrow::before{content:""; width:26px; height:1.5px; background:var(--ink-3); display:inline-block}
+  h1{font-size:clamp(30px,4.4vw,50px); line-height:1.04; margin:14px 0 10px; letter-spacing:-.02em}
+  .lede{font-size:17px; color:var(--ink-2); max-width:760px; margin:0}
+  .meta{display:flex; flex-wrap:wrap; gap:10px 14px; margin-top:24px}
+  .meta .pill{
+    background:var(--paper-2); border:1px solid var(--line); border-radius:999px;
+    padding:7px 14px; font-size:13px; color:var(--ink-2); box-shadow:var(--shadow);
+  }
+  .meta .pill b{color:var(--ink); font-weight:600}
+
+  .crit{
+    margin-top:26px; background:var(--ink); color:#f4f2ec; border-radius:16px;
+    padding:20px 24px; font-size:14.5px; box-shadow:var(--shadow);
+  }
+  .crit .lbl{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:#9aa3b2; font-weight:600}
+  .crit .path{margin-top:8px; line-height:1.7}
+  .crit .path b{color:#fff}
+  .crit .arrow{color:#6b7280; padding:0 6px}
+  .crit .gate{color:#f6c453; font-weight:600}
+
+  /* ---------- Section ---------- */
+  section{margin-top:56px}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:6px}
+  .sec-head h2{font-size:24px; margin:0; letter-spacing:-.01em}
+  .sec-head .num{font-family:'Space Grotesk'; font-size:13px; color:var(--ink-3); font-weight:600; letter-spacing:.04em}
+  .sec-sub{color:var(--ink-2); font-size:14.5px; margin:0 0 22px; max-width:780px}
+
+  /* ---------- Legend ---------- */
+  .legend{display:flex; flex-wrap:wrap; gap:10px 22px; align-items:center; margin:0 0 8px; font-size:13px; color:var(--ink-2)}
+  .legend .grp{display:flex; align-items:center; gap:8px}
+  .swatch{width:13px; height:13px; border-radius:4px; display:inline-block}
+  .legend .emo{font-size:12.5px}
+
+  /* ---------- Blueprint grid ---------- */
+  .scroller{overflow-x:auto; border:1px solid var(--line); border-radius:18px; background:var(--paper-2); box-shadow:var(--shadow)}
+  .grid{
+    display:grid;
+    grid-template-columns:178px repeat(7, minmax(196px,1fr));
+    min-width:1480px;
+  }
+  .lane-lbl, .phase-h, .cell{border-bottom:1px solid var(--line-2); border-right:1px solid var(--line-2)}
+  .grid > *:nth-child(8n+1){border-left:none}
+
+  /* phase headers */
+  .corner{
+    position:sticky; left:0; z-index:5; background:var(--paper-2);
+    border-right:1px solid var(--line); display:flex; align-items:flex-end; padding:14px;
+  }
+  .corner span{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+  .phase-h{padding:14px 14px 13px; background:#fcfbf8}
+  .phase-h .fno{font-family:'Space Grotesk'; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+  .phase-h .pname{font-family:'Space Grotesk'; font-weight:600; font-size:15px; margin:3px 0 3px}
+  .phase-h .pdesc{font-size:12px; color:var(--ink-3); line-height:1.35}
+  .phase-h .mot{
+    display:inline-flex; align-items:center; gap:5px; margin-top:9px;
+    background:var(--star-soft); color:var(--star); border-radius:6px;
+    font-size:10.5px; font-weight:600; padding:3px 7px; letter-spacing:.02em;
+  }
+
+  /* lane labels */
+  .lane-lbl{
+    position:sticky; left:0; z-index:4; background:var(--paper-2);
+    border-right:1px solid var(--line); padding:16px 14px; display:flex; flex-direction:column; gap:4px; justify-content:center;
+  }
+  .lane-lbl .ln{font-family:'Space Grotesk'; font-weight:600; font-size:14.5px}
+  .lane-lbl .role{font-size:11.5px; color:var(--ink-3)}
+  .lane-lbl .bar{width:30px; height:4px; border-radius:3px; margin-bottom:4px}
+
+  /* cells */
+  .cell{padding:13px 13px 14px; display:flex; flex-direction:column; gap:8px; position:relative; background:var(--paper-2)}
+  .cell .touch{
+    align-self:flex-start; font-size:10px; letter-spacing:.05em; text-transform:uppercase; font-weight:600;
+    color:var(--ink-3); background:#f3f0e8; border-radius:5px; padding:2.5px 6px;
+  }
+  .cell .do{margin:0; font-size:13px; color:var(--ink); line-height:1.45}
+  .cell .passive{color:var(--ink-3); font-style:italic}
+  .cell .emo{align-self:flex-start; font-size:11.5px; font-weight:500; border-radius:999px; padding:3px 9px; margin-top:auto}
+  .cand .touch{background:var(--cand-soft)}
+  .rec .touch{background:var(--rec-soft)}
+  .co .touch{background:var(--co-soft)}
+  .cand{border-left:3px solid var(--cand)}
+  .rec{border-left:3px solid var(--rec)}
+  .co{border-left:3px solid var(--co)}
+
+  .e-frust{background:var(--fric-soft); color:#b91c1c}
+  .e-neu{background:#eef0f2; color:#52606d}
+  .e-hope{background:#e7f2ef; color:#0d6e66}
+  .e-joy{background:#e6f4e6; color:#2f7d32}
+  .e-peak{background:#fdf0d8; color:#a16207}
+  .e-swing{background:linear-gradient(90deg,#fdf0d8 0 50%,#fbe8e8 50% 100%); color:#7c5310}
+
+  .frflag{
+    position:absolute; top:11px; right:11px; width:16px; height:16px; border-radius:50%;
+    background:var(--fric); color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center;
+    cursor:help; box-shadow:0 0 0 3px var(--fric-soft);
+  }
+
+  /* friction row */
+  .fr-lbl{background:var(--fric-soft); border-right:1px solid var(--line)}
+  .fr-lbl .ln{color:#b91c1c}
+  .fr-cell{background:#fffafa; padding:12px 13px; display:flex; flex-direction:column; gap:7px}
+  .fr-cell .ft{font-size:12px; color:#7f1d1d; line-height:1.4}
+  .fr-cell .sev{align-self:flex-start; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:2px 7px; border-radius:5px}
+  .sev-h{background:var(--fric); color:#fff}
+  .sev-m{background:#fcd9a6; color:#92510a}
+  .sev-l{background:#e6e1d4; color:#6b6250}
+
+  /* ---------- Emotion chart ---------- */
+  .chart-card{background:var(--paper-2); border:1px solid var(--line); border-radius:18px; padding:24px 26px 18px; box-shadow:var(--shadow)}
+  .chart-legend{display:flex; gap:22px; flex-wrap:wrap; margin-bottom:6px; font-size:13px}
+  .chart-legend .grp{display:flex; align-items:center; gap:7px; color:var(--ink-2)}
+  .chart-legend .ln{width:22px; height:3px; border-radius:3px; display:inline-block}
+  .chart-svg{width:100%; height:auto; display:block}
+  .chart-x{display:grid; grid-template-columns:repeat(7,1fr); margin-top:4px; padding-left:52px}
+  .chart-x span{font-size:11px; color:var(--ink-3); text-align:center; font-weight:500}
+
+  /* ---------- Friction cards ---------- */
+  .cards{display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:18px}
+  .card{background:var(--paper-2); border:1px solid var(--line); border-radius:16px; padding:20px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:11px}
+  .card .chead{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+  .card h3{font-size:15.5px; margin:0; line-height:1.3; letter-spacing:-.01em}
+  .card .sev{flex-shrink:0; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; padding:3px 8px; border-radius:6px}
+  .card .who{display:flex; gap:6px; flex-wrap:wrap}
+  .card .who .tag{font-size:10.5px; font-weight:600; padding:2.5px 8px; border-radius:999px}
+  .tag-c{background:var(--cand-soft); color:var(--cand)}
+  .tag-r{background:var(--rec-soft); color:var(--rec)}
+  .tag-o{background:var(--co-soft); color:var(--co)}
+  .card .prob{font-size:13.5px; color:var(--ink-2); margin:0; line-height:1.5}
+  .card .opp{font-size:13px; color:var(--ink); margin:0; padding:12px 14px; background:var(--cand-soft); border-radius:11px; line-height:1.5}
+  .card .opp b{color:var(--cand); display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px; font-family:'Space Grotesk'}
+
+  /* ---------- Method note ---------- */
+  .note{background:#fcfbf8; border:1px dashed var(--line); border-radius:16px; padding:22px 24px; font-size:13.5px; color:var(--ink-2); line-height:1.6}
+  .note h3{margin:0 0 8px; font-size:15px; color:var(--ink)}
+  .note ul{margin:8px 0 0; padding-left:20px}
+  .note li{margin:4px 0}
+
+  footer{margin-top:48px; padding-top:22px; border-top:1px solid var(--line); font-size:12.5px; color:var(--ink-3); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px}
+
+  @media print{
+    body{background:#fff}
+    .scroller{overflow:visible; box-shadow:none}
+    .grid{min-width:0}
+    section{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <span class="eyebrow">Tjänstedesign · Kundresa &amp; Service Blueprint</span>
+    <h1>Recruito — hela tjänsteresan</h1>
+    <p class="lede">En kartläggning av upplevelsen genom Recruitos rekryteringsmarknad sett ur tre aktörers ögon — <b>kandidat</b>, <b>rekryterare</b> och <b>företag&nbsp;/&nbsp;kund</b> — med faser, känslokurva, sanningens ögonblick och de friktionspunkter som ligger inbäddade i dagens flöde.</p>
+
+    <div class="meta">
+      <span class="pill"><b>3</b> aktörer i parallella spår</span>
+      <span class="pill"><b>7</b> faser, ände till ände</span>
+      <span class="pill"><b>1</b> kritisk grind · Recruito-godkännande</span>
+      <span class="pill"><b>45</b> dagars informell SLA</span>
+      <span class="pill">Hypotesdriven · grundad i produktlogiken</span>
+    </div>
+
+    <div class="crit">
+      <div class="lbl">Den kritiska vägen</div>
+      <div class="path">
+        <b>Företag skapar uppdrag</b><span class="arrow">→</span>
+        <b>Rekryterare lägger in kandidat</b> <span style="color:#9aa3b2">(intern granskning)</span><span class="arrow">→</span>
+        <span class="gate">★ Recruito-admin godkänner</span><span class="arrow">→</span>
+        <b>Kandidat blir synlig</b><span class="arrow">→</span>
+        <b>Företaget öppnar profil</b> <span style="color:#9aa3b2">(samtycke · 45-dagarsklockan startar)</span><span class="arrow">→</span>
+        <b>Stegförflyttning</b><span class="arrow">→</span>
+        <b>Anställning</b><span class="arrow">→</span>
+        <b>Stäng tjänst</b>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== BLUEPRINT ===================== -->
+  <section id="blueprint">
+    <div class="sec-head"><span class="num">01</span><h2>Service blueprint — tre spår</h2></div>
+    <p class="sec-sub">Varje rad är en aktör, varje kolumn en fas. Cellerna visar handling, upplevelse och känsloläge. Röd markör&nbsp;<span style="color:var(--fric);font-weight:700">!</span>&nbsp;= friktion i den cellen. ★&nbsp;= sanningens ögonblick.</p>
+
+    <div class="legend">
+      <span class="grp"><span class="swatch" style="background:var(--cand)"></span> Kandidat</span>
+      <span class="grp"><span class="swatch" style="background:var(--rec)"></span> Rekryterare</span>
+      <span class="grp"><span class="swatch" style="background:var(--co)"></span> Företag / Kund</span>
+      <span class="grp"><span class="emo e-frust" style="padding:2px 8px;border-radius:999px">😟 Oro</span></span>
+      <span class="grp"><span class="emo e-neu" style="padding:2px 8px;border-radius:999px">😐 Avvaktan</span></span>
+      <span class="grp"><span class="emo e-hope" style="padding:2px 8px;border-radius:999px">🙂 Hopp</span></span>
+      <span class="grp"><span class="emo e-joy" style="padding:2px 8px;border-radius:999px">😀 Engagerad</span></span>
+      <span class="grp"><span class="emo e-peak" style="padding:2px 8px;border-radius:999px">🤩 Höjdpunkt</span></span>
+    </div>
+
+    <div class="scroller">
+      <div class="grid">
+        <!-- Row: phase headers -->
+        <div class="corner"><span>Aktör / Fas</span></div>
+        <div class="phase-h"><div class="fno">Fas 1</div><div class="pname">Uppdrag</div><div class="pdesc">Behov uppstår → jobbannons skapas, fee-nivå låses</div></div>
+        <div class="phase-h"><div class="fno">Fas 2</div><div class="pname">Sourcing</div><div class="pdesc">Rekryterare hittar &amp; skickar in kandidater</div></div>
+        <div class="phase-h"><div class="fno">Fas 3</div><div class="pname">Recruito-grind</div><div class="pdesc">Intern granskning &amp; godkännande</div><div class="mot">★ Sanningens ögonblick</div></div>
+        <div class="phase-h"><div class="fno">Fas 4</div><div class="pname">Presentation</div><div class="pdesc">Kandidat blir synlig · 45-dagarsklockan startar</div><div class="mot">★ Sanningens ögonblick</div></div>
+        <div class="phase-h"><div class="fno">Fas 5</div><div class="pname">Intervju</div><div class="pdesc">Visad → Intervju → Slutintervju</div></div>
+        <div class="phase-h"><div class="fno">Fas 6</div><div class="pname">Beslut</div><div class="pdesc">Erbjudande → Anställd / Avvisad / Tillbakadragen</div><div class="mot">★ Sanningens ögonblick</div></div>
+        <div class="phase-h"><div class="fno">Fas 7</div><div class="pname">Avslut</div><div class="pdesc">Stäng tjänst · faktura · garantispårning</div><div class="mot">★ Sanningens ögonblick</div></div>
+
+        <!-- Row: Kandidat -->
+        <div class="lane-lbl"><span class="bar" style="background:var(--cand)"></span><span class="ln">Kandidat</span><span class="role">Den sökande</span></div>
+        <div class="cell cand"><span class="touch">Ingen touchpoint</span><p class="do passive">Ej medveten om uppdraget. Lever sitt yrkesliv, kanske passivt öppen för rätt erbjudande.</p><span class="emo e-neu">😐 Avvaktan</span></div>
+        <div class="cell cand"><span class="touch">Mejl / samtal</span><p class="do">Kontaktas av rekryterare, delar CV och motivation. Bygger en första bild av rollen.</p><span class="emo e-hope">🙂 Hopp</span></div>
+        <div class="cell cand"><span class="frflag" title="Osynlig väntan – ingen statusåterkoppling">!</span><span class="touch">Ingen</span><p class="do">Osynlig väntan. Vet sällan att intern granskning ens pågår — radiotystnad.</p><span class="emo e-frust">😟 Oro</span></div>
+        <div class="cell cand"><span class="touch">Ev. notis</span><p class="do">Profilen presenteras för företaget. Klockan startar — men kandidaten ser den aldrig.</p><span class="emo e-hope">🙂 Hopp</span></div>
+        <div class="cell cand"><span class="touch">Möte</span><p class="do">Kallas till intervju och slutintervju. Vill prestera, läser av signaler.</p><span class="emo e-joy">😀 Engagerad</span></div>
+        <div class="cell cand"><span class="touch">Besked</span><p class="do">Får erbjudande — eller avvisas / väljer att dra sig ur. Allt står på spel.</p><span class="emo e-swing">🤩/😟 Stor svängning</span></div>
+        <div class="cell cand"><span class="frflag" title="Tyst avslag – ofta ingen återkoppling">!</span><span class="touch">Onboarding</span><p class="do">Anställd och ombord (höjdpunkt) — eller tyst avslut utan återkoppling vid avslag.</p><span class="emo e-swing">🤩/😟 Höjd eller dal</span></div>
+
+        <!-- Row: Rekryterare -->
+        <div class="lane-lbl"><span class="bar" style="background:var(--rec)"></span><span class="ln">Rekryterare</span><span class="role">Operatören</span></div>
+        <div class="cell rec"><span class="frflag" title="Fee låses tidigt – kan ändras senare via omkonfirmering">!</span><span class="touch">Dashboard</span><p class="do">Ser nytt mandat, bedömer fee-nivån och antar uppdraget. Fee låses i jobbet.</p><span class="emo e-joy">😀 Motiverad</span></div>
+        <div class="cell rec"><span class="frflag" title="Tyst auto-avvisning (dublett / redan engagerad) utan förklaring">!</span><span class="touch">Kandidatformulär</span><p class="do">Söker och lägger in kandidater (tak 8/jobb). Auto-dubblettkoll körs i bakgrunden.</p><span class="emo e-joy">😀 Produktiv</span></div>
+        <div class="cell rec"><span class="frflag" title="Oklart om/när admin avvisar – kandidat fastnar i reviewing-limbo">!</span><span class="touch">Status: Granskas</span><p class="do">Väntar på Recruito-admins godkännande. Oklart om — och när — ett avslag sker.</p><span class="emo e-frust">😟 Ovisshet</span></div>
+        <div class="cell rec"><span class="touch">Notis</span><p class="do">Får notis: kandidat presenterad / profil visad. 45-dagarsklockan börjar ticka.</p><span class="emo e-hope">🙂 Lättnad</span></div>
+        <div class="cell rec"><span class="frflag" title="Parallella statusmodeller, ingen realtidssync – måste ladda om">!</span><span class="touch">Dashboard</span><p class="do">Följer företagets steg och uppdaterar sin egen pipeline parallellt.</p><span class="emo e-joy">😀 Engagerad</span></div>
+        <div class="cell rec"><span class="frflag" title="Lång tystnad utan tvingad återkoppling skapar oro">!</span><span class="touch">Notis</span><p class="do">Erbjudande pågår; kan dra tillbaka kandidat (terminalt). Lång tystnad föder oro.</p><span class="emo e-hope">🙂 Spänd</span></div>
+        <div class="cell rec"><span class="frflag" title="Om faktura-API fallerar fastnar status i invoice_enabled">!</span><span class="touch">Faktura</span><p class="do">Anställning → faktura aktiveras automatiskt, garantispårning startar. Belöning.</p><span class="emo e-peak">🤩 Belöning</span></div>
+
+        <!-- Row: Företag -->
+        <div class="lane-lbl"><span class="bar" style="background:var(--co)"></span><span class="ln">Företag / Kund</span><span class="role">Den betalande</span></div>
+        <div class="cell co"><span class="frflag" title="Fee-villkor kan upplevas oklara vid annonsering">!</span><span class="touch">Jobbformulär</span><p class="do">Skapar jobbannons. Fee-nivå beräknas på historik och låses i uppdraget.</p><span class="emo e-joy">😀 Förväntansfull</span></div>
+        <div class="cell co"><span class="frflag" title="Ingen synlighet i sourcing-fasen – tystnad">!</span><span class="touch">Ingen synlighet</span><p class="do passive">Väntar — ser ännu inga kandidater. Vet inte om något händer.</p><span class="emo e-neu">😐 Otålig</span></div>
+        <div class="cell co"><span class="touch">Ingen</span><p class="do passive">Omedveten — Recruito granskar internt. Processen är osynlig för kunden.</p><span class="emo e-neu">😐 Avvaktan</span></div>
+        <div class="cell co"><span class="frflag" title="Samtyckesgrind + dold 45-dagarsklocka + ev. tyst auto-paus vid kandidattak">!</span><span class="touch">Modal</span><p class="do">Notis: kandidat presenterad. Öppnar profil → samtyckesmodal (rekryterare notifieras, 45 dagar). Markeras auto som "Visad".</p><span class="emo e-hope">🙂 Nyfiken / press</span></div>
+        <div class="cell co"><span class="frflag" title="Fee-omkonfirmering kan blockera · tillbakadragen kandidat låser panelen">!</span><span class="touch">Present Status-panel</span><p class="do">Flyttar kandidat Visad → Intervju → Slutintervju i panelen.</p><span class="emo e-joy">😀 Beslutsam</span></div>
+        <div class="cell co"><span class="frflag" title="Erbjudande-acceptans är ett separat steg – oklart om låst">!</span><span class="touch">Present Status-panel</span><p class="do">Erbjudande → Anställd, eller Avvisad (kan återöppnas till tidigare steg).</p><span class="emo e-hope">🙂 Beslutsångest</span></div>
+        <div class="cell co"><span class="frflag" title="Stängning är manuell – måste kommas ihåg, annars kvarstår tjänsten">!</span><span class="touch">Modal</span><p class="do">Bekräftar stängning av tjänsten → resterande kandidater avvisas automatiskt.</p><span class="emo e-peak">🤩 Nöjd / lättnad</span></div>
+
+        <!-- Row: Friction -->
+        <div class="lane-lbl fr-lbl"><span class="bar" style="background:var(--fric)"></span><span class="ln">Friktion</span><span class="role">Smärtpunkter</span></div>
+        <div class="fr-cell"><span class="sev sev-l">Låg</span><p class="ft">Fee-villkor låses tidigt och kan upplevas oklara för båda parter.</p></div>
+        <div class="fr-cell"><span class="sev sev-m">Medel</span><p class="ft">Tyst auto-avvisning utan förklaring. Företaget ser ingenting under sourcing.</p></div>
+        <div class="fr-cell"><span class="sev sev-h">Hög</span><p class="ft">Limbo: ingen status under intern granskning. Ingen vet om/när avslag sker.</p></div>
+        <div class="fr-cell"><span class="sev sev-h">Hög</span><p class="ft">Dold 45-dagarsklocka + samtyckesgrind + tyst auto-paus vid kandidattak (8).</p></div>
+        <div class="fr-cell"><span class="sev sev-m">Medel</span><p class="ft">Parallella statusar utan sync · fee-block · panel låses av tillbakadragning.</p></div>
+        <div class="fr-cell"><span class="sev sev-m">Medel</span><p class="ft">Lång tystnad utan tvingad återkoppling · separat erbjudande-acceptans.</p></div>
+        <div class="fr-cell"><span class="sev sev-h">Hög</span><p class="ft">Tyst avslag mot kandidat · stängning måste kommas ihåg · faktura-fail fastnar.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== EMOTION CURVE ===================== -->
+  <section id="emotion">
+    <div class="sec-head"><span class="num">02</span><h2>Känslokurva</h2></div>
+    <p class="sec-sub">Den upplevda känslan per aktör genom de sju faserna. De tre djupen — kandidatens "limbo" (fas 3), företagets tysta väntan (fas 2) och rekryterarens beslutsoro (fas 6) — är där tjänsten tappar förtroende. Alla tre reser sig vid anställning.</p>
+
+    <div class="chart-card">
+      <div class="chart-legend">
+        <span class="grp"><span class="ln" style="background:var(--cand)"></span> Kandidat</span>
+        <span class="grp"><span class="ln" style="background:var(--rec)"></span> Rekryterare</span>
+        <span class="grp"><span class="ln" style="background:var(--co)"></span> Företag / Kund</span>
+      </div>
+      <svg class="chart-svg" viewBox="0 0 1000 250" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Känslokurva per aktör genom sju faser">
+        <!-- gridlines -->
+        <g stroke="#eee7da" stroke-width="1">
+          <line x1="52" y1="30" x2="980" y2="30"/>
+          <line x1="52" y1="75" x2="980" y2="75"/>
+          <line x1="52" y1="120" x2="980" y2="120"/>
+          <line x1="52" y1="165" x2="980" y2="165"/>
+          <line x1="52" y1="210" x2="980" y2="210"/>
+        </g>
+        <!-- y labels -->
+        <g font-family="Inter" font-size="10" fill="#9aa099">
+          <text x="44" y="34" text-anchor="end">Hög</text>
+          <text x="44" y="124" text-anchor="end">Neutral</text>
+          <text x="44" y="214" text-anchor="end">Låg</text>
+        </g>
+
+        <!-- Kandidat: 3,3.5,2,3.5,4.2,3.2,4.6 -->
+        <polyline fill="none" stroke="#0F766E" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"
+          points="70,120 222,97.5 374,165 526,97.5 678,66 830,111 980,48"/>
+        <g fill="#0F766E">
+          <circle cx="70" cy="120" r="4"/><circle cx="222" cy="97.5" r="4"/><circle cx="374" cy="165" r="5"/>
+          <circle cx="526" cy="97.5" r="4"/><circle cx="678" cy="66" r="4"/><circle cx="830" cy="111" r="4"/><circle cx="980" cy="48" r="5"/>
+        </g>
+
+        <!-- Rekryterare: 3.5,3,2.3,3.8,3.4,2.8,4.4 -->
+        <polyline fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"
+          points="70,97.5 222,120 374,151.5 526,84 678,102 830,129 980,57"/>
+        <g fill="#4338CA">
+          <circle cx="70" cy="97.5" r="4"/><circle cx="222" cy="120" r="4"/><circle cx="374" cy="151.5" r="4"/>
+          <circle cx="526" cy="84" r="4"/><circle cx="678" cy="102" r="4"/><circle cx="830" cy="129" r="4"/><circle cx="980" cy="57" r="5"/>
+        </g>
+
+        <!-- Företag: 3.8,2.6,2.4,3,3.3,2.7,4.2 -->
+        <polyline fill="none" stroke="#B45309" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"
+          points="70,84 222,138 374,147 526,120 678,106.5 830,133.5 980,66"/>
+        <g fill="#B45309">
+          <circle cx="70" cy="84" r="4"/><circle cx="222" cy="138" r="4"/><circle cx="374" cy="147" r="4"/>
+          <circle cx="526" cy="120" r="4"/><circle cx="678" cy="106.5" r="4"/><circle cx="830" cy="133.5" r="4"/><circle cx="980" cy="66" r="5"/>
+        </g>
+
+        <!-- low-point markers -->
+        <g font-family="Space Grotesk" font-size="10" font-weight="600" fill="#b91c1c">
+          <text x="374" y="184" text-anchor="middle">▼ Limbo</text>
+        </g>
+      </svg>
+      <div class="chart-x">
+        <span>1 · Uppdrag</span><span>2 · Sourcing</span><span>3 · Grind</span><span>4 · Presentation</span><span>5 · Intervju</span><span>6 · Beslut</span><span>7 · Avslut</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FRICTION → OPPORTUNITY ===================== -->
+  <section id="friction">
+    <div class="sec-head"><span class="num">03</span><h2>Friktion → designmöjlighet</h2></div>
+    <p class="sec-sub">De åtta tyngsta smärtpunkterna i tjänsten i dag, med berörda aktörer, allvarlighetsgrad och ett konkret designspår. Sorterade efter påverkan.</p>
+
+    <div class="cards">
+
+      <div class="card">
+        <div class="chead"><h3>Osynlig granskning — "reviewing"-limbo</h3><span class="sev sev-h" style="background:var(--fric);color:#fff">Hög</span></div>
+        <div class="who"><span class="tag tag-c">Kandidat</span><span class="tag tag-r">Rekryterare</span></div>
+        <p class="prob">Efter inskick ligger kandidaten i intern Recruito-granskning, osynlig för kunden. Det finns ingen statusåterkoppling och inget tydligt avslagsflöde — om admin nekar fastnar kandidaten i limbo utan besked.</p>
+        <p class="opp"><b>Möjlighet</b>Inför ett synligt statusspår ("Granskas av Recruito") med tidsestimat, och en explicit, vänlig avslagsnotis med orsak till rekryteraren.</p>
+      </div>
+
+      <div class="card">
+        <div class="chead"><h3>Dold 45-dagarsklocka &amp; samtyckesgrind</h3><span class="sev sev-h" style="background:var(--fric);color:#fff">Hög</span></div>
+        <div class="who"><span class="tag tag-o">Företag</span><span class="tag tag-r">Rekryterare</span><span class="tag tag-c">Kandidat</span></div>
+        <p class="prob">Klockan startar först vid företagets <i>första</i> profilvisning — inte vid uppdragsstart. Den syns bara för kunden, har ingen hård deadline och ingen automatisk åtgärd. Rekryteraren blir orolig, kandidaten ser ingenting.</p>
+        <p class="opp"><b>Möjlighet</b>Gör nedräkningen synlig och delad för alla parter, med mjuka påminnelser vid 14 / 5 dagar och en tydlig konsekvensbeskrivning.</p>
+      </div>
+
+      <div class="card">
+        <div class="chead"><h3>Tyst auto-paus vid kandidattak</h3><span class="sev sev-h" style="background:var(--fric);color:#fff">Hög</span></div>
+        <div class="who"><span class="tag tag-o">Företag</span><span class="tag tag-r">Rekryterare</span></div>
+        <p class="prob">När taket (8 kandidater/jobb) nås går jobbet tyst från aktivt → pausat. Rekryteringen stannar utan att kunden nödvändigtvis märker det.</p>
+        <p class="opp"><b>Möjlighet</b>Explicit notis vid paus med en tydlig CTA: "Höj taket" eller "Granska kandidater nu".</p>
+      </div>
+
+      <div class="card">
+        <div class="chead"><h3>Tyst avslag mot kandidaten</h3><span class="sev sev-h" style="background:var(--fric);color:#fff">Hög</span></div>
+        <div class="who"><span class="tag tag-c">Kandidat</span></div>
+        <p class="prob">Vid avslag — inklusive auto-avvisning när tjänsten fylls — får kandidaten sällan något besked alls. Det skadar både kandidatupplevelsen och arbetsgivarvarumärket.</p>
+        <p class="opp"><b>Möjlighet</b>Automatiserad, varm avslagsnotis och, där möjligt, en kort återkoppling — en låg insats med hög varumärkeseffekt.</p>
+      </div>
+
+      <div class="card">
+        <div class="chead"><h3>Fee-omkonfirmering blockerar flödet</h3><span class="sev sev-m" style="background:#fcd9a6;color:#92510a">Medel</span></div>
+        <div class="who"><span class="tag tag-o">Företag</span><span class="tag tag-r">Rekryterare</span></div>
+        <p class="prob">När admin höjer estimerad fee måste kunden godkänna eller avslå. Det finns ingen timeout eller standardåtgärd — progressionen fryses tills kunden agerar, och kunden kan glömma bort det.</p>
+        <p class="opp"><b>Möjlighet</b>Sätt en deadline med påminnelser, visa tydligt vad som blockeras, och definiera ett standardbeteende vid utebliven respons.</p>
+      </div>
+
+      <div class="card">
+        <div class="chead"><h3>Tyst auto-avvisning (dublett / redan engagerad)</h3><span class="sev sev-m" style="background:#fcd9a6;color:#92510a">Medel</span></div>
+        <div class="who"><span class="tag tag-r">Rekryterare</span></div>
+        <p class="prob">Vid inskick sätts kandidaten direkt i ett terminalt läge om en dublett eller "redan engagerad"-träff upptäcks — utan notis eller förklaring vid skapandet. Rekryteraren upptäcker det först som en statusbadge.</p>
+        <p class="opp"><b>Möjlighet</b>Inline-förklaring vid avvisning, plus en förhandskontroll redan i formuläret innan inskick.</p>
+      </div>
+
+      <div class="card">
+        <div class="chead"><h3>Parallella statusmodeller utan sync</h3><span class="sev sev-m" style="background:#fcd9a6;color:#92510a">Medel</span></div>
+        <div class="who"><span class="tag tag-r">Rekryterare</span><span class="tag tag-o">Företag</span></div>
+        <p class="prob">Företagssteget (Visad→Intervju→…) och rekryterarens egen pipeline lever parallellt utan realtidssync. Rekryteraren måste ladda om för att se kundens drag, och det är otydligt vem som äger vilket steg.</p>
+        <p class="opp"><b>Möjlighet</b>En enad, delad tidslinje per kandidat med realtidsuppdatering och tydlig ägarskapsmarkering per steg.</p>
+      </div>
+
+      <div class="card">
+        <div class="chead"><h3>Tillbakadragen kandidat låser panel utan kontext</h3><span class="sev sev-m" style="background:#fcd9a6;color:#92510a">Medel</span></div>
+        <div class="who"><span class="tag tag-o">Företag</span></div>
+        <p class="prob">När rekryteraren drar tillbaka en kandidat blir kundens panel skrivskyddad med meddelandet "kan inte flyttas" — men orsaken till tillbakadragningen visas inte inline. Kunden förstår inte varför.</p>
+        <p class="opp"><b>Möjlighet</b>Visa tillbakadragningsorsaken direkt i panelen, så att låsningen blir begriplig.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== METHOD ===================== -->
+  <section id="method">
+    <div class="sec-head"><span class="num">04</span><h2>Metod &amp; nästa steg</h2></div>
+    <div class="note">
+      <h3>Så är kartan gjord — och så validerar vi den</h3>
+      Detta är en <b>hypotesdriven</b> blueprint, härledd direkt ur Recruitos nuvarande produktlogik (stegregler, behörighetsgrindar, notisflöden och terminala tillstånd). Den beskriver tjänsten <i>som den är kodad i dag</i> — inte nödvändigtvis som den upplevs. Känslokurvan är en kvalificerad bedömning, inte uppmätt data.
+      <ul>
+        <li><b>Validera kvalitativt:</b> 5–7 intervjuer per aktör. Lägg särskild vikt vid de tre djupen — kandidatens limbo (fas 3), företagets tysta väntan (fas 2) och rekryterarens beslutsoro (fas 6).</li>
+        <li><b>Mät kvantitativt:</b> tid i "reviewing", andel jobb som auto-pausas, svarstid på fee-omkonfirmering, andel avslag utan besked.</li>
+        <li><b>Prioritera:</b> börja med de fyra röda (Hög) — limbo-synlighet, den delade 45-dagarsklockan, auto-paus-notis och kandidatens avslagsbesked. Störst förtroendeeffekt per krona.</li>
+        <li><b>Stäng loopen:</b> uppdatera blueprinten efter validering och knyt varje designmöjlighet till en mätbar hypotes.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span>Recruito · Kundresa &amp; Service Blueprint</span>
+    <span>Tjänstedesign-leverans · 2026-06-15 · v1 (hypotes, ej validerad)</span>
+  </footer>
+
+</div>
+</body>
+</html>

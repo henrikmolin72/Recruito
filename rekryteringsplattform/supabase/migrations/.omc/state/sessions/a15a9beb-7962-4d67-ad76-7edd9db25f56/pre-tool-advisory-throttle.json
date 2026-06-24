@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "entries": {
+    "79a93d4a2f8f50b95f852280616242fee1855dc99a3c75211917f55e72e95fae": {
+      "last_emitted_at_ms": 1781441324512,
+      "message": "Use parallel execution for independent tasks. Use run_in_background for long operations (npm install, builds, tests)."
+    },
+    "466399dafa2d20f60587180bad0a07358eb7f2bce724df0ff682f038ad33f5ad": {
+      "last_emitted_at_ms": 1781441275615,
+      "message": "Read multiple files in parallel when possible for faster analysis."
+    },
+    "445ed27a3872b681d98190bae61ccb84954e1bc4e140df5370be958dee776b3a": {
+      "last_emitted_at_ms": 1781441043530,
+      "message": "Verify changes work after editing. Test functionality before marking complete."
+    },
+    "d616df532c4ad4328e94775bb1b9c3afc2f9edd304fbdfb1055a75da78352fcb": {
+      "last_emitted_at_ms": 1781440925052,
+      "message": "Spawning agent: oh-my-claudecode:executor (opus) | Task: Build stage-engine UI"
+    },
+    "2d214a598d45fedebd1bf8c2957d95abed6f41a81713cb938ae824919bbb40bd": {
+      "last_emitted_at_ms": 1781440395339,
+      "message": "Spawning agent: oh-my-claudecode:executor (opus) | Task: Implement stage-engine backend + migrations"
+    }
+  },
+  "updated_at": "2026-06-14T12:48:44.512Z"
+}

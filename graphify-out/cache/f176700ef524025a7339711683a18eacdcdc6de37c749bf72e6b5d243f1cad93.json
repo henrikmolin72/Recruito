@@ -1,0 +1,1 @@
+{"nodes": [{"id": "eval-data_gatherEvalData", "label": "gatherEvalData / authorizeMandate", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/screening/eval-data.ts", "summary": "Server-only: mandate auth + IDOR check and assembly of JD + candidate context (EvalConfig/ScreeningAnswer) for screening."}], "edges": [], "hyperedges": []}

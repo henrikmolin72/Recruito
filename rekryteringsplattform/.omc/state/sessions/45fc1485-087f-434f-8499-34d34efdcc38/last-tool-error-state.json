@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"echo \\\"=== consumeRateLimit callers ===\\\" && grep -rn \\\"consumeRateLimit\\\" src/ | grep -v \\\"security/rate-limit.ts\\\" | head && echo \\\"=== config.toml? ===\\\" && ls -la supabase/config.toml ...",
+  "error": "Exit code 1\n=== consumeRateLimit callers ===\nsrc/app/api/candidates/check-duplicate/route.ts:4:import { consumeRateLimit } from \"@/lib/security/rate-limit\";\nsrc/app/api/candidates/check-duplicate/route.ts:33:        const rateLimit = await consumeRateLimit({\nsrc/app/api/screen/route.ts:7:import { consumeRateLimit } from \"@/lib/security/rate-limit\";\nsrc/app/api/screen/route.ts:84:    const rateLimit = await consumeRateLimit({\nsrc/app/api/screening-report/route.ts:6:import { consumeRateLimit } fro...",
+  "timestamp": "2026-06-21T18:13:26.094Z",
+  "retry_count": 1
+}

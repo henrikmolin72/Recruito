@@ -1,0 +1,1 @@
+{"nodes": [{"id": "job-fill_module", "label": "job-fill", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/job-fill.ts", "domain": "candidate workflow / job lifecycle", "summary": "Server-only job lifecycle cascade: reject remaining candidates on fill/close, reopen nudge, recruiter lifecycle notifications + email."}], "edges": [], "hyperedges": []}

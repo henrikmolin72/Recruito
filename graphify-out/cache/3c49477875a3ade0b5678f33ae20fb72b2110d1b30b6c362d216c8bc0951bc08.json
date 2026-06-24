@@ -1,0 +1,1 @@
+{"nodes": [{"id": "internal-notifications_dispatch", "label": "email dispatch (Resend/SMTP)", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/email/internal-notifications.ts", "summary": "Email transport layer: Resend primary with SMTP fallback; exports sendUserEmail + sendInternalRecruiterEmail."}], "edges": [], "hyperedges": []}

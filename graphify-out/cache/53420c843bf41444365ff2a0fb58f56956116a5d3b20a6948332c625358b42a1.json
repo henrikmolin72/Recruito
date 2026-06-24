@@ -1,0 +1,1 @@
+{"nodes": [{"id": "middleware_updateSession", "label": "updateSession", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/supabase/middleware.ts", "summary": "Next.js middleware: refreshes Supabase session, enforces protected/role-based routes, auto-detects locale."}], "edges": [], "hyperedges": []}

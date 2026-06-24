@@ -1,0 +1,1 @@
+{"nodes": [{"id": "app-url_module", "label": "app-url", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/app-url.ts", "domain": "url helpers", "summary": "Async getAppUrl deriving the request-time base URL from forwarded/host headers, falling back to NEXT_PUBLIC_APP_URL then localhost."}], "edges": [], "hyperedges": []}

@@ -1,0 +1,7 @@
+{
+  "tool_name": "mcp__e87c9d91-8b21-44df-a276-f0d7f92c2c03__list_migrations",
+  "tool_input_preview": "{\"project_id\":\"zzskjstnozqqpevkvswc\"}",
+  "error": "{\"error\":{\"name\":\"McpError\",\"message\":\"MCP error -32600: You do not have permission to perform this action\"}}",
+  "timestamp": "2026-06-23T18:34:08.788Z",
+  "retry_count": 1
+}

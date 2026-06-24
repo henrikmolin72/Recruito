@@ -1,0 +1,1 @@
+{"nodes": [{"id": "utils_module", "label": "utils", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/utils.ts", "domain": "fee/pricing + formatting", "summary": "cn classname merge, currency/date formatters, and canonical client-fee/recruiter-fee math (calculateClientFee, calculateFee, floorToHundreds)."}], "edges": [], "hyperedges": []}

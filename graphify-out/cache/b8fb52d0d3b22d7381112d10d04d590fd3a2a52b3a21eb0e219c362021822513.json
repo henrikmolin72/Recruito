@@ -1,0 +1,1 @@
+{"nodes": [{"id": "mandate-stages-test_mandateExpiryDaysLeft", "label": "mandate-stages.test", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/mandate-stages.test.ts", "summary": "Vitest suite for mandateExpiryDaysLeft: claim countdown, live-candidate suspension, rejection-window restart, expiry."}], "edges": [], "hyperedges": []}

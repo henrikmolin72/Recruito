@@ -1,0 +1,1 @@
+{"nodes": [{"id": "rate-limit_consumeRateLimit", "label": "consumeRateLimit", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/security/rate-limit.ts", "summary": "DB-backed durable rate limiter via consume_rate_limit() RPC with in-memory fail-open fallback."}], "edges": [], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "mandate-stages_module", "label": "mandate-stages", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/mandate-stages.ts", "domain": "candidate workflow / mandate", "summary": "Shared mandate stage buckets (in_review..rejected), candidate-to-stage mapping, and 10-day mandate-expiry-days-left computation."}], "edges": [], "hyperedges": []}
