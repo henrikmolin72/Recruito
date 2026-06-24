@@ -29,7 +29,7 @@ export default async function AdminMessageThreadPage({
                 initialMessages={thread.messages}
                 currentUserId={user.id}
                 candidate={thread.candidate}
-                conversationType="recruito"
+                conversationType="recruito_company"
                 sendMessageFn={sendAdminMessage}
             />
         </div>

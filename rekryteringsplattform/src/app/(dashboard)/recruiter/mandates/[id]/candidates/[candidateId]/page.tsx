@@ -292,7 +292,7 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
     const { data: { user } } = await supabase.auth.getUser();
     const [conversation, recruitorConversation] = await Promise.all([
         getCandidateConversation(candidateId, 'client'),
-        getCandidateConversation(candidateId, 'recruito'),
+        getCandidateConversation(candidateId, 'recruito_recruiter'),
     ]);
     const initialMessages = (conversation as any)?.messages || [];
     const recruitorMessages = (recruitorConversation as any)?.messages || [];
@@ -364,6 +364,7 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                             currentUserId={user?.id || ''}
                             candidate={candidate}
                             clientTabLabel="Chat with Client"
+                            recruitorConversationType="recruito_recruiter"
                         />
                     </div>
                 </div>

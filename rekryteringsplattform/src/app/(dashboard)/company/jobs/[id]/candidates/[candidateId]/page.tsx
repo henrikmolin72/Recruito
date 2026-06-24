@@ -104,7 +104,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
     const { data: { user } } = await supabase.auth.getUser();
     const [conversation, recruitorConversation] = await Promise.all([
         getCandidateConversation(candidateId, 'client'),
-        getCandidateConversation(candidateId, 'recruito'),
+        getCandidateConversation(candidateId, 'recruito_company'),
     ]);
     const initialMessages = (conversation as any)?.messages || [];
     const recruitorMessages = (recruitorConversation as any)?.messages || [];
@@ -512,6 +512,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                             ? `${(c as any).chatWithRecruiter || "Chat with Recruiter"} (${candidate.recruiter.profile.full_name})`
                             : ((c as any).chatWithRecruiter || "Chat with Recruiter")
                     }
+                    recruitorConversationType="recruito_company"
                 />
             </div>
         </div>

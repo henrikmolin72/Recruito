@@ -32,7 +32,7 @@ interface CandidateChatProps {
         current_title: string;
         status: string;
     };
-    conversationType?: 'client' | 'recruito';
+    conversationType?: 'client' | 'recruito_company' | 'recruito_recruiter';
     sendMessageFn?: (candidateId: string, jobId: string, content: string) => Promise<{ success?: boolean; error?: string }>;
 }
 
