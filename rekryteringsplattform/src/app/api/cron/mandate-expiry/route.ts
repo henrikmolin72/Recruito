@@ -14,8 +14,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createNotification } from "@/lib/notifications/create";
-import { mandateExpiryDaysLeft } from "@/lib/mandate-stages";
+import { releaseDueMandates } from "@/lib/mandate-expiry-release";
 
 export const runtime = "nodejs";
 
@@ -31,70 +30,8 @@ export async function GET(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    const { data: mandates, error } = await admin
-        .from("job_mandates")
-        .select(`
-            id,
-            claimed_at,
-            mandate_expiry_notified_at,
-            recruiter:recruiters(user_id),
-            job:jobs(title),
-            candidates:candidates(status, status_changed_at)
-        `)
-        .eq("is_active", true);
-
-    if (error || !mandates) {
-        return NextResponse.json({ error: "Failed to fetch mandates" }, { status: 500 });
-    }
-
-    let notified = 0;
-    for (const m of mandates as any[]) {
-        if (!m.claimed_at) continue;
-
-        // Fire at most once per mandate — survives missed daily runs (a single
-        // skipped run must not permanently silence the notification).
-        if (m.mandate_expiry_notified_at) continue;
-
-        // Shared expiry rule: a live (non-rejected) candidate suspends the timer;
-        // all-rejected restarts it from the last rejection. null => no expiry.
-        const daysLeft = mandateExpiryDaysLeft({
-            claimedAt: m.claimed_at,
-            candidates: m.candidates || [],
-        });
-        if (daysLeft === null) continue;
-        // Fire on the first run at or after the expiry boundary, not only the
-        // exact day — `<= 0` so a missed run still notifies on the next run.
-        if (daysLeft > 0) continue;
-
-        const recruiterUserId = Array.isArray(m.recruiter)
-            ? m.recruiter[0]?.user_id
-            : m.recruiter?.user_id;
-        if (!recruiterUserId) continue;
-
-        const jobTitle = (Array.isArray(m.job) ? m.job[0]?.title : m.job?.title) || "Uppdraget";
-
-        await createNotification(recruiterUserId, {
-            titleKey: "notif.mandateExpiredTitle",
-            bodyKey: "notif.mandateExpiredBody",
-            params: { jobTitle },
-            link: "/recruiter/mandates",
-        });
-
-        // Release the expired mandate and stamp the notification time. Setting
-        // is_active=false frees the recruiter slot, drops the row from the
-        // is_active=true scan (so it won't re-fire), and returns the job to the
-        // available list for a retake. Done after the notification so a send
-        // failure leaves the mandate active and eligible for retry next run.
-        await admin
-            .from("job_mandates")
-            .update({
-                is_active: false,
-                released_at: new Date().toISOString(),
-                mandate_expiry_notified_at: new Date().toISOString(),
-            })
-            .eq("id", m.id);
-        notified++;
-    }
-
-    return NextResponse.json({ ok: true, scanned: mandates.length, notified });
+    // Notify + release every due mandate (shared with the recruiter marketplace
+    // list so expired slots free up even between daily runs).
+    const { scanned, notified } = await releaseDueMandates(admin);
+    return NextResponse.json({ ok: true, scanned, notified });
 }
