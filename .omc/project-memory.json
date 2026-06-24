@@ -171,6 +171,12 @@
       "type": "file"
     },
     {
+      "path": "rekryteringsplattform/src/app/(dashboard)/recruiter/mandates/[id]/candidates/[candidateId]/page.tsx",
+      "accessCount": 9,
+      "lastAccessed": 1782324246203,
+      "type": "file"
+    },
+    {
       "path": "rekryteringsplattform/src/i18n/dictionaries/sv.json",
       "accessCount": 8,
       "lastAccessed": 1776603186857,
@@ -192,12 +198,6 @@
       "path": "rekryteringsplattform/src/app/api/screen/route.ts",
       "accessCount": 7,
       "lastAccessed": 1776780353020,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/app/(dashboard)/recruiter/mandates/[id]/candidates/[candidateId]/page.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1777022006870,
       "type": "file"
     },
     {

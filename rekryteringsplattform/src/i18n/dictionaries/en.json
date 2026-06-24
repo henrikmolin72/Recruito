@@ -668,6 +668,7 @@
     "pipelineSelectWorkflowStep": "Select next workflow step",
     "applyWorkflowStatus": "Apply workflow status",
     "withdrawCandidate": "Withdraw candidate",
+    "withdrawControlNote": "Only the company and Recruito can move the candidate through the process.",
     "pipelineSelectReason": "Select reason",
     "updating": "Updating…",
     "pipelineNoCustomStages": "This job has no custom pipeline stages. Use the status buttons below.",

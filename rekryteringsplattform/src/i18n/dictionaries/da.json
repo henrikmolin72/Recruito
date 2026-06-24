@@ -668,6 +668,7 @@
     "pipelineSelectWorkflowStep": "Vælg næste workflow-trin",
     "applyWorkflowStatus": "Anvend workflow-status",
     "withdrawCandidate": "Træk kandidat tilbage",
+    "withdrawControlNote": "Kun virksomheden og Recruito kan flytte kandidaten gennem processen.",
     "pipelineSelectReason": "Vælg årsag",
     "updating": "Opdaterer...",
     "pipelineNoCustomStages": "Dette job har ingen tilpassede pipeline-trin. Brug statusknapperne nedenfor.",

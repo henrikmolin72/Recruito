@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { TabbedCandidateChat } from "@/components/shared/tabbed-candidate-chat";
 import { CompanyNextStepPanel } from "@/components/dashboard/recruiter/company-next-step-panel";
-import { RecruiterPipelineControls } from "@/components/dashboard/recruiter/recruiter-pipeline-controls";
+import { RecruiterWithdrawControl } from "@/components/dashboard/recruiter/recruiter-withdraw-control";
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { cn } from "@/lib/utils";
@@ -333,12 +333,9 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                 <div className="lg:col-span-2 space-y-8">
                     <RecruiterCandidateProcessCard candidate={candidate} dict={dict} />
 
-                    <RecruiterPipelineControls
+                    <RecruiterWithdrawControl
                         candidateId={candidateId}
                         jobId={candidate.job_id}
-                        candidateStatus={candidate.status}
-                        currentPipelineStage={candidate.current_pipeline_stage}
-                        pipelineStages={(candidate.job as any)?.pipeline_stages || []}
                         dict={r as any}
                     />
 
