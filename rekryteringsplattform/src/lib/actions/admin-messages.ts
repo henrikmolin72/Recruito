@@ -6,24 +6,47 @@ import { createNotification } from "@/lib/notifications/create";
 import { revalidatePath } from "next/cache";
 
 /**
- * Admin inbox for the "Chat with Recruito" threads (conversation_type='recruito').
+ * Admin inbox for the "Chat with Recruito" threads. Migration 060 split the old
+ * shared 'recruito' thread into two PRIVATE per-party threads:
+ *   - 'recruito_company'   → the company's private thread with Recruito/admins
+ *   - 'recruito_recruiter' → the recruiter's private thread with Recruito/admins
+ * A candidate can have one of each, so it appears as two separate inbox rows.
  *
  * Admins are not conversation participants, so these run through the service-role
  * client and are gated by requireAdmin() — the same authorization model the rest of
  * the admin actions use. Reads can't rely on getConversations() (participant-scoped).
  */
 
+// The private per-party Recruito thread types this module reads/writes.
+type RecruitoConversationType = "recruito_company" | "recruito_recruiter";
+type RecruitoParty = "company" | "recruiter";
+
+// Unwrap a Supabase nested-relation modelled as `T | T[]` (mirrors firstOf in
+// messages.ts). PostgREST returns an array for some embedded relations and a
+// single object for others.
+function firstOf<T>(rel: T | T[] | null | undefined): T | undefined {
+    if (Array.isArray(rel)) return rel[0];
+    return rel ?? undefined;
+}
+
+const partyOf = (type: string): RecruitoParty =>
+    type === "recruito_recruiter" ? "recruiter" : "company";
+
 export interface AdminRecruitoConversation {
     candidateId: string;
     jobId: string | null;
+    party: RecruitoParty;
+    conversationType: RecruitoConversationType;
     candidateName: string;
     companyName: string | null;
+    /** Display name of the party on the other end (company name or recruiter name). */
+    partyName: string | null;
     lastMessage: string | null;
     lastAt: string | null;
     messageCount: number;
 }
 
-/** Every 'recruito' conversation, newest activity first. */
+/** Every private Recruito thread (one row per party thread), newest activity first. */
 export async function getRecruitoConversationsForAdmin(): Promise<AdminRecruitoConversation[]> {
     await requireAdmin();
     const sb = createAdminClient();
@@ -31,28 +54,38 @@ export async function getRecruitoConversationsForAdmin(): Promise<AdminRecruitoC
     const { data, error } = await sb
         .from("conversations")
         .select(`
-            candidate_id, job_id,
-            candidate:candidates(first_name, last_name, job:jobs(company:companies(company_name))),
+            candidate_id, job_id, conversation_type,
+            candidate:candidates(
+                first_name, last_name,
+                recruiter:recruiters(profile:profiles!recruiters_user_id_fkey(full_name)),
+                job:jobs(company:companies(company_name))
+            ),
             messages(content, created_at)
         `)
-        .eq("conversation_type", "recruito");
+        .in("conversation_type", ["recruito_company", "recruito_recruiter"]);
 
     if (error || !data) return [];
 
     const rows: AdminRecruitoConversation[] = data.map((conv: any) => {
-        const cand = Array.isArray(conv.candidate) ? conv.candidate[0] : conv.candidate;
-        const job = cand && (Array.isArray(cand.job) ? cand.job[0] : cand.job);
-        const company = job && (Array.isArray(job.company) ? job.company[0] : job.company);
+        const cand = firstOf(conv.candidate);
+        const job = firstOf(cand?.job);
+        const company = firstOf(job?.company);
+        const recruiterProfile = firstOf(firstOf(cand?.recruiter)?.profile);
         const msgs = (conv.messages ?? []) as Array<{ content: string; created_at: string }>;
         const last = msgs.length
             ? msgs.reduce((a, b) => (new Date(a.created_at) > new Date(b.created_at) ? a : b))
             : null;
         const name = cand ? `${cand.first_name ?? ""} ${cand.last_name ?? ""}`.trim() : "";
+        const party = partyOf(conv.conversation_type);
+        const companyName = company?.company_name ?? null;
         return {
             candidateId: conv.candidate_id,
             jobId: conv.job_id,
+            party,
+            conversationType: conv.conversation_type as RecruitoConversationType,
             candidateName: name || "Unknown candidate",
-            companyName: company?.company_name ?? null,
+            companyName,
+            partyName: party === "company" ? companyName : (recruiterProfile?.full_name ?? null),
             lastMessage: last?.content ?? null,
             lastAt: last?.created_at ?? null,
             messageCount: msgs.length,
@@ -80,8 +113,11 @@ export interface AdminRecruitoThread {
     messages: AdminThreadMessage[];
 }
 
-/** One 'recruito' thread for the admin reply view (service role → sender names resolve). */
-export async function getRecruitoThreadForAdmin(candidateId: string): Promise<AdminRecruitoThread | null> {
+/** One private Recruito thread for the admin reply view (service role → sender names resolve). */
+export async function getRecruitoThreadForAdmin(
+    candidateId: string,
+    conversationType: RecruitoConversationType,
+): Promise<AdminRecruitoThread | null> {
     await requireAdmin();
     const sb = createAdminClient();
 
@@ -89,7 +125,7 @@ export async function getRecruitoThreadForAdmin(candidateId: string): Promise<Ad
         .from("conversations")
         .select("id, job_id")
         .eq("candidate_id", candidateId)
-        .eq("conversation_type", "recruito")
+        .eq("conversation_type", conversationType)
         .maybeSingle();
     if (!conv) return null;
 
@@ -129,36 +165,68 @@ export async function getRecruitoThreadForAdmin(candidateId: string): Promise<Ad
 }
 
 /**
- * Admin reply into the 'recruito' thread. Signature matches CandidateChat's
- * sendMessageFn (candidateId, jobId, content). Admins aren't participants, so the
- * insert goes through the service-role client; requireAdmin() authorizes it.
+ * Admin reply into a specific private Recruito thread (company OR recruiter).
+ * Signature matches CandidateChat's sendMessageFn plus the target conversationType.
+ * Admins aren't participants, so the insert goes through the service-role client;
+ * requireAdmin() authorizes it. The thread is created (seeding ONLY the target
+ * party as participant) if it doesn't exist, and only that party is notified.
  */
 export async function sendAdminMessage(
     candidateId: string,
     jobId: string,
     content: string,
+    conversationType: RecruitoConversationType,
 ): Promise<{ success?: boolean; error?: string }> {
     const { user } = await requireAdmin();
     const normalizedContent = content.trim();
     if (!normalizedContent) return { error: "Empty message" };
 
+    const party = partyOf(conversationType);
     const sb = createAdminClient();
+
+    // Resolve the candidate's company/recruiter so we can seed the single correct
+    // participant and target the notification at exactly that party.
+    const { data: cand } = await sb
+        .from("candidates")
+        .select("mandate_id, recruiter:recruiters(user_id), job:jobs(company:companies(user_id))")
+        .eq("id", candidateId)
+        .single();
+    const rec = firstOf((cand as any)?.recruiter);
+    const job = firstOf((cand as any)?.job);
+    const company = firstOf(job?.company);
+    const mandateId = ((cand as any)?.mandate_id as string | null) ?? null;
+    const partyUserId = (party === "company" ? company?.user_id : rec?.user_id) as string | undefined;
+
+    // If the target party can't be resolved (null user_id / unresolved row), do NOT
+    // create an orphan thread the party could never see — bail before any write.
+    if (!partyUserId) return { error: "Could not open conversation" };
 
     let { data: conv } = await sb
         .from("conversations")
         .select("id, job_id")
         .eq("candidate_id", candidateId)
-        .eq("conversation_type", "recruito")
+        .eq("conversation_type", conversationType)
         .maybeSingle();
 
     if (!conv) {
         const { data: newConv, error: convErr } = await sb
             .from("conversations")
-            .insert({ candidate_id: candidateId, job_id: jobId || null, conversation_type: "recruito" })
+            .insert({ candidate_id: candidateId, job_id: jobId || null, conversation_type: conversationType })
             .select("id, job_id")
             .single();
         if (convErr || !newConv) return { error: "Could not open conversation" };
         conv = newConv;
+
+        // Seed ONLY the target party as participant (single-party private thread).
+        if (partyUserId) {
+            const { error: partErr } = await sb
+                .from("conversation_participants")
+                .upsert(
+                    { conversation_id: conv.id, user_id: partyUserId },
+                    { onConflict: "conversation_id,user_id", ignoreDuplicates: true },
+                );
+            if (partErr) return { error: "Could not open conversation" };
+        }
     }
 
     const { error: msgError } = await sb
@@ -166,32 +234,23 @@ export async function sendAdminMessage(
         .insert({ conversation_id: conv.id, sender_id: user.id, content: normalizedContent });
     if (msgError) return { error: "Could not send message" };
 
-    // Tell the company + recruiter that Recruito replied.
-    const { data: cand } = await sb
-        .from("candidates")
-        .select("mandate_id, recruiter:recruiters(user_id), job:jobs(company:companies(user_id))")
-        .eq("id", candidateId)
-        .single();
-    if (cand) {
-        const rec = Array.isArray((cand as any).recruiter) ? (cand as any).recruiter[0] : (cand as any).recruiter;
-        const job = Array.isArray((cand as any).job) ? (cand as any).job[0] : (cand as any).job;
-        const company = job && (Array.isArray(job.company) ? job.company[0] : job.company);
-        const mandateId = (cand as any).mandate_id as string | null;
+    // Notify ONLY the party this thread belongs to (not both).
+    if (partyUserId) {
         const body = normalizedContent.length > 50 ? normalizedContent.slice(0, 50) + "…" : normalizedContent;
-        const targets = [
-            { uid: company?.user_id as string | undefined, link: `/company/jobs/${conv.job_id}/candidates/${candidateId}` },
-            { uid: rec?.user_id as string | undefined, link: mandateId ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}` : "/recruiter/messages" },
-        ];
-        for (const t of targets) {
-            if (t.uid) {
-                await createNotification(t.uid, {
-                    titleKey: "notif.newMessageTitle",
-                    params: { sender: "Recruito" },
-                    body,
-                    link: t.link,
-                });
-            }
-        }
+        const link =
+            party === "company"
+                ? conv.job_id
+                    ? `/company/jobs/${conv.job_id}/candidates/${candidateId}`
+                    : "/company/messages"
+                : mandateId
+                    ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}`
+                    : "/recruiter/messages";
+        await createNotification(partyUserId, {
+            titleKey: "notif.newMessageTitle",
+            params: { sender: "Recruito" },
+            body,
+            link,
+        });
     }
 
     revalidatePath("/admin/messages");

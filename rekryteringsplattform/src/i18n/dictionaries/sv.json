@@ -984,6 +984,8 @@
   },
   "admin": {
     "dashboardTitle": "Admin Dashboard",
+    "messagesPartyCompany": "Företag",
+    "messagesPartyRecruiter": "Rekryterare",
     "platformOverview": "Plattformsöversikt",
     "companiesStat": "Företag",
     "recruitersStat": "Rekryterare",

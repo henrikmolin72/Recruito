@@ -21,6 +21,10 @@ interface TabbedCandidateChatProps {
     currentUserId: string;
     candidate?: { first_name: string; last_name: string; current_title: string; status: string };
     clientTabLabel: string;
+    // Which PRIVATE Recruito thread this viewer owns: the company side polls/sends
+    // 'recruito_company', the recruiter side 'recruito_recruiter'. The two never
+    // share a thread (migration 060 privacy split).
+    recruitorConversationType: 'recruito_company' | 'recruito_recruiter';
 }
 
 export function TabbedCandidateChat({
@@ -31,6 +35,7 @@ export function TabbedCandidateChat({
     currentUserId,
     candidate,
     clientTabLabel,
+    recruitorConversationType,
 }: TabbedCandidateChatProps) {
     const [activeTab, setActiveTab] = useState<"client" | "recruito">("client");
 
@@ -75,7 +80,7 @@ export function TabbedCandidateChat({
                     initialMessages={recruitorMessages}
                     currentUserId={currentUserId}
                     candidate={candidate}
-                    conversationType="recruito"
+                    conversationType={recruitorConversationType}
                     sendMessageFn={sendRecruitorMessage}
                 />
             </div>

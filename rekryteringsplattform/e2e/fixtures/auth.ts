@@ -15,6 +15,11 @@ export const ADMIN_CREDS: Creds = {
   password: process.env.E2E_ADMIN_PASSWORD ?? "",
 };
 
+export const RECRUITER_CREDS: Creds = {
+  email: process.env.E2E_RECRUITER_EMAIL ?? "",
+  password: process.env.E2E_RECRUITER_PASSWORD ?? "",
+};
+
 export function assertCredsPresent() {
   for (const [k, v] of Object.entries({
     E2E_COMPANY_EMAIL: COMPANY_CREDS.email,
