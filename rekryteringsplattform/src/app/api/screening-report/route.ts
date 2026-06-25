@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       const status = auth.error === "Not authenticated" ? 401 : 403;
       return NextResponse.json({ error: auth.error }, { status });
     }
-    const { admin, userId } = auth;
+    const { admin, userId, isAdmin } = auth;
 
     const rateLimit = await consumeRateLimit({
       key: `api:screening-report:user:${userId}`,
@@ -137,14 +137,14 @@ export async function POST(request: NextRequest) {
       console.error("[screening-report] store", insertError);
     }
 
-    // Populate the candidate's queue score from the report (best-effort). The
-    // admin screening queue shows ai_match_score; deriving it here keeps that
-    // column current after any full screening run — admin or recruiter.
+    // Populate the candidate's company-visible queue score from the report —
+    // ONLY when Recruito (admin) runs the evaluation. A recruiter running the
+    // eval is a self-check: they get the full report (stored above) but must not
+    // set the client-facing score, which is Recruito's independent verdict.
     const matchScore = extractMatchScore(reportMarkdown);
-    if (matchScore !== null) {
-      // Only fill the queue score when it's currently blank — don't clobber a
-      // value the recruiter already set at submission (it's company-visible).
-      // The full report itself is always refreshed regardless of this guard.
+    if (isAdmin && matchScore !== null) {
+      // Only fill the queue score when it's currently blank, so a re-run never
+      // clobbers an already-set value. The full report always refreshes.
       const { error: scoreError } = await admin
         .from("candidates")
         .update({ ai_match_score: matchScore })
