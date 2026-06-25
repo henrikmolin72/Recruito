@@ -52,9 +52,6 @@ export function RecruiterWithdrawControl({
                         <p className="text-[10px] font-black uppercase tracking-widest text-rose-700/70">
                             {r.withdrawCandidate || "Dra tillbaka kandidat"}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                            {r.withdrawControlNote || "Endast företaget och Recruito kan flytta kandidaten i processen."}
-                        </p>
                     </div>
                 </div>
             </CardHeader>
