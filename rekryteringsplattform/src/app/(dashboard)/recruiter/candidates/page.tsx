@@ -17,6 +17,7 @@ type PipelineTabKey =
   | "in_interview"
   | "offer"
   | "rejected"
+  | "withdrawn"
   | "hired";
 
 export default async function RecruiterCandidatesPage({
@@ -32,7 +33,7 @@ export default async function RecruiterCandidatesPage({
   // mandate stages (see lib/mandate-stages). Combined buckets per product:
   //   - Submitted   = submitted-to-client + still-in-review (presented, not yet screened)
   //   - In Interview = interview + final interview
-  //   - Rejected    = rejected + withdrawn
+  //   - Rejected    = rejected (withdrawn has its own tab)
   const tabs: { key: PipelineTabKey; label: string; match: (c: any) => boolean }[] = [
     { key: "all", label: r.tabAllCandidates || "All candidates", match: () => true },
     { key: "drafts", label: r.tabDrafts || "Drafts", match: (c) => candidateInStage(c, "draft") },
@@ -50,7 +51,12 @@ export default async function RecruiterCandidatesPage({
     {
       key: "rejected",
       label: r.colRejected || "Rejected",
-      match: (c) => candidateInStage(c, "rejected") || candidateInStage(c, "withdrawn"),
+      match: (c) => candidateInStage(c, "rejected"),
+    },
+    {
+      key: "withdrawn",
+      label: r.colWithdrawn || "Withdrawn",
+      match: (c) => candidateInStage(c, "withdrawn"),
     },
     { key: "hired", label: r.colHired || "Hired", match: (c) => candidateInStage(c, "hired") },
   ];
