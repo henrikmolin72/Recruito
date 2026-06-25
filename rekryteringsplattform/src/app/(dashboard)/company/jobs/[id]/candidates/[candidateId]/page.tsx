@@ -9,6 +9,7 @@ import { ArrowLeft, Download, Mail, Phone, Linkedin } from "lucide-react";
 import { TabbedCandidateChat } from "@/components/shared/tabbed-candidate-chat";
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
+import { hasCandidateCompensationData } from "@/lib/candidate-form";
 import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
 import { CandidatePresentStatusPanel } from "@/components/dashboard/company/candidate-present-status-panel";
 import { CandidateStageHistoryTimeline } from "@/components/dashboard/company/candidate-stage-history-timeline";
@@ -135,11 +136,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
     // Collapse genuinely-empty sections so legacy / sparsely-presented candidates
     // don't render rows of "Not specified". These fields are now required at
     // presentation time, so new candidates always have data to show.
-    const hasCompensation = !!(
-        candidate.current_salary || candidate.desired_salary || candidate.notice_period ||
-        candidate.first_contact_date || candidate.contact_method ||
-        candidate.current_benefits || candidate.desired_benefits
-    );
+    const hasCompensation = hasCandidateCompensationData(candidate);
     const hasScreeningAnswers = screeningAnswers.some((qa) => qa.answer && qa.answer.trim());
 
     // IMG-18: muted placeholder for empty detail fields. Reuses the existing

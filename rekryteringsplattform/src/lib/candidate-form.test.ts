@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCandidateColumns, getMissingRequiredFields } from "./candidate-form";
+import { parseCandidateColumns, getMissingRequiredFields, hasCandidateCompensationData } from "./candidate-form";
 
 // Builds a FormData representing a fully-completed presentation form.
 function fullFormData(): FormData {
@@ -119,5 +119,34 @@ describe("getMissingRequiredFields", () => {
         const fd = fullFormData();
         fd.delete("screening_answers");
         expect(getMissingRequiredFields(fd, 0)).not.toContain("screening_answers");
+    });
+});
+
+describe("hasCandidateCompensationData", () => {
+    it("returns false when all displayed fields are null", () => {
+        expect(hasCandidateCompensationData({
+            current_salary: null,
+            desired_salary: null,
+            notice_period: null,
+            first_contact_date: null,
+            contact_method: null,
+        })).toBe(false);
+    });
+
+    it("returns false when only benefits fields are set (legacy candidate bug)", () => {
+        // current_benefits/desired_benefits are NOT in the function — this was
+        // the bug: they triggered hasCompensation but nothing was displayed.
+        expect(hasCandidateCompensationData({})).toBe(false);
+    });
+
+    it("returns true when current_salary is set", () => {
+        expect(hasCandidateCompensationData({ current_salary: 60000 })).toBe(true);
+    });
+
+    it("returns true when any single displayed field is set", () => {
+        expect(hasCandidateCompensationData({ notice_period: "1_month" })).toBe(true);
+        expect(hasCandidateCompensationData({ desired_salary: 70000 })).toBe(true);
+        expect(hasCandidateCompensationData({ first_contact_date: "2026-06-01" })).toBe(true);
+        expect(hasCandidateCompensationData({ contact_method: "phone" })).toBe(true);
     });
 });

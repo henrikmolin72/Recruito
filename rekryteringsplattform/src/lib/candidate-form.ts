@@ -86,6 +86,27 @@ export function parseCandidateColumns(formData: FormData): Record<string, any> {
     };
 }
 
+// Returns true when at least one of the fields that are *displayed* in the
+// "Compensation & Availability" section has a value. Fields like
+// current_benefits/desired_benefits are intentionally excluded: they are not
+// rendered in that section, so including them caused the section to appear
+// with every visible field showing "Not specified" for legacy candidates.
+export function hasCandidateCompensationData(candidate: {
+    current_salary?: number | null;
+    desired_salary?: number | null;
+    notice_period?: string | null;
+    first_contact_date?: string | null;
+    contact_method?: string | null;
+}): boolean {
+    return !!(
+        candidate.current_salary ||
+        candidate.desired_salary ||
+        candidate.notice_period ||
+        candidate.first_contact_date ||
+        candidate.contact_method
+    );
+}
+
 // Stable keys returned by getMissingRequiredFields; the client maps these to
 // localized labels for the error banner.
 export type RequiredFieldKey =
