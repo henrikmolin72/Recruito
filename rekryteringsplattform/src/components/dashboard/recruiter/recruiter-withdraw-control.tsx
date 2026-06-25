@@ -25,7 +25,7 @@ export function RecruiterWithdrawControl({
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [withdrawReason, setWithdrawReason] = useState<string>(CANDIDATE_WITHDRAW_REASONS[0].key);
+    const [withdrawReason, setWithdrawReason] = useState<string>("");
 
     const withdraw = () => {
         setError(null);
