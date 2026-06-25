@@ -60,7 +60,9 @@ export function parseCandidateColumns(formData: FormData): Record<string, any> {
         location_status: fdString(formData.get("location_status")) || null,
         portfolio_url: fdString(formData.get("portfolio_url")) || null,
         work_authorization: fdString(formData.get("work_authorization")) || null,
-        ai_match_score: fdOptionalInt(formData.get("ai_match_score")),
+        // ai_match_score is the company-visible AI verdict and is set ONLY by
+        // Recruito (admin) running the evaluation — never by a recruiter's form
+        // submission. See /api/screening-report (admin-gated write).
         employment_status: fdString(formData.get("employment_status")) || null,
         employment_status_reason: fdString(formData.get("employment_reason")) || null,
         other_processes: fdString(formData.get("other_processes")) === "yes",

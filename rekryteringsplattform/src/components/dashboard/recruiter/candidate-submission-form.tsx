@@ -16,7 +16,6 @@ import {
     MessageSquare,
     ClipboardList,
     Upload,
-    AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,11 +95,6 @@ export function CandidateSubmissionForm({
     // --- Email (shared between Verify tool and Personal Details) ---
     const [email, setEmail] = useState(ds("email"));
     const [verifyStatus, setVerifyStatus] = useState<"idle" | "checking" | "ok" | "blocked">("idle");
-
-    // --- Section 2: AI score ---
-    const [aiScore, setAiScore] = useState<number | null>(draft?.ai_match_score ?? null);
-    const [aiScoreLoading, setAiScoreLoading] = useState(false);
-    const [aiHints, setAiHints] = useState<string[]>([]);
 
     // --- Section 2: location status & work auth ---
     const [locationStatus, setLocationStatus] = useState(ds("location_status"));
@@ -199,7 +193,6 @@ export function CandidateSubmissionForm({
                 if (d.noticeNegotiable) setNoticeNegotiable(d.noticeNegotiable);
                 if (d.contactMethod) setContactMethod(d.contactMethod);
                 if (d.screeningAnswers) setScreeningAnswers(d.screeningAnswers);
-                if (d.aiScore !== undefined) setAiScore(d.aiScore);
                 const restoredText: Record<string, string> = {};
                 for (const key of TEXT_DRAFT_KEYS) {
                     if (d[key]) restoredText[key] = d[key];
@@ -261,7 +254,6 @@ export function CandidateSubmissionForm({
                 screeningQuestions.map((q, i) => ({ question: q, answer: screeningAnswers[i] || "" }))
             )
         );
-        if (aiScore !== null) fd.set("ai_match_score", String(aiScore));
     }
 
     async function handleSaveDraft(e: React.MouseEvent) {
@@ -531,27 +523,6 @@ export function CandidateSubmissionForm({
                                         input.value = "";
                                         if (!f || f.size > 5 * 1024 * 1024) return;
                                         setCvFile(f);
-                                        const isPdf = f.type === "application/pdf" || f.name.endsWith(".pdf");
-                                        if (!isPdf) return;
-                                        setAiScoreLoading(true);
-                                        try {
-                                            const fd = new FormData();
-                                            fd.append("cv_file", f);
-                                            fd.append("mandate_id", mandateId);
-                                            const res = await fetch("/api/cv-match", { method: "POST", body: fd });
-                                            if (res.ok) {
-                                                const { score, hints } = await res.json();
-                                                setAiScore(score);
-                                                setAiHints(Array.isArray(hints) ? hints : []);
-                                            } else {
-                                                const { error } = await res.json().catch(() => ({ error: "Scoring failed" }));
-                                                toast.error(`AI scoring failed: ${error || res.status}. Set score manually.`);
-                                            }
-                                        } catch (err: any) {
-                                            toast.error(`AI scoring failed: ${err?.message || "network error"}. Set score manually.`);
-                                        } finally {
-                                            setAiScoreLoading(false);
-                                        }
                                     }}
                                 />
                                 {cvFile ? (
@@ -562,7 +533,7 @@ export function CandidateSubmissionForm({
                                         </div>
                                         <button
                                             type="button"
-                                            onClick={() => { setCvFile(null); setAiScore(null); setAiHints([]); cvInputRef.current?.click(); }}
+                                            onClick={() => { setCvFile(null); cvInputRef.current?.click(); }}
                                             className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
                                         >
                                             <Trash2 className="h-4 w-4" />
@@ -578,80 +549,6 @@ export function CandidateSubmissionForm({
                             </div>
                         </div>
 
-                        {/* AI Match Score — tier pill + improvement hints */}
-                        {(() => {
-                            const tier =
-                                aiScore === null
-                                    ? null
-                                    : aiScore >= 80
-                                        ? "strong"
-                                        : aiScore >= 60
-                                            ? "moderate"
-                                            : "weak";
-                            const tierLabel =
-                                tier === "strong"
-                                    ? r.aiMatchStrong || "Strong Match"
-                                    : tier === "moderate"
-                                        ? r.aiMatchModerate || "Moderate Match"
-                                        : tier === "weak"
-                                            ? r.aiMatchWeak || "Weak Match"
-                                            : null;
-                            const scoreColor =
-                                tier === "strong"
-                                    ? "text-emerald-600"
-                                    : tier === "moderate"
-                                        ? "text-amber-600"
-                                        : tier === "weak"
-                                            ? "text-red-500"
-                                            : "text-slate-400";
-                            const pillClass =
-                                tier === "strong"
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : tier === "moderate"
-                                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                                        : "bg-red-50 text-red-700 border-red-200";
-                            return (
-                                <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
-                                    <div className="flex items-center justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <Label>{r.aiMatchScore || "AI Match Score"}</Label>
-                                            {tierLabel && (
-                                                <span className={`text-[11px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${pillClass}`}>
-                                                    {tierLabel}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className={`text-3xl font-black tabular-nums text-right ${scoreColor}`}>
-                                            {aiScoreLoading ? "…" : (aiScore ?? "—")}%
-                                        </div>
-                                    </div>
-                                    {aiScore !== null && aiHints.length > 0 && (
-                                        <div className="mt-3 bg-white border border-slate-200 rounded-lg p-3">
-                                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-2">
-                                                {r.aiMatchHintsTitle || "Improvement hints"}
-                                            </p>
-                                            <ul className="space-y-1.5">
-                                                {aiHints.map((hint, idx) => (
-                                                    <li key={idx} className="text-xs text-slate-700 flex gap-2">
-                                                        <span className="text-brand-500 font-bold mt-0.5">•</span>
-                                                        <span>{hint}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                            <p className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500 leading-relaxed">
-                                                <strong className="font-semibold text-slate-700">{r.aiMatchHintsNoteLabel}</strong>{" "}{r.aiMatchHintsNote}
-                                            </p>
-                                        </div>
-                                    )}
-                                    {aiScore !== null && aiScore < 80 && aiHints.length === 0 && (
-                                        <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                                            <p className="text-xs text-amber-800 font-medium">{r.aiMatchWarning}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })()}
                     </div>
                 </div>
 

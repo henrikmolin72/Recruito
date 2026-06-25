@@ -49,6 +49,15 @@ describe("parseCandidateColumns", () => {
         expect(cols.language_proficiency).toHaveLength(1);
     });
 
+    it("never sets ai_match_score from the form — that score is Recruito-owned (A1)", () => {
+        // Even if a crafted submission includes ai_match_score, the parser must not
+        // carry it through: the company-visible AI verdict is set only by Recruito
+        // running the evaluation, never by a recruiter's submission.
+        const fd = fullFormData();
+        fd.set("ai_match_score", "95");
+        expect(parseCandidateColumns(fd).ai_match_score).toBeUndefined();
+    });
+
     it("maps the single 'expected' input to BOTH desired_salary and expected_salary", () => {
         const cols = parseCandidateColumns(fullFormData());
         expect(cols.expected_salary).toBe(70000);
