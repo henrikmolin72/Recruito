@@ -367,18 +367,20 @@ export async function getCompanyJobs() {
         .select(`
       *,
       candidates:candidates(recruito_screened_at, recruiter_id),
-      mandates:job_mandates(count)
+      mandates:job_mandates(recruiter_id)
     `)
         .eq("company_id", company.id)
         .order("created_at", { ascending: false });
 
     return jobs?.map((job) => ({
         ...job,
-        // "Recruiters" = recruiters working the job who have NOT delivered a
-        // candidate (delivered ones show up in the Candidates column). Expired-
-        // without-delivery recruiters still count. See countRecruitersWithoutDelivery.
+        // "Recruiters" = DISTINCT recruiters working the job who have NOT delivered
+        // a candidate (delivered ones show up in the Candidates column). Expired-
+        // without-delivery recruiters still count. We pass the mandate rows'
+        // recruiter_ids (not a raw row count) so duplicate/stale job_mandates rows
+        // don't inflate the number. See countRecruitersWithoutDelivery.
         recruiters_count: countRecruitersWithoutDelivery(
-            job.mandates?.[0]?.count ?? job.current_recruiter_count ?? 0,
+            (job.mandates || []).map((m: any) => m.recruiter_id),
             job.candidates || [],
         ),
         // Only count candidates Recruito has presented & approved (recruito_screened_at
