@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
+    // React's dev build needs the 'unsafe-eval' CSP token for debugging features
+    // (callstack reconstruction). Allow it ONLY in development so the dev console
+    // stays clean; production stays locked down (React never needs it in prod).
+    const scriptSrc =
+      process.env.NODE_ENV === "development"
+        ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+        : "script-src 'self' 'unsafe-inline'";
     return [
       {
         source: "/(.*)",
@@ -40,7 +47,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
