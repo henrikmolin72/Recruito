@@ -8,6 +8,7 @@ import { feeReconfirmEmail } from "@/lib/email/email-templates";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { createNotification } from "@/lib/notifications/create";
 import { getDictionary } from "@/i18n/server";
+import { countRecruiterCandidateBuckets } from "@/lib/candidate-workflow";
 import type { ClientFeeUpliftReason } from "@/types/db-types";
 
 function pickFirst<T>(value: T | T[] | null | undefined): T | null {
@@ -87,8 +88,21 @@ export async function getAdminRecruiters() {
 
     const profilesMap = Object.fromEntries((profilesRes.data || []).map(p => [p.id, p]));
 
+    // Active + rejected candidate counts per recruiter. One indexed query over
+    // (recruiter_id, status) for all listed recruiters, then bucket in memory via
+    // the canonical workflow predicates — no per-recruiter N+1, no status strings here.
+    const recruiterIds = (recruiters || []).map(r => r.id);
+    const candidatesRes = recruiterIds.length > 0
+        ? await supabaseAdmin.from("candidates").select("recruiter_id, status").in("recruiter_id", recruiterIds)
+        : { data: [] };
+    const statusesByRecruiter: Record<string, (string | null)[]> = {};
+    for (const c of (candidatesRes.data || []) as Array<{ recruiter_id: string; status: string | null }>) {
+        (statusesByRecruiter[c.recruiter_id] ??= []).push(c.status);
+    }
+
     return (recruiters || []).map((r: any) => {
         const profile = profilesMap[r.user_id];
+        const { active, rejected } = countRecruiterCandidateBuckets(statusesByRecruiter[r.id] || []);
         return {
             id: r.id,
             user_id: r.user_id,
@@ -98,6 +112,8 @@ export async function getAdminRecruiters() {
             status: r.approval_status || "pending",
             rating: r.rating || 0,
             placements: r.total_placements || 0,
+            activeCandidates: active,
+            rejectedCandidates: rejected,
             years_experience: r.years_experience || 0,
             joinedAt: r.created_at,
         };

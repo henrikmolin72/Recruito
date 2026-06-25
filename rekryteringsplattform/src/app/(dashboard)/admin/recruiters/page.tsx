@@ -26,9 +26,10 @@ export default async function AdminRecruitersPage() {
             <thead>
               <tr className="border-b border-border text-left">
                 <th className="p-4 font-medium text-muted-foreground">{a.tableRecruiter}</th>
-                <th className="p-4 font-medium text-muted-foreground">{a.tableTitleColumn}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableJoiningDate}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableStatusColumn}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tableActiveCandidates}</th>
+                <th className="p-4 font-medium text-muted-foreground">{a.tableRejected}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tablePlacements}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableRating}</th>
                 <th className="p-4 font-medium text-muted-foreground">{a.tableActions}</th>
@@ -36,7 +37,7 @@ export default async function AdminRecruitersPage() {
             </thead>
             <tbody>
               {recruiters.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">{a.noRecruitersRegistered}</td></tr>
+                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{a.noRecruitersRegistered}</td></tr>
               ) : (
                 recruiters.map((r) => (
                   <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/50">
@@ -49,13 +50,14 @@ export default async function AdminRecruitersPage() {
                         </div>
                       </Link>
                     </td>
-                    <td className="p-4 text-muted-foreground">{r.headline || dict.common.noDataDash}</td>
                     <td className="p-4 text-muted-foreground">{r.joinedAt ? formatDateShort(r.joinedAt) : dict.common.noDataDash}</td>
                     <td className="p-4">
                       <Badge variant={r.status === "approved" ? "success" : r.status === "pending" ? "warning" : "danger"}>
                         {r.status === "approved" ? a.statusApproved : r.status === "pending" ? a.statusPending : r.status === "rejected" ? a.statusRejected : a.statusSuspended}
                       </Badge>
                     </td>
+                    <td className="p-4">{r.activeCandidates}</td>
+                    <td className="p-4">{r.rejectedCandidates}</td>
                     <td className="p-4">{r.placements}</td>
                     <td className="p-4">
                       {r.rating > 0 ? (

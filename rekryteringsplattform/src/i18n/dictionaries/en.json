@@ -1011,6 +1011,8 @@
     "tableTitleColumn": "Title",
     "tableStatusColumn": "Status",
     "tablePlacements": "Placements",
+    "tableActiveCandidates": "Active candidates",
+    "tableRejected": "Rejected",
     "tableRating": "Rating",
     "tableActions": "Actions",
     "noRecruitersRegistered": "No recruiters registered",

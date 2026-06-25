@@ -3,6 +3,9 @@ import {
     canTransitionCandidateStatus,
     CANDIDATE_WITHDRAW_BLOCKED_STATUSES,
     CANDIDATE_WITHDRAW_REASONS,
+    isCandidateRejected,
+    isCandidateInProcess,
+    countRecruiterCandidateBuckets,
 } from "./candidate-workflow";
 
 // Workflow spec: Withdrawn can be triggered from Draft, In Review, Submitted,
@@ -64,5 +67,87 @@ describe("candidate withdrawal rules", () => {
             "Duplicate candidate submission",
             "Other",
         ]);
+    });
+});
+
+// Pins the bucket definitions behind the admin recruiters table's "Active
+// candidates" and "Rejected" columns. The error-prone cases are the ones that
+// must fall into NEITHER bucket (drafts, hired/completed, candidate withdrawals).
+describe("isCandidateRejected", () => {
+    it("counts Recruito-side screening rejections", () => {
+        expect(isCandidateRejected("recruito_rejected")).toBe(true);
+        expect(isCandidateRejected("duplicate_rejected")).toBe(true);
+        expect(isCandidateRejected("client_already_engaged")).toBe(true);
+    });
+
+    it("counts client-side rejections, including interview-stage", () => {
+        expect(isCandidateRejected("rejected_client")).toBe(true);
+        expect(isCandidateRejected("rejected_interview")).toBe(true);
+    });
+
+    it("normalizes the legacy 'rejected' status into the rejected bucket", () => {
+        expect(isCandidateRejected("rejected")).toBe(true);
+    });
+
+    it("does NOT count candidate-driven exits or completion", () => {
+        expect(isCandidateRejected("offer_declined")).toBe(false);
+        expect(isCandidateRejected("candidate_withdrawn")).toBe(false);
+        expect(isCandidateRejected("declined")).toBe(false);
+        expect(isCandidateRejected("completed")).toBe(false);
+    });
+
+    it("does NOT count drafts, in-flight, or hired", () => {
+        expect(isCandidateRejected("draft")).toBe(false);
+        expect(isCandidateRejected("under_client_review")).toBe(false);
+        expect(isCandidateRejected("hired")).toBe(false);
+        expect(isCandidateRejected(null)).toBe(false);
+        expect(isCandidateRejected(undefined)).toBe(false);
+    });
+});
+
+describe("isCandidateInProcess (the 'active' definition)", () => {
+    it("is active for in-flight statuses", () => {
+        expect(isCandidateInProcess("submitted")).toBe(true);
+        expect(isCandidateInProcess("under_client_review")).toBe(true);
+        expect(isCandidateInProcess("interview_stage_2")).toBe(true);
+        expect(isCandidateInProcess("on_hold")).toBe(true);
+    });
+
+    it("treats draft as in-process globally (the recruiter-table helper excludes it separately)", () => {
+        expect(isCandidateInProcess("draft")).toBe(true);
+    });
+
+    it("is NOT active for rejections, hired, or completed", () => {
+        expect(isCandidateInProcess("rejected")).toBe(false);
+        expect(isCandidateInProcess("recruito_rejected")).toBe(false);
+        expect(isCandidateInProcess("hired")).toBe(false);
+        expect(isCandidateInProcess("guarantee_period")).toBe(false);
+        expect(isCandidateInProcess("completed")).toBe(false);
+        expect(isCandidateInProcess("candidate_withdrawn")).toBe(false);
+    });
+});
+
+describe("countRecruiterCandidateBuckets", () => {
+    it("buckets a mixed list into active + rejected, ignoring the rest", () => {
+        const statuses = [
+            "submitted",            // active
+            "under_client_review",  // active
+            "interview_stage_2",    // active
+            "recruito_rejected",    // rejected
+            "rejected_client",      // rejected
+            "rejected",             // rejected (legacy → rejected_client)
+            "rejected_interview",   // rejected
+            "duplicate_rejected",   // rejected
+            "draft",                // neither
+            "hired",                // neither
+            "completed",            // neither
+            "candidate_withdrawn",  // neither
+            null,                   // neither
+        ];
+        expect(countRecruiterCandidateBuckets(statuses)).toEqual({ active: 3, rejected: 5 });
+    });
+
+    it("returns zeros for an empty list", () => {
+        expect(countRecruiterCandidateBuckets([])).toEqual({ active: 0, rejected: 0 });
     });
 });

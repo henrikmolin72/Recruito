@@ -1011,6 +1011,8 @@
     "tableTitleColumn": "Tittel",
     "tableStatusColumn": "Status",
     "tablePlacements": "Plasseringer",
+    "tableActiveCandidates": "Aktive kandidater",
+    "tableRejected": "Avviste",
     "tableRating": "Vurdering",
     "tableActions": "Handlinger",
     "noRecruitersRegistered": "Ingen rekrutterere registrert",

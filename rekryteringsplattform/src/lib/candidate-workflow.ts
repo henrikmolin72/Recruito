@@ -116,6 +116,44 @@ export function isCandidateInProcess(status: string | null | undefined): boolean
   );
 }
 
+// Candidates a recruiter had REJECTED — by Recruito (screening) or by the client.
+// Stored on normalized values: legacy "rejected" maps to "rejected_client" via
+// normalizeCandidateStatusForWorkflow, so isCandidateRejected catches it too.
+// Deliberately excludes candidate-driven exits (offer_declined, candidate_withdrawn,
+// declined) and "completed" — those are terminal but not rejections.
+export const REJECTED_CANDIDATE_STATUSES = new Set<string>([
+  "recruito_rejected", // by Recruito (admin screening)
+  "duplicate_rejected", // by Recruito (screening)
+  "client_already_engaged", // by Recruito (screening)
+  "rejected_client", // by Client (also the normalized target of legacy "rejected")
+  "rejected_interview", // by Client (rejected at interview stage)
+]);
+
+export function isCandidateRejected(status: string | null | undefined): boolean {
+  if (!status) return false;
+  return REJECTED_CANDIDATE_STATUSES.has(normalizeCandidateStatusForWorkflow(status));
+}
+
+/**
+ * Bucket a flat list of candidate statuses into the two counts shown on the admin
+ * recruiters table. A status is at most one of these. Drafts are excluded from
+ * "active" by design — note isCandidateInProcess() itself treats draft as in-process
+ * (auto-reject cascades depend on that), so draft is excluded here explicitly rather
+ * than by changing the shared predicate. Hired/completed and candidate-driven exits
+ * (withdrawn/declined) fall into neither bucket.
+ */
+export function countRecruiterCandidateBuckets(
+  statuses: (string | null | undefined)[],
+): { active: number; rejected: number } {
+  let active = 0;
+  let rejected = 0;
+  for (const s of statuses) {
+    if (s !== "draft" && isCandidateInProcess(s)) active++;
+    else if (isCandidateRejected(s)) rejected++;
+  }
+  return { active, rejected };
+}
+
 // Per workflow spec: Withdrawn can be triggered from Draft, In Review,
 // Submitted, Interview, Final Interview and Offer — but never from Hired
 // or Rejected.
