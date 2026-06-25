@@ -152,6 +152,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                             : null}
                     />
                     <OverviewItem label="Contract" value={formatEnumLabel(job.employment_type)} />
+                    <OverviewItem label="Industry" value={job.industry ?? null} />
                     <OverviewItem label="Experience" value={job.experience_bracket} />
                     <OverviewItem
                         label="Language"
@@ -259,7 +260,6 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                 <div className="md:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                     <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Additional Information</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
-                        {job.industry && <InfoItem label="Industry" value={job.industry} />}
                         {job.reporting_to && <InfoItem label="Reports To" value={job.reporting_to} />}
                         {job.working_hours && <InfoItem label="Working Hours" value={job.working_hours} />}
                         {job.shift_work && <InfoItem label={shiftWorkLabel} value={job.shift_work.charAt(0).toUpperCase() + job.shift_work.slice(1)} />}

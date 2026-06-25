@@ -12,7 +12,7 @@ import { getRecruiterMandateById } from "@/lib/actions/recruiter";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
-import { formatCurrency, formatDate, calculateClientFee } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
@@ -151,32 +151,6 @@ export default async function RecruiterMandateDetailsPage({
         <p className="text-sm text-amber-800">{r.confidentialNote}</p>
       </div>
 
-      <Card>
-        <CardContent className="p-6 grid md:grid-cols-3 gap-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{r.industryLabel}</p>
-            <p className="mt-1 text-sm">{mandate.industry || dict.common.notSpecified}</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{r.feeLabel}</p>
-            <p className="mt-1 text-sm">
-              {mandate.client_fee_amount != null
-                ? formatCurrency(Number(mandate.client_fee_amount), mandate.salary_currency || "EUR")
-                : (mandate.salary_max || mandate.salary_min)
-                  ? formatCurrency(calculateClientFee(mandate.salary_max || mandate.salary_min, mandate.guarantee_period_months ?? 0, !!mandate.is_exclusive), mandate.salary_currency || "EUR")
-                  : mandate.fee_percentage ? `${mandate.fee_percentage}%` : dict.common.notSpecifiedNeutral}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{r.salaryRange}</p>
-            <p className="mt-1 text-sm">
-              {(mandate.salary_max || mandate.salary_min)
-                ? `${formatCurrency(mandate.salary_max || mandate.salary_min)} ${mandate.salary_currency || "EUR"}`
-                : dict.common.notSpecifiedNeutral}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {announcements.length > 0 && (
         <Card>
