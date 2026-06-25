@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { stripHtml } from "@/lib/sanitize";
+import { isAdminUser } from "@/lib/auth/is-admin";
 
 export const runtime = "nodejs";
 
@@ -58,7 +59,7 @@ async function getAuthenticatedRecruiterContext() {
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
 
-  if (profile?.role === "admin") {
+  if (isAdminUser(user, profile)) {
     return { userId: user.id, recruiterId: null, isAdmin: true, admin } as const;
   }
 

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications/create";
+import { isAdminUser } from "@/lib/auth/is-admin";
 
 // The thread types this module reads/writes. 'client' is the company↔recruiter
 // thread; the two 'recruito_*' types are the PRIVATE per-party Recruito/admin
@@ -187,7 +188,7 @@ export async function getCandidateConversation(candidateId: string, conversation
         .select("role")
         .eq("id", user.id)
         .maybeSingle();
-    const isAdmin = (profile as any)?.role === "admin";
+    const isAdmin = isAdminUser(user, profile as any);
 
     if (!isAdmin) {
         const parties = await resolveCandidateParties(supabase, candidateId);
