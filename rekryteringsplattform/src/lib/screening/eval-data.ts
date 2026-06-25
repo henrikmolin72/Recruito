@@ -6,6 +6,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAdminUser } from "@/lib/auth/is-admin";
 import { stripHtml } from "@/lib/sanitize";
 import type { EvalConfig, ScreeningAnswer } from "./evaluation-prompt";
 
@@ -26,8 +27,11 @@ export async function authorizeMandate(mandateId: string): Promise<AuthResult> {
 
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
-  const isAdmin = profile?.role === "admin";
-  if (profile?.role !== "recruiter" && !isAdmin) {
+  // Admins are authorized via the canonical app_metadata.role (what requireAdmin and
+  // the admin route surface trust); profiles.role is OR'd in for resilience. Checking
+  // profiles.role alone wrongly denied admins whose profiles.role had drifted.
+  const isAdmin = isAdminUser(user, profile);
+  if (!isAdmin && profile?.role !== "recruiter") {
     return { error: "Recruiter profile required" };
   }
 
