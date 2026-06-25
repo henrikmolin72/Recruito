@@ -6,6 +6,9 @@ import {
     isCandidateRejected,
     isCandidateInProcess,
     countRecruiterCandidateBuckets,
+    isCandidateSubmitted,
+    isCandidateInInterview,
+    countCompanyCandidateBuckets,
 } from "./candidate-workflow";
 
 // Workflow spec: Withdrawn can be triggered from Draft, In Review, Submitted,
@@ -149,5 +152,72 @@ describe("countRecruiterCandidateBuckets", () => {
 
     it("returns zeros for an empty list", () => {
         expect(countRecruiterCandidateBuckets([])).toEqual({ active: 0, rejected: 0 });
+    });
+});
+
+// Pins the buckets behind the admin companies table's "Candidates Submitted",
+// "In interview" and "Rejected" columns. Unlike the recruiter buckets these are
+// NOT mutually exclusive — Submitted is a superset.
+describe("isCandidateInInterview", () => {
+    it("counts every interview stage, including legacy 'interview'", () => {
+        expect(isCandidateInInterview("interview_stage_1")).toBe(true);
+        expect(isCandidateInInterview("interview_stage_2")).toBe(true);
+        expect(isCandidateInInterview("interview_stage_3")).toBe(true);
+        expect(isCandidateInInterview("final_interview")).toBe(true);
+        expect(isCandidateInInterview("interview")).toBe(true); // legacy → interview_stage_1
+    });
+
+    it("does NOT count pre/post-interview statuses", () => {
+        expect(isCandidateInInterview("submitted")).toBe(false);
+        expect(isCandidateInInterview("under_client_review")).toBe(false);
+        expect(isCandidateInInterview("rejected_client")).toBe(false);
+        expect(isCandidateInInterview("hired")).toBe(false);
+        expect(isCandidateInInterview("draft")).toBe(false);
+        expect(isCandidateInInterview(null)).toBe(false);
+    });
+});
+
+describe("isCandidateSubmitted (all non-draft)", () => {
+    it("counts everything that left draft, including interview/rejected/hired", () => {
+        expect(isCandidateSubmitted("submitted")).toBe(true);
+        expect(isCandidateSubmitted("under_client_review")).toBe(true);
+        expect(isCandidateSubmitted("interview_stage_2")).toBe(true);
+        expect(isCandidateSubmitted("rejected_client")).toBe(true);
+        expect(isCandidateSubmitted("hired")).toBe(true);
+        expect(isCandidateSubmitted("completed")).toBe(true);
+    });
+
+    it("does NOT count drafts or empty", () => {
+        expect(isCandidateSubmitted("draft")).toBe(false);
+        expect(isCandidateSubmitted(null)).toBe(false);
+        expect(isCandidateSubmitted(undefined)).toBe(false);
+    });
+});
+
+describe("countCompanyCandidateBuckets", () => {
+    it("buckets a mixed list; Submitted is a superset of In interview + Rejected", () => {
+        const statuses = [
+            "draft",              // none
+            "submitted",          // submitted
+            "under_client_review", // submitted
+            "interview_stage_2",  // submitted + in interview
+            "final_interview",    // submitted + in interview
+            "interview",          // submitted + in interview (legacy)
+            "rejected_client",    // submitted + rejected
+            "recruito_rejected",  // submitted + rejected
+            "rejected_interview", // submitted + rejected
+            "hired",              // submitted
+            "completed",          // submitted
+            null,                 // none
+        ];
+        expect(countCompanyCandidateBuckets(statuses)).toEqual({
+            submitted: 10,
+            inInterview: 3,
+            rejected: 3,
+        });
+    });
+
+    it("returns zeros for an empty list", () => {
+        expect(countCompanyCandidateBuckets([])).toEqual({ submitted: 0, inInterview: 0, rejected: 0 });
     });
 });

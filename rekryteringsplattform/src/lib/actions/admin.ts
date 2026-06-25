@@ -8,7 +8,7 @@ import { feeReconfirmEmail } from "@/lib/email/email-templates";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { createNotification } from "@/lib/notifications/create";
 import { getDictionary } from "@/i18n/server";
-import { countRecruiterCandidateBuckets } from "@/lib/candidate-workflow";
+import { countRecruiterCandidateBuckets, countCompanyCandidateBuckets } from "@/lib/candidate-workflow";
 import type { ClientFeeUpliftReason } from "@/types/db-types";
 
 function pickFirst<T>(value: T | T[] | null | undefined): T | null {
@@ -302,6 +302,10 @@ export async function getAdminCompanies() {
     await requireAdmin();
     const supabaseAdmin = createAdminClient();
 
+    // Embed jobs + their candidate statuses so the candidate funnel columns can be
+    // bucketed in JS via the canonical candidate-workflow predicates. Selecting only
+    // status keeps the payload lean; revisit with a DB-side aggregate if a company
+    // ever accumulates very large candidate volumes.
     const { data, error } = await supabaseAdmin
         .from("companies")
         .select(`
@@ -315,7 +319,10 @@ export async function getAdminCompanies() {
                 full_name,
                 email
             ),
-            jobs:jobs (count),
+            jobs:jobs (
+                id,
+                candidates:candidates ( status )
+            ),
             placements:placements (count)
         `)
         .order("created_at", { ascending: false });
@@ -327,6 +334,11 @@ export async function getAdminCompanies() {
 
     return (data || []).map((company: any) => {
         const profile = pickFirst(company.profile);
+        const jobsArr = Array.isArray(company.jobs) ? company.jobs : [];
+        const statuses = jobsArr.flatMap((j: any) =>
+            (Array.isArray(j.candidates) ? j.candidates : []).map((c: any) => c.status),
+        );
+        const { submitted, inInterview, rejected } = countCompanyCandidateBuckets(statuses);
         return {
             id: company.id,
             name: company.company_name || "Okänt företag",
@@ -334,8 +346,11 @@ export async function getAdminCompanies() {
             industry: company.industry || "",
             contact: profile?.full_name || "",
             email: profile?.email || "",
-            jobs: company.jobs?.[0]?.count || 0,
+            jobs: jobsArr.length,
             hired: company.placements?.[0]?.count || 0,
+            candidatesSubmitted: submitted,
+            inInterview,
+            rejectedCandidates: rejected,
             approvalStatus: company.approval_status || "approved",
             joinedAt: company.created_at,
         };

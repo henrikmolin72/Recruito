@@ -154,6 +154,42 @@ export function countRecruiterCandidateBuckets(
   return { active, rejected };
 }
 
+// "Submitted" = every candidate that has left draft, i.e. was actually submitted
+// into the pipeline. Deliberately a SUPERSET of in-interview/rejected/hired — the
+// admin companies table shows it as a funnel total, so it does NOT sum with the
+// other columns. Normalizes first so any legacy alias is handled consistently.
+export function isCandidateSubmitted(status: string | null | undefined): boolean {
+  if (!status) return false;
+  return normalizeCandidateStatusForWorkflow(status) !== "draft";
+}
+
+// "In interview" = interview_stage_1..3 + final_interview. Normalizes first so the
+// legacy "interview" status (→ interview_stage_1) is counted; isInterviewWorkflowStatus
+// alone tests the raw value and would miss it.
+export function isCandidateInInterview(status: string | null | undefined): boolean {
+  if (!status) return false;
+  return isInterviewWorkflowStatus(normalizeCandidateStatusForWorkflow(status));
+}
+
+/**
+ * Bucket a flat list of candidate statuses for the admin companies table. Unlike
+ * the recruiter buckets these are NOT mutually exclusive: an interviewing or
+ * rejected candidate is also counted in `submitted`. Drafts count toward none.
+ */
+export function countCompanyCandidateBuckets(
+  statuses: (string | null | undefined)[],
+): { submitted: number; inInterview: number; rejected: number } {
+  let submitted = 0;
+  let inInterview = 0;
+  let rejected = 0;
+  for (const s of statuses) {
+    if (isCandidateSubmitted(s)) submitted++;
+    if (isCandidateInInterview(s)) inInterview++;
+    if (isCandidateRejected(s)) rejected++;
+  }
+  return { submitted, inInterview, rejected };
+}
+
 // Per workflow spec: Withdrawn can be triggered from Draft, In Review,
 // Submitted, Interview, Final Interview and Offer — but never from Hired
 // or Rejected.
