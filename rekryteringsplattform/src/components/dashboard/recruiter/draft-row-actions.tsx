@@ -36,12 +36,14 @@ export function DraftRowActions({
 
     return (
         <div className="flex items-center gap-3">
-            <Link
-                href={`/recruiter/mandates/${mandateId}/candidates/new?draftId=${draftId}`}
-                className="text-brand-600 hover:text-brand-700 font-medium"
-            >
-                {resume}
-            </Link>
+            {mandateId && (
+                <Link
+                    href={`/recruiter/mandates/${mandateId}/candidates/new?draftId=${draftId}`}
+                    className="text-brand-600 hover:text-brand-700 font-medium"
+                >
+                    {resume}
+                </Link>
+            )}
             <button
                 type="button"
                 onClick={onDelete}

@@ -145,3 +145,28 @@ export function candidateInStage(c: StageCandidate, stage: MandateStage): boolea
 export function isMandateStage(value: string | null | undefined): value is MandateStage {
     return !!value && (MANDATE_STAGE_KEYS as string[]).includes(value);
 }
+
+// Which tab a mandate is grouped under in the recruiter "My Mandates" view.
+export type MandateTabKey = "active" | "closed" | "hired";
+
+// Job statuses that mean the client closed the mandate (vs. it expiring because
+// the recruiter delivered nothing). Paused (auto-pause on cap) stays Active.
+export const CLIENT_CLOSED_JOB_STATUSES = new Set(["closed", "filled", "cancelled"]);
+
+export interface ClassifiableMandate {
+    status: string | null;
+    candidates: StageCandidate[];
+}
+
+// Buckets a mandate into the recruiter's My-Mandates tabs. There is deliberately
+// no "expired" bucket: the daily expiry cron releases timer-expired mandates
+// (is_active=false) and they drop out of the recruiter's mandate query entirely,
+// resurfacing under Browse Jobs with the "Worked Previously" tag. In the brief
+// window before the cron runs, a timer-expired mandate classifies as "active";
+// the per-row expiry check still disables Refer and shows the "Expired" label.
+export function classifyMandate(m: ClassifiableMandate): MandateTabKey {
+    const hasHired = (m.candidates || []).some((c) => candidateInStage(c, "hired"));
+    if (hasHired) return "hired";
+    if (m.status && CLIENT_CLOSED_JOB_STATUSES.has(m.status)) return "closed";
+    return "active";
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { candidateInStage, mandateExpiryDaysLeft, MANDATE_EXPIRY_DAYS } from "./mandate-stages";
+import { candidateInStage, classifyMandate, mandateExpiryDaysLeft, MANDATE_EXPIRY_DAYS } from "./mandate-stages";
 
 const DAY = 86_400_000;
 const NOW = new Date("2026-05-31T12:00:00.000Z").getTime();
@@ -78,5 +78,35 @@ describe("candidateInStage", () => {
         expect(candidateInStage({ status: "candidate_withdrawn" }, "rejected")).toBe(false);
         expect(candidateInStage({ status: "rejected_client" }, "rejected")).toBe(true);
         expect(candidateInStage({ status: "rejected_client" }, "withdrawn")).toBe(false);
+    });
+});
+
+// The "Expired" tab was removed: timer-expired mandates are released by the cron
+// (is_active=false) and drop out of the recruiter's mandate query. These tests
+// pin that there is no "expired" bucket — a timer-expired-but-still-active
+// mandate falls into "active", with the per-row expiry UI carrying the signal.
+describe("classifyMandate", () => {
+    it("classifies a mandate with a hired candidate as hired", () => {
+        expect(classifyMandate({ status: "active", candidates: [{ status: "hired" }] })).toBe("hired");
+    });
+
+    it("classifies a client-closed/filled/cancelled job as closed", () => {
+        expect(classifyMandate({ status: "closed", candidates: [] })).toBe("closed");
+        expect(classifyMandate({ status: "filled", candidates: [] })).toBe("closed");
+        expect(classifyMandate({ status: "cancelled", candidates: [] })).toBe("closed");
+    });
+
+    it("classifies a fresh open mandate as active", () => {
+        expect(classifyMandate({ status: "active", candidates: [] })).toBe("active");
+    });
+
+    it("classifies a timer-expired but still-open mandate as active (no expired bucket)", () => {
+        // A mandate whose every candidate was rejected (timer would have run out)
+        // is no longer its own bucket — it stays in active until the cron releases it.
+        expect(classifyMandate({ status: "active", candidates: [{ status: "rejected_client" }] })).toBe("active");
+    });
+
+    it("prioritizes hired over a client-closed job status", () => {
+        expect(classifyMandate({ status: "filled", candidates: [{ status: "hired" }] })).toBe("hired");
     });
 });
