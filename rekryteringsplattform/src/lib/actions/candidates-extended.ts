@@ -296,5 +296,6 @@ export async function deleteDraftCandidate(candidateId: string) {
         return { error: "Kunde inte ta bort utkast." };
     }
     revalidatePath("/recruiter/mandates");
+    revalidatePath("/recruiter/candidates");
     return { success: true };
 }

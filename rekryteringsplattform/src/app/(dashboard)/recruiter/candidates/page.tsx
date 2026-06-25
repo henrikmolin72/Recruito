@@ -8,6 +8,7 @@ import Link from "next/link";
 import { getDictionary } from "@/i18n/server";
 import { candidateInStage } from "@/lib/mandate-stages";
 import { Eye, EyeOff } from "lucide-react";
+import { DraftRowActions } from "@/components/dashboard/recruiter/draft-row-actions";
 
 type PipelineTabKey =
   | "all"
@@ -125,12 +126,18 @@ export default async function RecruiterCandidatesPage({
                         <Avatar initials={(candidate.first_name?.[0] || "") + (candidate.last_name?.[0] || "")} size="lg" />
                         <div className="flex-1">
                           <div className="flex items-center gap-3 flex-wrap">
-                            <h3 className="font-semibold">{candidate.first_name} {candidate.last_name}</h3>
+                            <h3 className="font-semibold">
+                              {(candidate.first_name || candidate.last_name)
+                                ? `${candidate.first_name ?? ""} ${candidate.last_name ?? ""}`.trim()
+                                : (r.unnamedDraft || "Unnamed draft")}
+                            </h3>
                             <StatusBadge status={candidate.status} />
-                            <span className={`inline-flex items-center gap-1 text-xs font-medium ${seen ? "text-emerald-600" : "text-muted-foreground"}`}>
-                              {seen ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                              {seen ? (r.seenLabel || "Seen") : (r.notSeenLabel || "Not seen")}
-                            </span>
+                            {candidate.status !== "draft" && (
+                              <span className={`inline-flex items-center gap-1 text-xs font-medium ${seen ? "text-emerald-600" : "text-muted-foreground"}`}>
+                                {seen ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                                {seen ? (r.seenLabel || "Seen") : (r.notSeenLabel || "Not seen")}
+                              </span>
+                            )}
                           </div>
                           {candidate.current_title && (
                             <p className="text-sm text-muted-foreground">{candidate.current_title}</p>
@@ -144,9 +151,19 @@ export default async function RecruiterCandidatesPage({
                             </p>
                           )}
                         </div>
-                        <Link href={`/recruiter/mandates/${candidate.mandate_id}/candidates/${candidate.id}`}>
-                          <Button variant="outline" size="sm">{dict.common.details}</Button>
-                        </Link>
+                        {candidate.status === "draft" ? (
+                          <DraftRowActions
+                            mandateId={candidate.mandate_id}
+                            draftId={candidate.id}
+                            resumeLabel={r.resume}
+                            deleteLabel={r.remove}
+                            confirmLabel={r.removeDraftConfirm}
+                          />
+                        ) : (
+                          <Link href={`/recruiter/mandates/${candidate.mandate_id}/candidates/${candidate.id}`}>
+                            <Button variant="outline" size="sm">{dict.common.details}</Button>
+                          </Link>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

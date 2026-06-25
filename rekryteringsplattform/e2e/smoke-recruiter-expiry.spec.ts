@@ -1,26 +1,25 @@
 import { test, expect } from "@playwright/test";
 import { loginAs, ADMIN_CREDS, assertCredsPresent } from "./fixtures/auth";
 
-// Read-only smoke for the recruiter-side "Expire Date" changes (Expired tab +
-// all-recruiter job process panel). The E2E_ADMIN account is a recruiter-role
-// user, so it exercises the recruiter views. No mutations.
-test("recruiter: Expired tab + job Ongoing-process panel render", async ({ browser }) => {
+// Read-only smoke for the recruiter-side mandate tabs + all-recruiter job
+// process panel. The E2E_ADMIN account is a recruiter-role user, so it exercises
+// the recruiter views. No mutations.
+test("recruiter: mandate tabs + job Ongoing-process panel render", async ({ browser }) => {
     assertCredsPresent();
     const ctx = await loginAs(browser, ADMIN_CREDS);
     const page = await ctx.newPage();
     const consoleErrors: string[] = [];
     page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text()); });
 
-    // 1) My Mandates → the new "Expired" tab is present alongside Active/Closed/Hired.
+    // 1) My Mandates → Active/Closed/Hired tabs present, "Expired" tab removed.
     await page.goto("/recruiter/mandates");
     await page.waitForLoadState("networkidle");
     const tabTexts = await page.getByRole("button").allInnerTexts();
     console.log(`[smoke] mandate tabs: ${JSON.stringify(tabTexts.filter((t) => /Active|Closed|Expired|Hired/.test(t)))}`);
-    await expect(page.getByRole("button", { name: /Expired/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /Closed/ })).toBeVisible();
-
-    // Clicking Expired switches tab without error.
-    await page.getByRole("button", { name: /Expired/ }).click();
+    await expect(page.getByRole("button", { name: /Hired/ })).toBeVisible();
+    // The "Expired" tab was removed; guard against it creeping back.
+    await expect(page.getByRole("button", { name: /Expired/ })).toHaveCount(0);
 
     // 2) Browse Jobs → open a job → "Ongoing process" panel with the 4 stats.
     await page.goto("/recruiter/jobs");
