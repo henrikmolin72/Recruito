@@ -30,13 +30,25 @@ function firstOf<T>(rel: T | T[] | null | undefined): T | undefined {
 }
 
 const partyOf = (type: string): RecruitoParty =>
-    type === "recruito_recruiter" ? "recruiter" : "company";
+    type === "recruito_company" ? "company" : "recruiter";
+
+// All thread types the admin inbox surfaces, including the candidate-independent
+// recruiter support thread (migration 061).
+const ADMIN_THREAD_TYPES = [
+    "recruito_company",
+    "recruito_recruiter",
+    "recruito_recruiter_general",
+];
 
 export interface AdminRecruitoConversation {
-    candidateId: string;
+    /** The conversation row id — used to open candidate-less (support) threads. */
+    conversationId: string;
+    /** 'candidate' = candidate-keyed thread; 'recruiter_support' = candidate-less. */
+    kind: "candidate" | "recruiter_support";
+    candidateId: string | null;
     jobId: string | null;
     party: RecruitoParty;
-    conversationType: RecruitoConversationType;
+    conversationType: string;
     candidateName: string;
     companyName: string | null;
     /** Display name of the party on the other end (company name or recruiter name). */
@@ -54,7 +66,7 @@ export async function getRecruitoConversationsForAdmin(): Promise<AdminRecruitoC
     const { data, error } = await sb
         .from("conversations")
         .select(`
-            candidate_id, job_id, conversation_type,
+            id, candidate_id, job_id, conversation_type, owner_user_id,
             candidate:candidates(
                 first_name, last_name,
                 recruiter:recruiters(profile:profiles!recruiters_user_id_fkey(full_name)),
@@ -62,11 +74,25 @@ export async function getRecruitoConversationsForAdmin(): Promise<AdminRecruitoC
             ),
             messages(content, created_at)
         `)
-        .in("conversation_type", ["recruito_company", "recruito_recruiter"]);
+        .in("conversation_type", ADMIN_THREAD_TYPES);
 
     if (error || !data) return [];
 
-    const rows: AdminRecruitoConversation[] = data.map((conv: any) => {
+    // Candidate-less support threads (kind 'recruiter_support') have no candidate
+    // join — resolve the owning recruiter's display name from owner_user_id.
+    const ownerIds = [...new Set(
+        (data as any[])
+            .filter((c) => c.conversation_type === "recruito_recruiter_general" && c.owner_user_id)
+            .map((c) => c.owner_user_id),
+    )] as string[];
+    const ownerNames: Record<string, string> = {};
+    if (ownerIds.length) {
+        const { data: profs } = await sb.from("profiles").select("id, full_name").in("id", ownerIds);
+        (profs || []).forEach((p: any) => { ownerNames[p.id] = p.full_name || ""; });
+    }
+
+    const rows: AdminRecruitoConversation[] = (data as any[]).map((conv) => {
+        const isGeneral = conv.conversation_type === "recruito_recruiter_general";
         const cand = firstOf(conv.candidate);
         const job = firstOf(cand?.job);
         const company = firstOf(job?.company);
@@ -79,13 +105,17 @@ export async function getRecruitoConversationsForAdmin(): Promise<AdminRecruitoC
         const party = partyOf(conv.conversation_type);
         const companyName = company?.company_name ?? null;
         return {
-            candidateId: conv.candidate_id,
+            conversationId: conv.id,
+            kind: isGeneral ? "recruiter_support" : "candidate",
+            candidateId: conv.candidate_id ?? null,
             jobId: conv.job_id,
             party,
-            conversationType: conv.conversation_type as RecruitoConversationType,
-            candidateName: name || "Unknown candidate",
+            conversationType: conv.conversation_type,
+            candidateName: isGeneral
+                ? (ownerNames[conv.owner_user_id] || "Rekryterare")
+                : (name || "Unknown candidate"),
             companyName,
-            partyName: party === "company" ? companyName : (recruiterProfile?.full_name ?? null),
+            partyName: isGeneral ? null : (party === "company" ? companyName : (recruiterProfile?.full_name ?? null)),
             lastMessage: last?.content ?? null,
             lastAt: last?.created_at ?? null,
             messageCount: msgs.length,
@@ -165,6 +195,23 @@ export async function getRecruitoThreadForAdmin(
 }
 
 /**
+ * Admin-scoped poll fetcher for the chat component. Reuses getRecruitoThreadForAdmin
+ * so the admin detail view has ONE source of truth for reads (instead of polling the
+ * candidate-side getCandidateConversation). Returns just the message list. The wider
+ * ConversationType is accepted so a bare reference can satisfy CandidateChat's prop
+ * signature; the admin view only ever passes a recruito_* type.
+ */
+export async function getRecruitoThreadMessagesForAdmin(
+    candidateId: string,
+    conversationType: "client" | RecruitoConversationType | "recruito_recruiter_general",
+): Promise<AdminThreadMessage[]> {
+    // This candidate-keyed reader only serves the two per-party threads.
+    if (conversationType !== "recruito_company" && conversationType !== "recruito_recruiter") return [];
+    const thread = await getRecruitoThreadForAdmin(candidateId, conversationType);
+    return thread?.messages ?? [];
+}
+
+/**
  * Admin reply into a specific private Recruito thread (company OR recruiter).
  * Signature matches CandidateChat's sendMessageFn plus the target conversationType.
  * Admins aren't participants, so the insert goes through the service-role client;
@@ -175,11 +222,16 @@ export async function sendAdminMessage(
     candidateId: string,
     jobId: string,
     content: string,
-    conversationType: RecruitoConversationType,
+    conversationType: "client" | RecruitoConversationType | "recruito_recruiter_general",
 ): Promise<{ success?: boolean; error?: string }> {
     const { user } = await requireAdmin();
     const normalizedContent = content.trim();
     if (!normalizedContent) return { error: "Empty message" };
+    // The candidate-keyed admin reply only writes to the two per-party threads.
+    // Guard the wider type accepted for the CandidateChat prop signature.
+    if (conversationType !== "recruito_company" && conversationType !== "recruito_recruiter") {
+        return { error: "Invalid thread" };
+    }
 
     const party = partyOf(conversationType);
     const sb = createAdminClient();
@@ -255,5 +307,109 @@ export async function sendAdminMessage(
 
     revalidatePath("/admin/messages");
     revalidatePath(`/admin/messages/${candidateId}`);
+    return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Conversation-id-based admin thread access. Used for candidate-less threads
+// (the recruiter support thread, migration 061) which the candidate-keyed route
+// above cannot open. Also works for any recruito_* thread.
+// ---------------------------------------------------------------------------
+
+async function fetchAdminThreadMessages(
+    sb: ReturnType<typeof createAdminClient>,
+    conversationId: string,
+): Promise<AdminThreadMessage[]> {
+    const { data: msgs } = await sb
+        .from("messages")
+        .select("id, content, sender_id, created_at, is_system_message, sender:profiles(full_name, role)")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+    return (msgs ?? []).map((m: any) => ({
+        id: m.id,
+        content: m.content,
+        sender_id: m.sender_id,
+        created_at: m.created_at,
+        is_system_message: m.is_system_message ?? false,
+        sender: m.sender ? (Array.isArray(m.sender) ? m.sender[0] : m.sender) : undefined,
+    }));
+}
+
+export async function getRecruitoThreadByConversationId(
+    conversationId: string,
+): Promise<{ conversationId: string; title: string; messages: AdminThreadMessage[] } | null> {
+    await requireAdmin();
+    const sb = createAdminClient();
+    const { data: conv } = await sb
+        .from("conversations")
+        .select("id, conversation_type, owner_user_id")
+        .eq("id", conversationId)
+        .maybeSingle();
+    if (!conv || !ADMIN_THREAD_TYPES.includes((conv as any).conversation_type)) return null;
+
+    let title = "Recruito-konversation";
+    if ((conv as any).owner_user_id) {
+        const { data: prof } = await sb
+            .from("profiles")
+            .select("full_name")
+            .eq("id", (conv as any).owner_user_id)
+            .maybeSingle();
+        title = (prof as any)?.full_name || title;
+    }
+
+    return { conversationId: (conv as any).id, title, messages: await fetchAdminThreadMessages(sb, conversationId) };
+}
+
+/** Poll fetcher for the conversation-id thread view. Leading args match CandidateChat. */
+export async function getRecruitoThreadMessagesByConversationId(
+    conversationId: string,
+): Promise<AdminThreadMessage[]> {
+    await requireAdmin();
+    const sb = createAdminClient();
+    const { data: conv } = await sb
+        .from("conversations")
+        .select("conversation_type")
+        .eq("id", conversationId)
+        .maybeSingle();
+    if (!conv || !ADMIN_THREAD_TYPES.includes((conv as any).conversation_type)) return [];
+    return fetchAdminThreadMessages(sb, conversationId);
+}
+
+/** Admin reply into a thread by conversation id. Signature matches CandidateChat's sendMessageFn. */
+export async function sendAdminMessageToConversation(
+    conversationId: string,
+    _jobId: string,
+    content: string,
+): Promise<{ success?: boolean; error?: string }> {
+    const { user } = await requireAdmin();
+    const normalizedContent = content.trim();
+    if (!normalizedContent) return { error: "Empty message" };
+
+    const sb = createAdminClient();
+    const { data: conv } = await sb
+        .from("conversations")
+        .select("id, conversation_type, owner_user_id")
+        .eq("id", conversationId)
+        .maybeSingle();
+    if (!conv || !ADMIN_THREAD_TYPES.includes((conv as any).conversation_type)) return { error: "Invalid thread" };
+
+    const { error: msgError } = await sb
+        .from("messages")
+        .insert({ conversation_id: (conv as any).id, sender_id: user.id, content: normalizedContent });
+    if (msgError) return { error: "Could not send message" };
+
+    // Notify the thread owner (recruiter support thread → owner_user_id).
+    if ((conv as any).owner_user_id) {
+        const body = normalizedContent.length > 50 ? normalizedContent.slice(0, 50) + "…" : normalizedContent;
+        await createNotification((conv as any).owner_user_id, {
+            titleKey: "notif.newMessageTitle",
+            params: { sender: "Recruito" },
+            body,
+            link: "/recruiter/messages/support",
+        });
+    }
+
+    revalidatePath(`/admin/messages/thread/${conversationId}`);
+    revalidatePath("/admin/messages");
     return { success: true };
 }

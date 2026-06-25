@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireAdmin } from "@/lib/actions/require-admin";
-import { getRecruitoThreadForAdmin, sendAdminMessage } from "@/lib/actions/admin-messages";
+import { getRecruitoThreadForAdmin, getRecruitoThreadMessagesForAdmin, sendAdminMessage } from "@/lib/actions/admin-messages";
 import { CandidateChat } from "@/components/shared/candidate-chat";
 import { getDictionary } from "@/i18n/server";
 
@@ -32,11 +32,6 @@ export default async function AdminMessageThreadPage({
         ? dict.admin.messagesPartyRecruiter
         : dict.admin.messagesPartyCompany;
 
-    // Bind the target thread type into the send fn so CandidateChat (which only
-    // passes candidateId/jobId/content) replies into the correct party thread.
-    const sendMessageFn = (cId: string, jId: string, content: string) =>
-        sendAdminMessage(cId, jId, content, conversationType);
-
     return (
         <div className="max-w-3xl space-y-4">
             <Link
@@ -61,7 +56,8 @@ export default async function AdminMessageThreadPage({
                 currentUserId={user.id}
                 candidate={thread.candidate}
                 conversationType={conversationType}
-                sendMessageFn={sendMessageFn}
+                sendMessageFn={sendAdminMessage}
+                pollFn={getRecruitoThreadMessagesForAdmin}
             />
         </div>
     );

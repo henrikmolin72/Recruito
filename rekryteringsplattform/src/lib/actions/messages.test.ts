@@ -18,6 +18,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // Identities used across tests.
 const COMPANY_USER = "company-user-1";
 const RECRUITER_USER = "recruiter-user-1";
+const RECRUITER_ID = "recruiter-row-1"; // recruiters.id (distinct from the auth user_id)
 const ADMIN_USER = "admin-user-1";
 const STRANGER_USER = "stranger-user-1";
 const CANDIDATE_ID = "cand-1";
@@ -27,16 +28,18 @@ const JOB_ID = "job-1";
 // Supabase nested-join the action requests).
 const candidateRow: any = {
   mandate_id: "mand-1",
-  recruiter: { user_id: RECRUITER_USER },
+  recruiter: { id: RECRUITER_ID, user_id: RECRUITER_USER },
   job: { id: JOB_ID, company: { user_id: COMPANY_USER } },
 };
 
 // Per-test state.
 let currentUserId: string | null = null;
-let conversationsStore: any[] = []; // rows: { id, candidate_id, job_id, conversation_type, created_at }
+let conversationsStore: any[] = []; // rows: { id, candidate_id, job_id, conversation_type, owner_user_id, created_at }
 let participantsStore: Array<{ conversation_id: string; user_id: string }> = [];
 let messagesStore: any[] = []; // { id, conversation_id, sender_id, content, created_at, is_system_message }
 let profilesStore: Record<string, { id: string; full_name: string; role: string }> = {};
+let jobMandatesStore: any[] = []; // { id, job_id, recruiter_id, is_active }
+let recruitersStore: Array<{ id: string; user_id: string }> = [];
 // Auth user metadata, keyed by id — the canonical display-name source the app
 // falls back to when profiles.full_name has drifted/empty.
 let usersMetaStore: Record<string, { user_metadata?: { full_name?: string }; email?: string }> = {};
@@ -61,6 +64,8 @@ function makeClient(asService: boolean) {
       if (table === "conversations") return applyFilters(conversationsStore);
       if (table === "conversation_participants") return applyFilters(participantsStore);
       if (table === "messages") return applyFilters(messagesStore);
+      if (table === "job_mandates") return applyFilters(jobMandatesStore);
+      if (table === "recruiters") return applyFilters(recruitersStore);
       if (table === "profiles") {
         const all = Object.values(profilesStore);
         if (filters.id) return all.filter((p) => p.id === filters.id);
@@ -73,6 +78,7 @@ function makeClient(asService: boolean) {
     const chain: any = {
       select: () => chain,
       eq: (col: string, val: any) => { filters[col] = val; return chain; },
+      is: (col: string, val: any) => { filters[col] = val; return chain; },
       in: (col: string, vals: any[]) => {
         if (col === "id") filters.__in_id = vals;
         else filters[col] = vals;
@@ -137,7 +143,13 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => makeClient(f
 vi.mock("@/lib/notifications/create", () => ({ createNotification: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
-import { sendRecruitorMessage, getCandidateConversation } from "./messages";
+import {
+  sendRecruitorMessage,
+  getCandidateConversation,
+  sendMessage,
+  sendRecruiterSupportMessage,
+  getRecruiterSupportMessages,
+} from "./messages";
 
 beforeEach(() => {
   currentUserId = null;
@@ -149,6 +161,8 @@ beforeEach(() => {
     [RECRUITER_USER]: { id: RECRUITER_USER, full_name: "Recruiter Rita", role: "recruiter" },
     [ADMIN_USER]: { id: ADMIN_USER, full_name: "Admin Alice", role: "admin" },
   };
+  jobMandatesStore = [];
+  recruitersStore = [{ id: RECRUITER_ID, user_id: RECRUITER_USER }];
   usersMetaStore = {};
   inserts.length = 0;
   convIdSeq = 0;
@@ -246,5 +260,81 @@ describe("getCandidateConversation — service-role sender resolution + IDOR gua
     const msg = (result as any).messages[0];
     expect(msg.sender?.full_name).toBe("Demo Rekryterare");
     expect(msg.sender?.full_name).not.toBe("");
+  });
+});
+
+describe("sendMessage — recruiter→company requires an ACTIVE mandate", () => {
+  it("blocks the recruiter when no active mandate exists (and writes nothing)", async () => {
+    currentUserId = RECRUITER_USER; // no rows in jobMandatesStore
+    const res = await sendMessage(CANDIDATE_ID, JOB_ID, "hej företaget");
+    expect(res.success).toBeUndefined();
+    expect(res.error).toBeTruthy();
+    expect(messagesStore).toHaveLength(0);
+    expect(conversationsStore).toHaveLength(0);
+  });
+
+  it("ignores a released (inactive) mandate", async () => {
+    currentUserId = RECRUITER_USER;
+    jobMandatesStore.push({ id: "mand-x", job_id: JOB_ID, recruiter_id: RECRUITER_ID, is_active: false });
+    const res = await sendMessage(CANDIDATE_ID, JOB_ID, "hej");
+    expect(res.error).toBeTruthy();
+    expect(messagesStore).toHaveLength(0);
+  });
+
+  it("allows the recruiter when an active mandate exists", async () => {
+    currentUserId = RECRUITER_USER;
+    jobMandatesStore.push({ id: "mand-x", job_id: JOB_ID, recruiter_id: RECRUITER_ID, is_active: true });
+    const res = await sendMessage(CANDIDATE_ID, JOB_ID, "hej");
+    expect(res).toEqual({ success: true });
+    const msg = messagesStore.find((m) => m.sender_id === RECRUITER_USER);
+    expect(msg?.content).toBe("hej");
+  });
+
+  it("does not gate the company sender", async () => {
+    currentUserId = COMPANY_USER; // no mandate needed for the company side
+    const res = await sendMessage(CANDIDATE_ID, JOB_ID, "from company");
+    expect(res).toEqual({ success: true });
+  });
+});
+
+describe("recruiter ↔ Recruito support thread (candidate-independent)", () => {
+  it("creates a candidate-less thread owned by the recruiter and stores the message", async () => {
+    currentUserId = RECRUITER_USER;
+    const res = await sendRecruiterSupportMessage("", "", "behöver hjälp");
+    expect(res).toEqual({ success: true });
+
+    const conv = conversationsStore.find((c) => c.conversation_type === "recruito_recruiter_general");
+    expect(conv).toBeTruthy();
+    expect(conv.candidate_id).toBeNull();
+    expect(conv.owner_user_id).toBe(RECRUITER_USER);
+
+    const msg = messagesStore.find((m) => m.conversation_id === conv.id);
+    expect(msg.content).toBe("behöver hjälp");
+    expect(msg.sender_id).toBe(RECRUITER_USER);
+    expect(participantsStore.some((p) => p.conversation_id === conv.id && p.user_id === RECRUITER_USER)).toBe(true);
+  });
+
+  it("reuses the same thread on a second message (one per recruiter)", async () => {
+    currentUserId = RECRUITER_USER;
+    await sendRecruiterSupportMessage("", "", "first");
+    await sendRecruiterSupportMessage("", "", "second");
+    const general = conversationsStore.filter((c) => c.conversation_type === "recruito_recruiter_general");
+    expect(general).toHaveLength(1);
+    expect(messagesStore.filter((m) => m.conversation_id === general[0].id)).toHaveLength(2);
+  });
+
+  it("rejects a non-recruiter (no recruiters row) and writes nothing", async () => {
+    currentUserId = COMPANY_USER;
+    const res = await sendRecruiterSupportMessage("", "", "I am a company");
+    expect(res.error).toBeTruthy();
+    expect(conversationsStore).toHaveLength(0);
+  });
+
+  it("getRecruiterSupportMessages returns the caller's own thread messages", async () => {
+    currentUserId = RECRUITER_USER;
+    await sendRecruiterSupportMessage("", "", "hello recruito");
+    const msgs = await getRecruiterSupportMessages();
+    expect(msgs).not.toBeNull();
+    expect((msgs as any[]).some((m) => m.content === "hello recruito")).toBe(true);
   });
 });

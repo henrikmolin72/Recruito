@@ -8,7 +8,10 @@ import { createNotification } from "@/lib/notifications/create";
 // The thread types this module reads/writes. 'client' is the company↔recruiter
 // thread; the two 'recruito_*' types are the PRIVATE per-party Recruito/admin
 // threads introduced by migration 060.
-type ConversationType = 'client' | 'recruito_company' | 'recruito_recruiter';
+type ConversationType = 'client' | 'recruito_company' | 'recruito_recruiter' | 'recruito_recruiter_general';
+
+// The candidate-independent recruiter <-> Recruito support thread (migration 061).
+const RECRUITER_SUPPORT_TYPE = 'recruito_recruiter_general' as const;
 
 // Unwrap a Supabase nested-relation that the typings model as `T | T[]`. PostgREST
 // returns an array for some embedded relations and a single object for others;
@@ -62,14 +65,14 @@ async function resolveCandidateParties(
     supabase: Awaited<ReturnType<typeof createClient>>,
     candidateId: string,
 ): Promise<
-    | { recruiterUserId?: string; companyUserId?: string; jobId?: string; mandateId: string | null }
+    | { recruiterId?: string; recruiterUserId?: string; companyUserId?: string; jobId?: string; mandateId: string | null }
     | null
 > {
     const { data: candidate, error } = await supabase
         .from("candidates")
         .select(`
             mandate_id,
-            recruiter:recruiters(user_id),
+            recruiter:recruiters(id, user_id),
             job:jobs(
                 id,
                 company:companies(user_id)
@@ -85,6 +88,7 @@ async function resolveCandidateParties(
     const company = firstOf(job?.company);
 
     return {
+        recruiterId: recruiter?.id,
         recruiterUserId: recruiter?.user_id,
         companyUserId: company?.user_id,
         jobId: job?.id,
@@ -285,6 +289,30 @@ export async function sendRecruitorMessage(candidateId: string, jobId: string, c
         return { error: "Kunde inte skicka meddelande." };
     }
 
+    // Notify every admin so an inbound Recruito message surfaces in the admin
+    // inbox without a manual refresh. Admins aren't conversation participants,
+    // so fan out explicitly (service role) and deep-link to this party's thread.
+    const supabaseAdmin = createAdminClient();
+    const { data: admins } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("role", "admin");
+    if (admins?.length) {
+        const senderName = user.user_metadata?.full_name || user.email || "okänd användare";
+        const body = normalizedContent.length > 50 ? normalizedContent.substring(0, 50) + "…" : normalizedContent;
+        const party = isCompany ? "company" : "recruiter";
+        await Promise.all(
+            admins.map((a: { id: string }) =>
+                createNotification(a.id, {
+                    titleKey: "notif.newMessageTitle",
+                    params: { sender: senderName },
+                    body,
+                    link: `/admin/messages/${candidateId}?party=${party}`,
+                }),
+            ),
+        );
+    }
+
     return { success: true };
 }
 
@@ -309,6 +337,26 @@ export async function sendMessage(candidateId: string, jobId: string, content: s
 
     if (user.id !== recruiterUserId && user.id !== companyUserId) {
         return { error: "Not allowed to message in this conversation" };
+    }
+
+    // Recruiter -> company is only allowed within an ACTIVE mandate on the job.
+    // (Owning the candidate is not enough — a released/expired mandate must cut
+    // off contact.) The company side is always allowed to message its recruiter.
+    if (user.id === recruiterUserId) {
+        if (!parties.recruiterId || !resolvedJobId) {
+            return { error: "Not allowed to message in this conversation" };
+        }
+        const supabaseAdminMandate = createAdminClient();
+        const { data: activeMandate } = await supabaseAdminMandate
+            .from("job_mandates")
+            .select("id")
+            .eq("job_id", resolvedJobId)
+            .eq("recruiter_id", parties.recruiterId)
+            .eq("is_active", true)
+            .maybeSingle();
+        if (!activeMandate) {
+            return { error: "Du kan bara kontakta företaget när du har ett aktivt uppdrag." };
+        }
     }
 
     const otherUserId = user.id === recruiterUserId ? companyUserId : recruiterUserId;
@@ -400,15 +448,22 @@ export async function getConversations() {
 
     const supabaseAdmin = createAdminClient();
 
-    const { data: conversations, error } = await supabaseAdmin
+    const { data: conversationsRaw, error } = await supabaseAdmin
         .from("conversations")
-        .select("id, job_id, candidate_id, created_at")
+        .select("id, job_id, candidate_id, created_at, conversation_type")
         .in("id", myConvIds);
 
     if (error) {
         console.error("Error fetching conversations:", JSON.stringify(error));
         return [];
     }
+
+    // The candidate-independent recruiter support thread is shown on its own page
+    // (/recruiter/messages/support), not in this candidate-keyed inbox — exclude it
+    // so it doesn't render as a broken "regarding (no candidate)" row.
+    const conversations = (conversationsRaw || []).filter(
+        (c: any) => c.conversation_type !== RECRUITER_SUPPORT_TYPE,
+    );
 
     const candidateIds = [...new Set((conversations || []).map(c => c.candidate_id).filter(Boolean))];
     const jobIds = [...new Set((conversations || []).map(c => c.job_id).filter(Boolean))];
@@ -609,4 +664,140 @@ export async function markConversationAsRead(conversationId: string) {
         .update({ last_read_at: new Date().toISOString() })
         .eq("conversation_id", conversationId)
         .eq("user_id", user.id);
+}
+
+// ---------------------------------------------------------------------------
+// Recruiter <-> Recruito (admin) support thread (migration 061).
+// Candidate-independent: available to a recruiter from day one, with no
+// candidate and no mandate. Keyed per recruiter via conversations.owner_user_id.
+// ---------------------------------------------------------------------------
+
+// Authenticate the caller and confirm they are a recruiter (has a recruiters row).
+async function getRecruiterUser() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const supabaseAdmin = createAdminClient();
+    const { data: rec } = await supabaseAdmin
+        .from("recruiters")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+    return rec ? user : null;
+}
+
+// Idempotently look up (or create) the caller's support thread. The partial
+// UNIQUE(owner_user_id, conversation_type) WHERE candidate_id IS NULL index
+// (migration 061) guarantees one row per recruiter; a concurrent insert is
+// resolved by re-selecting the winner.
+async function getOrCreateRecruiterSupportThreadId(userId: string): Promise<string | null> {
+    const supabaseAdmin = createAdminClient();
+
+    const { data: existing } = await supabaseAdmin
+        .from("conversations")
+        .select("id")
+        .eq("owner_user_id", userId)
+        .eq("conversation_type", RECRUITER_SUPPORT_TYPE)
+        .is("candidate_id", null)
+        .maybeSingle();
+    if (existing?.id) return existing.id;
+
+    const { data: created, error } = await supabaseAdmin
+        .from("conversations")
+        .insert({ owner_user_id: userId, conversation_type: RECRUITER_SUPPORT_TYPE, candidate_id: null, job_id: null })
+        .select("id")
+        .single();
+
+    if (error || !created) {
+        const { data: raced } = await supabaseAdmin
+            .from("conversations")
+            .select("id")
+            .eq("owner_user_id", userId)
+            .eq("conversation_type", RECRUITER_SUPPORT_TYPE)
+            .is("candidate_id", null)
+            .maybeSingle();
+        if (raced?.id) return raced.id;
+        if (error) console.error("Failed to create recruiter support thread:", error);
+        return null;
+    }
+
+    // Seed the recruiter as participant so participant-scoped reads also work.
+    await supabaseAdmin
+        .from("conversation_participants")
+        .upsert(
+            [{ conversation_id: created.id, user_id: userId }],
+            { onConflict: "conversation_id,user_id", ignoreDuplicates: true },
+        );
+    return created.id;
+}
+
+// Read all messages for a thread (service role → sender names always resolve).
+async function fetchThreadMessages(conversationId: string) {
+    const supabaseAdmin = createAdminClient();
+    const { data: rows } = await supabaseAdmin
+        .from("messages")
+        .select("id, content, created_at, sender_id, is_system_message")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+    const senderIds = [...new Set((rows || []).map((m: any) => m.sender_id).filter(Boolean))] as string[];
+    const profileMap = await resolveUserDisplayNames(supabaseAdmin, senderIds);
+
+    return (rows || []).map((m: any) => ({
+        id: m.id,
+        content: m.content,
+        created_at: m.created_at,
+        sender_id: m.sender_id,
+        is_system_message: !!m.is_system_message,
+        sender: m.sender_id ? profileMap[m.sender_id] || undefined : undefined,
+    }));
+}
+
+// Poll/initial-load fetcher for the recruiter support chat. Signature ignores the
+// CandidateChat (candidateId, conversationType) args — the thread is the caller's own.
+export async function getRecruiterSupportMessages() {
+    const user = await getRecruiterUser();
+    if (!user) return null;
+    const conversationId = await getOrCreateRecruiterSupportThreadId(user.id);
+    if (!conversationId) return null;
+    return fetchThreadMessages(conversationId);
+}
+
+// Recruiter sends to Recruito. Signature matches CandidateChat's sendMessageFn
+// (leading candidateId/jobId are unused — the thread is the caller's own).
+export async function sendRecruiterSupportMessage(_candidateId: string, _jobId: string, content: string) {
+    const user = await getRecruiterUser();
+    const normalizedContent = content.trim();
+    if (!user || !normalizedContent) return { error: "Not authenticated" };
+
+    const conversationId = await getOrCreateRecruiterSupportThreadId(user.id);
+    if (!conversationId) return { error: "Kunde inte öppna konversation." };
+
+    const supabaseAdmin = createAdminClient();
+    const { error: msgError } = await supabaseAdmin
+        .from("messages")
+        .insert({ conversation_id: conversationId, sender_id: user.id, content: normalizedContent });
+    if (msgError) {
+        console.error("Failed to insert recruiter support message:", msgError);
+        return { error: "Kunde inte skicka meddelande." };
+    }
+
+    // Notify every admin (admins aren't participants — fan out explicitly).
+    const { data: admins } = await supabaseAdmin.from("profiles").select("id").eq("role", "admin");
+    if (admins?.length) {
+        const senderName = user.user_metadata?.full_name || user.email || "okänd användare";
+        const body = normalizedContent.length > 50 ? normalizedContent.substring(0, 50) + "…" : normalizedContent;
+        await Promise.all(
+            admins.map((a: { id: string }) =>
+                createNotification(a.id, {
+                    titleKey: "notif.newMessageTitle",
+                    params: { sender: senderName },
+                    body,
+                    link: `/admin/messages/thread/${conversationId}`,
+                }),
+            ),
+        );
+    }
+
+    return { success: true };
 }

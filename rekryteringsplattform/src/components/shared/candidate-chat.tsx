@@ -32,8 +32,12 @@ interface CandidateChatProps {
         current_title: string;
         status: string;
     };
-    conversationType?: 'client' | 'recruito_company' | 'recruito_recruiter';
-    sendMessageFn?: (candidateId: string, jobId: string, content: string) => Promise<{ success?: boolean; error?: string }>;
+    conversationType?: 'client' | 'recruito_company' | 'recruito_recruiter' | 'recruito_recruiter_general';
+    sendMessageFn?: (candidateId: string, jobId: string, content: string, conversationType: 'client' | 'recruito_company' | 'recruito_recruiter' | 'recruito_recruiter_general') => Promise<{ success?: boolean; error?: string }>;
+    // Optional admin-scoped poll fetcher. When provided, the chat reads messages
+    // through this instead of the candidate-side getCandidateConversation, so the
+    // admin view has a single source of truth for reads.
+    pollFn?: (candidateId: string, conversationType: 'client' | 'recruito_company' | 'recruito_recruiter' | 'recruito_recruiter_general') => Promise<Message[] | null>;
 }
 
 function formatMessageTime(createdAt: string) {
@@ -48,7 +52,7 @@ function formatMessageTime(createdAt: string) {
     }
 }
 
-export function CandidateChat({ candidateId, jobId, initialMessages, currentUserId, candidate, conversationType = 'client', sendMessageFn }: CandidateChatProps) {
+export function CandidateChat({ candidateId, jobId, initialMessages, currentUserId, candidate, conversationType = 'client', sendMessageFn, pollFn }: CandidateChatProps) {
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -67,6 +71,11 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
 
     const pollMessages = useCallback(async () => {
         try {
+            if (pollFn) {
+                const polled = await pollFn(candidateId, conversationType);
+                if (polled) setMessages(polled);
+                return;
+            }
             const conversation = await getCandidateConversation(candidateId, conversationType);
             if (conversation?.messages) {
                 setMessages(conversation.messages);
@@ -74,7 +83,7 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
         } catch {
             // Silently ignore polling errors
         }
-    }, [candidateId, conversationType]);
+    }, [candidateId, conversationType, pollFn]);
 
     useEffect(() => {
         const interval = setInterval(pollMessages, 5000);
@@ -99,7 +108,7 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
         setIsLoading(true);
 
         const activeSendFn = sendMessageFn ?? sendMessage;
-        const result = await activeSendFn(candidateId, jobId, msgContent);
+        const result = await activeSendFn(candidateId, jobId, msgContent, conversationType);
 
         if (!result.success) {
             setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
