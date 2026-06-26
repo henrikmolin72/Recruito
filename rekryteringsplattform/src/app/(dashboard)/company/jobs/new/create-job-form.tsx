@@ -83,7 +83,6 @@ interface InitialJobData {
 
 interface CreateJobFormProps {
     feePercentage: number;
-    tierLabel: string;
     editJobId?: string;
     initialData?: InitialJobData;
 }
@@ -210,8 +209,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         position_type: initialData?.position_type ?? "",
         open_positions: initialData?.open_positions != null ? String(initialData.open_positions) : "1",
         // Step 4
-        salary_min: "",
-        salary_max: "",
         salary_currency: initialData?.salary_currency ?? "SEK",
         salary_gross_net: initialData?.salary_gross_net ?? "gross",
         salary_period: initialData?.salary_period ?? "",

@@ -31,20 +31,3 @@ export function getTierForPlacementCount(completedPlacements: number): PricingTi
 export function getFeePercentage(completedPlacements: number): number {
     return getTierForPlacementCount(completedPlacements).feePercentage;
 }
-
-/**
- * Returns how many more placements are needed to reach the next tier,
- * or null if already at the best tier.
- */
-export function placementsUntilNextTier(
-    completedPlacements: number
-): { needed: number; nextTier: PricingTier } | null {
-    const current = getTierForPlacementCount(completedPlacements);
-    const currentIndex = PRICING_TIERS.indexOf(current);
-    if (currentIndex <= 0) return null;
-    const nextTier = PRICING_TIERS[currentIndex - 1];
-    return {
-        needed: nextTier.minPlacements - completedPlacements,
-        nextTier,
-    };
-}

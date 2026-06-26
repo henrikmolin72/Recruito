@@ -1,8 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCompanyPlacementCountRecent } from "@/lib/actions/company";
-import { getFeePercentage, getTierForPlacementCount } from "@/lib/pricing";
-import { createTranslator } from "@/i18n/server";
+import { getFeePercentage } from "@/lib/pricing";
 import { CreateJobForm } from "../../new/create-job-form";
 
 async function getJob(id: string) {
@@ -26,13 +25,10 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
 
     const recentPlacements = await getCompanyPlacementCountRecent();
     const feePercentage = job.fee_percentage ?? getFeePercentage(recentPlacements);
-    const tier = getTierForPlacementCount(recentPlacements);
-    const t = await createTranslator();
 
     return (
         <CreateJobForm
             feePercentage={feePercentage}
-            tierLabel={t(tier.labelKey)}
             editJobId={id}
             initialData={{
                 title: job.title,

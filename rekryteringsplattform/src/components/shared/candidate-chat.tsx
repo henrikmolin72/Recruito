@@ -5,7 +5,7 @@ import { sendMessage, getCandidateConversation } from "@/lib/actions/messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 
@@ -236,12 +236,4 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
             </CardFooter>
         </Card>
     );
-}
-
-function Loader2({ className }: { className?: string }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("animate-spin", className)}>
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-        </svg>
-    )
 }

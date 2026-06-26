@@ -37,13 +37,6 @@ export function formatDateShort(date: string | Date | null | undefined): string 
   }).format(d);
 }
 
-export function calculateFee(annualSalary: number, feePercentage: number = 15) {
-  const totalFee = annualSalary * (feePercentage / 100);
-  const platformFee = totalFee * 0.25;
-  const recruiterFee = totalFee * 0.75;
-  return { totalFee, platformFee, recruiterFee };
-}
-
 // Canonical Recruito client-fee formula. Matches the marketing calculator:
 //   fee = max(salary × (11% + guaranteeMonths × 1%) × (exclusive ? 0.9 : 1), 3500)
 // Use this only to *suggest* a default fee at job creation. Once a job is approved,

@@ -242,28 +242,6 @@ export function getAllowedCandidateTransitions(currentStatus: string | null | un
   return TRANSITIONS[currentStatus] || [];
 }
 
-// Statuses a RECRUITER may no longer set directly. Recruiters cannot reject a
-// candidate (that is the client's / Recruito's decision) and they withdraw via
-// the dedicated reason-coded flow, not the generic status dropdown.
-export const RECRUITER_BLOCKED_TRANSITIONS = new Set<string>([
-  "rejected_client",
-  "rejected_interview",
-  "recruito_rejected",
-  "rejected",
-  "declined",
-  "duplicate_rejected",
-  "client_already_engaged",
-  "offer_declined",
-  "candidate_withdrawn",
-]);
-
-// Allowed next statuses the recruiter may pick from the generic workflow control.
-export function getRecruiterAllowedTransitions(currentStatus: string | null | undefined): string[] {
-  return getAllowedCandidateTransitions(currentStatus).filter(
-    (s) => !RECRUITER_BLOCKED_TRANSITIONS.has(s),
-  );
-}
-
 // Structured reasons a recruiter must pick when withdrawing a candidate.
 export const CANDIDATE_WITHDRAW_REASONS = [
   { key: "candidate_no_longer_interested", label: "Candidate no longer interested" },
@@ -343,88 +321,6 @@ export function inferInterviewWorkflowStatus(
       return "final_interview";
     default:
       return "interview_stage_1";
-  }
-}
-
-export type WorkflowVisualNodeId =
-  | "submitted"
-  | "validation"
-  | "under_client_review"
-  | "info_requested"
-  | "resubmitted"
-  | "interview_stage_1"
-  | "interview_stage_2"
-  | "interview_stage_3"
-  | "final_interview"
-  | "offer_in_progress"
-  | "offer_accepted"
-  | "hired"
-  | "invoice_enabled"
-  | "guarantee_tracking"
-  | "on_hold";
-
-export const WORKFLOW_VISUAL_NODES: Array<{ id: WorkflowVisualNodeId; label: string }> = [
-  { id: "submitted", label: "Submitted" },
-  { id: "validation", label: "Duplicate Check" },
-  { id: "under_client_review", label: "Under Client Review" },
-  { id: "info_requested", label: "Info Requested" },
-  { id: "resubmitted", label: "Resubmitted" },
-  { id: "interview_stage_1", label: "Interview Stage 1" },
-  { id: "interview_stage_2", label: "Interview Stage 2" },
-  { id: "interview_stage_3", label: "Interview Stage 3" },
-  { id: "final_interview", label: "Final Interview" },
-  { id: "offer_in_progress", label: "Offer in Progress" },
-  { id: "offer_accepted", label: "Offer Accepted" },
-  { id: "hired", label: "Hired" },
-  { id: "invoice_enabled", label: "Invoice Enabled" },
-  { id: "guarantee_tracking", label: "Guarantee Tracking" },
-  { id: "on_hold", label: "On Hold" },
-];
-
-export function getWorkflowVisualNodeId(status: string | null | undefined): WorkflowVisualNodeId {
-  const normalized = normalizeCandidateStatusForWorkflow(status);
-  switch (normalized) {
-    case "submitted":
-      return "submitted";
-    case "duplicate_rejected":
-    case "client_already_engaged":
-      return "validation";
-    case "under_client_review":
-    case "rejected_client":
-      return "under_client_review";
-    case "info_requested":
-      return "info_requested";
-    case "resubmitted":
-      return "resubmitted";
-    case "interview_stage_1":
-      return "interview_stage_1";
-    case "interview_stage_2":
-      return "interview_stage_2";
-    case "interview_stage_3":
-      return "interview_stage_3";
-    case "final_interview":
-    case "rejected_interview":
-    case "candidate_withdrawn":
-      return "final_interview";
-    case "offer_in_progress":
-    case "offer_declined":
-      return "offer_in_progress";
-    case "offer_accepted":
-      return "offer_accepted";
-    case "hired":
-      return "hired";
-    case "invoice_enabled":
-      return "invoice_enabled";
-    case "guarantee_tracking":
-    case "guarantee_period":
-      return "guarantee_tracking";
-    case "on_hold":
-    case "paused":
-      return "on_hold";
-    case "completed":
-      return "guarantee_tracking";
-    default:
-      return "submitted";
   }
 }
 
