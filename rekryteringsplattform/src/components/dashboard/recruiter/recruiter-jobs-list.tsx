@@ -21,6 +21,9 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 
+// Job statuses where the company has ended the job (vs. a temporary pause).
+const ENDED_STATUSES = new Set(["closed", "filled", "cancelled"]);
+
 const SALARY_RANGES = [
   { label: "Any", value: "all", min: 0, max: Infinity },
   { label: "< €30 000", value: "0-30000", min: 0, max: 30000 },
@@ -297,8 +300,16 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                           {t(`employment.${EMPLOYMENT_TYPE_DICT_KEY[job.employment_type] || "fullTime"}`)}
                         </Badge>
                         {job.status !== "active" && (
-                          <Badge variant="outline" className="rounded-full bg-rose-50 text-rose-600 border-rose-100 py-1 px-3">
-                            {t("recruiter.expired") || "Expired"}
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "rounded-full py-1 px-3",
+                              ENDED_STATUSES.has(job.status)
+                                ? "bg-rose-50 text-rose-600 border-rose-100"
+                                : "bg-slate-50 text-slate-500 border-slate-100",
+                            )}
+                          >
+                            {t(`status.${job.status}`) || job.status}
                           </Badge>
                         )}
                         {job.worked_previously && (

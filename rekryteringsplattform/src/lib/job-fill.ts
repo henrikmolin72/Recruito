@@ -180,6 +180,12 @@ export async function notifyRecruitersOfJobLifecycleChange(
 
         if (userIds.length === 0) return;
 
+        // A closed job's recruiter discovery page (/recruiter/jobs/[id]) now 404s —
+        // closed jobs are no longer visible to recruiters there. Point the close
+        // notice at the recruiter's mandates instead (the job shows under the
+        // "Closed" tab). Paused/reopened keep linking to the job, which still loads.
+        const link = transition === "closed" ? "/recruiter/mandates" : `/recruiter/jobs/${jobId}`;
+
         // In-app bell notifications (re-rendered in each viewer's locale). Best-effort.
         const NOTIF_KEYS: Record<string, { titleKey: string; bodyKey: string }> = {
             closed: { titleKey: "notif.jobClosedTitle", bodyKey: "notif.jobClosedBody" },
@@ -193,7 +199,7 @@ export async function notifyRecruitersOfJobLifecycleChange(
                     titleKey: keys.titleKey,
                     bodyKey: keys.bodyKey,
                     params: { jobTitle, reason: reason || "—" },
-                    link: `/recruiter/jobs/${jobId}`,
+                    link,
                 })
             )
         );
@@ -226,7 +232,7 @@ export async function notifyRecruitersOfJobLifecycleChange(
                             companyName,
                             headline,
                             bodyLine,
-                            jobUrl: `${baseUrl}/recruiter/jobs/${jobId}`,
+                            jobUrl: `${baseUrl}${link}`,
                         }),
                     })
                 )

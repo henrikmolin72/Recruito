@@ -26,7 +26,9 @@ async function getJob(id: string) {
             company:companies(company_name, website, logo_url)
         `)
         .eq("id", id)
-        .in("status", ["active", "closed", "paused"])
+        // Closed/filled/cancelled jobs are not discoverable by recruiters (they
+        // cannot be claimed); a stale link to one resolves to notFound below.
+        .in("status", ["active", "paused"])
         .maybeSingle();
 
     if (error) {

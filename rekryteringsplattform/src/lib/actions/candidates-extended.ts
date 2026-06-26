@@ -15,6 +15,7 @@ import {
     parseCandidateColumns,
     getMissingRequiredFields,
 } from "@/lib/candidate-form";
+import { CLIENT_CLOSED_JOB_STATUSES } from "@/lib/mandate-stages";
 
 export async function createCandidateExtended(mandateId: string, formData: FormData) {
   try {
@@ -60,9 +61,15 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
     // actually defines questions.
     const { data: jobForValidation } = await supabase
         .from("jobs")
-        .select("screening_questions")
+        .select("screening_questions, status")
         .eq("id", mandate.job_id)
         .single();
+    // A company-ended job (closed/filled/cancelled) no longer accepts candidates,
+    // even from a recruiter who still holds an active mandate row. Mirrors the
+    // disabled "Present Candidate" UI gate; enforced here as the server boundary.
+    if (CLIENT_CLOSED_JOB_STATUSES.has((jobForValidation as any)?.status)) {
+        return { error: "This job is no longer accepting candidates." };
+    }
     const screeningCount = Array.isArray((jobForValidation as any)?.screening_questions)
         ? (jobForValidation as any).screening_questions.length
         : 0;

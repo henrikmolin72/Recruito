@@ -411,7 +411,10 @@ export async function getAvailableJobsForRecruiter() {
       company:companies(company_name),
       candidates:candidates(status)
     `)
-        .in("status", ["active", "closed", "paused"])
+        // Recruiters only discover jobs they can act on. Closed/filled/cancelled
+        // jobs are terminal and not claimable, so they are excluded from Browse;
+        // paused jobs stay visible (a company may resume them).
+        .in("status", ["active", "paused"])
         .order("created_at", { ascending: false });
 
     if (error) {
