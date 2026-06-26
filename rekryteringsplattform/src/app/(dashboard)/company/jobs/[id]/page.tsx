@@ -28,6 +28,7 @@ import { AnnouncementsTab } from "@/components/dashboard/company/announcements-t
 import { getDictionary } from "@/i18n/server";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { BiasReportCard } from "@/components/compliance/bias-report-card";
+import { mandateExpiryDaysLeft } from "@/lib/mandate-stages";
 
 async function getJob(id: string) {
     const supabase = await createClient();
@@ -56,6 +57,8 @@ async function getJob(id: string) {
       ),
       mandates:job_mandates(
         id,
+        is_active,
+        claimed_at,
         recruiter:recruiters(
           id,
           user_id,
@@ -73,10 +76,12 @@ async function getJob(id: string) {
         (job as any).candidates = (job as any).candidates.filter((cand: any) => cand.recruito_screened_at);
     }
 
-    // RLS hides recruiter profiles from company users, so the joined
-    // profile.full_name comes back null. Fetch display names only via the
-    // admin client for recruiters already attached to this job.
     if (job) {
+        const admin = createAdminClient();
+
+        // RLS hides recruiter profiles from company users, so the joined
+        // profile.full_name comes back null. Fetch display names only via the
+        // admin client for recruiters already attached to this job.
         const recruiterUserIds = new Set<string>();
         for (const m of (job as any).mandates || []) {
             if (m.recruiter?.user_id) recruiterUserIds.add(m.recruiter.user_id);
@@ -85,7 +90,6 @@ async function getJob(id: string) {
             if (cand.recruiter?.user_id) recruiterUserIds.add(cand.recruiter.user_id);
         }
         if (recruiterUserIds.size > 0) {
-            const admin = createAdminClient();
             const { data: names } = await admin
                 .from("profiles")
                 .select("id, full_name")
@@ -101,6 +105,49 @@ async function getJob(id: string) {
                     cand.recruiter.profile = { ...(cand.recruiter.profile || {}), full_name: nameById.get(cand.recruiter.user_id) };
                 }
             }
+        }
+
+        // Per-recruiter mandate status for the Recruiters tab. A recruiter can
+        // hold several mandate rows on one job (mandate recycling, migration
+        // 045): an expired cycle stays as is_active=false history alongside a
+        // fresh re-claim. Collapse to one row per recruiter — Active if they
+        // currently hold a live mandate, else Expired — using the shared 10-day
+        // timer so the company sees the same status the recruiter does, without
+        // waiting for the daily expiry cron. Candidate timing is read with the
+        // admin client because the company's screened-only candidate RLS would
+        // under-count submissions and mistime the expiry.
+        const mandates = (job as any).mandates || [];
+        if (mandates.length > 0) {
+            const { data: cands } = await admin
+                .from("candidates")
+                .select("recruiter_id, status, status_changed_at")
+                .eq("job_id", id);
+            const candsByRecruiter = new Map<string, { status: string | null; status_changed_at: string | null }[]>();
+            for (const cnd of cands || []) {
+                if (!cnd.recruiter_id) continue;
+                const arr = candsByRecruiter.get(cnd.recruiter_id) || [];
+                arr.push({ status: cnd.status, status_changed_at: cnd.status_changed_at });
+                candsByRecruiter.set(cnd.recruiter_id, arr);
+            }
+            const rowByRecruiter = new Map<string, { recruiter: any; active: boolean }>();
+            for (const m of mandates) {
+                const rid = m.recruiter?.id;
+                if (!rid) continue;
+                const daysLeft = mandateExpiryDaysLeft({
+                    claimedAt: m.claimed_at ?? null,
+                    candidates: candsByRecruiter.get(rid) || [],
+                });
+                const liveActive = !!m.is_active && (daysLeft === null || daysLeft > 0);
+                const existing = rowByRecruiter.get(rid);
+                if (existing) {
+                    existing.active = existing.active || liveActive;
+                } else {
+                    rowByRecruiter.set(rid, { recruiter: m.recruiter, active: liveActive });
+                }
+            }
+            (job as any).recruiterRows = [...rowByRecruiter.values()];
+        } else {
+            (job as any).recruiterRows = [];
         }
     }
 
@@ -119,6 +166,10 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
     const dict = await getDictionary();
     const c = dict.company;
     const noticeAccepted = await getCandidateProfileNoticeAccepted();
+
+    const recruiterRows = (job as any).recruiterRows || [];
+    const activeRecruiterCount = recruiterRows.filter((r: any) => r.active).length;
+    const expiredRecruiterCount = recruiterRows.length - activeRecruiterCount;
 
     return (
         <div className="space-y-8 max-w-6xl mx-auto py-2">
@@ -221,29 +272,48 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
                         <CardContent className="p-0">
                             <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                                <h3 className="text-lg font-bold">{job.mandates?.length || 0} {c.activeRecruiters}</h3>
+                                <h3 className="text-lg font-bold">
+                                    {activeRecruiterCount} {c.activeRecruiters}
+                                    {expiredRecruiterCount > 0 && (
+                                        <span className="text-slate-400 font-medium"> · {expiredRecruiterCount} {c.recruiterExpired}</span>
+                                    )}
+                                </h3>
                             </div>
 
                             <div className="divide-y divide-slate-50">
-                                {job.mandates && job.mandates.length > 0 ? (
-                                    job.mandates.map((mandate: any) => (
-                                        <div key={mandate.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                {recruiterRows.length > 0 ? (
+                                    recruiterRows.map((row: any) => (
+                                        <div key={row.recruiter.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
                                             <div className="flex items-center gap-4">
                                                 <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border border-slate-200">
-                                                    {(mandate.recruiter?.profile?.full_name || 'R')[0]}
+                                                    {(row.recruiter?.profile?.full_name || 'R')[0]}
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-slate-900">
-                                                        {mandate.recruiter?.profile?.full_name || dict.common.recruiter}
+                                                        {row.recruiter?.profile?.full_name || dict.common.recruiter}
                                                     </p>
                                                     <p className="text-xs text-slate-500 font-medium">
-                                                        {mandate.recruiter?.headline || c.professionalRecruiter}
+                                                        {row.recruiter?.headline || c.professionalRecruiter}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{c.ratingLabel}</p>
-                                                <p className="text-sm font-bold text-slate-700">⭐ {mandate.recruiter?.rating || 'N/A'}</p>
+                                            <div className="flex items-center gap-10">
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">{c.statusLabel}</p>
+                                                    {row.active ? (
+                                                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-100">
+                                                            {c.recruiterActive}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-bold text-red-700 border border-red-100">
+                                                            {c.recruiterExpired}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{c.ratingLabel}</p>
+                                                    <p className="text-sm font-bold text-slate-700">⭐ {row.recruiter?.rating || 'N/A'}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     ))
