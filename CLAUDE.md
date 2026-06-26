@@ -124,7 +124,7 @@ Refresh the dep graph into the vault weekly: `/graphify . --update --obsidian --
 ## 8. Production-ready gate
 
 Before claiming a coding task done:
-1. `npm run build` passes in `rekryteringsplattform/`.
+1. `npm run build` AND `npm run lint` pass in `rekryteringsplattform/`. Build does NOT run ESLint — lint separately (a lint-only error, e.g. `react-hooks/set-state-in-effect`, shipped red to `main` twice on 2026-06-26).
 2. Tests pass; for bug fixes, the reproducing test exists and was red before the fix.
 3. Security-adjacent work checks §6 (auth, IDOR, error leakage, MIME, CSV injection, i18n).
 4. Handoff includes verification evidence, not assertions.

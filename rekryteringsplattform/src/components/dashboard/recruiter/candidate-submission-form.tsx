@@ -184,6 +184,11 @@ export function CandidateSubmissionForm({
             const saved = localStorage.getItem(DRAFT_KEY);
             if (saved) {
                 const d = JSON.parse(saved);
+                /* eslint-disable react-hooks/set-state-in-effect --
+                   One-shot client-only hydration of a localStorage draft on mount
+                   (guarded by initialDraftId + deps [DRAFT_KEY]). localStorage is
+                   unavailable during SSR, so a lazy useState initializer isn't viable
+                   across these atoms; React batches these updates into one render. */
                 if (d.languages) setLanguages(d.languages);
                 if (d.locationStatus) setLocationStatus(d.locationStatus);
                 if (d.workAuth) setWorkAuth(d.workAuth);
@@ -199,6 +204,7 @@ export function CandidateSubmissionForm({
                 }
                 if (Object.keys(restoredText).length > 0) setDraftTextFields(restoredText);
                 if (d.email) { setEmail(d.email); setVerifyStatus("ok"); }
+                /* eslint-enable react-hooks/set-state-in-effect */
             }
         } catch { }
     }, [DRAFT_KEY]);
