@@ -18,7 +18,7 @@ export type AuthResult =
 
 /**
  * Confirm the current user is a recruiter (or admin) who owns the given
- * mandate. Mirrors the auth + IDOR check in /api/cv-match.
+ * mandate (recruiter/admin role + mandate-ownership IDOR check).
  */
 export async function authorizeMandate(mandateId: string): Promise<AuthResult> {
   const supabase = await createClient();

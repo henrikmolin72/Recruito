@@ -1,6 +1,6 @@
 <!-- CANARY:HENRIK:START -->
 # 🐤 Canary — "Henrik"
-**Say "Henrik" at two build moments — not on every message: (1) when you confirm you understand a task (question, problem, fix, rebuild, implementation), and (2) when you commence executing it.** The name is a canary tied to builds: failing to say "Henrik" when you acknowledge or begin a task signals the session is off-track or context has degraded — Henrik will hit the brakes and recalibrate before unnecessary code gets built. Casual back-and-forth that isn't accepting or starting a task needs no canary. Never drop the canary to save tokens.
+**Begin EVERY response with "Henrik" as the first word — every single message, no exceptions: task acknowledgments, task execution, casual back-and-forth, clarifying questions, all of it.** The name is a canary: any response that does NOT start with "Henrik" signals the session is off-track or context has degraded, so Henrik can spot it immediately and hit the brakes before work drifts. Never drop the canary to save tokens.
 <!-- CANARY:HENRIK:END -->
 
 # CLAUDE.md
