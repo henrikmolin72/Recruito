@@ -11,9 +11,7 @@ import {
     MapPin,
     Building,
     Banknote,
-    Users,
     Clock,
-    Briefcase,
     LayoutDashboard,
     FileText,
     Users2,
@@ -23,13 +21,11 @@ import {
 import { formatDate, formatCurrency, calculateClientFee } from "@/lib/utils";
 import { FeeReconfirmCard } from "@/components/dashboard/company/fee-reconfirm-card";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
-import { sanitizeRichText } from "@/lib/sanitize";
 import { JobActions } from "@/components/dashboard/company/job-actions";
 import { CompanyCandidatesOverview } from "@/components/dashboard/company/company-candidates-overview";
 import { getCandidateProfileNoticeAccepted } from "@/lib/actions/company";
 import { AnnouncementsTab } from "@/components/dashboard/company/announcements-tab";
 import { getDictionary } from "@/i18n/server";
-import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { BiasReportCard } from "@/components/compliance/bias-report-card";
 

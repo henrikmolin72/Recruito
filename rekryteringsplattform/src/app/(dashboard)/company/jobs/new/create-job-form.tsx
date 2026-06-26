@@ -13,7 +13,6 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { RecruitmentCalculator, CALCULATOR_DEFAULTS, type CalculatorState } from "@/components/layout/recruitment-calculator";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
-import type { PipelineStage } from "@/types/db-types";
 import { useTranslations } from "@/i18n/client";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
@@ -21,12 +20,9 @@ import {
     WORK_TYPE_OPTIONS,
     REMOTE_TYPE_OPTIONS,
     SALARY_PERIOD_OPTIONS,
-    SALARY_CURRENCY_OPTIONS,
     BENEFITS_OPTIONS,
-    POSITION_TYPE_OPTIONS,
     LANGUAGE_LEVEL_OPTIONS,
     SHIFT_WORK_OPTIONS,
-    URGENCY_LEVEL_OPTIONS,
     COUNTRY_OPTIONS,
     EUROPEAN_LANGUAGE_OPTIONS,
     INDUSTRY_OPTIONS,
@@ -37,7 +33,6 @@ import {
 
 const selectClass = "flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 transition-all font-medium";
 const labelClass = "text-sm font-semibold text-slate-700";
-const textareaClass = "flex min-h-[100px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 transition-all leading-relaxed";
 const checkboxClass = "h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500";
 
 interface InitialJobData {

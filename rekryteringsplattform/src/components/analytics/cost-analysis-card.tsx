@@ -1,7 +1,6 @@
 "use client";
 
 import { Banknote, TrendingDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils";
 
 interface CostRow {

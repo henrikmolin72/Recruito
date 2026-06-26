@@ -8,7 +8,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/lib/notifications/create";
-import { formatCurrency } from "@/lib/utils";
 
 export const runtime = "nodejs";
 

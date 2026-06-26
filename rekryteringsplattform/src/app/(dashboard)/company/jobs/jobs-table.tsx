@@ -10,14 +10,6 @@ type Dict = Record<string, any>;
 
 type TabKey = "live" | "closed" | "filled";
 
-// Non-terminal statuses that count as "Live".
-const LIVE_STATUSES = new Set([
-  "active",
-  "paused",
-  "pending_approval",
-  "pending_client_reconfirm",
-  "draft",
-]);
 
 function tabForStatus(status: string): TabKey {
   if (status === "filled") return "filled";

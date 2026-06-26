@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, X, Loader2, Tag } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface Skill {

@@ -49,12 +49,12 @@ let convIdSeq = 0;
 // Build a chainable client. `asService` true means RLS is bypassed (sees all
 // rows); false means the user-scoped client (still used for candidate
 // resolution + message insert here, which we don't gate in the mock).
-function makeClient(asService: boolean) {
+function makeClient(_asService: boolean) {
   function from(table: string) {
     const filters: Record<string, any> = {};
     let op: "select" | "insert" | "upsert" | "update" = "select";
     let payload: any = null;
-    let upsertOpts: any = null;
+    let _upsertOpts: any = null;
 
     const applyFilters = (rows: any[]) =>
       rows.filter((r) => Object.entries(filters).every(([k, v]) => r[k] === v));
@@ -87,7 +87,7 @@ function makeClient(asService: boolean) {
       order: () => chain,
       limit: () => chain,
       insert: (p: any) => { op = "insert"; payload = p; inserts.push({ table, payload: p }); return chain; },
-      upsert: (p: any, opts: any) => { op = "upsert"; payload = p; upsertOpts = opts; inserts.push({ table, payload: p }); return chain; },
+      upsert: (p: any, opts: any) => { op = "upsert"; payload = p; _upsertOpts = opts; inserts.push({ table, payload: p }); return chain; },
       update: (p: any) => { op = "update"; payload = p; return chain; },
       single: async () => {
         if (op === "insert" && table === "conversations") {

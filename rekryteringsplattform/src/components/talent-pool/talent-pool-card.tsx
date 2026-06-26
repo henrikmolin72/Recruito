@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Bookmark, BookmarkCheck, Loader2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

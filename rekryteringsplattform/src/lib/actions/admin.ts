@@ -565,7 +565,7 @@ function getDateRange(timeRange: string): { from: Date; to: Date } {
 
 export async function getRecruiterAnalytics(timeRange: string = "90d") {
     const { supabase } = await requireAdmin();
-    const { from, to } = getDateRange(timeRange);
+    getDateRange(timeRange);
 
     // Get all recruiter counts and statuses
     const recruiterCountRes = await supabase.from("recruiters").select("approval_status", { count: "exact" });
@@ -691,7 +691,7 @@ export async function getCandidateAnalytics(timeRange: string = "90d") {
     const { supabase } = await requireAdmin();
     const { from, to } = getDateRange(timeRange);
 
-    const [candidatesByStage, stageMetrics] = await Promise.all([
+    const [, stageMetrics] = await Promise.all([
         supabase
             .from("candidates")
             .select("status", { count: "exact" })
@@ -706,9 +706,6 @@ export async function getCandidateAnalytics(timeRange: string = "90d") {
 
     const candidates = stageMetrics.data || [];
     const hiredCandidates = candidates.filter((c: any) => c.status === "hired").length;
-    const submittedCandidates = candidates.filter((c: any) => c.status === "submitted").length;
-
-    const conversionRate = submittedCandidates > 0 ? (hiredCandidates / submittedCandidates) * 100 : 0;
 
     const stageBreakdown: Record<string, { count: number; avgDays: number }> = {};
     const stages = ["submitted", "reviewing", "interview", "offered", "hired", "rejected"];

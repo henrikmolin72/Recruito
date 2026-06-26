@@ -4,7 +4,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendNotificationEmail } from "@/lib/email/notification-email";
 import sv from "@/i18n/dictionaries/sv.json";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Params = Record<string, string | number | null | undefined>;
 
 // Strip CRLF to defend against email-header / log injection from caller-supplied values.
@@ -26,7 +25,6 @@ function safePath(link: string | null | undefined): string | null {
 // the viewer's own locale from title_key/body_key + params.
 function renderTemplate(key: string | undefined, params?: Params): string {
     if (!key) return "";
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let value: any = sv;
     for (const part of key.split(".")) value = value?.[part];
     if (typeof value !== "string") return "";

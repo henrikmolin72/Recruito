@@ -72,7 +72,7 @@ export function newJobNotificationEmail({
 }
 
 export function candidateSubmissionEmail({
-  companyName,
+  companyName: _companyName,
   candidateName,
   candidateTitle,
   jobTitle,
@@ -123,7 +123,7 @@ export function candidateSubmissionEmail({
 }
 
 export function candidateProgressEmail({
-  recruiterName,
+  recruiterName: _recruiterName,
   candidateName,
   jobTitle,
   newStage,

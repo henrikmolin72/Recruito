@@ -439,7 +439,7 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
     // job, nudge them once to reopen for more candidates.
     await maybeNudgeReopenForReview(jobId);
 
-    const { candidate, recruiterUserId, mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
+    const { mandateId, candidateName } = await getCandidateMessagingContext(supabase, candidateId);
     const targetUserId = access.companyUserId;
 
     if (targetUserId) {

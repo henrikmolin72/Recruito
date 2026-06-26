@@ -7,7 +7,7 @@ import {
     Search, MessageSquare, ClipboardCheck,
     CheckCircle2, ArrowRight, Inbox, Award, PauseCircle
 } from "lucide-react";
-import type { PipelineStage, PipelineStageType } from "@/types/db-types";
+import type { PipelineStage } from "@/types/db-types";
 import { useTranslations } from "@/i18n/client";
 
 interface FlowchartCandidate {

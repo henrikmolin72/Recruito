@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Bell, MessageSquare, Briefcase, UserPlus, CreditCard, CheckCircle2, XCircle } from "lucide-react";
 import { getNotifications, markAsRead, markAllAsRead } from "@/lib/actions/notifications";
 import { useRouter } from "next/navigation";
@@ -14,7 +13,6 @@ type Notification = {
     body: string;
     title_key: string | null;
     body_key: string | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     params: Record<string, any> | null;
     link: string | null;
     is_read: boolean;
@@ -23,7 +21,6 @@ type Notification = {
 };
 
 // Interpolate {token} placeholders in a translated string with notification params.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const format = (str: string, params?: Record<string, any> | null): string =>
     params ? str.replace(/\{(\w+)\}/g, (_, k) => (params[k] == null ? "" : String(params[k]))) : str;
 

@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const runtime = "nodejs";
 
 // GET /api/talent-pool?companyId=...&skills=...&q=...
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

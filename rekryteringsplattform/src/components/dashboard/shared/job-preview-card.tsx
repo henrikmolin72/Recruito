@@ -1,4 +1,4 @@
-import { Briefcase, MapPin, Globe, Linkedin, Users, Clock, TrendingUp, Gift, Heart, Shield, Landmark, BarChart2, Package, Car, CheckCircle2, CircleHelp, Phone } from "lucide-react";
+import { Briefcase, MapPin, Globe, Linkedin, TrendingUp, Gift, Heart, Shield, Landmark, BarChart2, Package, Car, CheckCircle2, CircleHelp, Phone } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
 import { sanitizeRichText } from "@/lib/sanitize";
