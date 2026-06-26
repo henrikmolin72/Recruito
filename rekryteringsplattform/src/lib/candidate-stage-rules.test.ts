@@ -4,6 +4,8 @@ import {
     canTransition,
     canReopenTo,
     REOPEN_TARGETS,
+    COMPANY_STAGES,
+    COMPANY_STAGE_TO_STATUS,
 } from "./candidate-stage-rules";
 
 describe("allowedNextStages", () => {
@@ -88,5 +90,32 @@ describe("canReopenTo", () => {
         expect(canReopenTo("viewed")).toBe(false);
         expect(canReopenTo("hired")).toBe(false);
         expect(canReopenTo("rejected")).toBe(false);
+    });
+});
+
+describe("COMPANY_STAGE_TO_STATUS", () => {
+    // Regression: a company "interview"/"final_interview" move used to leave
+    // candidates.status untouched, so the recruiter kept seeing "Under review"
+    // while the company saw "Interview".
+    it("maps interview and final_interview to interview statuses", () => {
+        expect(COMPANY_STAGE_TO_STATUS.interview).toBe("interview");
+        expect(COMPANY_STAGE_TO_STATUS.final_interview).toBe("final_interview");
+    });
+
+    it("keeps the existing offer/hire/reject mappings", () => {
+        expect(COMPANY_STAGE_TO_STATUS.job_offer).toBe("offer_in_progress");
+        expect(COMPANY_STAGE_TO_STATUS.hired).toBe("hired");
+        expect(COMPANY_STAGE_TO_STATUS.rejected).toBe("rejected_client");
+    });
+
+    it("leaves status unchanged for 'viewed' (still under review to the recruiter)", () => {
+        expect(COMPANY_STAGE_TO_STATUS.viewed).toBeNull();
+    });
+
+    it("has an explicit entry for every company stage (no silent omissions)", () => {
+        for (const stage of COMPANY_STAGES) {
+            expect(Object.prototype.hasOwnProperty.call(COMPANY_STAGE_TO_STATUS, stage)).toBe(true);
+        }
+        expect(Object.keys(COMPANY_STAGE_TO_STATUS).sort()).toEqual([...COMPANY_STAGES].sort());
     });
 });

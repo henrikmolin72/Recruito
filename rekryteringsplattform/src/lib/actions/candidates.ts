@@ -28,7 +28,7 @@ import {
     recalculateRecruiterMetrics,
 } from "@/lib/actions/placements";
 import { markJobFilledAndReject, maybeNudgeReopenForReview, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
-import { canTransition, canReopenTo } from "@/lib/candidate-stage-rules";
+import { canTransition, canReopenTo, COMPANY_STAGES, COMPANY_STAGE_TO_STATUS, type CompanyStageValue } from "@/lib/candidate-stage-rules";
 import { logCandidateStageChange } from "@/lib/candidate-stage-history";
 
 type CandidateNextStepRequest =
@@ -715,9 +715,6 @@ export async function requestCandidateNextStep(
     return { success: true };
 }
 
-const COMPANY_STAGES = ["viewed", "interview", "final_interview", "job_offer", "hired", "rejected"] as const;
-export type CompanyStageValue = typeof COMPANY_STAGES[number];
-
 export async function updateCompanyStage(candidateId: string, jobId: string, stage: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -747,15 +744,14 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         patch.company_viewed_at = new Date().toISOString();
     }
 
-    // Step 11 of recruitment process flow: keep candidate.status in sync with offer/hire/reject
-    // transitions so downstream automation (placement trigger, payouts, analytics) sees the change.
-    const STAGE_TO_STATUS: Record<string, string> = {
-        job_offer: "offer_in_progress",
-        hired: "hired",
-        rejected: "rejected_client",
-    };
-    if (STAGE_TO_STATUS[stage]) {
-        patch.status = STAGE_TO_STATUS[stage];
+    // Step 11 of recruitment process flow: keep candidate.status in sync with the
+    // company stage so downstream automation (placement trigger, payouts,
+    // analytics) AND the recruiter's status-derived views reflect the move. The
+    // mapping is exhaustive (COMPANY_STAGE_TO_STATUS); null means the stage
+    // deliberately leaves status unchanged (e.g. "viewed").
+    const mappedStatus = COMPANY_STAGE_TO_STATUS[stage as CompanyStageValue];
+    if (mappedStatus) {
+        patch.status = mappedStatus;
     }
 
     const { error } = await supabase
