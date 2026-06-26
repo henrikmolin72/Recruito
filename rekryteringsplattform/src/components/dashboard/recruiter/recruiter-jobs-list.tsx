@@ -131,6 +131,11 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
   const hasActiveFilters = search || industry !== "all" || location !== "all" || employmentType !== "all" || workType !== "all" || salaryRange !== "all" || country !== "all";
   const activeFilterCount = [industry !== "all", location !== "all", employmentType !== "all", workType !== "all", salaryRange !== "all", country !== "all"].filter(Boolean).length;
 
+  // The header counter reflects only LIVE (active, claimable) assignments. The
+  // marketplace also lists paused jobs, but those are not live opportunities.
+  const liveTotal = jobs.filter((j: any) => j.status === "active").length;
+  const liveFiltered = filteredJobs.filter((j: any) => j.status === "active").length;
+
   const clearFilters = () => {
     setSearch("");
     setIndustry("all");
@@ -153,7 +158,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
         <div className="flex items-center gap-3 bg-brand-50 px-4 py-2 rounded-2xl border border-brand-100">
           <TrendingUp className="h-4 w-4 text-brand-600" />
           <span className="text-xs font-bold text-brand-700 uppercase tracking-wider">
-            {t("recruiter.jobCountLabel").replace("{filtered}", String(filteredJobs.length)).replace("{total}", String(jobs.length))}
+            {t("recruiter.jobCountLabel").replace("{filtered}", String(liveFiltered)).replace("{total}", String(liveTotal))}
           </span>
         </div>
       </div>
