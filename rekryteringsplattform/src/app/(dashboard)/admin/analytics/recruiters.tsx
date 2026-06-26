@@ -7,11 +7,7 @@ import { TrendCard } from "@/components/dashboard/admin/trend-card";
 import { MetricGrid } from "@/components/dashboard/admin/metric-grid";
 import { Users, TrendingUp } from "lucide-react";
 
-interface RecruiterAnalyticsProps {
-    timeRange: string;
-}
-
-export default function RecruiterAnalytics({ timeRange }: RecruiterAnalyticsProps) {
+export default function RecruiterAnalytics() {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -19,7 +15,7 @@ export default function RecruiterAnalytics({ timeRange }: RecruiterAnalyticsProp
         const fetchData = async () => {
             setLoading(true);
             try {
-                const result = await getRecruiterAnalytics(timeRange);
+                const result = await getRecruiterAnalytics();
                 setData(result);
             } catch (error) {
                 console.error("Error fetching recruiter analytics:", error);
@@ -28,7 +24,7 @@ export default function RecruiterAnalytics({ timeRange }: RecruiterAnalyticsProp
             }
         };
         fetchData();
-    }, [timeRange]);
+    }, []);
 
     if (loading) {
         return (
@@ -49,6 +45,10 @@ export default function RecruiterAnalytics({ timeRange }: RecruiterAnalyticsProp
 
     return (
         <div className="space-y-6">
+            <p className="text-xs text-slate-500">
+                Lifetime figures — recruiter performance is cumulative and not affected by the date range above.
+            </p>
+
             {/* Key Metrics */}
             <MetricGrid cols={4}>
                 <TrendCard

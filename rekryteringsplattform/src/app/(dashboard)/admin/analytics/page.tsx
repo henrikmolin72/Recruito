@@ -55,7 +55,7 @@ export default function AnalyticsPage() {
                 </TabsList>
 
                 <TabsContent value="recruiters" className="space-y-6">
-                    <RecruiterAnalytics timeRange={timeRange} />
+                    <RecruiterAnalytics />
                 </TabsContent>
 
                 <TabsContent value="jobs" className="space-y-6">

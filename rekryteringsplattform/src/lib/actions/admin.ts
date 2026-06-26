@@ -563,9 +563,8 @@ function getDateRange(timeRange: string): { from: Date; to: Date } {
     return { from, to };
 }
 
-export async function getRecruiterAnalytics(timeRange: string = "90d") {
+export async function getRecruiterAnalytics() {
     const { supabase } = await requireAdmin();
-    getDateRange(timeRange);
 
     // Get all recruiter counts and statuses
     const recruiterCountRes = await supabase.from("recruiters").select("approval_status", { count: "exact" });
