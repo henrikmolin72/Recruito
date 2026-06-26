@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { TimeRangeSelector } from "@/components/dashboard/admin/time-range-selector";
 import { BarChart3, Users, Briefcase, TrendingUp, Building2 } from "lucide-react";
 import RecruiterAnalytics from "./recruiters";

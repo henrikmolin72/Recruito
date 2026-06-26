@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Job, Company } from "@/types/db-types";
+import { Company } from "@/types/db-types";
 
 import { revalidatePath } from "next/cache";
 import { validateCompanyProfileForm } from "@/lib/validation/forms";

@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 
 let userRow: any;
 let recruiterRow: any;
-let candidateRow: any;
+let _candidateRow: any;
 let deleteError: any = null;
 
 function makeClient() {
@@ -64,7 +64,7 @@ describe("deleteDraftCandidate", () => {
     beforeEach(() => {
         userRow = { id: "user-1" };
         recruiterRow = { id: "rec-1" };
-        candidateRow = { id: "cand-1", recruiter_id: "rec-1", status: "draft" };
+        _candidateRow = { id: "cand-1", recruiter_id: "rec-1", status: "draft" };
         deleteError = null;
     });
 

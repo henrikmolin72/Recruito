@@ -112,7 +112,7 @@ export default function RecruiterAnalytics({ timeRange }: RecruiterAnalyticsProp
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.topRecruiters.map((recruiter: any, idx: number) => (
+                                    {data.topRecruiters.map((recruiter: any) => (
                                         <tr key={recruiter.id} className="border-b hover:bg-slate-50 transition-colors">
                                             <td className="py-2 px-2 font-medium">{recruiter.name}</td>
                                             <td className="text-right py-2 px-2 font-semibold text-emerald-600">{(recruiter.hireRate * 100).toFixed(1)}%</td>

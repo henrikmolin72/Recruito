@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, ShieldCheck, ShieldAlert, ShieldX, Clock } from "lucide-react";
+import { Shield, ShieldCheck, ShieldAlert, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 
@@ -30,7 +30,7 @@ function daysBetween(startStr: string, endStr: string): number {
     return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidateName, jobTitle, className }: GuaranteeTimerProps) {
+export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidateName, jobTitle: _jobTitle, className }: GuaranteeTimerProps) {
     const { t } = useTranslations();
     const [days, setDays] = useState(() => daysUntil(guaranteeEndDate));
 
@@ -43,7 +43,6 @@ export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidate
     const expired = days <= 0;
     const critical = days > 0 && days <= 7;
     const warning = days > 7 && days <= 14;
-    const safe = days > 14;
 
     // Derive the period length from the real start date when available
     // (guarantees run 1–3 months); fall back to 30 days otherwise.

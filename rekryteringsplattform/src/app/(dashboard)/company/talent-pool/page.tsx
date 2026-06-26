@@ -39,7 +39,6 @@ async function getTalentPool() {
         .order("created_at", { ascending: false });
 
     // Supabase returns nested relations as arrays; normalise recursively
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (entries ?? []).map((e: any) => ({
         ...e,
         candidate: Array.isArray(e.candidate)

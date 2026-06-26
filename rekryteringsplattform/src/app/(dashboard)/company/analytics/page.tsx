@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { BarChart3, Download, Loader2, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { HiringFunnel } from "@/components/analytics/hiring-funnel";
 import { TimeToHireCard } from "@/components/analytics/time-to-hire-card";
 import { CostAnalysisCard } from "@/components/analytics/cost-analysis-card";

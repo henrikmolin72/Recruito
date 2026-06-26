@@ -12,7 +12,7 @@ import { getRecruiterMandateById } from "@/lib/actions/recruiter";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";

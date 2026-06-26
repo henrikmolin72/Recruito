@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { GuaranteeTimer } from "./guarantee-timer";
 import { BreachReportForm } from "./breach-report-form";
-import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 
 interface GuaranteeBillingRowProps {

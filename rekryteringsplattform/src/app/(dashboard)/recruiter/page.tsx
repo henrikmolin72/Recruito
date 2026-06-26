@@ -14,7 +14,7 @@ export default async function RecruiterDashboard() {
     getRecruiterDashboard(),
     getRecruiterPerformanceMetrics(),
   ]);
-  const { recruiter, userName, mandates, stats, recentActivity } = dashboardData;
+  const { userName, mandates, stats, recentActivity } = dashboardData;
   const dict = await getDictionary();
   const r = dict.recruiter;
 

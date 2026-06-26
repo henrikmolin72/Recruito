@@ -2,7 +2,7 @@ import { getDictionary } from "@/i18n/server";
 import { AiPolicyContent } from "@/components/compliance/ai-policy-content";
 
 export default async function CompanyAiPolicyPage() {
-    const dict = await getDictionary();
+    await getDictionary();
 
     return (
         <div className="space-y-6">

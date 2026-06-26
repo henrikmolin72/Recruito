@@ -5,10 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
-import { updateCandidateStatus } from "@/lib/actions/candidates";
 import { CandidateAccessGate } from "@/components/dashboard/company/candidate-access-gate";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "@/i18n/client";
 import { normalizeCandidateStatusForWorkflow } from "@/lib/candidate-workflow";
 
@@ -71,8 +69,6 @@ export function CandidatePipeline({ candidates, noticeAccepted }: CandidatePipel
 }
 
 function PipelineView({ candidates, noticeAccepted }: { candidates: any[]; noticeAccepted: boolean }) {
-  const router = useRouter();
-  const [loading, setLoading] = useState<string | null>(null);
   const { t } = useTranslations();
 
   const PIPELINE_STAGES = [
@@ -86,47 +82,6 @@ function PipelineView({ candidates, noticeAccepted }: { candidates: any[]; notic
     { key: "rejected", label: t("components.pipelineRejected"), color: "bg-slate-400" },
     { key: "withdrawn", label: t("components.pipelineWithdrawn"), color: "bg-zinc-400" },
   ] as const;
-
-  type TransitionAction = { label: string; next: string; variant?: "default" | "outline" | "danger" | "ghost" };
-
-  const STATUS_TRANSITIONS: Record<string, TransitionAction[]> = {
-    submitted: [
-      { label: t("components.pipelineActionReview"), next: "reviewing" },
-      { label: t("components.pipelineActionPause"), next: "paused", variant: "outline" },
-      { label: t("components.pipelineActionReject"), next: "rejected", variant: "outline" },
-    ],
-    reviewing: [
-      { label: t("components.pipelineActionBookInterview"), next: "interview" },
-      { label: t("components.pipelineActionBack"), next: "submitted", variant: "ghost" },
-      { label: t("components.pipelineActionPause"), next: "paused", variant: "outline" },
-      { label: t("components.pipelineActionReject"), next: "rejected", variant: "outline" },
-    ],
-    interview: [
-      { label: t("components.pipelineActionGiveOffer"), next: "offered" },
-      { label: t("components.pipelineActionBack"), next: "reviewing", variant: "ghost" },
-      { label: t("components.pipelineActionPause"), next: "paused", variant: "outline" },
-      { label: t("components.pipelineActionReject"), next: "rejected", variant: "outline" },
-    ],
-    offered: [
-      { label: t("components.pipelineActionMarkHired"), next: "hired" },
-      { label: t("components.pipelineActionBack"), next: "interview", variant: "ghost" },
-      { label: t("components.pipelineActionPause"), next: "paused", variant: "outline" },
-      { label: t("components.pipelineActionReject"), next: "rejected", variant: "outline" },
-    ],
-    paused: [
-      { label: t("components.pipelineActionResume"), next: "submitted" },
-    ],
-    rejected: [
-      { label: t("components.pipelineActionResume"), next: "submitted" },
-    ],
-  };
-
-  const handleStatusChange = async (candidateId: string, jobId: string, newStatus: string) => {
-    setLoading(candidateId);
-    await updateCandidateStatus(candidateId, jobId, newStatus);
-    router.refresh();
-    setLoading(null);
-  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

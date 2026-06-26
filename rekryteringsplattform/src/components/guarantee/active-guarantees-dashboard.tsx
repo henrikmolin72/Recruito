@@ -1,6 +1,6 @@
 "use client";
 
-import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";

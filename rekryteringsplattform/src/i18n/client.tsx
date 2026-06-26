@@ -3,7 +3,6 @@
 import { createContext, useContext, useCallback, type ReactNode } from "react";
 import type { Locale } from "./config";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Dictionary = Record<string, any>;
 
 interface I18nContextValue {
@@ -26,7 +25,6 @@ export function LocaleProvider({
     const t = useCallback(
         (key: string): string => {
             const parts = key.split(".");
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let value: any = dictionary;
             for (const part of parts) {
                 value = value?.[part];

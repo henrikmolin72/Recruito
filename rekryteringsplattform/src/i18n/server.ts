@@ -38,7 +38,6 @@ export async function createTranslator() {
 
     return function t(key: string, params?: Record<string, string | number>): string {
         const parts = key.split(".");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let value: any = dict;
         for (const part of parts) {
             value = value?.[part];

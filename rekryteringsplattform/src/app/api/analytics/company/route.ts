@@ -70,12 +70,6 @@ export async function GET(request: NextRequest) {
         `)
         .in("job_id", jobIds);
 
-    // Get AI screenings for applications
-    const { data: screenings } = await admin
-        .from("ai_screenings")
-        .select("application_id, match_score")
-        .in("job_id", jobIds);
-
     // Get placements
     const { data: placements } = await admin
         .from("placements")
@@ -205,7 +199,6 @@ export async function GET(request: NextRequest) {
 
         for (const c of mandateCandidates) {
             if (c.ai_match_score != null) recruiterMap[rid].scores.push(c.ai_match_score);
-            const job = jobs.find((j) => j.id === c.job_id);
             const days = daysBetween(mandate.created_at, c.submitted_at);
             if (days != null && days >= 0) recruiterMap[rid].daysList.push(days);
         }
