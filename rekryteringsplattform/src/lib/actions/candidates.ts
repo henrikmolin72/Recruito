@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { runCandidateEvaluation } from "@/lib/screening/run-evaluation";
 import { createNotification } from "@/lib/notifications/create";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { candidateSubmissionEmail, candidateProgressEmail } from "@/lib/email/email-templates";
@@ -1036,9 +1038,32 @@ export async function markCandidateRecruitoScreened(candidateId: string) {
         const admin = createAdminClient();
         const { data: cand } = await admin
             .from("candidates")
-            .select("first_name, last_name, job_id")
+            .select("first_name, last_name, job_id, mandate_id")
             .eq("id", candidateId)
             .single();
+
+        // Auto-run the AI evaluation so the company sees a match score at approval
+        // time. Non-blocking (after()) so the approval returns immediately; the
+        // score lands a few seconds later. setScore=true: this is Recruito's run, so
+        // it owns the company-visible ai_match_score. Best-effort — a missing CV or
+        // DOCX (eval handles PDF/TXT only) just yields no score, never blocks.
+        const mandateId = (cand as any)?.mandate_id as string | undefined;
+        if (mandateId) {
+            after(async () => {
+                try {
+                    const res = await runCandidateEvaluation({
+                        admin: createAdminClient(),
+                        mandateId,
+                        candidateId,
+                        actorUserId: user.id,
+                        setScore: true,
+                    });
+                    if (!res.ok) console.warn("[markCandidateRecruitoScreened auto-eval]", res.error);
+                } catch (e) {
+                    console.error("[markCandidateRecruitoScreened auto-eval]", e);
+                }
+            });
+        }
 
         if (cand?.job_id) {
             const { data: job } = await admin
