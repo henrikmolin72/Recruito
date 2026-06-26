@@ -8,6 +8,7 @@ import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/notifications/create";
+import { notifyAdmins } from "@/lib/notifications/notify-admins";
 import { countRecruitersWithoutDelivery } from "@/lib/recruiter-search-count";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { newJobNotificationEmail } from "@/lib/email/email-templates";
@@ -491,7 +492,11 @@ export async function closeJob(jobId: string, reason?: string) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
 
-    const { data: job } = await supabase.from("jobs").select("status").eq("id", jobId).single();
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("status, title, company:companies(company_name)")
+        .eq("id", jobId)
+        .single();
     if (!job || (job.status !== "active" && job.status !== "paused")) {
         return { error: "Jobbet kan inte stängas från dess nuvarande status." };
     }
@@ -513,6 +518,12 @@ export async function closeJob(jobId: string, reason?: string) {
     await rejectRemainingCandidates(jobId);
 
     await notifyRecruitersOfJobLifecycleChange(jobId, "closed", reason);
+    await notifyAdmins({
+        titleKey: "notif.adminJobClosedTitle",
+        bodyKey: "notif.adminJobClosedBody",
+        params: { company: (job as any).company?.company_name || "—", jobTitle: (job as any).title || "—" },
+        link: "/admin/jobs",
+    });
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -522,7 +533,11 @@ export async function pauseJob(jobId: string, reason?: string) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
 
-    const { data: job } = await supabase.from("jobs").select("status").eq("id", jobId).single();
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("status, title, company:companies(company_name)")
+        .eq("id", jobId)
+        .single();
     if (!job || job.status !== "active") {
         return { error: "Endast aktiva jobb kan pausas." };
     }
@@ -538,6 +553,12 @@ export async function pauseJob(jobId: string, reason?: string) {
     }
 
     await notifyRecruitersOfJobLifecycleChange(jobId, "paused", reason);
+    await notifyAdmins({
+        titleKey: "notif.adminJobPausedTitle",
+        bodyKey: "notif.adminJobPausedBody",
+        params: { company: (job as any).company?.company_name || "—", jobTitle: (job as any).title || "—" },
+        link: "/admin/jobs",
+    });
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -547,7 +568,11 @@ export async function resumeJob(jobId: string) {
     const { error: authError, supabase } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
 
-    const { data: job } = await supabase.from("jobs").select("status").eq("id", jobId).single();
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("status, title, company:companies(company_name)")
+        .eq("id", jobId)
+        .single();
     if (!job || job.status !== "paused") {
         return { error: "Endast pausade jobb kan återupptas." };
     }
@@ -564,6 +589,12 @@ export async function resumeJob(jobId: string) {
     }
 
     await notifyRecruitersOfJobLifecycleChange(jobId, "reopened");
+    await notifyAdmins({
+        titleKey: "notif.adminJobResumedTitle",
+        bodyKey: "notif.adminJobResumedBody",
+        params: { company: (job as any).company?.company_name || "—", jobTitle: (job as any).title || "—" },
+        link: "/admin/jobs",
+    });
 
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath("/company/jobs");
@@ -788,7 +819,7 @@ export async function clientApproveProposedFee(jobId: string) {
 
     const { data: job } = await supabase
         .from("jobs")
-        .select("id, status, client_fee_amount_proposed, published_at, title")
+        .select("id, status, client_fee_amount_proposed, published_at, title, company:companies(company_name)")
         .eq("id", jobId)
         .single();
     if (!job) return { error: "Job not found" };
@@ -822,6 +853,12 @@ export async function clientApproveProposedFee(jobId: string) {
     }
 
     await notifyMatchingRecruitersAboutJob(jobId);
+    await notifyAdmins({
+        titleKey: "notif.adminFeeApprovedTitle",
+        bodyKey: "notif.adminFeeApprovedBody",
+        params: { company: (job as any).company?.company_name || "—", jobTitle: job.title || "—" },
+        link: "/admin/jobs",
+    });
 
     revalidatePath("/company/jobs");
     revalidatePath(`/company/jobs/${jobId}`);
@@ -838,7 +875,7 @@ export async function clientRejectProposedFee(jobId: string) {
 
     const { data: job } = await supabase
         .from("jobs")
-        .select("id, status")
+        .select("id, status, title, company:companies(company_name)")
         .eq("id", jobId)
         .single();
     if (!job) return { error: "Job not found" };
@@ -867,6 +904,13 @@ export async function clientRejectProposedFee(jobId: string) {
     if (!updated || updated.length === 0) {
         return { error: "Job state changed; please refresh." };
     }
+
+    await notifyAdmins({
+        titleKey: "notif.adminFeeRejectedTitle",
+        bodyKey: "notif.adminFeeRejectedBody",
+        params: { company: (job as any).company?.company_name || "—", jobTitle: (job as any).title || "—" },
+        link: "/admin/jobs",
+    });
 
     revalidatePath("/company/jobs");
     revalidatePath(`/company/jobs/${jobId}`);

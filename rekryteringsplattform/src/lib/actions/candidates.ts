@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { runCandidateEvaluation } from "@/lib/screening/run-evaluation";
 import { createNotification } from "@/lib/notifications/create";
+import { notifyAdmins } from "@/lib/notifications/notify-admins";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { candidateSubmissionEmail, candidateProgressEmail } from "@/lib/email/email-templates";
 import { validateCandidateForm } from "@/lib/validation/forms";
@@ -824,6 +825,22 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         changedByRole: "company",
     });
 
+    // Notify admins of final company outcomes only — hire and reject. Intermediate
+    // moves (viewed/interview/offer) are intentionally not surfaced to admins.
+    if (stage === "hired" || stage === "rejected") {
+        try {
+            const { candidateName } = await getCandidateMessagingContext(supabase, candidateId);
+            await notifyAdmins({
+                titleKey: stage === "hired" ? "notif.adminCandidateHiredTitle" : "notif.adminCandidateRejectedTitle",
+                bodyKey: stage === "hired" ? "notif.adminCandidateHiredBody" : "notif.adminCandidateRejectedBody",
+                params: { candidate: candidateName || "—", jobTitle: access.job?.title || "—" },
+                link: `/admin/candidates/${candidateId}`,
+            });
+        } catch (err) {
+            console.error("[updateCompanyStage admin notify]", err);
+        }
+    }
+
     // Rejecting/advancing a candidate on a paused job may drop the review pool
     // to the reopen-nudge threshold.
     await maybeNudgeReopenForReview(jobId);
@@ -943,6 +960,18 @@ export async function closeJobAfterHire(jobId: string, hiredCandidateId: string)
         return { error: "Något gick fel. Försök igen." };
     }
 
+    try {
+        const { candidateName } = await getCandidateMessagingContext(supabase, hiredCandidateId);
+        await notifyAdmins({
+            titleKey: "notif.adminJobFilledTitle",
+            bodyKey: "notif.adminJobFilledBody",
+            params: { jobTitle: access.job?.title || "—", candidate: candidateName || "—" },
+            link: `/admin/candidates/${hiredCandidateId}`,
+        });
+    } catch (err) {
+        console.error("[closeJobAfterHire admin notify]", err);
+    }
+
     revalidatePath(`/company/jobs/${jobId}`);
     revalidatePath(`/company/jobs/${jobId}/candidates/${hiredCandidateId}`);
     return { success: true };
@@ -1004,6 +1033,13 @@ export async function markOfferAccepted(candidateId: string, jobId: string) {
             subject: `Offer accepted by ${ctx.candidateName || "candidate"}`,
         });
     }
+
+    await notifyAdmins({
+        titleKey: "notif.adminOfferAcceptedTitle",
+        bodyKey: "notif.adminOfferAcceptedBody",
+        params: { candidate: ctx.candidateName || "—", jobTitle: access.job?.title || "—" },
+        link: `/admin/candidates/${candidateId}`,
+    });
 
     revalidatePath(`/company/jobs/${jobId}/candidates/${candidateId}`);
     if (access.mandateId) {
