@@ -16,6 +16,55 @@ import {
     getMissingRequiredFields,
 } from "@/lib/candidate-form";
 import { CLIENT_CLOSED_JOB_STATUSES } from "@/lib/mandate-stages";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { runCandidateEvaluation } from "@/lib/screening/run-evaluation";
+
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+
+const ALLOWED_CV_EXTENSIONS = new Set(["pdf", "doc", "docx", "txt", "rtf"]);
+const ALLOWED_CV_MIME_TYPES = new Set([
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+    "application/rtf",
+    "text/rtf",
+]);
+
+// Single, content-validated CV upload path shared by Present and the in-form AI
+// screening self-check (CLAUDE.md §6: validate MIME by content, one boundary).
+// Returns { cvFilePath: null } when no file was provided (CV is optional on Present).
+async function uploadCandidateCv(
+    supabase: ServerClient,
+    cvFile: FormDataEntryValue | null,
+    jobId: string,
+    recruiterId: string
+): Promise<{ cvFilePath: string | null } | { error: string }> {
+    if (!(cvFile instanceof File) || cvFile.size === 0) return { cvFilePath: null };
+    if (cvFile.size > 5 * 1024 * 1024) return { error: "CV file must be at most 5 MB." };
+
+    const fileExt = (cvFile.name.split(".").pop() || "").toLowerCase();
+    const mimeType = (cvFile.type || "").toLowerCase();
+    if (!fileExt || !ALLOWED_CV_EXTENSIONS.has(fileExt)) {
+        return { error: "Allowed file types: PDF, DOC, DOCX, TXT, RTF." };
+    }
+    if (mimeType && !ALLOWED_CV_MIME_TYPES.has(mimeType)) {
+        return { error: "Allowed file types: PDF, DOC, DOCX, TXT, RTF." };
+    }
+    // Validate by content, not just extension/declared MIME (CLAUDE.md §6).
+    if (!(await verifyCvFileContent(cvFile, fileExt))) {
+        return { error: "Filinnehåll matchar inte filtypen. Ladda upp en giltig CV-fil." };
+    }
+
+    const safeName = cvFile.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
+    const fileName = `${jobId}/${recruiterId}/${Date.now()}-${safeName}`;
+    const { error: uploadError, data } = await supabase.storage.from("cvs").upload(fileName, cvFile);
+    if (uploadError) {
+        console.error("CV Upload Error:", uploadError);
+        return { error: "Kunde inte ladda upp CV." };
+    }
+    return { cvFilePath: data.path };
+}
 
 export async function createCandidateExtended(mandateId: string, formData: FormData) {
   try {
@@ -129,44 +178,10 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         }
     }
 
-    // --- CV Upload ---
-    const ALLOWED_CV_EXTENSIONS = new Set(["pdf", "doc", "docx", "txt", "rtf"]);
-    const ALLOWED_CV_MIME_TYPES = new Set([
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "text/plain",
-        "application/rtf",
-        "text/rtf",
-    ]);
-
-    let cvFilePath = null;
-    const cvFile = formData.get("cv_file");
-    if (cvFile instanceof File && cvFile.size > 0) {
-        if (cvFile.size > 5 * 1024 * 1024) return { error: "CV file must be at most 5 MB." };
-
-        const fileExt = (cvFile.name.split(".").pop() || "").toLowerCase();
-        const mimeType = (cvFile.type || "").toLowerCase();
-        if (!fileExt || !ALLOWED_CV_EXTENSIONS.has(fileExt)) {
-            return { error: "Allowed file types: PDF, DOC, DOCX, TXT, RTF." };
-        }
-        if (mimeType && !ALLOWED_CV_MIME_TYPES.has(mimeType)) {
-            return { error: "Allowed file types: PDF, DOC, DOCX, TXT, RTF." };
-        }
-        // Validate by content, not just extension/declared MIME (CLAUDE.md §6).
-        if (!(await verifyCvFileContent(cvFile, fileExt))) {
-            return { error: "Filinnehåll matchar inte filtypen. Ladda upp en giltig CV-fil." };
-        }
-
-        const safeName = cvFile.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120);
-        const fileName = `${mandate.job_id}/${recruiter.id}/${Date.now()}-${safeName}`;
-        const { error: uploadError, data } = await supabase.storage.from("cvs").upload(fileName, cvFile);
-        if (uploadError) {
-            console.error("CV Upload Error:", uploadError);
-            return { error: "Kunde inte ladda upp CV." };
-        }
-        cvFilePath = data.path;
-    }
+    // --- CV Upload (shared, content-validated path) ---
+    const cvUpload = await uploadCandidateCv(supabase, formData.get("cv_file"), mandate.job_id, recruiter.id);
+    if ("error" in cvUpload) return { error: cvUpload.error };
+    const cvFilePath = cvUpload.cvFilePath;
 
     // --- Insert candidate ---
     // Structured fields are parsed once in candidate-form.ts, shared with the
@@ -305,4 +320,107 @@ export async function deleteDraftCandidate(candidateId: string) {
     revalidatePath("/recruiter/mandates");
     revalidatePath("/recruiter/candidates");
     return { success: true };
+}
+
+// Recruiter pre-submission AI self-check. Persists the in-progress candidate as a
+// draft (incl. CV) so the screening engine can read it, runs the evaluation, and
+// returns Score + a few critical gaps for an inline preview. setScore=false — a
+// recruiter run NEVER sets the company-visible ai_match_score (only Recruito
+// approval does). The draft is promoted to a new row (and deleted) on Present, so
+// this report is an ephemeral self-check, not the candidate's official screening.
+export async function screenDraftCandidate(
+    mandateId: string,
+    formData: FormData,
+    draftId?: string | null
+): Promise<{ error: string } | { draftId: string; matchScore: number | null; criticalGaps: string[] }> {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Du måste vara inloggad." };
+
+    // Auth + mandate ownership (IDOR).
+    const { data: mandate } = await supabase
+        .from("job_mandates").select("job_id, recruiter_id").eq("id", mandateId).single();
+    if (!mandate) return { error: "Mandate not found." };
+
+    const { data: recruiter } = await supabase
+        .from("recruiters").select("id").eq("user_id", user.id).single();
+    if (!recruiter || recruiter.id !== mandate.recruiter_id) return { error: "Unauthorized." };
+
+    // Same per-user budget as the on-demand report route (Anthropic cost control).
+    const rl = await consumeRateLimit({
+        key: `api:screening-report:user:${user.id}`,
+        limit: 15,
+        windowMs: 10 * 60 * 1000,
+    });
+    if (!rl.allowed) return { error: "rate_limited" };
+
+    // A CV is required to screen.
+    const cvUpload = await uploadCandidateCv(supabase, formData.get("cv_file"), mandate.job_id, recruiter.id);
+    if ("error" in cvUpload) return { error: cvUpload.error };
+    if (!cvUpload.cvFilePath) return { error: "no_cv" };
+
+    const admin = createAdminClient();
+    const fields = {
+        first_name: toString(formData.get("first_name")).trim() || "",
+        last_name: toString(formData.get("last_name")).trim() || "",
+        email: toString(formData.get("email")).trim() || null,
+        ...parseCandidateColumns(formData),
+        cv_file_path: cvUpload.cvFilePath,
+    };
+
+    // Upsert the draft so gatherEvalData() can read CV + answers + job context.
+    let id = draftId || null;
+    if (id) {
+        const { data: existing } = await admin
+            .from("candidates").select("id, status, recruiter_id").eq("id", id).single();
+        if (!existing || existing.recruiter_id !== recruiter.id || existing.status !== "draft") {
+            return { error: "Utkastet kunde inte hittas." };
+        }
+        const { error } = await admin.from("candidates").update(fields).eq("id", id);
+        if (error) { console.error("[screenDraftCandidate update]", error); return { error: "save_failed" }; }
+    } else {
+        // Bound draft accumulation: this action is directly callable and each
+        // no-draftId call inserts a row + uploads a CV. Generous cap — legit use
+        // reuses one draft via draftId; this only stops runaway/abusive creation.
+        const { count } = await admin
+            .from("candidates")
+            .select("id", { count: "exact", head: true })
+            .eq("recruiter_id", recruiter.id)
+            .eq("mandate_id", mandateId)
+            .eq("status", "draft");
+        if ((count ?? 0) >= 25) return { error: "too_many_drafts" };
+
+        const { data: inserted, error } = await admin
+            .from("candidates")
+            .insert({
+                job_id: mandate.job_id,
+                recruiter_id: recruiter.id,
+                mandate_id: mandateId,
+                status: "draft",
+                status_changed_at: new Date().toISOString(),
+                ...fields,
+            })
+            .select("id").single();
+        if (error || !inserted) { console.error("[screenDraftCandidate insert]", error); return { error: "save_failed" }; }
+        id = inserted.id as string;
+    }
+
+    const result = await runCandidateEvaluation({
+        admin, mandateId, candidateId: id, actorUserId: user.id, setScore: false,
+    });
+    if (!result.ok) {
+        // Surface only safe, actionable codes; mask internal failures (§6).
+        const known = result.error === "no_cv" || result.error === "unsupported_cv_format";
+        return { error: known ? result.error : "screening_failed" };
+    }
+
+    revalidatePath("/recruiter/mandates");
+    return { draftId: id, matchScore: result.matchScore, criticalGaps: result.criticalGaps };
+  } catch (err) {
+    // Mirror createCandidateExtended: any unexpected throw (e.g. the Anthropic
+    // call) returns the masked code, never a raw error to the client (§6).
+    console.error("[screenDraftCandidate] unexpected", err);
+    return { error: "screening_failed" };
+  }
 }

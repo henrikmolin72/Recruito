@@ -11,12 +11,13 @@ import { randomUUID, createHash } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { gatherEvalData } from "@/lib/screening/eval-data";
 import { extractMatchScore } from "@/lib/screening/extract-match-score";
+import { extractCriticalGaps } from "@/lib/screening/extract-critical-gaps";
 import { fillEvaluationPrompt } from "@/lib/screening/evaluation-prompt";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
 export type RunEvalResult =
-  | { ok: true; reportMarkdown: string; modelVersion: string; matchScore: number | null }
+  | { ok: true; reportMarkdown: string; modelVersion: string; matchScore: number | null; criticalGaps: string[] }
   | { ok: false; error: string; status: number };
 
 function cvMimeFromPath(path: string): "application/pdf" | "text/plain" | null {
@@ -105,7 +106,10 @@ export async function runCandidateEvaluation(args: {
 
   if (!reportMarkdown) return { ok: false, error: "Empty AI response", status: 500 };
 
-  // Store for re-views + audit trail. Failure to store shouldn't lose the report.
+  // Store for re-views + audit trail. Failure to store must NOT lose the report:
+  // callers surface it from this return value (render-from-response), so a missing
+  // candidate_screenings row only costs persisted re-views, not the live result.
+  // ponytail: if this logs in prod, the table/migration (047) is the real fix.
   const { error: insertError } = await admin.from("candidate_screenings").insert({
     screening_id: screeningId,
     candidate_id: candidateId,
@@ -118,10 +122,12 @@ export async function runCandidateEvaluation(args: {
   });
   if (insertError) console.error("[run-evaluation] store", insertError);
 
-  // Company-visible score: only Recruito (admin) runs set it, and only when blank
-  // so a re-run never clobbers an already-set value. The full report always stores.
+  // Company-visible score: only Recruito (admin) runs set it, only when blank (a
+  // re-run never clobbers), AND only when the report row actually persisted — never
+  // expose a client-facing score without its backing report. The live report is
+  // still returned above, so a failed insert just yields no score (no data drift).
   const matchScore = extractMatchScore(reportMarkdown);
-  if (setScore && matchScore !== null) {
+  if (setScore && matchScore !== null && !insertError) {
     const { error: scoreError } = await admin
       .from("candidates")
       .update({ ai_match_score: matchScore })
@@ -130,5 +136,5 @@ export async function runCandidateEvaluation(args: {
     if (scoreError) console.error("[run-evaluation] ai_match_score update", { code: scoreError.code, message: scoreError.message });
   }
 
-  return { ok: true, reportMarkdown, modelVersion: model, matchScore };
+  return { ok: true, reportMarkdown, modelVersion: model, matchScore, criticalGaps: extractCriticalGaps(reportMarkdown) };
 }

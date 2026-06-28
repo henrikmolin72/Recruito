@@ -103,6 +103,17 @@ describe("runCandidateEvaluation", () => {
     expect(admin.candidatesUpdate).not.toHaveBeenCalled();
   });
 
+  it("does NOT set ai_match_score when the report insert fails (no score without a persisted report)", async () => {
+    gather.mockResolvedValue(evalData("cvs/jane.pdf"));
+    const admin = makeAdmin();
+    admin.screeningsInsert.mockResolvedValueOnce({ error: { message: "insert failed" } });
+    const res = await runCandidateEvaluation(baseArgs(admin, true));
+    // The live report is still returned (callers render it from this response)…
+    expect(res.ok).toBe(true);
+    // …but the company-visible score must NOT be written without its backing report.
+    expect(admin.candidatesUpdate).not.toHaveBeenCalled();
+  });
+
   it("returns a 500 when the API key is missing", async () => {
     delete process.env.ANTHROPIC_API_KEY;
     gather.mockResolvedValue(evalData("cvs/jane.pdf"));

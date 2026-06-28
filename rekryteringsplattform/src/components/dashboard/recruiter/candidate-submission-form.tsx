@@ -16,11 +16,12 @@ import {
     MessageSquare,
     ClipboardList,
     Upload,
+    Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createCandidateExtended, saveDraftCandidate, deleteDraftCandidate } from "@/lib/actions/candidates-extended";
+import { createCandidateExtended, saveDraftCandidate, deleteDraftCandidate, screenDraftCandidate } from "@/lib/actions/candidates-extended";
 import { getMissingRequiredFields } from "@/lib/candidate-form";
 import { EUROPEAN_LANGUAGE_OPTIONS } from "@/lib/job-form-options";
 import { toast } from "sonner";
@@ -140,6 +141,11 @@ export function CandidateSubmissionForm({
     // --- CV ---
     const [cvFile, setCvFile] = useState<File | null>(null);
     const cvInputRef = useRef<HTMLInputElement>(null);
+
+    // --- In-form AI screening (pre-submission self-check: Score + a few gaps) ---
+    const [screening, setScreening] = useState(false);
+    const [screenResult, setScreenResult] = useState<{ matchScore: number | null; criticalGaps: string[] } | null>(null);
+    const [screenError, setScreenError] = useState<string | null>(null);
 
     // --- Declaration ---
     const [declared, setDeclared] = useState(false);
@@ -279,6 +285,41 @@ export function CandidateSubmissionForm({
             toast.success("Utkast sparat. Du hittar det under kolumnen Draft.");
         } catch {
             toast.error("Could not save draft");
+        }
+    }
+
+    const screenErrors: Record<string, string> = {
+        no_cv: r.aiScreenErrNoCv || "Upload a CV first to run AI screening.",
+        unsupported_cv_format:
+            r.aiScreenErrUnsupportedCv ||
+            "AI screening supports PDF or TXT CVs only. Upload one of those to get a score.",
+        rate_limited: r.aiScreenErrRateLimited || "Too many screenings — wait a few minutes and try again.",
+    };
+
+    // Persist the in-progress candidate as a draft (incl. CV), run the AI
+    // self-check, and show Score + a few critical gaps — before presenting.
+    async function handleScreen(e: React.MouseEvent) {
+        e.preventDefault();
+        if (!cvFile) { setScreenError(screenErrors.no_cv); return; }
+        setScreening(true);
+        setScreenError(null);
+        const form = (e.currentTarget as HTMLElement).closest("form") as HTMLFormElement;
+        const fd = new FormData(form);
+        injectDynamicFields(fd);
+        fd.set("cv_file", cvFile);
+        try {
+            const result = await screenDraftCandidate(mandateId, fd, draftId);
+            if ("error" in result) {
+                setScreenError(screenErrors[result.error] || r.aiScreenErrFailed || "Screening failed. Please try again.");
+                return;
+            }
+            // Keep editing the same draft row on subsequent runs / save / submit.
+            if (result.draftId) setDraftId(result.draftId);
+            setScreenResult({ matchScore: result.matchScore, criticalGaps: result.criticalGaps });
+        } catch {
+            setScreenError(r.aiScreenErrFailed || "Screening failed. Please try again.");
+        } finally {
+            setScreening(false);
         }
     }
 
@@ -553,6 +594,57 @@ export function CandidateSubmissionForm({
                                     </div>
                                 )}
                             </div>
+                        </div>
+
+                        {/* In-form AI screening — pre-submission self-check (Score + critical gaps) */}
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-sm font-bold text-slate-700">{r.aiScreenTitle || "AI screening (optional)"}</p>
+                                    <p className="text-xs text-slate-500">{r.aiScreenHint || "Check the candidate's fit before presenting. The client never sees this."}</p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleScreen}
+                                    disabled={screening || !cvFile}
+                                    className="h-10 px-4 gap-2 shrink-0"
+                                >
+                                    {screening ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                                    {screening ? (r.aiScreenRunning || "Screening…") : (r.aiScreenRun || "Run AI screening")}
+                                </Button>
+                            </div>
+
+                            {screenError && <p className="mt-2 text-xs font-medium text-red-600">{screenError}</p>}
+
+                            {screenResult && (
+                                <div className="mt-3 border-t border-slate-200 pt-3">
+                                    {screenResult.matchScore !== null ? (
+                                        <div className="flex items-baseline gap-2">
+                                            <span className={`text-3xl font-black tabular-nums ${screenResult.matchScore >= 80 ? "text-emerald-600" : screenResult.matchScore >= 60 ? "text-amber-500" : "text-red-500"}`}>
+                                                {screenResult.matchScore}%
+                                            </span>
+                                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{r.aiScreenScore || "AI Match Score"}</span>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-slate-500">{r.aiScreenNoScore || "Screening ran, but no score could be extracted."}</p>
+                                    )}
+                                    {screenResult.criticalGaps.length > 0 && (
+                                        <div className="mt-2">
+                                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{r.aiScreenGaps || "Critical gaps"}</p>
+                                            <ul className="mt-1 space-y-1">
+                                                {screenResult.criticalGaps.map((g, i) => (
+                                                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                                                        <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
+                                                        <span>{g}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    <p className="mt-2 text-[11px] text-slate-400">{r.aiScreenDisclaimer || "Decision support only — not an automated decision. The full report stays in Recruito."}</p>
+                                </div>
+                            )}
                         </div>
 
                     </div>

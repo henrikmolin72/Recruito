@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       reportMarkdown: result.reportMarkdown,
       modelVersion: result.modelVersion,
+      matchScore: result.matchScore,
+      criticalGaps: result.criticalGaps,
       createdAt: new Date().toISOString(),
     });
   } catch (err) {
