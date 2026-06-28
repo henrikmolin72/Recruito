@@ -288,10 +288,11 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                 <td className="px-4 py-3 text-center">
                                                     {(() => {
                                                         const isExpired = expiryDays !== null && expiryDays <= 0;
+                                                        const isPaused = mandate.status === "paused";
                                                         const cap = mandate.max_candidates ?? 8;
                                                         const totalSubmitted = mandate.submitted_count ?? 0;
                                                         const capReached = totalSubmitted >= cap;
-                                                        const blocked = isExpired || capReached || tab !== "active";
+                                                        const blocked = isExpired || isPaused || capReached || tab !== "active";
 
                                                         if (blocked) {
                                                             return (
@@ -303,9 +304,11 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                                     <UserPlus className="h-3.5 w-3.5" />
                                                                     {isExpired
                                                                         ? (r.expiredLabel || "Expired")
-                                                                        : capReached
-                                                                            ? (r.capReachedLabel || "Cap reached")
-                                                                            : (r.referCandidate || "Refer a Candidate")}
+                                                                        : isPaused
+                                                                            ? (r.pausedLabel || "Paused")
+                                                                            : capReached
+                                                                                ? (r.capReachedLabel || "Cap reached")
+                                                                                : (r.referCandidate || "Refer a Candidate")}
                                                                 </Button>
                                                             );
                                                         }

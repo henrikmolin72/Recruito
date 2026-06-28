@@ -638,6 +638,7 @@
     "emailLabel": "E-postadress *",
     "expiredLabel": "Utgånget",
     "capReachedLabel": "Tak uppnått",
+    "pausedLabel": "Pausad",
     "shiftWork": "Skiftarbete",
     "colDraft": "Utkast",
     "colInReview": "Under granskning",

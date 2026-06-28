@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
         const jobId = (mandate as any).job_id as string;
 
-        // 1) Same-job duplicate (mirror createCandidate same-job rule).
+        // 1) Same-job duplicate (mirror createCandidateExtended same-job rule).
         const { data: sameJobCandidates } = await admin
             .from("candidates")
             .select("email, linkedin_url")
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ duplicate: true });
         }
 
-        // 2) Same-company active engagement duplicate (mirror createCandidate
+        // 2) Same-company active engagement duplicate (mirror createCandidateExtended
         //    client_already_engaged rule).
         const { data: jobRow } = await admin
             .from("jobs")

@@ -193,6 +193,20 @@ export type MandateTabKey = "active" | "closed" | "hired";
 // the recruiter delivered nothing). Paused (auto-pause on cap) stays Active.
 export const CLIENT_CLOSED_JOB_STATUSES = new Set(["closed", "filled", "cancelled"]);
 
+// Job statuses that no longer accept NEW candidate referrals: the client-ended
+// statuses PLUS "paused". A paused job (manual pause, or auto-pause when the
+// candidate cap is hit) must reject new presentations even from a recruiter who
+// still holds an active mandate row. Deliberately DISTINCT from
+// CLIENT_CLOSED_JOB_STATUSES — that set also buckets a mandate into the "Closed"
+// tab, whereas a paused mandate must stay in the recruiter's Active tab
+// (classifyMandate). Single source of truth shared by the Refer button, the
+// new-candidate page guard, and the createCandidateExtended server boundary so a
+// paused job can never receive a referral on any path.
+export const REFERRAL_BLOCKED_JOB_STATUSES = new Set<string>([
+    ...CLIENT_CLOSED_JOB_STATUSES,
+    "paused",
+]);
+
 export interface ClassifiableMandate {
     status: string | null;
     candidates: StageCandidate[];

@@ -6,6 +6,7 @@ import {
     isMandateLiveActive,
     mandateExpiryDaysLeft,
     MANDATE_EXPIRY_DAYS,
+    REFERRAL_BLOCKED_JOB_STATUSES,
     type ExpiryCandidate,
 } from "./mandate-stages";
 
@@ -122,6 +123,26 @@ describe("countActiveRecruiters", () => {
     it("ignores rows without a recruiter id and counts nothing for an empty list", () => {
         expect(countActiveRecruiters([{ recruiterId: null, isActive: true, claimedAt: iso(1 * DAY) }], new Map(), NOW)).toBe(0);
         expect(countActiveRecruiters([], new Map(), NOW)).toBe(0);
+    });
+});
+
+// A paused job must reject new referrals (recruiter Refer button, new-candidate
+// page guard, and the createCandidateExtended server boundary all key on this)
+// while still classifying as an Active mandate (classifyMandate keeps it there).
+describe("REFERRAL_BLOCKED_JOB_STATUSES", () => {
+    it("blocks paused plus the client-ended statuses", () => {
+        for (const s of ["paused", "closed", "filled", "cancelled"]) {
+            expect(REFERRAL_BLOCKED_JOB_STATUSES.has(s)).toBe(true);
+        }
+    });
+
+    it("still accepts referrals on an active job", () => {
+        expect(REFERRAL_BLOCKED_JOB_STATUSES.has("active")).toBe(false);
+    });
+
+    it("keeps a paused mandate in the Active tab (paused gates referrals, not bucketing)", () => {
+        expect(classifyMandate({ status: "paused", candidates: [] })).toBe("active");
+        expect(REFERRAL_BLOCKED_JOB_STATUSES.has("paused")).toBe(true);
     });
 });
 

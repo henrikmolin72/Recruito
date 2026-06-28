@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { runCandidateEvaluation } from "@/lib/screening/run-evaluation";
@@ -10,9 +9,7 @@ import { createNotification } from "@/lib/notifications/create";
 import { notifyAdmins } from "@/lib/notifications/notify-admins";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { candidateSubmissionEmail, candidateProgressEmail } from "@/lib/email/email-templates";
-import { validateCandidateForm } from "@/lib/validation/forms";
 import { requireAdmin } from "@/lib/actions/require-admin";
-import { verifyCvFileContent } from "@/lib/file-magic";
 import type { PipelineStage } from "@/types/db-types";
 import {
     canTransitionCandidateStatus,
@@ -173,188 +170,6 @@ function mapCompanyNextStepLabel(nextStep: CandidateNextStepRequest) {
         proceed_to_hire: "Gå vidare till anställa",
     };
     return labels[nextStep];
-}
-
-import {
-    normalizeIdentity,
-    candidateMatchesIdentity,
-    isClientEngagementActiveStatus,
-} from "@/lib/candidate-identity";
-
-export async function createCandidate(mandateId: string, formData: FormData) {
-    const supabase = await createClient();
-    const admin = createAdminClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect("/login");
-    }
-
-    // Get mandate and job info
-    const { data: mandate } = await supabase
-        .from("job_mandates")
-        .select("job_id, recruiter_id")
-        .eq("id", mandateId)
-        .single();
-
-    if (!mandate) {
-        return { error: "Mandat kunde inte hittas." };
-    }
-
-    // Verify user is the recruiter owning this mandate
-    const { data: recruiter } = await supabase
-        .from("recruiters")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-    if (!recruiter || recruiter.id !== mandate.recruiter_id) {
-        return { error: "Obehörig åtgärd." };
-    }
-
-    // Cap submissions per job (client-requested, default 8). Admin can raise
-    // max_candidates once the client has reviewed the current batch.
-    const { data: jobCap } = await admin
-        .from("jobs")
-        .select("max_candidates")
-        .eq("id", mandate.job_id)
-        .single();
-
-    const maxCandidates = (jobCap as any)?.max_candidates ?? 8;
-    const { count: currentCount } = await admin
-        .from("candidates")
-        .select("id", { count: "exact", head: true })
-        .eq("job_id", mandate.job_id)
-        .neq("status", "draft");
-
-    if ((currentCount ?? 0) >= maxCandidates) {
-        return {
-            error: `Submission limit reached (${maxCandidates} candidates). The client must review the current batch before more can be submitted.`,
-        };
-    }
-
-    const parsed = validateCandidateForm(formData);
-    if (!parsed.success) {
-        return { error: parsed.error };
-    }
-
-    // Workflow: a new candidate enters Recruito's internal review ("reviewing",
-    // recruito_screened_at = null). It is NOT visible to the client and does not
-    // notify them until an admin approves it (markCandidateRecruitoScreened).
-    // Duplicate / client-already-engaged are auto-detected terminal exceptions.
-    const normalizedEmail = normalizeIdentity(parsed.data.email);
-    const normalizedLinkedIn = normalizeIdentity(parsed.data.linkedin_url);
-    let initialStatus = "reviewing";
-
-    if (normalizedEmail || normalizedLinkedIn) {
-        const { data: jobRow } = await admin
-            .from("jobs")
-            .select("id, company_id")
-            .eq("id", mandate.job_id)
-            .single();
-
-        const companyId = (jobRow as any)?.company_id as string | undefined;
-
-        const { data: sameJobCandidates } = await admin
-            .from("candidates")
-            .select("id, email, linkedin_url, status")
-            .eq("job_id", mandate.job_id);
-
-        const duplicate = (sameJobCandidates || []).some((candidate: any) =>
-            candidate.status !== "draft" &&
-            candidateMatchesIdentity(candidate, normalizedEmail, normalizedLinkedIn)
-        );
-
-        if (duplicate) {
-            initialStatus = "duplicate_rejected";
-        } else if (companyId) {
-            const { data: companyJobs } = await admin
-                .from("jobs")
-                .select("id")
-                .eq("company_id", companyId);
-
-            const companyJobIds = (companyJobs || []).map((j: any) => j.id).filter(Boolean);
-
-            if (companyJobIds.length > 0) {
-                const { data: companyCandidates } = await admin
-                    .from("candidates")
-                    .select("id, job_id, email, linkedin_url, status")
-                    .in("job_id", companyJobIds);
-
-                const clientEngaged = (companyCandidates || []).some((candidate: any) =>
-                    candidate.job_id !== mandate.job_id &&
-                    candidateMatchesIdentity(candidate, normalizedEmail, normalizedLinkedIn) &&
-                    isClientEngagementActiveStatus(candidate.status)
-                );
-
-                if (clientEngaged) {
-                    initialStatus = "client_already_engaged";
-                }
-            }
-        }
-    }
-
-    const cvFile = parsed.data.cv_file;
-
-    let cvFilePath = null;
-
-    if (cvFile.size > 0) {
-        const fileExt = (cvFile.name.split('.').pop() ?? "").toLowerCase();
-        const allowedExts = new Set(["pdf", "doc", "docx", "txt", "rtf"]);
-        if (!allowedExts.has(fileExt)) {
-            return { error: "Tillåtna filtyper för CV är PDF, DOC, DOCX, TXT eller RTF." };
-        }
-        if (!(await verifyCvFileContent(cvFile, fileExt))) {
-            return { error: "Filinnehåll matchar inte filtypen. Ladda upp en giltig CV-fil." };
-        }
-        const fileName = `${mandate.job_id}/${recruiter.id}/${Date.now()}.${fileExt}`;
-
-        const { error: uploadError, data } = await supabase.storage
-            .from('cvs')
-            .upload(fileName, cvFile);
-
-        if (uploadError) {
-            console.error("CV Upload Error:", uploadError);
-            return { error: "Kunde inte ladda upp CV." };
-        }
-        cvFilePath = data.path;
-    }
-
-    const { error: insertError } = await supabase
-        .from("candidates")
-        .insert({
-            job_id: mandate.job_id,
-            recruiter_id: recruiter.id,
-            mandate_id: mandateId,
-            first_name: parsed.data.first_name,
-            last_name: parsed.data.last_name,
-            email: parsed.data.email,
-            phone: parsed.data.phone,
-            linkedin_url: parsed.data.linkedin_url,
-            current_title: parsed.data.current_title,
-            current_company: parsed.data.current_company,
-            years_experience: parsed.data.years_experience,
-            expected_salary: parsed.data.expected_salary,
-            cover_note: parsed.data.cover_note,
-            cv_file_path: cvFilePath,
-            status: initialStatus,
-            status_changed_at: new Date().toISOString(),
-        });
-
-    if (insertError) {
-        console.error("Candidate Insert Error:", insertError);
-        return { error: "Något gick fel. Försök igen." };
-    }
-
-    // No client-facing side effects at creation: the candidate is in internal
-    // review and invisible to the client. The "presented" notification and the
-    // candidate-cap auto-pause now fire on Recruito approval
-    // (markCandidateRecruitoScreened), when the candidate actually reaches the
-    // client.
-
-    revalidatePath(`/recruiter/mandates`);
-    revalidatePath(`/recruiter`); // Update stats
-    redirect("/recruiter/mandates");
 }
 
 export async function updateCandidateStatus(candidateId: string, jobId: string, status: string) {

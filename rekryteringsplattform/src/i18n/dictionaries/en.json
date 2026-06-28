@@ -638,6 +638,7 @@
     "emailLabel": "Email Address *",
     "expiredLabel": "Expired",
     "capReachedLabel": "Cap reached",
+    "pausedLabel": "Paused",
     "shiftWork": "Shift Work",
     "colDraft": "Draft",
     "colInReview": "In Review",

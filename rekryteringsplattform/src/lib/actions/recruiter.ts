@@ -511,7 +511,7 @@ export async function claimMandate(jobId: string) {
 
     // Submission-capacity gate (covers retaking an expired job): there must be
     // room to submit at least one more candidate. Mirrors the submission cap in
-    // createCandidate (all candidates count toward max_candidates, default 8).
+    // createCandidateExtended (all candidates count toward max_candidates, default 8).
     const maxCandidates = (job as any).max_candidates ?? 8;
     const { count: candidateCount } = await supabase
         .from("candidates")

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/server";
 import { CandidateSubmissionForm } from "@/components/dashboard/recruiter/candidate-submission-form";
-import { CLIENT_CLOSED_JOB_STATUSES } from "@/lib/mandate-stages";
+import { REFERRAL_BLOCKED_JOB_STATUSES } from "@/lib/mandate-stages";
 
 async function getMandate(id: string) {
     const supabase = await createClient();
@@ -25,10 +25,10 @@ async function getMandate(id: string) {
         .eq("id", id)
         .single();
 
-    // A company-ended job can't take new candidates — don't render the form for it
-    // (the server action rejects it too). The null return triggers notFound().
+    // A paused or company-ended job can't take new candidates — don't render the
+    // form for it (the server action rejects it too). Null return → notFound().
     const job = Array.isArray((mandate as any)?.job) ? (mandate as any).job[0] : (mandate as any)?.job;
-    if (job && CLIENT_CLOSED_JOB_STATUSES.has(job.status)) return null;
+    if (job && REFERRAL_BLOCKED_JOB_STATUSES.has(job.status)) return null;
 
     return mandate;
 }

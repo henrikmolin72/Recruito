@@ -15,7 +15,7 @@ import {
     parseCandidateColumns,
     getMissingRequiredFields,
 } from "@/lib/candidate-form";
-import { CLIENT_CLOSED_JOB_STATUSES } from "@/lib/mandate-stages";
+import { REFERRAL_BLOCKED_JOB_STATUSES } from "@/lib/mandate-stages";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { runCandidateEvaluation } from "@/lib/screening/run-evaluation";
 
@@ -113,11 +113,12 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         .select("screening_questions, status")
         .eq("id", mandate.job_id)
         .single();
-    // A company-ended job (closed/filled/cancelled) no longer accepts candidates,
-    // even from a recruiter who still holds an active mandate row. Mirrors the
-    // disabled "Present Candidate" UI gate; enforced here as the server boundary.
-    if (CLIENT_CLOSED_JOB_STATUSES.has((jobForValidation as any)?.status)) {
-        return { error: "This job is no longer accepting candidates." };
+    // A paused or company-ended (closed/filled/cancelled) job no longer accepts
+    // NEW candidates, even from a recruiter who still holds an active mandate row.
+    // Mirrors the disabled "Refer a Candidate" UI gate; enforced here as the
+    // server boundary so a paused job can never receive a referral on any path.
+    if (REFERRAL_BLOCKED_JOB_STATUSES.has((jobForValidation as any)?.status)) {
+        return { error: "This job is not currently accepting candidates." };
     }
     const screeningCount = Array.isArray((jobForValidation as any)?.screening_questions)
         ? (jobForValidation as any).screening_questions.length
