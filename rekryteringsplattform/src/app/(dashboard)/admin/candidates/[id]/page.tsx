@@ -9,6 +9,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLatestEvaluation } from "@/lib/actions/screening";
 import { MarkdownReport } from "@/components/screening/markdown-report";
 import { RunScreeningButton } from "@/components/dashboard/admin/run-screening-button";
+import { CandidateStageHistoryTimeline } from "@/components/dashboard/company/candidate-stage-history-timeline";
+import type { CandidateStageHistory } from "@/types/db-types";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
     if (value === null || value === undefined || value === "") return null;
@@ -70,6 +72,15 @@ export default async function AdminCandidateDetailPage({
             // Non-fatal — the page still renders without a download link.
         }
     }
+
+    // Stage-progression audit trail (migration 052), read with the admin client.
+    // Recruito is view-only but sees the same client-side history for parity.
+    const { data: stageHistoryRows } = await createAdminClient()
+        .from("candidate_stage_history")
+        .select("*")
+        .eq("candidate_id", c.id)
+        .order("created_at", { ascending: false });
+    const stageHistory: CandidateStageHistory[] = (stageHistoryRows as CandidateStageHistory[]) ?? [];
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
@@ -204,6 +215,34 @@ export default async function AdminCandidateDetailPage({
                         value={languages.length > 0 ? languages.map((l) => `${l.language}${l.proficiency ? ` (${l.proficiency})` : ""}`).join(", ") : null}
                     />
                 </dl>
+            </Section>
+
+            <Section title="Stage history">
+                <CandidateStageHistoryTimeline
+                    rows={stageHistory}
+                    labels={{
+                        title: "Stage history",
+                        empty: "No stage changes recorded yet.",
+                        by: "by {role}",
+                        reason: "Reason: {reason}",
+                        actions: {
+                            move: "Moved",
+                            reject: "Rejected",
+                            reopen: "Reopened",
+                            withdraw: "Withdrawn",
+                            hire: "Hired",
+                        },
+                        stageNames: {
+                            viewed: "Viewed",
+                            interview: "Interview",
+                            final_interview: "Final interview",
+                            job_offer: "Job offer",
+                            hired: "Hired",
+                            rejected: "Rejected",
+                            withdrawn: "Withdrawn",
+                        },
+                    }}
+                />
             </Section>
         </div>
     );

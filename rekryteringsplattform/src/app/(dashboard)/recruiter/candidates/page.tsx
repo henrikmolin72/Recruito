@@ -6,9 +6,25 @@ import { getRecruiterCandidates } from "@/lib/actions/recruiter";
 import { formatDate, cn } from "@/lib/utils";
 import Link from "next/link";
 import { getDictionary } from "@/i18n/server";
-import { candidateInStage } from "@/lib/mandate-stages";
+import { candidateInStage, type MandateStage } from "@/lib/mandate-stages";
+import { CANDIDATE_WITHDRAW_BLOCKED_STATUSES } from "@/lib/candidate-workflow";
 import { Eye, EyeOff } from "lucide-react";
 import { DraftRowActions } from "@/components/dashboard/recruiter/draft-row-actions";
+import { PipelineWithdrawButton } from "@/components/dashboard/recruiter/pipeline-withdraw-button";
+
+// Per the workflow spec the recruiter may withdraw only while the candidate is
+// live in one of these stages — never from draft, rejected, withdrawn or hired.
+// withdrawCandidate enforces the same rule server-side as the authoritative guard.
+const WITHDRAWABLE_STAGES: MandateStage[] = ["submitted", "in_review", "interview", "final_interview", "offer"];
+
+// A candidate can sit in a withdrawable *stage bucket* yet be in a terminal
+// status the server rejects (e.g. duplicate_rejected/client_already_engaged live
+// in the "submitted" bucket, offer_declined in "offer"). Gate on the same blocked
+// set the server enforces so we never offer a Withdraw button that always errors.
+function canWithdrawCandidate(candidate: { status: string | null }): boolean {
+  if (CANDIDATE_WITHDRAW_BLOCKED_STATUSES.has(candidate.status ?? "")) return false;
+  return WITHDRAWABLE_STAGES.some((s) => candidateInStage(candidate, s));
+}
 
 type PipelineTabKey =
   | "all"
@@ -166,9 +182,28 @@ export default async function RecruiterCandidatesPage({
                             confirmLabel={r.removeDraftConfirm}
                           />
                         ) : (
-                          <Link href={`/recruiter/mandates/${candidate.mandate_id}/candidates/${candidate.id}`}>
-                            <Button variant="outline" size="sm">{dict.common.details}</Button>
-                          </Link>
+                          <div className="flex items-center gap-3">
+                            {canWithdrawCandidate(candidate) && (
+                              <PipelineWithdrawButton
+                                candidateId={candidate.id}
+                                jobId={candidate.job_id}
+                                candidateName={`${candidate.first_name ?? ""} ${candidate.last_name ?? ""}`.trim()}
+                                labels={{
+                                  withdraw: r.withdraw,
+                                  title: r.withdrawCandidate,
+                                  warning: r.withdrawConfirmWarning,
+                                  selectReason: r.pipelineSelectReason,
+                                  confirm: r.withdrawCandidate,
+                                  cancel: dict.common.cancel,
+                                  updating: r.updating,
+                                  errorFallback: r.pipelineUpdateError,
+                                }}
+                              />
+                            )}
+                            <Link href={`/recruiter/mandates/${candidate.mandate_id}/candidates/${candidate.id}`}>
+                              <Button variant="outline" size="sm">{dict.common.details}</Button>
+                            </Link>
+                          </div>
                         )}
                       </div>
                     </CardContent>

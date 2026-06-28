@@ -1,16 +1,16 @@
-import type { PipelineStage } from "@/types/db-types";
+import type { PipelineStage, CandidateStageHistory } from "@/types/db-types";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import {
     ArrowLeft,
     Mail,
     Phone,
     Linkedin,
-    FileText,
     GitBranch,
     Search,
     MessageSquare,
@@ -21,10 +21,12 @@ import {
     Circle,
     PauseCircle,
     Sparkles,
+    Download,
 } from "lucide-react";
 import { TabbedCandidateChat } from "@/components/shared/tabbed-candidate-chat";
 import { CompanyNextStepPanel } from "@/components/dashboard/recruiter/company-next-step-panel";
-import { RecruiterWithdrawControl } from "@/components/dashboard/recruiter/recruiter-withdraw-control";
+import { CandidateDetailSections } from "@/components/shared/candidate-detail-sections";
+import { CandidateStageHistoryTimeline } from "@/components/dashboard/company/candidate-stage-history-timeline";
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { cn } from "@/lib/utils";
@@ -264,6 +266,13 @@ async function getCandidate(candidateId: string) {
 
     if (!user) return null;
 
+    const { data: recruiter } = await supabase
+        .from("recruiters")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+    if (!recruiter) return null;
+
     const { data: candidate } = await supabase
         .from("candidates")
         .select(`
@@ -276,6 +285,11 @@ async function getCandidate(candidateId: string) {
         `)
         .eq("id", candidateId)
         .single();
+
+    // IDOR guard: a recruiter may only open candidates they presented. The CV is
+    // signed below with the service-role client (which bypasses RLS), so an
+    // explicit ownership check is required here — not just RLS on the read above.
+    if (!candidate || (candidate as any).recruiter_id !== recruiter.id) return null;
 
     return candidate;
 }
@@ -303,6 +317,38 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
         getLatestEvaluation(candidateId, mandateId),
     ]);
 
+    // CV + stage history are read with the service-role client only AFTER
+    // getCandidate() confirmed this recruiter owns the candidate (IDOR guard),
+    // mirroring how the company/admin pages sign CVs without relying on a broad
+    // storage SELECT policy (see migration 054).
+    const admin = createAdminClient();
+    let cvUrl: string | null = null;
+    if (candidate.cv_file_path) {
+        try {
+            const { data, error } = await admin.storage.from("cvs").createSignedUrl(candidate.cv_file_path, 3600);
+            if (!error) cvUrl = data?.signedUrl ?? null;
+        } catch (e) {
+            console.error("Storage error:", e);
+        }
+    }
+    const { data: stageHistoryRows } = await admin
+        .from("candidate_stage_history")
+        .select("*")
+        .eq("candidate_id", candidateId)
+        .order("created_at", { ascending: false });
+    const stageHistory: CandidateStageHistory[] = (stageHistoryRows as CandidateStageHistory[]) ?? [];
+    // Reuse the client-side labels so the recruiter sees the same stage history UI.
+    const cc = dict.company;
+    const stageNames: Record<string, string> = {
+        viewed: cc.stageNameViewed,
+        interview: cc.stageNameInterview,
+        final_interview: cc.stageNameFinalInterview,
+        job_offer: cc.stageNameJobOffer,
+        hired: cc.stageNameHired,
+        rejected: cc.stageNameRejected,
+        withdrawn: cc.stageNameWithdrawn,
+    };
+
     return (
         <div className="space-y-8 max-w-5xl mx-auto py-2">
             <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between border-b pb-8 border-slate-100">
@@ -327,17 +373,18 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                         </div>
                     </div>
                 </div>
+                {cvUrl && (
+                    <a href={cvUrl} target="_blank" rel="noreferrer">
+                        <Button variant="outline" className="gap-2">
+                            <Download className="h-4 w-4" /> {dict.company.downloadCv}
+                        </Button>
+                    </a>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
                     <RecruiterCandidateProcessCard candidate={candidate} dict={dict} />
-
-                    <RecruiterWithdrawControl
-                        candidateId={candidateId}
-                        jobId={candidate.job_id}
-                        dict={r as any}
-                    />
 
                     <CompanyNextStepPanel
                         candidateId={candidateId}
@@ -348,6 +395,8 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                         pendingRequestAt={candidate.company_requested_next_step_at}
                         pipelineStages={(candidate.job as any)?.pipeline_stages || []}
                     />
+
+                    <CandidateDetailSections candidate={candidate} dict={dict} />
 
                     <div className="space-y-4">
                         <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mb-4">
@@ -377,112 +426,70 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
 
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
                         <CardHeader className="pb-2">
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">{r.profileOverview}</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">{dict.company.contactInfoTitle}</h3>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-4">
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                                    <Mail className="h-4 w-4 text-slate-400" />
+                                </div>
+                                <a href={`mailto:${candidate.email}`} className="text-sm font-bold text-slate-700 hover:underline">{candidate.email}</a>
+                            </div>
+                            {candidate.phone && (
                                 <div className="flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
-                                        <Mail className="h-4 w-4 text-slate-400" />
+                                        <Phone className="h-4 w-4 text-slate-400" />
                                     </div>
-                                    <span className="text-sm font-bold text-slate-700">{candidate.email}</span>
+                                    <span className="text-sm font-bold text-slate-700">{candidate.phone}</span>
                                 </div>
-                                {candidate.phone && (
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
-                                            <Phone className="h-4 w-4 text-slate-400" />
-                                        </div>
-                                        <span className="text-sm font-bold text-slate-700">{candidate.phone}</span>
+                            )}
+                            {candidate.linkedin_url && (
+                                <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                                        <Linkedin className="h-4 w-4 text-slate-400" />
                                     </div>
-                                )}
-                                {candidate.linkedin_url && (
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
-                                            <Linkedin className="h-4 w-4 text-slate-400" />
-                                        </div>
-                                        <a href={candidate.linkedin_url} target="_blank" rel="noreferrer" className="text-sm font-bold text-brand-600 hover:underline">{dict.common.linkedInProfile}</a>
+                                    <a href={candidate.linkedin_url} target="_blank" rel="noreferrer" className="text-sm font-bold text-brand-600 hover:underline">{dict.common.linkedInProfile}</a>
+                                </div>
+                            )}
+                            {candidate.portfolio_url && (
+                                <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                                        <Linkedin className="h-4 w-4 text-slate-400" />
                                     </div>
-                                )}
-                            </div>
+                                    <a href={candidate.portfolio_url} target="_blank" rel="noreferrer" className="text-sm font-bold text-brand-600 hover:underline">Portfolio</a>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
-                            <div className="pt-4 border-t border-slate-50 space-y-4">
-                                {candidate.desired_salary && (
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{r.salaryExpectationLabel}</p>
-                                        <p className="text-sm font-bold text-slate-700">
-                                            {candidate.desired_salary_currency || ''} {candidate.desired_salary?.toLocaleString()}
-                                        </p>
-                                        {candidate.expected_salary_below_current_reason && (
-                                            <p className="mt-1 text-xs text-slate-500 italic">
-                                                {candidate.expected_salary_below_current_reason}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                                {(candidate.location_city || candidate.location_country) && (
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Location</p>
-                                        <p className="text-sm font-bold text-slate-700">
-                                            {[candidate.location_city, candidate.location_country].filter(Boolean).join(", ")}
-                                        </p>
-                                    </div>
-                                )}
-                                {candidate.work_authorization && (
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Authorization</p>
-                                        <p className="text-sm font-bold text-slate-700 capitalize">{candidate.work_authorization.replace(/_/g, ' ')}</p>
-                                    </div>
-                                )}
-                                {candidate.employment_status && (
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Employment Status</p>
-                                        <p className="text-sm font-bold text-slate-700 capitalize">{candidate.employment_status.replace(/_/g, ' ')}</p>
-                                    </div>
-                                )}
-                                {candidate.notice_period && (
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Notice Period</p>
-                                        <p className="text-sm font-bold text-slate-700">
-                                            {candidate.notice_period === 'immediately' ? 'Available Immediately' : candidate.notice_period.replace(/_/g, ' ')}
-                                            {candidate.notice_negotiable && <span className="ml-2 text-xs text-emerald-600">(Negotiable)</span>}
-                                        </p>
-                                    </div>
-                                )}
-                                {candidate.other_processes !== null && (
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Other Processes</p>
-                                        <p className="text-sm font-bold text-slate-700">
-                                            {candidate.other_processes
-                                                ? `Yes${candidate.other_processes_stage ? ` — ${candidate.other_processes_stage.replace(/_/g, ' ')}` : ''}`
-                                                : 'No'}
-                                        </p>
-                                    </div>
-                                )}
-                                {candidate.contact_method && (
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Preferred Contact</p>
-                                        <p className="text-sm font-bold text-slate-700 capitalize">{candidate.contact_method.replace(/_/g, ' ')}</p>
-                                    </div>
-                                )}
-                            </div>
+                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base">{dict.company.stageHistoryTitle}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <CandidateStageHistoryTimeline
+                                rows={stageHistory}
+                                labels={{
+                                    title: cc.stageHistoryTitle,
+                                    empty: cc.stageHistoryEmpty,
+                                    by: cc.stageHistoryBy,
+                                    reason: cc.stageHistoryReason,
+                                    actions: {
+                                        move: cc.stageActionMove,
+                                        reject: cc.stageActionReject,
+                                        reopen: cc.stageActionReopen,
+                                        withdraw: cc.stageActionWithdraw,
+                                        hire: cc.stageActionHire,
+                                    },
+                                    stageNames,
+                                }}
+                            />
                         </CardContent>
                     </Card>
 
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
                         <CardContent className="p-6">
                             <SkillTagEditor candidateId={candidate.id} />
-                        </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-slate-900 text-white overflow-hidden">
-                        <CardContent className="p-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <FileText className="h-5 w-5 text-brand-400" />
-                                <h3 className="font-bold">{r.yourMotivation}</h3>
-                            </div>
-                            <p className="text-sm text-slate-400 italic leading-relaxed">
-                                &quot;{candidate.cover_note || dict.company.noMotivationProvided}&quot;
-                            </p>
                         </CardContent>
                     </Card>
                 </div>

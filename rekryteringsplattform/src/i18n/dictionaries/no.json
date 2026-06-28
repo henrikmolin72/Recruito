@@ -674,6 +674,8 @@
     "applyWorkflowStatus": "Bruk workflow-status",
     "withdrawCandidate": "Trekk tilbake kandidat",
     "withdrawControlNote": "Kun selskapet og Recruito kan flytte kandidaten gjennom prosessen.",
+    "withdraw": "Trekk tilbake",
+    "withdrawConfirmWarning": "Denne handlingen kan ikke angres. Kandidaten trekkes permanent tilbake fra prosessen.",
     "pipelineSelectReason": "Velg årsak",
     "updating": "Oppdaterer...",
     "pipelineNoCustomStages": "Denne jobben mangler egendefinerte pipeline-steg. Bruk statusknappene nedenfor.",

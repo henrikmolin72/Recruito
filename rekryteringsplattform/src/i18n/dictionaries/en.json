@@ -674,6 +674,8 @@
     "applyWorkflowStatus": "Apply workflow status",
     "withdrawCandidate": "Withdraw candidate",
     "withdrawControlNote": "Only the company and Recruito can move the candidate through the process.",
+    "withdraw": "Withdraw",
+    "withdrawConfirmWarning": "This action cannot be undone. The candidate will be permanently withdrawn from the process.",
     "pipelineSelectReason": "Select reason",
     "updating": "Updating…",
     "pipelineNoCustomStages": "This job has no custom pipeline stages. Use the status buttons below.",
