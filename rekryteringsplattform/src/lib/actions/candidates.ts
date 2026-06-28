@@ -10,6 +10,7 @@ import { notifyAdmins } from "@/lib/notifications/notify-admins";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { candidateSubmissionEmail, candidateProgressEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";
+import { REFERRAL_BLOCKED_JOB_STATUSES } from "@/lib/mandate-stages";
 import type { PipelineStage } from "@/types/db-types";
 import {
     canTransitionCandidateStatus,
@@ -863,6 +864,24 @@ export async function markOfferAccepted(candidateId: string, jobId: string) {
 // before the client sees them. Sets recruito_screened_at + recruito_screened_by.
 export async function markCandidateRecruitoScreened(candidateId: string) {
     const { supabase, user } = await requireAdmin();
+
+    // A paused or company-ended job no longer accepts presentations to the client.
+    // Block BEFORE marking the candidate screened/visible so an admin can't push an
+    // in-flight candidate through to a paused job and notify the company. The
+    // cap-triggering presentation itself still goes through: the auto-pause below
+    // flips status to "paused" only AFTER this point, so at entry it is still
+    // "active". Mirrors the recruiter-side createCandidateExtended gate.
+    const { data: screenJob } = await createAdminClient()
+        .from("candidates")
+        .select("job:jobs(status)")
+        .eq("id", candidateId)
+        .single();
+    const screenJobStatus = Array.isArray((screenJob as any)?.job)
+        ? (screenJob as any).job[0]?.status
+        : (screenJob as any)?.job?.status;
+    if (REFERRAL_BLOCKED_JOB_STATUSES.has(screenJobStatus)) {
+        return { error: "This job is not currently accepting candidates." };
+    }
 
     const { error } = await supabase
         .from("candidates")
