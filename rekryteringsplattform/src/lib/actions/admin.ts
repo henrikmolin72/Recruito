@@ -25,17 +25,30 @@ export async function getAdminStats() {
         supabase.from("companies").select("*", { count: "exact", head: true }),
         supabase.from("recruiters").select("*", { count: "exact", head: true }),
         supabase.from("jobs").select("*", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("placements").select("total_fee,platform_fee,recruiter_fee,status").limit(1000),
+        supabase.from("placements").select("status, jobs(client_fee_amount, recruiter_fee_amount)").limit(1000),
         supabase.from("recruiters").select("*", { count: "exact", head: true }).eq("approval_status", "pending"),
-        supabase.from("candidates").select("*", { count: "exact", head: true }),
+        // Only presented candidates — exclude drafts (mirrors isCandidateSubmitted: status !== "draft").
+        supabase.from("candidates").select("*", { count: "exact", head: true }).neq("status", "draft"),
         supabase.from("recruiters").select("*", { count: "exact", head: true }).eq("approval_status", "approved"),
     ]);
 
+    // Revenue rides on the full placements set; a silent query error or the 1000-row cap
+    // would understate a money figure shown to admins. Make either condition loud rather
+    // than render a wrong total. ponytail: 1000-row cap — move revenue to a SQL sum if this fires.
+    if (placements.error) {
+        console.error("[getAdminStats] placements query failed; revenue may be understated:", placements.error.message);
+    } else if (placements.data?.length === 1000) {
+        console.warn("[getAdminStats] placements hit the 1000-row cap — revenue/placement stats truncate here.");
+    }
+
+    // Platform revenue = Σ over placements of (client fee − recruiter fee), using the job's
+    // admin-negotiated fees. The placement's own total_fee/recruiter_fee are stale seed
+    // snapshots (15%-of-salary) and must not be used here.
     const totalRevenue = placements.data?.reduce((sum, placement) => {
-        const totalFee = placement.total_fee || 0;
-        const recruiterFee = placement.recruiter_fee || 0;
-        const platformFee = placement.platform_fee ?? (totalFee > 0 ? Math.max(totalFee - recruiterFee, 0) : 0);
-        return sum + platformFee;
+        const job = pickFirst(placement.jobs);
+        const clientFee = Number(job?.client_fee_amount ?? 0);
+        const recruiterFee = Number(job?.recruiter_fee_amount ?? 0);
+        return sum + Math.max(clientFee - recruiterFee, 0);
     }, 0) || 0;
 
     const completedPlacements = placements.data?.filter(p => p.status === "completed").length || 0;
