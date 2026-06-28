@@ -28,7 +28,7 @@ import { AnnouncementsTab } from "@/components/dashboard/company/announcements-t
 import { getDictionary } from "@/i18n/server";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { BiasReportCard } from "@/components/compliance/bias-report-card";
-import { mandateExpiryDaysLeft } from "@/lib/mandate-stages";
+import { isMandateLiveActive } from "@/lib/mandate-stages";
 
 async function getJob(id: string) {
     const supabase = await createClient();
@@ -133,11 +133,10 @@ async function getJob(id: string) {
             for (const m of mandates) {
                 const rid = m.recruiter?.id;
                 if (!rid) continue;
-                const daysLeft = mandateExpiryDaysLeft({
-                    claimedAt: m.claimed_at ?? null,
-                    candidates: candsByRecruiter.get(rid) || [],
-                });
-                const liveActive = !!m.is_active && (daysLeft === null || daysLeft > 0);
+                const liveActive = isMandateLiveActive(
+                    { isActive: m.is_active, claimedAt: m.claimed_at ?? null },
+                    candsByRecruiter.get(rid) || [],
+                );
                 const existing = rowByRecruiter.get(rid);
                 if (existing) {
                     existing.active = existing.active || liveActive;

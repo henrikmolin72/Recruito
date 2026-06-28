@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { candidateInStage, classifyMandate, mandateExpiryDaysLeft, MANDATE_EXPIRY_DAYS } from "./mandate-stages";
+import {
+    candidateInStage,
+    classifyMandate,
+    countActiveRecruiters,
+    isMandateLiveActive,
+    mandateExpiryDaysLeft,
+    MANDATE_EXPIRY_DAYS,
+    type ExpiryCandidate,
+} from "./mandate-stages";
 
 const DAY = 86_400_000;
 const NOW = new Date("2026-05-31T12:00:00.000Z").getTime();
@@ -61,6 +69,59 @@ describe("mandateExpiryDaysLeft", () => {
             now: NOW,
         });
         expect(result).toBeNull();
+    });
+});
+
+// Single source of truth for "active recruiter": the company Jobs list count and
+// the job-detail Recruiters-tab count both run through these, so they can't drift.
+describe("isMandateLiveActive", () => {
+    it("is active for a fresh claim with is_active=true", () => {
+        expect(isMandateLiveActive({ isActive: true, claimedAt: iso(2 * DAY) }, [], NOW)).toBe(true);
+    });
+
+    it("is not active when is_active=false (released), even within the timer", () => {
+        expect(isMandateLiveActive({ isActive: false, claimedAt: iso(2 * DAY) }, [], NOW)).toBe(false);
+    });
+
+    it("is not active once the no-delivery timer has run out", () => {
+        expect(isMandateLiveActive({ isActive: true, claimedAt: iso(20 * DAY) }, [], NOW)).toBe(false);
+    });
+
+    it("stays active while a live candidate suspends the timer, however old the claim", () => {
+        const cands: ExpiryCandidate[] = [{ status: "under_client_review", status_changed_at: iso(15 * DAY) }];
+        expect(isMandateLiveActive({ isActive: true, claimedAt: iso(40 * DAY) }, cands, NOW)).toBe(true);
+    });
+});
+
+describe("countActiveRecruiters", () => {
+    const map = (e: Record<string, ExpiryCandidate[]>) => new Map(Object.entries(e));
+
+    it("counts only recruiters with a live mandate", () => {
+        const mandates = [
+            { recruiterId: "r1", isActive: true, claimedAt: iso(2 * DAY) },   // active
+            { recruiterId: "r2", isActive: false, claimedAt: iso(2 * DAY) },  // released
+            { recruiterId: "r3", isActive: true, claimedAt: iso(20 * DAY) },  // timer-expired
+        ];
+        expect(countActiveRecruiters(mandates, new Map(), NOW)).toBe(1);
+    });
+
+    it("counts a timer-expired recruiter as active when a live candidate suspends the timer", () => {
+        const mandates = [{ recruiterId: "r3", isActive: true, claimedAt: iso(20 * DAY) }];
+        const cands = map({ r3: [{ status: "interview_stage_1", status_changed_at: iso(1 * DAY) }] });
+        expect(countActiveRecruiters(mandates, cands, NOW)).toBe(1);
+    });
+
+    it("dedupes multiple mandate rows per recruiter (active if any row is live)", () => {
+        const mandates = [
+            { recruiterId: "r4", isActive: false, claimedAt: iso(30 * DAY) }, // old expired cycle
+            { recruiterId: "r4", isActive: true, claimedAt: iso(1 * DAY) },   // fresh re-claim
+        ];
+        expect(countActiveRecruiters(mandates, new Map(), NOW)).toBe(1);
+    });
+
+    it("ignores rows without a recruiter id and counts nothing for an empty list", () => {
+        expect(countActiveRecruiters([{ recruiterId: null, isActive: true, claimedAt: iso(1 * DAY) }], new Map(), NOW)).toBe(0);
+        expect(countActiveRecruiters([], new Map(), NOW)).toBe(0);
     });
 });
 

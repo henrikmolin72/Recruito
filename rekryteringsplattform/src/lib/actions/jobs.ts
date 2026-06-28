@@ -9,7 +9,7 @@ import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/notifications/create";
 import { notifyAdmins } from "@/lib/notifications/notify-admins";
-import { countRecruitersWithoutDelivery } from "@/lib/recruiter-search-count";
+import { countActiveRecruiters, type ExpiryCandidate } from "@/lib/mandate-stages";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";
@@ -368,21 +368,47 @@ export async function getCompanyJobs() {
         .select(`
       *,
       candidates:candidates(recruito_screened_at, recruiter_id),
-      mandates:job_mandates(recruiter_id)
+      mandates:job_mandates(recruiter_id, is_active, claimed_at)
     `)
         .eq("company_id", company.id)
         .order("created_at", { ascending: false });
 
+    // Candidate timing per job→recruiter for the shared active-recruiter calc.
+    // Read with the admin client because the company's screened-only candidate RLS
+    // would under-count submissions and mistime the 10-day expiry — same reason the
+    // job-detail page reads timing via admin. Grouped: jobId → recruiterId → rows.
+    const jobIds = (jobs || []).map((j: any) => j.id);
+    const timingByJob = new Map<string, Map<string, ExpiryCandidate[]>>();
+    if (jobIds.length > 0) {
+        const { createAdminClient } = await import("@/lib/supabase/admin");
+        const admin = createAdminClient();
+        const { data: timing } = await admin
+            .from("candidates")
+            .select("job_id, recruiter_id, status, status_changed_at")
+            .in("job_id", jobIds);
+        for (const c of timing || []) {
+            if (!c.job_id || !c.recruiter_id) continue;
+            let byRecruiter = timingByJob.get(c.job_id);
+            if (!byRecruiter) { byRecruiter = new Map(); timingByJob.set(c.job_id, byRecruiter); }
+            const arr = byRecruiter.get(c.recruiter_id) || [];
+            arr.push({ status: c.status, status_changed_at: c.status_changed_at });
+            byRecruiter.set(c.recruiter_id, arr);
+        }
+    }
+
     return jobs?.map((job) => ({
         ...job,
-        // "Recruiters" = DISTINCT recruiters working the job who have NOT delivered
-        // a candidate (delivered ones show up in the Candidates column). Expired-
-        // without-delivery recruiters still count. We pass the mandate rows'
-        // recruiter_ids (not a raw row count) so duplicate/stale job_mandates rows
-        // don't inflate the number. See countRecruitersWithoutDelivery.
-        recruiters_count: countRecruitersWithoutDelivery(
-            (job.mandates || []).map((m: any) => m.recruiter_id),
-            job.candidates || [],
+        // "Recruiters" = DISTINCT recruiters with a live ACTIVE mandate on the job —
+        // the same definition the job-detail Recruiters tab shows, so the list count
+        // and the tab's "N Active recruiters" can never diverge. Dedupes recycled
+        // mandate rows and applies the shared 10-day expiry timer.
+        recruiters_count: countActiveRecruiters(
+            (job.mandates || []).map((m: any) => ({
+                recruiterId: m.recruiter_id,
+                isActive: m.is_active,
+                claimedAt: m.claimed_at ?? null,
+            })),
+            timingByJob.get(job.id) || new Map(),
         ),
         // Only count candidates Recruito has presented & approved (recruito_screened_at
         // set). Drafts and not-yet-approved submissions stay hidden from the company —

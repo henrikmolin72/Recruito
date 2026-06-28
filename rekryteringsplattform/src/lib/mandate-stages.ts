@@ -106,6 +106,46 @@ export function mandateExpiryDaysLeft(opts: {
     return Math.ceil((expiryMs - now) / 86_400_000);
 }
 
+// Whether a single mandate row is currently a LIVE active mandate: the recruiter
+// still holds it (is_active) AND the no-delivery timer has not run out. Single
+// source of truth shared by the company Jobs list count and the job-detail
+// Recruiters tab so the two "active recruiter" numbers can never drift.
+export function isMandateLiveActive(
+    mandate: { isActive: boolean | null | undefined; claimedAt: string | null },
+    candidates: ExpiryCandidate[],
+    now?: number,
+): boolean {
+    const daysLeft = mandateExpiryDaysLeft({ claimedAt: mandate.claimedAt ?? null, candidates, now });
+    return !!mandate.isActive && (daysLeft === null || daysLeft > 0);
+}
+
+export interface RecruiterMandate {
+    recruiterId: string | null | undefined;
+    isActive: boolean | null | undefined;
+    claimedAt: string | null;
+}
+
+// Distinct recruiters with at least one live active mandate on a job. Collapses
+// multiple mandate rows per recruiter (mandate recycling, migration 045): a
+// recruiter is Active if ANY of their rows is live. `candidatesByRecruiter` keys
+// candidate timing rows by recruiter id for the shared 10-day expiry calc.
+export function countActiveRecruiters(
+    mandates: RecruiterMandate[],
+    candidatesByRecruiter: Map<string, ExpiryCandidate[]>,
+    now?: number,
+): number {
+    const activeByRecruiter = new Map<string, boolean>();
+    for (const m of mandates) {
+        const rid = m.recruiterId;
+        if (!rid) continue;
+        const live = isMandateLiveActive(m, candidatesByRecruiter.get(rid) || [], now);
+        activeByRecruiter.set(rid, (activeByRecruiter.get(rid) || false) || live);
+    }
+    let count = 0;
+    for (const active of activeByRecruiter.values()) if (active) count++;
+    return count;
+}
+
 export interface StageCandidate {
     status: string | null;
     recruito_screened_at?: string | null;
