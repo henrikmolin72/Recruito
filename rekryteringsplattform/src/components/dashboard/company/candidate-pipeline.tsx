@@ -119,9 +119,11 @@ function PipelineView({ candidates, noticeAccepted }: { candidates: any[]; notic
                           >
                             {candidate.first_name} {candidate.last_name}
                           </CandidateAccessGate>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {candidate.current_title || t("common.noTitle")}
-                          </p>
+                          {candidate.current_title && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {candidate.current_title}
+                            </p>
+                          )}
                           <p className="text-[10px] text-brand-600 font-medium mt-1">
                             {candidate.job?.title}
                           </p>
