@@ -131,3 +131,11 @@ Before claiming a coding task done:
 
 Trivial edits (typos, comments) skip the gate.
 
+## 9. Harness structure (senior-dev setup)
+
+Implements the global "Senior-dev harness standard" for this repo. **Before any non-trivial build, confirm it's intact:**
+- [ ] **Subdir CLAUDE.md** present & current: [`src/lib/actions/CLAUDE.md`](rekryteringsplattform/src/lib/actions/CLAUDE.md), [`supabase/migrations/CLAUDE.md`](rekryteringsplattform/supabase/migrations/CLAUDE.md). Hot-path rules live there, not only in §6.
+- [ ] **`.claudeignore`** at repo root blocks node_modules / `.next` / `.omc` state / `.env` from the agent.
+- [ ] **TS LSP** installed — OMC `lsp_servers` shows `typescript-language-server`. If missing: `npm i -g typescript-language-server typescript`.
+- [ ] **Build-error hook** active (`.claude/settings.json`): `build-error-loop.py` (PostToolUse Bash → fix a failed build/test before proceeding). (A reflection Stop hook was trialed 2026-06-28 and removed as low-yield.)
+
