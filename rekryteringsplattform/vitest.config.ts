@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // `server-only` is a Next.js build-time marker package with no vitest
+      // resolution; alias it to an empty stub so any server module imports
+      // cleanly in tests (replaces ad-hoc per-test vi.mock("server-only")).
+      "server-only": fileURLToPath(new URL("./vitest.stub.ts", import.meta.url)),
     },
   },
   test: {

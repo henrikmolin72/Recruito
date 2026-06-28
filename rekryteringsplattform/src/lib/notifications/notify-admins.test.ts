@@ -4,9 +4,6 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // profile and create one notification per admin, and never throw (a failure
 // must not block the company/recruiter action that triggered it).
 
-// `server-only` is a Next.js build-time guard with no vitest resolution; stub it.
-vi.mock("server-only", () => ({}));
-
 const { createNotificationMock } = vi.hoisted(() => ({ createNotificationMock: vi.fn() }));
 const state = vi.hoisted(() => ({ admins: [] as Array<{ id: string }> | null, throwOnQuery: false }));
 

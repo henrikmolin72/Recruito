@@ -40,7 +40,6 @@ function makeClient() {
     return { from };
 }
 
-vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => makeClient() }));
 vi.mock("@/lib/notifications/create", () => ({ createNotification: vi.fn() }));
 vi.mock("@/lib/candidate-stage-history", () => ({ logCandidateStageChange: vi.fn() }));
