@@ -59,6 +59,21 @@ async function getCandidate(candidateId: string, jobId: string) {
         return null;
     }
 
+    // profiles RLS only exposes a user's own row, so the recruiter.profile join
+    // above returns null for the company and the name falls back to "Recruiter".
+    // Ownership is already enforced, so read the name via the service-role client.
+    if (candidate?.recruiter_id) {
+        const { data: rec } = await createAdminClient()
+            .from("recruiters")
+            .select("profile:profiles!recruiters_user_id_fkey(full_name)")
+            .eq("id", candidate.recruiter_id)
+            .single();
+        const profile = Array.isArray(rec?.profile) ? rec?.profile[0] : (rec?.profile as any);
+        if (profile?.full_name) {
+            (candidate as any).recruiter = { ...(candidate as any).recruiter, profile: { full_name: profile.full_name } };
+        }
+    }
+
     return candidate;
 }
 

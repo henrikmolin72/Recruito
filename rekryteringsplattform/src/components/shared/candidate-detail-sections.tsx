@@ -28,6 +28,17 @@ function formatContactMethod(value: string | null) {
     return value ? (map[value] || value) : null;
 }
 
+function formatWorkAuthorization(value: string | null) {
+    const map: Record<string, string> = {
+        eu_citizen: "EU Citizen",
+        permanent_resident: "Permanent Resident",
+        valid_work_permit: "Valid Work Permit",
+        requires_visa: "Requires Visa Sponsorship",
+        not_authorized: "Not Authorized to Work",
+    };
+    return value ? (map[value] || value) : null;
+}
+
 function formatLocationStatus(value: string | null) {
     const map: Record<string, string> = {
         on_site: "Based in / near job location",
@@ -88,7 +99,7 @@ export function CandidateDetailSections({
                         {candidate.work_authorization && (
                             <div>
                                 <p className="text-muted-foreground">Work Authorization</p>
-                                <p className="font-semibold">{candidate.work_authorization}</p>
+                                <p className="font-semibold">{formatWorkAuthorization(candidate.work_authorization)}</p>
                             </div>
                         )}
                     </div>
