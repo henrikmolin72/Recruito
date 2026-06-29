@@ -28,7 +28,7 @@ printf '\n## %s\n%s\n' "$DATE" "$COMMITS" >> "$LOG"
 # Stale-flag the dep graph when app source changed.
 if git diff --name-only "$RANGE" 2>/dev/null | grep -q '^rekryteringsplattform/src/'; then
   mkdir -p "$ROOT/graphify-out" 2>/dev/null
-  printf 'stale since %s — refresh with: /graphify . --update --obsidian --obsidian-dir .\n' "$DATE" > "$ROOT/graphify-out/.stale" 2>/dev/null
-  echo "[vault] dep-graph flagged stale (app code changed) — run /graphify . --update when convenient" 1>&2
+  printf 'stale since %s — refresh: `graphify update .` (quick, code) or /graphify --update (full, incl. notes)\n' "$DATE" > "$ROOT/graphify-out/.stale" 2>/dev/null
+  echo "[vault] dep-graph flagged stale (app code changed) — run: graphify update ." 1>&2
 fi
 exit 0

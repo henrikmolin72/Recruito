@@ -3,5 +3,7 @@
 ROOT="$(git rev-parse --show-toplevel)"
 GRAPHIFY=$(which graphify 2>/dev/null)
 if [ -n "$GRAPHIFY" ]; then
-  (cd "$ROOT" && graphify . --update --no-viz --obsidian --obsidian-dir "$ROOT" >/dev/null 2>&1) &
+  # Correct CLI syntax is `graphify update <path>` — the old `graphify . --update`
+  # was rejected as "unknown command '.'" and silently no-op'd (hence the stale graph).
+  (cd "$ROOT" && graphify update "$ROOT" >/dev/null 2>&1) &
 fi
