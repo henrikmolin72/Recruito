@@ -38,6 +38,7 @@ export type CandidateStatus =
   | 'invoice_enabled'
   | 'guarantee_tracking'
   | 'candidate_withdrawn'
+  | 'recruito_rejected'
   | 'guarantee_period';
 export type RecruiterApproval = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type PipelineStageType = 'screening' | 'interview' | 'test' | 'assessment';
