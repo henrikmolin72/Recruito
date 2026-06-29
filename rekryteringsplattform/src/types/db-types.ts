@@ -10,6 +10,7 @@ export type ClientFeeUpliftReason =
 
 export type ClientFeeReconfirmDecision = 'approved' | 'rejected' | 'withdrawn';
 export type CandidateStatus =
+  | 'draft'
   | 'submitted'
   | 'reviewing'
   | 'interview'
