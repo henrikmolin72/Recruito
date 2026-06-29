@@ -9,6 +9,8 @@ import {
     isCandidateSubmitted,
     isCandidateInInterview,
     countCompanyCandidateBuckets,
+    candidateOccupiesCapSlot,
+    countCandidatesAgainstCap,
 } from "./candidate-workflow";
 
 // Workflow spec: Withdrawn can be triggered from Draft, In Review, Submitted,
@@ -219,5 +221,60 @@ describe("countCompanyCandidateBuckets", () => {
 
     it("returns zeros for an empty list", () => {
         expect(countCompanyCandidateBuckets([])).toEqual({ submitted: 0, inInterview: 0, rejected: 0 });
+    });
+});
+
+describe("candidateOccupiesCapSlot / countCandidatesAgainstCap", () => {
+    it("drafts and empty values never occupy a slot", () => {
+        expect(candidateOccupiesCapSlot("draft")).toBe(false);
+        expect(candidateOccupiesCapSlot(null)).toBe(false);
+        expect(candidateOccupiesCapSlot(undefined)).toBe(false);
+        expect(candidateOccupiesCapSlot("")).toBe(false);
+    });
+
+    it("rejections and candidate-driven exits release the slot", () => {
+        for (const s of [
+            "recruito_rejected", "duplicate_rejected", "client_already_engaged",
+            "rejected_client", "rejected_interview",
+            "candidate_withdrawn", "offer_declined",
+            "rejected", "declined", // legacy aliases normalize into the released set
+        ]) {
+            expect(candidateOccupiesCapSlot(s)).toBe(false);
+        }
+    });
+
+    it("in-process, interview, offer, hired and completed candidates hold a slot", () => {
+        for (const s of [
+            "submitted", "reviewing", "under_client_review", "info_requested", "resubmitted",
+            "on_hold", "interview", "interview_stage_1", "final_interview",
+            "offer_in_progress", "offer_accepted", "hired", "invoice_enabled",
+            "guarantee_tracking", "completed",
+        ]) {
+            expect(candidateOccupiesCapSlot(s)).toBe(true);
+        }
+    });
+
+    it("reproduces the reported job: 1 draft + 1 rejected + 8 in-process = 8/8 (not 9 or 10)", () => {
+        const statuses = [
+            "draft",                 // excluded (not a real submission)
+            "recruito_rejected",     // excluded (slot freed)
+            "under_client_review",
+            "under_client_review",
+            "interview_stage_1",
+            "interview_stage_1",
+            "final_interview",
+            "interview_stage_1",
+            "interview_stage_1",
+            "under_client_review",
+        ];
+        expect(statuses.length).toBe(10);                  // admin Jobs list counted all 10
+        expect(countCandidatesAgainstCap(statuses)).toBe(8); // cap badge / gate sees 8
+    });
+
+    it("a rejection frees a slot so a replacement can be submitted (cap rule)", () => {
+        const full = ["under_client_review", "under_client_review", "interview_stage_1"];
+        expect(countCandidatesAgainstCap(full)).toBe(3);
+        const oneRejected = ["recruito_rejected", "under_client_review", "interview_stage_1"];
+        expect(countCandidatesAgainstCap(oneRejected)).toBe(2); // slot freed
     });
 });

@@ -949,6 +949,14 @@ export async function markCandidateRecruitoScreened(candidateId: string) {
                 });
             }
 
+            // Auto-pause counts only APPROVED candidates (recruito_screened_at set) —
+            // deliberately a DIFFERENT, looser count than the submission cap, which
+            // counts occupied slots (countCandidatesAgainstCap, incl. un-screened
+            // "reviewing" rows) in createCandidateExtended/claimMandate. The submission
+            // gate stops new referrals once 8 slots are filled; this only flips the job
+            // to "paused" once 8 are approved/delivered. Do NOT unify these two counts —
+            // making the pause depend on approvals while submissions stop at occupancy
+            // is intentional; merging them would let a 9th candidate slip in.
             const maxCandidates = (job as any)?.max_candidates ?? 8;
             const { count: approvedCount } = await admin
                 .from("candidates")

@@ -134,6 +134,35 @@ export function isCandidateRejected(status: string | null | undefined): boolean 
   return REJECTED_CANDIDATE_STATUSES.has(normalizeCandidateStatusForWorkflow(status));
 }
 
+// Candidate statuses that RELEASE a job's candidate-cap slot: rejections (by
+// Recruito or the client) plus candidate-driven exits (withdrew, or declined the
+// offer). Such a candidate is out of the running before being hired, so its slot
+// frees for a replacement submission — the "rejected/withdrawn frees a slot" cap
+// rule. Hired, in-pipeline and completed candidates were delivered and KEEP a slot.
+export const CAP_SLOT_RELEASED_STATUSES = new Set<string>([
+  ...REJECTED_CANDIDATE_STATUSES,
+  "candidate_withdrawn",
+  "offer_declined", // legacy "declined" normalizes to offer_declined
+]);
+
+/**
+ * Whether a candidate currently occupies one of a job's max_candidates slots.
+ * Drafts never occupy a slot (not a real submission); a rejected or withdrawn
+ * candidate releases its slot so a recruiter can submit a replacement; everything
+ * still in play — in review, interview, offer, hired, completed — holds its slot.
+ * Single source of truth for the submission-cap gate AND every "X / cap" badge so
+ * the enforced limit and the displayed count can never drift.
+ */
+export function candidateOccupiesCapSlot(status: string | null | undefined): boolean {
+  if (!status || status === "draft") return false;
+  return !CAP_SLOT_RELEASED_STATUSES.has(normalizeCandidateStatusForWorkflow(status));
+}
+
+/** Count a job's candidates that occupy a cap slot (see candidateOccupiesCapSlot). */
+export function countCandidatesAgainstCap(statuses: (string | null | undefined)[]): number {
+  return statuses.filter(candidateOccupiesCapSlot).length;
+}
+
 /**
  * Bucket a flat list of candidate statuses into the two counts shown on the admin
  * recruiters table. A status is at most one of these. Drafts are excluded from

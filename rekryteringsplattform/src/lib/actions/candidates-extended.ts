@@ -16,6 +16,7 @@ import {
     getMissingRequiredFields,
 } from "@/lib/candidate-form";
 import { REFERRAL_BLOCKED_JOB_STATUSES } from "@/lib/mandate-stages";
+import { countCandidatesAgainstCap } from "@/lib/candidate-workflow";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { runCandidateEvaluation } from "@/lib/screening/run-evaluation";
 
@@ -110,7 +111,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
     // actually defines questions.
     const { data: jobForValidation } = await supabase
         .from("jobs")
-        .select("screening_questions, status")
+        .select("screening_questions, status, max_candidates")
         .eq("id", mandate.job_id)
         .single();
     // A paused or company-ended (closed/filled/cancelled) job no longer accepts
@@ -119,6 +120,23 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
     // server boundary so a paused job can never receive a referral on any path.
     if (REFERRAL_BLOCKED_JOB_STATUSES.has((jobForValidation as any)?.status)) {
         return { error: "This job is not currently accepting candidates." };
+    }
+
+    // Candidate-cap gate: a job accepts at most max_candidates candidates in active
+    // slots. Drafts never count, and a rejected/withdrawn candidate frees its slot
+    // (countCandidatesAgainstCap) — the SAME predicate the admin "X / cap" badge
+    // uses, so the enforced limit and the displayed count can never drift. Counted
+    // job-wide via the admin client so RLS can't undercount another recruiter's rows.
+    // ponytail: app-level check-then-insert; a rare concurrent double-submit at the
+    // boundary could still slip one past. Tighten with a DB BEFORE INSERT trigger if
+    // that ever shows up in practice — sequential over-submission is what was broken.
+    const maxCandidates = (jobForValidation as any)?.max_candidates ?? 8;
+    const { data: capRows } = await admin
+        .from("candidates")
+        .select("status")
+        .eq("job_id", mandate.job_id);
+    if (countCandidatesAgainstCap((capRows || []).map((c: any) => c.status)) >= maxCandidates) {
+        return { error: "This job has reached its candidate limit and is no longer accepting submissions." };
     }
     const screeningCount = Array.isArray((jobForValidation as any)?.screening_questions)
         ? (jobForValidation as any).screening_questions.length

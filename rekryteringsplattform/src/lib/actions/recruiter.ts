@@ -9,7 +9,7 @@ import { createNotification } from "@/lib/notifications/create";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
 import { candidateInStage } from "@/lib/mandate-stages";
-import { isCandidateInProcess } from "@/lib/candidate-workflow";
+import { isCandidateInProcess, countCandidatesAgainstCap } from "@/lib/candidate-workflow";
 import { releaseDueMandates } from "@/lib/mandate-expiry-release";
 import { verifyImageFileContent } from "@/lib/file-magic";
 
@@ -511,14 +511,16 @@ export async function claimMandate(jobId: string) {
 
     // Submission-capacity gate (covers retaking an expired job): there must be
     // room to submit at least one more candidate. Mirrors the submission cap in
-    // createCandidateExtended (all candidates count toward max_candidates, default 8).
+    // createCandidateExtended — only candidates occupying a slot count toward
+    // max_candidates (drafts excluded, rejected/withdrawn free their slot), counted
+    // job-wide via the admin client so RLS can't undercount other recruiters' rows.
     const maxCandidates = (job as any).max_candidates ?? 8;
-    const { count: candidateCount } = await supabase
+    const { data: capRows } = await createAdminClient()
         .from("candidates")
-        .select("id", { count: "exact", head: true })
+        .select("status")
         .eq("job_id", jobId);
 
-    if ((candidateCount ?? 0) >= maxCandidates) {
+    if (countCandidatesAgainstCap((capRows || []).map((c: any) => c.status)) >= maxCandidates) {
         return { error: "Uppdraget har nått sin kandidatgräns och kan inte tas just nu" };
     }
 

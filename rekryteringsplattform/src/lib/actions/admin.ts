@@ -8,7 +8,7 @@ import { feeReconfirmEmail } from "@/lib/email/email-templates";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { createNotification } from "@/lib/notifications/create";
 import { getDictionary } from "@/i18n/server";
-import { countRecruiterCandidateBuckets, countCompanyCandidateBuckets } from "@/lib/candidate-workflow";
+import { countRecruiterCandidateBuckets, countCompanyCandidateBuckets, countCandidatesAgainstCap } from "@/lib/candidate-workflow";
 import type { ClientFeeUpliftReason } from "@/types/db-types";
 
 function pickFirst<T>(value: T | T[] | null | undefined): T | null {
@@ -334,6 +334,7 @@ export async function getAdminCompanies() {
             ),
             jobs:jobs (
                 id,
+                status,
                 candidates:candidates ( status )
             ),
             placements:placements (count)
@@ -359,7 +360,10 @@ export async function getAdminCompanies() {
             industry: company.industry || "",
             contact: profile?.full_name || "",
             email: profile?.email || "",
-            jobs: jobsArr.length,
+            // "Active jobs" column = live mandates only (status 'active'); paused,
+            // draft, closed and filled jobs are excluded, matching the company
+            // dashboard's own Active-jobs metric (company.ts getCompanyDashboard).
+            jobs: jobsArr.filter((j: any) => j.status === "active").length,
             hired: company.placements?.[0]?.count || 0,
             candidatesSubmitted: submitted,
             inInterview,
@@ -402,7 +406,7 @@ export async function getAdminJobs() {
             max_candidates,
             created_at,
             company:companies (company_name),
-            candidates:candidates (count)
+            candidates:candidates ( status )
         `)
         .order("created_at", { ascending: false });
 
@@ -436,7 +440,10 @@ export async function getAdminJobs() {
             recruiters: job.current_recruiter_count || 0,
             maxRecruiters: job.max_recruiters || 5,
             maxCandidates: job.max_candidates ?? 8,
-            candidates: job.candidates?.[0]?.count || 0,
+            // "X / cap" badge: count candidates occupying a slot (drafts excluded,
+            // rejected/withdrawn free their slot) — same predicate as the submission
+            // gate, so the badge can never read above the cap again (was: all rows).
+            candidates: countCandidatesAgainstCap((job.candidates || []).map((c: any) => c.status)),
             publishedAt: job.created_at,
         };
     });
