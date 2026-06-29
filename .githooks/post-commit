@@ -1,0 +1,7 @@
+#!/bin/bash
+# Refresh graphify dep graph after every commit (background, non-blocking)
+ROOT="$(git rev-parse --show-toplevel)"
+GRAPHIFY=$(which graphify 2>/dev/null)
+if [ -n "$GRAPHIFY" ]; then
+  (cd "$ROOT" && graphify . --update --no-viz --obsidian --obsidian-dir "$ROOT" >/dev/null 2>&1) &
+fi

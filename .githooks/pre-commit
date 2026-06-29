@@ -1,0 +1,12 @@
+#!/bin/bash
+# Type-check before every commit — catches errors that have shipped before (CLAUDE.md §6)
+APP="$(git rev-parse --show-toplevel)/rekryteringsplattform"
+if [ -f "$APP/tsconfig.json" ]; then
+  echo "→ Type-checking..."
+  cd "$APP" && npx tsc --noEmit --pretty 2>&1
+  if [ $? -ne 0 ]; then
+    echo "✗ Type errors found. Fix before committing (or use --no-verify to skip)."
+    exit 1
+  fi
+  echo "✓ Types OK"
+fi
