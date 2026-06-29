@@ -4,10 +4,12 @@ Entry point for all project knowledge. This is an Obsidian vault — every markd
 
 ## Folders
 
-- **[[Architecture/00-MASTER-PLAN|Architecture]]** — system design, schema, portals, jobs, payments
+- **Architecture** — two layers:
+  - [[Architecture/00-MASTER-PLAN|Original build spec (00–11)]] — the frozen April plan (migration-004 era), kept as history.
+  - [[Architecture/As-Built/_index|As-Built (current state)]] — what the code actually does now (migrations → 061), code-grounded + verified. **Start here for current architecture.**
 - **[[Decisions/README|Decisions]]** — architectural and tooling decisions, with rationale
-- **[[Work-Log/README|Work-Log]]** — weekly/milestone summaries of work done
-- **[[Dev-Notes/README|Dev-Notes]]** — ad-hoc notes, runbooks, hot-path documentation
+- **Work-Log** — [[Work-Log/2026-H1-milestone-log|2026 H1 milestone log]] (build → 2026-06); `merge-log.md` is auto-appended on merge
+- **[[Dev-Notes/README|Dev-Notes]]** — runbooks & hot-path docs, incl. [[Dev-Notes/vault-sync-runbook|vault sync runbook]]
 
 ## External persistence (not in vault)
 

@@ -1,0 +1,51 @@
+# Messaging — As-Built (2026-06-29, migrations through 061)
+> Current-state companion to the original build spec [[Architecture/07-MESSAGING]]. The spec is the frozen April plan; this note is what the code actually does now.
+
+## What it does today
+In-app, DB-backed messaging keyed to `(candidate_id, conversation_type)`. Three live thread types plus one candidate-less type:
+
+- **`client`** — the shared company ↔ recruiter thread about a candidate. Both parties read and write it. Recruiter → company is gated on an **active mandate** for the job (a released/expired mandate cuts off contact); the company side is always allowed.
+- **`recruito_company`** / **`recruito_recruiter`** — two **private, single-human-party** "Chat with Recruito" threads. The company and the recruiter each get their own thread with Recruito/admins; they never share one (privacy split, migration 060). Admins are not participants — they read/reply via service role.
+- **`recruito_recruiter_general`** — a **candidate-independent** recruiter ↔ Recruito support thread, available from day one with no candidate and no mandate. Keyed per recruiter via `conversations.owner_user_id` (migration 061), reached at `/recruiter/messages/support`.
+
+Cross-cutting behaviour:
+- **Delivery is 5s polling**, not Realtime. `CandidateChat` does optimistic append on send, then re-fetches via a `pollFn` (or `getCandidateConversation`) every 5 s. The April spec's Supabase Realtime hook (`use-messages.ts`) was never the shipped path.
+- **Conversation creation + participant seeding run through the service-role client** in every send action, because the `conversations` SELECT RLS policy hides a just-inserted row from its creator until they are a participant (chicken-and-egg). The message INSERT itself stays RLS-scoped for `client`/`recruito_*`; admin and support inserts go through service role. RLS bypass means the **in-action IDOR ownership guard is load-bearing** (sender must be the candidate's recruiter or company; admin actions gate on `requireAdmin()`).
+- **Sender display names resolve via service role** (`resolveUserDisplayNames`: `profiles.full_name` → auth `user_metadata.full_name` → email). This is what kills the old "Unknown / UNKNOWN" sender label, which came from an RLS-scoped `profiles` join that couldn't read the counterpart's row.
+- **Notifications fan out explicitly** on every send (admins aren't participants, so they're notified by querying `profiles.role='admin'`), deep-linking to the correct party thread.
+- **Read-status is per-participant.** `conversation_participants.last_read_at` is the watermark. `getUnreadMessageCount` walks the caller's participations and counts messages where `sender_id !== caller && created_at > last_read_at`; `markConversationAsRead` stamps `last_read_at = now()` for the caller's row. `sendMessage` also advances the sender's own `last_read_at` on send (so the act of replying clears the thread's unread count for the sender). Both run RLS-scoped (no service role).
+- **System messages** are `messages` rows flagged `is_system_message = true`. Every read selects the column and normalizes it (`!!m.is_system_message`); the UI renders a flagged row as a centered status pill with no sender name (`candidate-chat.tsx`), distinct from the left/right party bubbles. Optimistic sends always set `is_system_message: false` — the human send paths never author system rows, so they originate elsewhere (e.g. DB/stage triggers writing the `messages` row directly).
+
+## Key files
+- `src/lib/actions/messages.ts` — human-side actions: `getCandidateConversation`, `sendMessage` (client thread + mandate gate), `sendRecruitorMessage` (routes to sender's own private Recruito thread), `getConversations`, `getUnreadMessageCount`, `markConversationAsRead`, plus the recruiter-support trio (`getRecruiterSupportMessages`, `sendRecruiterSupportMessage`). Holds `getOrCreateConversation` and `resolveUserDisplayNames`.
+- `src/lib/actions/admin-messages.ts` — admin inbox (all `requireAdmin()` + service role): `getRecruitoConversationsForAdmin` (one row per party thread, newest first), `getRecruitoThreadForAdmin` / `…MessagesForAdmin` (candidate-keyed per-party reply), `sendAdminMessage` (targets a specific party thread, seeds only that party, notifies only that party), and the conversation-id-based trio for candidate-less threads (`getRecruitoThreadByConversationId`, `…MessagesByConversationId`, `sendAdminMessageToConversation`).
+- `src/components/shared/candidate-chat.tsx` — the one chat UI. Pluggable via `sendMessageFn` + `pollFn` props, so the same component serves company, recruiter, admin, and support views. Renders `is_system_message` rows as a centered status pill (no sender, no bubble side), distinct from the left/right party bubbles. (Read-status is driven elsewhere: `getUnreadMessageCount` powers the sidebar badge in `layout/sidebar.tsx`; `markConversationAsRead` fires on thread-open in `recruiter-inbox.tsx` / `company-inbox.tsx`.)
+- `src/components/shared/tabbed-candidate-chat.tsx` — two-tab wrapper (client tab + "Chat with Recruito" tab) that **bridges the 060 per-party split at the UI layer**: the Recruito tab mounts a `CandidateChat` with `conversationType={recruitorConversationType}` + `sendMessageFn={sendRecruitorMessage}`, so the viewer reads and writes only their own private Recruito thread. `recruitorConversationType` is `'recruito_company' | 'recruito_recruiter'`, set by the caller page per side, so neither party ever sees the other's Recruito conversation.
+- `src/app/(dashboard)/company/jobs/[id]/candidates/[candidateId]/page.tsx` — company detail; loads `client` + `recruito_company`, renders `TabbedCandidateChat` with `recruitorConversationType="recruito_company"`.
+- `src/app/(dashboard)/recruiter/mandates/[id]/candidates/[candidateId]/page.tsx` — recruiter detail; loads `client` + `recruito_recruiter`, `recruitorConversationType="recruito_recruiter"`.
+- `src/app/(dashboard)/recruiter/messages/support/page.tsx` — candidate-less support chat (`recruito_recruiter_general`).
+- `src/app/(dashboard)/admin/messages/page.tsx` — admin inbox list (calls `getRecruitoConversationsForAdmin`).
+- `src/app/(dashboard)/admin/messages/thread/[conversationId]/page.tsx` — admin reply view for candidate-less (support) threads, opened by conversation id.
+- `src/lib/actions/messages.test.ts`, `admin-messages.test.ts` — unit coverage (note: runtime RLS is not exercised by these — see ADR consequence below).
+
+## Data model / migrations
+Base tables `conversations`, `conversation_participants`, `messages` (incl. `is_system_message`) were created in **001_initial_schema.sql**. Messaging-shaping migrations since:
+
+- **055_conversation_type.sql** — captures `conversations.conversation_type text NOT NULL DEFAULT 'client'` (column existed in the live DB as drift, in no prior migration) + non-unique lookup index `idx_conversations_candidate_type (candidate_id, conversation_type)`. Idempotent.
+- **060_split_recruito_threads.sql** — splits the legacy single `recruito` thread into private `recruito_company` / `recruito_recruiter`: dedupes existing `(candidate_id, conversation_type)` duplicates, adds **`UNIQUE(candidate_id, conversation_type)`** (`uq_conversations_candidate_type`), relabels each `recruito` row → `recruito_company`, spins off a `recruito_recruiter` thread per resolvable recruiter (moves recruiter-authored msgs, copies admin-authored msgs into both), and a `DO $$` block fails the migration unless every `recruito_*` thread has exactly one non-admin participant. **No RLS changes** — policies are participant-based and type-agnostic. **Not auto-applied to production**; manual, idempotent re-run is part of the rollout.
+- **061_recruiter_support_thread.sql** — adds `conversations.owner_user_id UUID REFERENCES profiles(id) ON DELETE CASCADE` plus partial **`UNIQUE(owner_user_id, conversation_type) WHERE candidate_id IS NULL AND owner_user_id IS NOT NULL`**, so each recruiter has at most one candidate-less support thread. New type value `recruito_recruiter_general` (free-text column, no enum change). ALTER-only, so no new GRANT.
+
+Concurrency: the `getOrCreate*` helpers rely on the unique indexes — a lost insert race is resolved by re-selecting the winning row rather than erroring.
+
+## Notable changes since the original plan
+- **Polling replaced Realtime.** Spec called for a Supabase Realtime `useMessages` hook; shipped code is 5 s `setInterval` polling in `CandidateChat`. Realtime is explicitly out of scope (per the split-threads ADR).
+- **Service-role conversation creation.** Not in the spec — added to fix messaging being 100% broken in production (0 conversations / 0 messages ever) due to the RLS chicken-and-egg on first send.
+- **`conversation_type` dimension.** Spec modelled one thread per candidate; the code now carries four type values, with the Recruito channel split into private per-party threads (060) and a candidate-less recruiter support channel (061) keyed by `owner_user_id`.
+- **`getConversations` excludes `recruito_recruiter_general`** from the candidate-keyed inbox so the support thread doesn't render as a broken "no candidate" row; it lives on its own page.
+- **Admin inbox is a first-class surface** (one row per party thread, party badges, per-party targeted replies/notifications) — beyond the spec's symmetric two-party model.
+
+## Related decisions & notes
+- [[Decisions/2026-06-22-messaging-rls-service-role-creation]] — why conversation creation runs through the service-role client (RLS chicken-and-egg); the in-action IDOR guard is load-bearing.
+- [[Decisions/2026-06-24-split-recruito-threads]] — splitting the shared `recruito` thread into private per-party channels; the "UNKNOWN" sender fix; `UNIQUE(candidate_id, conversation_type)` invariant; migration 060 data plan.
+- [[Dev-Notes/deployment-runbook]] — references the manual, non-auto migration apply step (060 is apply-as-a-separate-step).
+- Related areas: [[Architecture/As-Built/08-NOTIFICATIONS]] (every send fans out a notification), [[Architecture/As-Built/05-RECRUITER-PORTAL]] / [[Architecture/As-Built/03-RECRUITER-PORTAL]] (mandate gate on recruiter→company messaging), [[Architecture/As-Built/10-ADMIN-PANEL]] (admin inbox).
