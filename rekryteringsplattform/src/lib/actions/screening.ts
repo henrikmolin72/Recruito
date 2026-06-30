@@ -1,12 +1,7 @@
 "use server";
 
-import { randomUUID, createHash } from "crypto";
-import { authorizeMandate, gatherEvalData } from "@/lib/screening/eval-data";
-import {
-  fillEvaluationPrompt,
-  assembleClipboardPayload,
-  type EvalConfig,
-} from "@/lib/screening/evaluation-prompt";
+import { authorizeMandate } from "@/lib/screening/eval-data";
+import { type EvalConfig } from "@/lib/screening/evaluation-prompt";
 
 /** Persist the per-mandate evaluation config (target sector, adjacent, etc.). */
 export async function saveMandateEvalConfig(
@@ -57,51 +52,6 @@ export async function getMandateEvalConfig(
     transferableSkills: d.eval_transferable_skills ?? null,
     customKeywords: d.eval_custom_keywords ?? null,
   };
-}
-
-/**
- * Phase 1 — build the assembled evaluation prompt for one candidate (manual
- * copy/paste). Returns the clipboard payload + a signed CV download URL.
- */
-export async function buildEvaluationPrompt(
-  candidateId: string,
-  mandateId: string
-): Promise<{ payload: string; cvUrl: string | null } | { error: string }> {
-  const auth = await authorizeMandate(mandateId);
-  if ("error" in auth) return { error: auth.error };
-
-  const data = await gatherEvalData(auth.admin, mandateId, candidateId);
-  if ("error" in data) return { error: data.error };
-
-  const cvHash = data.cvPath
-    ? `manual:${createHash("sha256").update(data.cvPath).digest("hex").slice(0, 16)}`
-    : "(no CV on file)";
-
-  const prompt = fillEvaluationPrompt({
-    jdText: data.jdText,
-    config: data.config,
-    metadata: {
-      screeningId: randomUUID(),
-      modelVersion: "external (manual run)",
-      isoTimestamp: new Date().toISOString(),
-      jdId: data.jobId,
-      cvHash,
-    },
-  });
-
-  const payload = assembleClipboardPayload({
-    prompt,
-    cvText: null, // recruiter attaches the CV file in their AI tool
-    screeningAnswers: data.screeningAnswers,
-  });
-
-  let cvUrl: string | null = null;
-  if (data.cvPath) {
-    const { data: signed } = await auth.admin.storage.from("cvs").createSignedUrl(data.cvPath, 3600);
-    cvUrl = signed?.signedUrl ?? null;
-  }
-
-  return { payload, cvUrl };
 }
 
 export type StoredEvaluation = {
