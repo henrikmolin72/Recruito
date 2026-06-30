@@ -300,6 +300,31 @@ export const CANDIDATE_WITHDRAW_REASON_KEYS = new Set<string>(
   CANDIDATE_WITHDRAW_REASONS.map((r) => r.key),
 );
 
+// Structured reasons a client must pick when rejecting a candidate from the
+// company Present Status panel. Mirrors CANDIDATE_WITHDRAW_REASONS: hardcoded
+// English labels (the panel renders r.label directly), and the chosen label is
+// persisted to candidate_stage_history.reason so the timeline renders it as-is.
+export const CANDIDATE_REJECT_REASONS = [
+  { key: "skills_experience_mismatch", label: "Skills/experience don't match requirements" },
+  { key: "insufficient_relevant_experience", label: "Insufficient relevant experience" },
+  { key: "salary_expectations_too_high", label: "Salary expectations too high" },
+  { key: "stronger_candidate_selected", label: "Stronger candidate selected" },
+  { key: "not_a_culture_fit", label: "Not a culture fit" },
+  { key: "location_relocation_issue", label: "Location / relocation issue" },
+  { key: "did_not_pass_interview_or_assessment", label: "Did not pass interview or assessment" },
+  { key: "position_filled_or_on_hold", label: "Position filled or on hold" },
+  { key: "other", label: "Other" },
+] as const;
+
+export const CANDIDATE_REJECT_REASON_KEYS = new Set<string>(
+  CANDIDATE_REJECT_REASONS.map((r) => r.key),
+);
+
+// Map a reason key to its human label (stored on the audit row), null if unknown.
+export function rejectReasonLabel(key: string): string | null {
+  return CANDIDATE_REJECT_REASONS.find((r) => r.key === key)?.label ?? null;
+}
+
 export function canTransitionCandidateStatus(currentStatus: string | null | undefined, nextStatus: string): boolean {
   if (!isCandidateStatusValue(nextStatus)) return false;
   if (!currentStatus) return nextStatus === "submitted" || nextStatus === "under_client_review";

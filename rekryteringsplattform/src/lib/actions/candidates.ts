@@ -19,6 +19,7 @@ import {
     statusChangeTimestampPatch,
     CANDIDATE_WITHDRAW_REASON_KEYS,
     CANDIDATE_WITHDRAW_BLOCKED_STATUSES,
+    rejectReasonLabel,
 } from "@/lib/candidate-workflow";
 import {
     getPlacementByCandidateId,
@@ -531,7 +532,7 @@ export async function requestCandidateNextStep(
     return { success: true };
 }
 
-export async function updateCompanyStage(candidateId: string, jobId: string, stage: string) {
+export async function updateCompanyStage(candidateId: string, jobId: string, stage: string, reason?: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Utloggad!" };
@@ -552,6 +553,16 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
     const current = (access.candidate as any)?.company_stage ?? null;
     if (stage !== current && !canTransition(current, stage)) {
         return { error: "Ogiltigt stegbyte" };
+    }
+
+    // A client rejection must carry a structured reason (mirrors recruiter
+    // withdrawal). The chosen reason's human label is stored on the audit row so
+    // the stage-history timeline renders it directly.
+    let rejectReasonText: string | null = null;
+    if (stage === "rejected") {
+        const label = reason ? rejectReasonLabel(reason) : null;
+        if (!label) return { error: "Please select a reason for rejecting this candidate." };
+        rejectReasonText = label;
     }
 
     const patch: Record<string, any> = { company_stage: stage };
@@ -635,6 +646,7 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         action: stage === "rejected" ? "reject" : stage === "hired" ? "hire" : "move",
         changedBy: user.id,
         changedByRole: "company",
+        reason: rejectReasonText,
     });
 
     // Notify admins of final company outcomes only — hire and reject. Intermediate

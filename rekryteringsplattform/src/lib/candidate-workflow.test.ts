@@ -3,6 +3,8 @@ import {
     canTransitionCandidateStatus,
     CANDIDATE_WITHDRAW_BLOCKED_STATUSES,
     CANDIDATE_WITHDRAW_REASONS,
+    CANDIDATE_REJECT_REASONS,
+    rejectReasonLabel,
     isCandidateRejected,
     isCandidateInProcess,
     countRecruiterCandidateBuckets,
@@ -276,5 +278,26 @@ describe("candidateOccupiesCapSlot / countCandidatesAgainstCap", () => {
         expect(countCandidatesAgainstCap(full)).toBe(3);
         const oneRejected = ["recruito_rejected", "under_client_review", "interview_stage_1"];
         expect(countCandidatesAgainstCap(oneRejected)).toBe(2); // slot freed
+    });
+});
+
+describe("candidate rejection reasons", () => {
+    it("offers the standard client rejection reasons in order", () => {
+        expect(CANDIDATE_REJECT_REASONS.map((r) => r.label)).toEqual([
+            "Skills/experience don't match requirements",
+            "Insufficient relevant experience",
+            "Salary expectations too high",
+            "Stronger candidate selected",
+            "Not a culture fit",
+            "Location / relocation issue",
+            "Did not pass interview or assessment",
+            "Position filled or on hold",
+            "Other",
+        ]);
+    });
+
+    it("maps a known reason key to its label and returns null for unknown keys", () => {
+        expect(rejectReasonLabel("not_a_culture_fit")).toBe("Not a culture fit");
+        expect(rejectReasonLabel("bogus")).toBeNull();
     });
 });

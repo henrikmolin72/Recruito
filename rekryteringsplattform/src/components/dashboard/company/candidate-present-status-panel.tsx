@@ -4,7 +4,8 @@ import { useTransition, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { updateCompanyStage, markOfferAccepted, closeJobAfterHire, reopenCandidate } from "@/lib/actions/candidates";
 import { allowedNextStages, REOPEN_TARGETS } from "@/lib/candidate-stage-rules";
-import { CheckCircle2, XCircle, Handshake, Clock, RotateCcw } from "lucide-react";
+import { CANDIDATE_REJECT_REASONS } from "@/lib/candidate-workflow";
+import { CheckCircle2, XCircle, Handshake, Clock, RotateCcw, Check } from "lucide-react";
 
 type PanelDict = {
     closeJobTitle: string;
@@ -74,6 +75,7 @@ export function CandidatePresentStatusPanel({
     const isWithdrawn = candidateStatus === "candidate_withdrawn";
     const [currentStage, setCurrentStage] = useState<CompanyStage | null>(initialStage as CompanyStage | null);
     const [pendingStage, setPendingStage] = useState<CompanyStage | null>(null);
+    const [rejectReason, setRejectReason] = useState<string>("");
     const [offerAccepted, setOfferAccepted] = useState(initialOfferAccepted);
     const [offerError, setOfferError] = useState<string | null>(null);
     const [viewedAt, setViewedAt] = useState<string | null>(initialViewedAt);
@@ -129,9 +131,12 @@ export function CandidatePresentStatusPanel({
     const confirmStageChange = () => {
         if (!pendingStage) return;
         const stage = pendingStage;
+        if (stage === "rejected" && !rejectReason) return; // reason is required
+        const reason = stage === "rejected" ? rejectReason : undefined;
         setPendingStage(null);
+        setRejectReason("");
         startTransition(async () => {
-            const result = await updateCompanyStage(candidateId, jobId, stage);
+            const result = await updateCompanyStage(candidateId, jobId, stage, reason);
             if (!result.error) {
                 setCurrentStage(stage);
                 // After a successful hire, offer to close the position.
@@ -293,16 +298,46 @@ export function CandidatePresentStatusPanel({
 
             {pendingStage && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="absolute inset-0 bg-black/40" onClick={() => setPendingStage(null)} />
+                    <div className="absolute inset-0 bg-black/40" onClick={() => { setPendingStage(null); setRejectReason(""); }} />
                     <div className="relative z-10 bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
                         <h2 className="text-base font-bold text-slate-900 mb-2">Confirm Stage Change</h2>
-                        <p className="text-sm text-slate-500 mb-6">
+                        <p className="text-sm text-slate-500 mb-4">
                             Move candidate to <strong>{STAGES.find(s => s.value === pendingStage)?.label}</strong>?
                         </p>
+                        {pendingStage === "rejected" && (
+                            <>
+                                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+                                    Select a reason for rejection
+                                </p>
+                                <ul className="max-h-56 space-y-1.5 overflow-y-auto mb-4">
+                                    {CANDIDATE_REJECT_REASONS.map((r) => {
+                                        const selected = rejectReason === r.key;
+                                        return (
+                                            <li key={r.key}>
+                                                <button
+                                                    type="button"
+                                                    disabled={isPending}
+                                                    onClick={() => setRejectReason(r.key)}
+                                                    className={
+                                                        "flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors " +
+                                                        (selected
+                                                            ? "border-red-300 bg-red-50 font-semibold text-red-700"
+                                                            : "border-slate-200 text-slate-700 hover:border-red-200 hover:bg-red-50/40")
+                                                    }
+                                                >
+                                                    <span>{r.label}</span>
+                                                    {selected && <Check className="h-4 w-4 shrink-0" />}
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </>
+                        )}
                         <div className="flex justify-end gap-3">
                             <button
                                 type="button"
-                                onClick={() => setPendingStage(null)}
+                                onClick={() => { setPendingStage(null); setRejectReason(""); }}
                                 className="px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50"
                             >
                                 Cancel
@@ -310,7 +345,8 @@ export function CandidatePresentStatusPanel({
                             <button
                                 type="button"
                                 onClick={confirmStageChange}
-                                className="px-4 py-2 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-700"
+                                disabled={isPending || (pendingStage === "rejected" && !rejectReason)}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-60"
                             >
                                 Confirm
                             </button>
