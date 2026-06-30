@@ -20,8 +20,8 @@ import { CandidateStageHistoryTimeline } from "@/components/dashboard/company/ca
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
-import { EvaluationPromptPanel } from "@/components/screening/evaluation-prompt-panel";
-import { getMandateEvalConfig, getLatestEvaluation } from "@/lib/actions/screening";
+import { ScreeningReportCard } from "@/components/screening/screening-report-card";
+import { getLatestEvaluation } from "@/lib/actions/screening";
 
 async function getCandidate(candidateId: string) {
     const supabase = await createClient();
@@ -75,10 +75,7 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
     const recruitorMessages = (recruitorConversation as any)?.messages || [];
     const dict = await getDictionary();
     const r = dict.recruiter;
-    const [evalConfig, latestEvaluation] = await Promise.all([
-        getMandateEvalConfig(mandateId),
-        getLatestEvaluation(candidateId, mandateId),
-    ]);
+    const latestEvaluation = await getLatestEvaluation(candidateId, mandateId);
 
     // CV + stage history are read with the service-role client only AFTER
     // getCandidate() confirmed this recruiter owns the candidate (IDOR guard),
@@ -177,13 +174,7 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                 </div>
 
                 <div className="space-y-6">
-                    <EvaluationPromptPanel
-                        candidateId={candidateId}
-                        mandateId={mandateId}
-                        initialConfig={evalConfig}
-                        initialReport={latestEvaluation}
-                        dict={r as any}
-                    />
+                    <ScreeningReportCard report={latestEvaluation} dict={r as any} />
 
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
                         <CardHeader className="pb-2">

@@ -8,8 +8,10 @@ import { DraftRowActions } from "@/components/dashboard/recruiter/draft-row-acti
 import { DownloadJobDescription } from "@/components/dashboard/recruiter/download-job-description";
 import { PipelineFlowchart } from "@/components/dashboard/recruiter/pipeline-flowchart";
 import { ShortlistGenerator } from "@/components/screening/shortlist-generator";
+import { MandateEvalConfigPanel } from "@/components/screening/mandate-eval-config-panel";
 import { getRecruiterMandateById } from "@/lib/actions/recruiter";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
+import { getMandateEvalConfig } from "@/lib/actions/screening";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
 import { formatDate } from "@/lib/utils";
@@ -93,6 +95,10 @@ export default async function RecruiterMandateDetailsPage({
 
   const dict = await getDictionary();
   const r = dict.recruiter;
+
+  // Assignment-level AI evaluation sector config (consumed by every candidate
+  // eval on this mandate — recruiter self-check + Recruito's official run).
+  const evalConfig = await getMandateEvalConfig(id);
 
   // Optional stage filter, deep-linked from the count badges on the mandates list.
   const activeStage: MandateStage | null = isMandateStage(stage) ? stage : null;
@@ -182,6 +188,8 @@ export default async function RecruiterMandateDetailsPage({
         </CardContent>
       </Card>
       )}
+
+      <MandateEvalConfigPanel mandateId={id} initialConfig={evalConfig} dict={r as any} />
 
       {mandate.pipeline_stages && mandate.pipeline_stages.length > 0 && (
         <Card>
