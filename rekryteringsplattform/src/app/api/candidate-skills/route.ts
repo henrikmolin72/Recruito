@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { companyOwnsCandidate } from "@/lib/candidate-skills-auth";
 
 export const runtime = "nodejs";
 
@@ -31,7 +32,10 @@ export async function GET(request: NextRequest) {
     const { recruiterId, isAdmin } = await getCallerContext(user.id, admin);
 
     if (!isAdmin) {
-        if (!recruiterId || !(await ownsCandidate(candidateId, recruiterId, admin))) {
+        const allowed =
+            (recruiterId && (await ownsCandidate(candidateId, recruiterId, admin))) ||
+            (await companyOwnsCandidate(candidateId, user.id, admin));
+        if (!allowed) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
     }
