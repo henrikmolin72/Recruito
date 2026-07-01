@@ -3,7 +3,7 @@ import { CandidateAccessGate } from "@/components/dashboard/company/candidate-ac
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ArrowRight, GitBranch, Users, UserCheck } from "lucide-react";
-import { normalizeCandidateStatusForWorkflow, TERMINAL_CANDIDATE_STATUSES } from "@/lib/candidate-workflow";
+import { normalizeCandidateStatusForWorkflow, TERMINAL_CANDIDATE_STATUSES, countCandidatesAgainstCap } from "@/lib/candidate-workflow";
 import { getDictionary } from "@/i18n/server";
 
 type CandidateItem = {
@@ -32,7 +32,11 @@ export async function CompanyCandidatesOverview({
     const dict = await getDictionary();
     const c = dict.company;
 
-    const total = candidates.length;
+    // "Candidates" box = candidates occupying a cap slot (excludes rejected,
+    // withdrawn and drafts) — the same countCandidatesAgainstCap the admin "X/8"
+    // badge and the auto-pause use, so the company sees the number that actually
+    // drives the cap/pause instead of a lifetime total that included rejects.
+    const total = countCandidatesAgainstCap(candidates.map((c) => c.status));
     const active = candidates.filter((c) => {
         const status = normalizeCandidateStatusForWorkflow(c.status);
         return !(TERMINAL_CANDIDATE_STATUSES.has(status) || ["hired", "invoice_enabled", "guarantee_tracking", "completed"].includes(status));

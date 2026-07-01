@@ -20,6 +20,7 @@ import {
     CANDIDATE_WITHDRAW_REASON_KEYS,
     CANDIDATE_WITHDRAW_BLOCKED_STATUSES,
     rejectReasonLabel,
+    countCandidatesAgainstCap,
 } from "@/lib/candidate-workflow";
 import {
     getPlacementByCandidateId,
@@ -969,14 +970,22 @@ export async function markCandidateRecruitoScreened(candidateId: string) {
             // to "paused" once 8 are approved/delivered. Do NOT unify these two counts —
             // making the pause depend on approvals while submissions stop at occupancy
             // is intentional; merging them would let a 9th candidate slip in.
+            //
+            // But like every cap count it must run the approved rows through
+            // candidateOccupiesCapSlot: a rejected/withdrawn candidate keeps its
+            // recruito_screened_at, so counting raw approvals paused jobs on their
+            // TOTAL history instead of their ACTIVE load (client-reported bug — a job
+            // with 1 active + 7 rejected showed as paused at "8"). Excluding released
+            // slots only ever pauses LATER, so the submission gate is unaffected.
             const maxCandidates = (job as any)?.max_candidates ?? 8;
-            const { count: approvedCount } = await admin
+            const { data: approvedRows } = await admin
                 .from("candidates")
-                .select("id", { count: "exact", head: true })
+                .select("status")
                 .eq("job_id", cand.job_id)
                 .not("recruito_screened_at", "is", null);
+            const approvedActiveCount = countCandidatesAgainstCap((approvedRows ?? []).map((r: any) => r.status));
 
-            if ((approvedCount ?? 0) >= maxCandidates && (job as any)?.status === "active") {
+            if (approvedActiveCount >= maxCandidates && (job as any)?.status === "active") {
                 await admin
                     .from("jobs")
                     .update({ status: "paused", pause_reason: "Candidate Limit Reached" })

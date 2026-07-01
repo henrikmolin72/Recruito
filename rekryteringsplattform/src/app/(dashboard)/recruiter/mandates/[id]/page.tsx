@@ -16,7 +16,8 @@ import { formatDate } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
-import { candidateInStage, isMandateStage, mandateExpiryDaysLeft, type MandateStage } from "@/lib/mandate-stages";
+import { candidateInStage, isMandateStage, mandateExpiryDaysLeft, REFERRAL_BLOCKED_JOB_STATUSES, type MandateStage } from "@/lib/mandate-stages";
+import { countCandidatesAgainstCap } from "@/lib/candidate-workflow";
 
 const STAGE_LABEL_KEY: Record<MandateStage, string> = {
   draft: "colDraft",
@@ -101,16 +102,25 @@ export default async function RecruiterMandateDetailsPage({
     : mandate.candidates;
   const activeStageLabel = activeStage ? ((r as any)[STAGE_LABEL_KEY[activeStage]] || activeStage) : null;
 
-  // "Present candidate" gating — mirrors the mandates list view: a new
-  // candidate can only be presented while the mandate is active, not expired,
-  // and below the submission cap.
+  // "Present candidate" gating — mirrors the mandates list view: a new candidate
+  // can only be presented while the mandate is active, not expired, and below the
+  // cap. Blocked-status check reuses REFERRAL_BLOCKED_JOB_STATUSES — the SAME set
+  // the /candidates/new page 404s on (client-closed statuses PLUS "paused") — so
+  // the button can never send a recruiter to a page that rejects them. Was: only
+  // {closed,filled,cancelled}, which left the button live on a paused job and
+  // produced the reported 404 on click. capReached now excludes rejected/withdrawn
+  // via countCandidatesAgainstCap (was raw .length, which over-counted freed slots).
   const expiryDays = mandateExpiryDaysLeft({ claimedAt: mandate.claimed_at, candidates: mandate.candidates });
   const isExpired = expiryDays !== null && expiryDays <= 0;
   const cap = (mandate as any).max_candidates ?? 8;
-  const capReached = mandate.candidates.length >= cap;
-  const isInactive = new Set(["closed", "filled", "cancelled"]).has(mandate.status ?? "");
-  const presentBlocked = isExpired || capReached || isInactive;
-  const presentBlockedLabel = isExpired ? (r.expiredLabel || "Expired") : (r.capReachedLabel || "Cap reached");
+  const capReached = countCandidatesAgainstCap(mandate.candidates.map((c) => c.status)) >= cap;
+  const isBlockedStatus = REFERRAL_BLOCKED_JOB_STATUSES.has(mandate.status ?? "");
+  const presentBlocked = isExpired || capReached || isBlockedStatus;
+  const presentBlockedLabel = isExpired
+    ? (r.expiredLabel || "Expired")
+    : mandate.status === "paused"
+      ? (r.pausedLabel || "Paused")
+      : (r.capReachedLabel || "Cap reached");
 
   return (
     <div className="space-y-6">
