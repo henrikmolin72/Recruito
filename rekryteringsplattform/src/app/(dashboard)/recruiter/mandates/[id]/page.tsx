@@ -11,6 +11,7 @@ import { getRecruiterMandateById } from "@/lib/actions/recruiter";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
+import { JobProcessStats } from "@/components/dashboard/shared/job-process-stats";
 import { formatDate } from "@/lib/utils";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
@@ -145,6 +146,8 @@ export default async function RecruiterMandateDetailsPage({
           )}
         </div>
       </div>
+
+      {jobId && <JobProcessStats jobId={jobId} />}
 
       <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">
         <p className="text-sm text-amber-800">{r.confidentialNote}</p>
