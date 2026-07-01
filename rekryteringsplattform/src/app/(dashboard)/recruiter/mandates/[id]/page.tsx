@@ -1,17 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Building2, Briefcase, MapPin, Users, Plus, GitBranch, Megaphone } from "lucide-react";
+import { ArrowLeft, Building2, Briefcase, MapPin, Users, Plus, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { DraftRowActions } from "@/components/dashboard/recruiter/draft-row-actions";
 import { DownloadJobDescription } from "@/components/dashboard/recruiter/download-job-description";
-import { PipelineFlowchart } from "@/components/dashboard/recruiter/pipeline-flowchart";
 import { ShortlistGenerator } from "@/components/screening/shortlist-generator";
-import { MandateEvalConfigPanel } from "@/components/screening/mandate-eval-config-panel";
 import { getRecruiterMandateById } from "@/lib/actions/recruiter";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
-import { getMandateEvalConfig } from "@/lib/actions/screening";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
 import { formatDate } from "@/lib/utils";
@@ -95,10 +92,6 @@ export default async function RecruiterMandateDetailsPage({
 
   const dict = await getDictionary();
   const r = dict.recruiter;
-
-  // Assignment-level AI evaluation sector config (consumed by every candidate
-  // eval on this mandate — recruiter self-check + Recruito's official run).
-  const evalConfig = await getMandateEvalConfig(id);
 
   // Optional stage filter, deep-linked from the count badges on the mandates list.
   const activeStage: MandateStage | null = isMandateStage(stage) ? stage : null;
@@ -187,22 +180,6 @@ export default async function RecruiterMandateDetailsPage({
           )}
         </CardContent>
       </Card>
-      )}
-
-      <MandateEvalConfigPanel mandateId={id} initialConfig={evalConfig} dict={r as any} />
-
-      {mandate.pipeline_stages && mandate.pipeline_stages.length > 0 && (
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
-              <GitBranch className="h-3.5 w-3.5" /> {(r as any).hiringProcess || "Rekryteringsprocess"}
-            </p>
-            <PipelineFlowchart
-              stages={mandate.pipeline_stages}
-              candidates={mandate.candidates}
-            />
-          </CardContent>
-        </Card>
       )}
 
       <Card id="candidates" className="scroll-mt-6">
