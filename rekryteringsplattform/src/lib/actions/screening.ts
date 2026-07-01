@@ -1,58 +1,6 @@
 "use server";
 
 import { authorizeMandate } from "@/lib/screening/eval-data";
-import { type EvalConfig } from "@/lib/screening/evaluation-prompt";
-
-/** Persist the per-mandate evaluation config (target sector, adjacent, etc.). */
-export async function saveMandateEvalConfig(
-  mandateId: string,
-  config: EvalConfig
-): Promise<{ success: true } | { error: string }> {
-  const auth = await authorizeMandate(mandateId);
-  if ("error" in auth) return { error: auth.error };
-
-  const clean = (arr: string[] | null) =>
-    Array.isArray(arr) ? arr.map((s) => s.trim()).filter(Boolean) : [];
-
-  const { error } = await auth.admin
-    .from("job_mandates")
-    .update({
-      eval_target_sector: config.targetSector?.trim() || null,
-      eval_adjacent_sectors: clean(config.adjacentSectors),
-      eval_transferable_skills: clean(config.transferableSkills),
-      eval_custom_keywords: clean(config.customKeywords),
-    })
-    .eq("id", mandateId);
-
-  if (error) {
-    console.error("[screening] saveMandateEvalConfig", error);
-    return { error: "Could not save evaluation settings" };
-  }
-  return { success: true };
-}
-
-/** Read the per-mandate evaluation config for prefilling the panel. */
-export async function getMandateEvalConfig(
-  mandateId: string
-): Promise<EvalConfig | null> {
-  const auth = await authorizeMandate(mandateId);
-  if ("error" in auth) return null;
-
-  const { data } = await auth.admin
-    .from("job_mandates")
-    .select("eval_target_sector, eval_adjacent_sectors, eval_transferable_skills, eval_custom_keywords")
-    .eq("id", mandateId)
-    .single();
-
-  if (!data) return null;
-  const d = data as any;
-  return {
-    targetSector: d.eval_target_sector ?? null,
-    adjacentSectors: d.eval_adjacent_sectors ?? null,
-    transferableSkills: d.eval_transferable_skills ?? null,
-    customKeywords: d.eval_custom_keywords ?? null,
-  };
-}
 
 export type StoredEvaluation = {
   reportMarkdown: string;
