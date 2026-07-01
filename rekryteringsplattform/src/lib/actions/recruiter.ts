@@ -11,6 +11,7 @@ import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
 import { candidateInStage } from "@/lib/mandate-stages";
 import { isCandidateInProcess, countCandidatesAgainstCap } from "@/lib/candidate-workflow";
 import { releaseDueMandates } from "@/lib/mandate-expiry-release";
+import { selectMarketplaceJobs } from "@/lib/marketplace-visibility";
 import { verifyImageFileContent } from "@/lib/file-magic";
 
 function handleError(error: any) {
@@ -456,13 +457,11 @@ export async function getAvailableJobsForRecruiter() {
     }
     const mandateCountOf = (job: any): number => activeMandateCount.get(job.id) ?? 0;
 
-    const availableJobs = jobs.filter(job => {
-        if (job.status !== "active") return true;
-        // Full jobs stay visible (the card renders them as "Fullsatt" with no
-        // claim action); only hide jobs this recruiter has already claimed —
-        // those live under "My Mandates".
-        return !activeClaimedJobIds.has(job.id);
-    });
+    // Hide jobs the recruiter already actively holds (they live under "My
+    // Mandates") regardless of status; paused re-claimed jobs previously leaked
+    // back in. Full jobs the recruiter has NOT claimed stay visible ("Slots
+    // full", no claim action).
+    const availableJobs = selectMarketplaceJobs(jobs || [], activeClaimedJobIds);
 
     return availableJobs.map(job => ({
         ...job,
