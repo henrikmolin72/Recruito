@@ -11,10 +11,14 @@
             "id": "ec626a96b797e67b",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Grafvy"
+              "type": "markdown",
+              "state": {
+                "file": "rekryteringsplattform/node_modules/axe-core/README.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "README"
             }
           }
         ]
