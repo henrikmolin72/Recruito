@@ -594,7 +594,9 @@
     "pipelineSaved": "Processen har sparats!",
     "pipelineWarningCandidates": "Det finns aktiva kandidater i denna process. Var försiktig vid borttagning av steg.",
     "stepProcess": "Process",
-    "stepProcessDesc": "Rekryteringsprocess"
+    "stepProcessDesc": "Rekryteringsprocess",
+    "aiReportTitle": "AI-screeningrapport",
+    "aiReportDisclaimer": "Denna AI-screening är endast ett beslutsstöd. Den bedömer CV:t mot jobbeskrivningen och kan inte ta hänsyn till intervjuprestation, plats- eller pendlingspreferenser, team- eller kulturell matchning, löneförväntningar eller andra affärsmässiga överväganden. Det slutgiltiga anställningsbeslutet är alltid ditt."
   },
   "recruiter": {
     "dashboardTitle": "Dashboard",

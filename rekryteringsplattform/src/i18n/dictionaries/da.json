@@ -594,7 +594,9 @@
     "pipelineSaved": "Processen er gemt!",
     "pipelineWarningCandidates": "Der er aktive kandidater i denne proces. Vær forsigtig ved fjernelse af trin.",
     "stepProcess": "Proces",
-    "stepProcessDesc": "Rekrutteringsproces"
+    "stepProcessDesc": "Rekrutteringsproces",
+    "aiReportTitle": "AI-screeningrapport",
+    "aiReportDisclaimer": "Denne AI-screening er kun beslutningsstøtte. Den vurderer CV'et op mod jobbeskrivelsen og kan ikke tage højde for interviewpræstation, placerings- eller pendlerpræferencer, team- eller kulturel match, lønforventninger eller andre forretningsmæssige overvejelser. Den endelige ansættelsesbeslutning er altid din."
   },
   "recruiter": {
     "dashboardTitle": "Dashboard",
