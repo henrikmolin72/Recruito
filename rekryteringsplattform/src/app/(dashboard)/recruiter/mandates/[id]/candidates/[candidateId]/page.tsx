@@ -20,7 +20,7 @@ import { CandidateStageHistoryTimeline } from "@/components/dashboard/company/ca
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
-import { ScreeningReportCard } from "@/components/screening/screening-report-card";
+import { ScreeningSummaryCard } from "@/components/screening/screening-summary-card";
 import { getLatestEvaluation } from "@/lib/actions/screening";
 
 async function getCandidate(candidateId: string) {
@@ -174,7 +174,7 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                 </div>
 
                 <div className="space-y-6">
-                    <ScreeningReportCard report={latestEvaluation} dict={r as any} />
+                    <ScreeningSummaryCard report={latestEvaluation} dict={r as any} />
 
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
                         <CardHeader className="pb-2">
