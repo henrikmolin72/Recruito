@@ -13,6 +13,7 @@ import { CandidateDetailSections } from "@/components/shared/candidate-detail-se
 import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
 import { CandidatePresentStatusPanel } from "@/components/dashboard/company/candidate-present-status-panel";
 import { CandidateStageHistoryTimeline } from "@/components/dashboard/company/candidate-stage-history-timeline";
+import { CompanyScreeningReport } from "@/components/screening/company-screening-report";
 import type { CandidateStageHistory } from "@/types/db-types";
 
 async function getCandidate(candidateId: string, jobId: string) {
@@ -173,6 +174,7 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
                     <CandidateDetailSections candidate={candidate} dict={dict} />
+                    <CompanyScreeningReport candidateId={candidate.id} />
                 </div>
 
                 <div className="space-y-6">
