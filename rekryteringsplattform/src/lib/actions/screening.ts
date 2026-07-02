@@ -1,6 +1,8 @@
 "use server";
 
 import { authorizeMandate } from "@/lib/screening/eval-data";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type StoredEvaluation = {
   reportMarkdown: string;
@@ -39,6 +41,61 @@ export async function getLatestEvaluation(
     .limit(1)
     .maybeSingle();
 
+  if (!data) return null;
+  const d = data as any;
+  return {
+    reportMarkdown: d.report_markdown,
+    modelVersion: d.model_version,
+    createdAt: d.created_at,
+  };
+}
+
+/**
+ * Company-authorized fetch of a candidate's full AI screening report.
+ *
+ * The full report is a CLIENT-ONLY decision-support tool (client request
+ * 2026-07-02) — recruiters never see it. Authorization mirrors the company
+ * candidate detail page exactly: the caller must own the job the candidate
+ * belongs to, and the candidate must be Recruito-screened (companies only ever
+ * see screened candidates). candidate_screenings is service-role-only, so the
+ * row is read via the admin client only after ownership passes.
+ */
+export async function getCompanyCandidateScreening(
+  candidateId: string
+): Promise<StoredEvaluation | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // Resolve the candidate's job + screened gate, then confirm the caller owns
+  // the job's company — same ownership rule the company page enforces.
+  const { data: cand } = await supabase
+    .from("candidates")
+    .select("job_id, recruito_screened_at, job:jobs(company:companies(user_id))")
+    .eq("id", candidateId)
+    .maybeSingle();
+
+  if (!cand) return null;
+  const c = cand as any;
+  if (!c.recruito_screened_at) return null;
+
+  const jobData = Array.isArray(c.job) ? c.job[0] : c.job;
+  const companyData = jobData?.company;
+  const jobOwnerId = Array.isArray(companyData) ? companyData[0]?.user_id : companyData?.user_id;
+  if (jobOwnerId !== user.id) return null;
+
+  const { data, error } = await createAdminClient()
+    .from("candidate_screenings")
+    .select("report_markdown, model_version, created_at")
+    .eq("candidate_id", candidateId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getCompanyCandidateScreening: screening fetch failed", error);
+    return null;
+  }
   if (!data) return null;
   const d = data as any;
   return {
