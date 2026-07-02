@@ -2,6 +2,8 @@
 // mandates list (clickable count badges) and the mandate detail page (stage
 // filter) so the two stay in sync.
 
+import { candidateOccupiesCapSlot } from "./candidate-workflow";
+
 export type MandateStage =
     | "draft"
     | "in_review"
@@ -180,6 +182,33 @@ export function candidateInStage(c: StageCandidate, stage: MandateStage): boolea
         default:
             return false;
     }
+}
+
+// "Ongoing process" tile counts for a job. presented deliberately equals the
+// admin "X / cap" badge (candidateOccupiesCapSlot): drafts are invisible and
+// rejected/withdrawn/declined release their slot — admin and recruiter see
+// these numbers side by side, so they must never drift (client bug 2026-07-02).
+// released = once-submitted candidates whose slot was freed (rejection,
+// withdrawal or declined offer) — historical churn, shown as its own tile.
+export interface JobProcessStatCounts {
+    presented: number;
+    inProcess: number;
+    inInterview: number;
+    released: number;
+}
+
+export function computeJobProcessStats(rows: StageCandidate[]): JobProcessStatCounts {
+    const submitted = rows.filter((c) => c.status && c.status !== "draft");
+    const occupying = submitted.filter((c) => candidateOccupiesCapSlot(c.status));
+    const inInterview = occupying.filter(
+        (c) => candidateInStage(c, "interview") || candidateInStage(c, "final_interview"),
+    ).length;
+    return {
+        presented: occupying.length,
+        inProcess: occupying.length - inInterview,
+        inInterview,
+        released: submitted.length - occupying.length,
+    };
 }
 
 export function isMandateStage(value: string | null | undefined): value is MandateStage {

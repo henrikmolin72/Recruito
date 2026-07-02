@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
     candidateInStage,
     classifyMandate,
+    computeJobProcessStats,
     countActiveRecruiters,
     isMandateLiveActive,
     mandateExpiryDaysLeft,
@@ -9,6 +10,7 @@ import {
     REFERRAL_BLOCKED_JOB_STATUSES,
     type ExpiryCandidate,
 } from "./mandate-stages";
+import { countCandidatesAgainstCap } from "./candidate-workflow";
 
 const DAY = 86_400_000;
 const NOW = new Date("2026-05-31T12:00:00.000Z").getTime();
@@ -190,5 +192,49 @@ describe("classifyMandate", () => {
 
     it("prioritizes hired over a client-closed job status", () => {
         expect(classifyMandate({ status: "filled", candidates: [{ status: "hired" }] })).toBe("hired");
+    });
+});
+
+describe("computeJobProcessStats", () => {
+    it("excludes drafts from every bucket", () => {
+        expect(
+            computeJobProcessStats([{ status: "draft" }, { status: "submitted" }]),
+        ).toEqual({ presented: 1, inProcess: 1, inInterview: 0, released: 0 });
+    });
+
+    it("presented matches the admin cap badge: rejected/withdrawn release the slot", () => {
+        const stats = computeJobProcessStats([
+            { status: "under_client_review", recruito_screened_at: "2026-07-01" },
+            { status: "rejected_client" },
+            { status: "candidate_withdrawn" },
+        ]);
+        expect(stats.presented).toBe(1);
+        expect(stats.released).toBe(2);
+    });
+
+    it("splits interview stages out of in-process", () => {
+        expect(
+            computeJobProcessStats([
+                { status: "interview_stage_1" },
+                { status: "final_interview" },
+                { status: "submitted" },
+            ]),
+        ).toEqual({ presented: 3, inProcess: 1, inInterview: 2, released: 0 });
+    });
+
+    it("keeps hired candidates presented; offer_declined releases", () => {
+        expect(
+            computeJobProcessStats([{ status: "hired" }, { status: "offer_declined" }]),
+        ).toEqual({ presented: 1, inProcess: 1, inInterview: 0, released: 1 });
+    });
+
+    it("agrees with countCandidatesAgainstCap for any status mix", () => {
+        const rows = [
+            "draft", "submitted", "rejected_client", "interview_stage_2",
+            "hired", "candidate_withdrawn", "offer_declined", "recruito_rejected",
+        ].map((status) => ({ status }));
+        expect(computeJobProcessStats(rows).presented).toBe(
+            countCandidatesAgainstCap(rows.map((r) => r.status)),
+        );
     });
 });
