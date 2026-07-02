@@ -72,4 +72,31 @@ SECTION E — FINAL RECOMMENDATION
 `;
     expect(extractMatchScore(report)).toBe(88);
   });
+
+  it("prefers the canonical FINAL_MATCH_SCORE marker over prose scores", () => {
+    const md = `Direct Match Score: 76%\nAdjusted Match Score: 67%\n\nFINAL_MATCH_SCORE: 42`;
+    expect(extractMatchScore(md)).toBe(42);
+  });
+
+  it("reads the marker with a percent sign and surrounding whitespace", () => {
+    expect(extractMatchScore("blah\n\nFINAL_MATCH_SCORE:  50 %\n")).toBe(50);
+  });
+
+  it("is stable regardless of Adjusted-vs-Direct prose wording when the marker is present", () => {
+    const a = `Adjusted Match Score: N/A\nDirect Match Score: 67%\nFINAL_MATCH_SCORE: 40`;
+    const b = `Adjusted Match Score: 75%\nDirect Match Score: 70%\nFINAL_MATCH_SCORE: 40`;
+    expect(extractMatchScore(a)).toBe(extractMatchScore(b));
+  });
+
+  it("falls back to prose scores when no marker is present (legacy reports)", () => {
+    expect(extractMatchScore("Direct Match Score: 80%")).toBe(80);
+  });
+
+  it("ignores out-of-range marker values and falls back", () => {
+    expect(extractMatchScore("FINAL_MATCH_SCORE: 250\nDirect Match Score: 55%")).toBe(55);
+  });
+
+  it("returns null when neither marker nor prose score exists", () => {
+    expect(extractMatchScore("no score here")).toBeNull();
+  });
 });
