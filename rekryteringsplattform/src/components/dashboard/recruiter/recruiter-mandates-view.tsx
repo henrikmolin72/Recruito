@@ -47,7 +47,7 @@ interface Mandate {
     application_deadline: string | null;
     claimed_at: string | null;
     max_candidates: number | null;
-    submitted_count: number | null;
+    cap_occupied_count: number | null;
     candidates: MandateCandidate[];
 }
 
@@ -290,8 +290,8 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                         const isExpired = expiryDays !== null && expiryDays <= 0;
                                                         const isPaused = mandate.status === "paused";
                                                         const cap = mandate.max_candidates ?? 8;
-                                                        const totalSubmitted = mandate.submitted_count ?? 0;
-                                                        const capReached = totalSubmitted >= cap;
+                                                        const occupied = mandate.cap_occupied_count ?? 0;
+                                                        const capReached = occupied >= cap;
                                                         const blocked = isExpired || isPaused || capReached || tab !== "active";
 
                                                         if (blocked) {

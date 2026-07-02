@@ -9,7 +9,7 @@ import { createNotification } from "@/lib/notifications/create";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
 import { computeJobProcessStats } from "@/lib/mandate-stages";
-import { isCandidateInProcess, countCandidatesAgainstCap } from "@/lib/candidate-workflow";
+import { isCandidateInProcess, countCandidatesAgainstCap, candidateOccupiesCapSlot } from "@/lib/candidate-workflow";
 import { releaseDueMandates } from "@/lib/mandate-expiry-release";
 import { selectMarketplaceJobs } from "@/lib/marketplace-visibility";
 import { verifyImageFileContent } from "@/lib/file-magic";
@@ -632,6 +632,25 @@ export async function getRecruiterMandates() {
         return [];
     }
 
+    // Job-wide cap usage across ALL recruiters (admin client — RLS hides other
+    // recruiters' rows from this user). Same predicate as the server submission
+    // gate and the admin "X / cap" badge so "Cap reached" can never drift.
+    // Counts only — statuses are never returned to the client.
+    const jobIds = [...new Set(mandates.map((m: any) => m.job?.id).filter(Boolean))] as string[];
+    const occupiedByJob = new Map<string, number>();
+    if (jobIds.length > 0) {
+        const adminClient = createAdminClient();
+        const { data: capRows } = await adminClient
+            .from("candidates")
+            .select("job_id, status")
+            .in("job_id", jobIds);
+        for (const row of capRows || []) {
+            if (candidateOccupiesCapSlot(row.status)) {
+                occupiedByJob.set(row.job_id, (occupiedByJob.get(row.job_id) || 0) + 1);
+            }
+        }
+    }
+
     return mandates.map((mandate: any) => ({
         id: mandate.id,
         job_id: mandate.job?.id,
@@ -650,7 +669,7 @@ export async function getRecruiterMandates() {
         application_deadline: mandate.job?.application_deadline,
         published_at: mandate.job?.published_at,
         max_candidates: mandate.job?.max_candidates ?? 8,
-        submitted_count: (mandate.candidates || []).length,
+        cap_occupied_count: mandate.job?.id ? (occupiedByJob.get(mandate.job.id) ?? 0) : 0,
         candidates: mandate.candidates?.map((c: any) => ({
             id: c.id,
             name: `${c.first_name} ${c.last_name}`,
