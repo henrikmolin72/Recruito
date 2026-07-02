@@ -1,11 +1,20 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { getJobProcessStats } from "@/lib/actions/recruiter";
+import type { JobProcessStatCounts } from "@/lib/mandate-stages";
 
 // Aggregate pipeline counts across ALL recruiters on a job. Shown to any
 // recruiter (Browse Jobs + My Mandates) near the top so they can judge at a
 // glance whether to keep sourcing candidates or ease off. Counts only, no PII.
-export async function JobProcessStats({ jobId }: { jobId: string }) {
-    const stats = await getJobProcessStats(jobId);
+// `preloaded` lets a page that already fetched the stats (for its cap gate)
+// avoid a second query.
+export async function JobProcessStats({
+    jobId,
+    preloaded,
+}: {
+    jobId: string;
+    preloaded?: JobProcessStatCounts | null;
+}) {
+    const stats = preloaded ?? (await getJobProcessStats(jobId));
     if (!stats) return null;
 
     return (
@@ -20,7 +29,7 @@ export async function JobProcessStats({ jobId }: { jobId: string }) {
                         { label: "Presented", value: stats.presented, color: "text-slate-900" },
                         { label: "In process", value: stats.inProcess, color: "text-blue-600" },
                         { label: "In interview", value: stats.inInterview, color: "text-purple-600" },
-                        { label: "Rejected", value: stats.rejected, color: "text-red-600" },
+                        { label: "Rejected / withdrawn", value: stats.released, color: "text-red-600" },
                     ].map((s) => (
                         <div key={s.label} className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-center">
                             <div className={`text-2xl font-black tabular-nums ${s.color}`}>{s.value}</div>

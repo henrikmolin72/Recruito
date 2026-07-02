@@ -8,7 +8,7 @@ import { Recruiter } from "@/types/db-types";
 import { createNotification } from "@/lib/notifications/create";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
-import { candidateInStage } from "@/lib/mandate-stages";
+import { computeJobProcessStats } from "@/lib/mandate-stages";
 import { isCandidateInProcess, countCandidatesAgainstCap } from "@/lib/candidate-workflow";
 import { releaseDueMandates } from "@/lib/mandate-expiry-release";
 import { selectMarketplaceJobs } from "@/lib/marketplace-visibility";
@@ -663,7 +663,8 @@ export async function getRecruiterMandates() {
 
 // Aggregate pipeline stats for a job across ALL recruiters' candidates, shown
 // to any recruiter who opens the job so they can judge whether more candidates
-// are needed. Counts only — no candidate PII. presented = process + interview + rejected.
+// are needed. Counts only — no candidate PII. presented mirrors the admin
+// "X / cap" badge (see computeJobProcessStats) so the dashboards never drift.
 export async function getJobProcessStats(jobId: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -680,16 +681,7 @@ export async function getJobProcessStats(jobId: string) {
         return null;
     }
 
-    const candidates = data || [];
-    const inInterview = candidates.filter(
-        (c) => candidateInStage(c, "interview") || candidateInStage(c, "final_interview"),
-    ).length;
-    const rejected = candidates.filter((c) => candidateInStage(c, "rejected")).length;
-    const presented = candidates.length;
-    // Everything still in play that isn't an interview or a rejection.
-    const inProcess = presented - inInterview - rejected;
-
-    return { presented, inProcess, inInterview, rejected };
+    return computeJobProcessStats(data || []);
 }
 
 export async function getRecruiterMandateById(mandateId: string) {
