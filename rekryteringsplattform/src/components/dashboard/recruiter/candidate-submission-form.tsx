@@ -627,13 +627,23 @@ export function CandidateSubmissionForm({
                                     type="button"
                                     variant="outline"
                                     onClick={() => runScreening()}
-                                    disabled={screening || !cvFile}
+                                    // Disabled once a result exists: re-runs would return a different
+                                    // score for the same CV (non-determinism reads as low quality).
+                                    // Stays enabled after an error (screenResult null) so retry works.
+                                    disabled={screening || !cvFile || screenResult !== null}
                                     className="h-10 px-4 gap-2 shrink-0"
                                 >
-                                    {screening ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                                    {screening ? (r.aiScreenRunning || "Screening…") : (r.aiScreenRerun || "Re-run AI screening")}
+                                    {screening ? <Loader2 className="h-4 w-4 animate-spin" /> : screenResult ? <CheckCircle2 className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                                    {screening ? (r.aiScreenRunning || "Screening…") : screenResult ? (r.aiScreenDone || "Screening complete") : (r.aiScreenRun || "Run AI screening")}
                                 </Button>
                             </div>
+
+                            {screening && (
+                                <div className="mt-3 flex items-center gap-2 rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-sm text-brand-700">
+                                    <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                                    <span>{r.aiScreenProcessing || "Generating report — this can take up to a minute. Please stand by."}</span>
+                                </div>
+                            )}
 
                             {screenError && <p className="mt-2 text-xs font-medium text-red-600">{screenError}</p>}
 
