@@ -237,4 +237,21 @@ describe("computeJobProcessStats", () => {
             countCandidatesAgainstCap(rows.map((r) => r.status)),
         );
     });
+
+    // Client report 2026-07-02 (Electrical Engineer): admin badge 1/8 while the
+    // old panel showed Presented 12 / In process 2 / Rejected 10 — the 12th row
+    // (a draft or a withdrawal) leaked into "In process". Both variants must now
+    // land outside it, and Presented must equal the admin badge's 1.
+    it("reproduces the 2026-07-02 client report: 10 rejected + 1 active + 1 stray row", () => {
+        const rejected = [
+            "rejected_client", "rejected_client", "rejected_interview", "recruito_rejected",
+            "rejected", "rejected", "rejected_client", "rejected_interview", "recruito_rejected", "rejected_client",
+        ].map((status) => ({ status }));
+        expect(
+            computeJobProcessStats([...rejected, { status: "under_client_review" }, { status: "draft" }]),
+        ).toEqual({ presented: 1, inProcess: 1, inInterview: 0, released: 10 });
+        expect(
+            computeJobProcessStats([...rejected, { status: "under_client_review" }, { status: "candidate_withdrawn" }]),
+        ).toEqual({ presented: 1, inProcess: 1, inInterview: 0, released: 11 });
+    });
 });
