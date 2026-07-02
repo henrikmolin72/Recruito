@@ -42,6 +42,7 @@ SCREENING RULES (read before analysis)
 - Flag any JD requirement that may constitute indirect discrimination.
 - All output must be in English.
 - Use red marks 🔴 as specified per field.
+- HARD REQUIREMENTS CAP: Treat any requirement the JD marks as mandatory / required / "must have" (including a required working language, a required certification, or a legally required work authorization) as a gate. If the CV does not demonstrate a mandatory requirement, the Direct Match Score MUST NOT exceed 49%, regardless of other strengths. If several mandatory requirements are unmet, score proportionally lower. A strong adjacent profile can still be noted, but never lifts the score above 49% while a mandatory requirement is unmet.
 ─────────────────────────────────────────────────────────────────
 
 Review the CV against the JD above. Return ALL sections below in TABLE FORMAT
@@ -181,7 +182,12 @@ Model Version: {MODEL_VERSION}
 Timestamp    : {ISO_TIMESTAMP}
 JD ID        : {JD_ID}
 CV Hash      : {CV_HASH}
-─────────────────────────────────────────────────────────────────`;
+─────────────────────────────────────────────────────────────────
+
+──────────────────────────────────────────────────────────────────
+FINAL LINE (required, machine-read — output exactly once, as the very last line):
+FINAL_MATCH_SCORE: <the final match score as an integer 0-100, no % sign>
+This number MUST equal the Adjusted Match Score if one applies, otherwise the Direct Match Score, after applying the HARD REQUIREMENTS CAP above.`;
 
 function orNotSpecified(value: string | null | undefined): string {
   const v = (value ?? "").trim();
