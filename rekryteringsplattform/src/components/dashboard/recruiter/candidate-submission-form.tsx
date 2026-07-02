@@ -141,11 +141,15 @@ export function CandidateSubmissionForm({
     // --- CV ---
     const [cvFile, setCvFile] = useState<File | null>(null);
     const cvInputRef = useRef<HTMLInputElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
 
     // --- In-form AI screening (pre-submission self-check: Score + a few gaps) ---
     const [screening, setScreening] = useState(false);
     const [screenResult, setScreenResult] = useState<{ matchScore: number | null; criticalGaps: string[] } | null>(null);
     const [screenError, setScreenError] = useState<string | null>(null);
+    // Identifies the CV file the last screening ran against (name+size), so the
+    // auto-run effect fires once per new CV and never loops (rate limit is 15/10min).
+    const [screenedMarker, setScreenedMarker] = useState<string | null>(null);
 
     // --- Declaration ---
     const [declared, setDeclared] = useState(false);
@@ -298,13 +302,15 @@ export function CandidateSubmissionForm({
 
     // Persist the in-progress candidate as a draft (incl. CV), run the AI
     // self-check, and show Score + a few critical gaps — before presenting.
-    async function handleScreen(e: React.MouseEvent) {
-        e.preventDefault();
-        if (!cvFile) { setScreenError(screenErrors.no_cv); return; }
+    // Called both by the auto-run effect (on CV upload) and the manual Re-run button.
+    async function runScreening() {
+        if (!cvFile || !formRef.current) { setScreenError(screenErrors.no_cv); return; }
+        // Mark this CV as screened up front so the effect doesn't re-fire while the
+        // request is in flight (or on a failure that would leave the marker stale).
+        setScreenedMarker(`${cvFile.name}:${cvFile.size}`);
         setScreening(true);
         setScreenError(null);
-        const form = (e.currentTarget as HTMLElement).closest("form") as HTMLFormElement;
-        const fd = new FormData(form);
+        const fd = new FormData(formRef.current);
         injectDynamicFields(fd);
         fd.set("cv_file", cvFile);
         try {
@@ -322,6 +328,20 @@ export function CandidateSubmissionForm({
             setScreening(false);
         }
     }
+
+    // Auto-run the AI screening once whenever a new CV is uploaded — the check is
+    // always shown, no longer behind an optional button click. The screenedMarker
+    // guard makes this fire once per file (the manual button re-runs on demand).
+    useEffect(() => {
+        if (!cvFile || screening) return;
+        const marker = `${cvFile.name}:${cvFile.size}`;
+        if (marker === screenedMarker) return;
+        runScreening();
+        // Intentionally keyed on cvFile only; runScreening reads the latest state
+        // via closure and is guarded by screenedMarker so it runs exactly once per
+        // uploaded CV.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cvFile]);
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -393,7 +413,7 @@ export function CandidateSubmissionForm({
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+            <form ref={formRef} onSubmit={handleSubmit} className="max-w-4xl mx-auto px-6 py-8 space-y-6">
                 {/* ─────────────────── SECTION 1 – VERIFICATION ─────────────────── */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                     <SectionHeader icon={ShieldCheck} title={r.sec1Title || "Candidate Verification"} number={1} />
@@ -600,18 +620,18 @@ export function CandidateSubmissionForm({
                         <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <p className="text-sm font-bold text-slate-700">{r.aiScreenTitle || "AI screening (optional)"}</p>
+                                    <p className="text-sm font-bold text-slate-700">{r.aiScreenTitle || "AI screening"}</p>
                                     <p className="text-xs text-slate-500">{r.aiScreenHint || "Check the candidate's fit before presenting. The client never sees this."}</p>
                                 </div>
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={handleScreen}
+                                    onClick={() => runScreening()}
                                     disabled={screening || !cvFile}
                                     className="h-10 px-4 gap-2 shrink-0"
                                 >
                                     {screening ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                                    {screening ? (r.aiScreenRunning || "Screening…") : (r.aiScreenRun || "Run AI screening")}
+                                    {screening ? (r.aiScreenRunning || "Screening…") : (r.aiScreenRerun || "Re-run AI screening")}
                                 </Button>
                             </div>
 
