@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { DraftRowActions } from "@/components/dashboard/recruiter/draft-row-actions";
 import { DownloadJobDescription } from "@/components/dashboard/recruiter/download-job-description";
 import { ShortlistGenerator } from "@/components/screening/shortlist-generator";
-import { getRecruiterMandateById } from "@/lib/actions/recruiter";
+import { getRecruiterMandateById, getJobProcessStats } from "@/lib/actions/recruiter";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
@@ -108,12 +108,17 @@ export default async function RecruiterMandateDetailsPage({
   // the /candidates/new page 404s on (client-closed statuses PLUS "paused") — so
   // the button can never send a recruiter to a page that rejects them. Was: only
   // {closed,filled,cancelled}, which left the button live on a paused job and
-  // produced the reported 404 on click. capReached now excludes rejected/withdrawn
-  // via countCandidatesAgainstCap (was raw .length, which over-counted freed slots).
+  // produced the reported 404 on click. capReached counts JOB-WIDE occupied slots
+  // via getJobProcessStats — the same number the admin badge and server gate use.
+  const jobStats = jobId ? await getJobProcessStats(jobId) : null;
   const expiryDays = mandateExpiryDaysLeft({ claimedAt: mandate.claimed_at, candidates: mandate.candidates });
   const isExpired = expiryDays !== null && expiryDays <= 0;
   const cap = (mandate as any).max_candidates ?? 8;
-  const capReached = countCandidatesAgainstCap(mandate.candidates.map((c) => c.status)) >= cap;
+  // Job-wide occupancy (all recruiters) — same number as the admin badge and
+  // the server submission gate. Falls back to this recruiter's own rows only
+  // if the stats fetch fails (button fail-open; the server gate still blocks).
+  const capReached =
+    (jobStats?.presented ?? countCandidatesAgainstCap(mandate.candidates.map((c) => c.status))) >= cap;
   const isBlockedStatus = REFERRAL_BLOCKED_JOB_STATUSES.has(mandate.status ?? "");
   const presentBlocked = isExpired || capReached || isBlockedStatus;
   const presentBlockedLabel = isExpired
@@ -157,7 +162,7 @@ export default async function RecruiterMandateDetailsPage({
         </div>
       </div>
 
-      {jobId && <JobProcessStats jobId={jobId} />}
+      {jobId && <JobProcessStats jobId={jobId} preloaded={jobStats} />}
 
       <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">
         <p className="text-sm text-amber-800">{r.confidentialNote}</p>
