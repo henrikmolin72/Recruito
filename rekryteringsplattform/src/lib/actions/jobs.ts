@@ -14,6 +14,7 @@ import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";
 import { rejectRemainingCandidates, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
+import { normalizeCountry } from "@/lib/job-form-options";
 import type { PipelineStage } from "@/types/db-types";
 
 async function verifyJobOwnership(jobId: string) {
@@ -305,9 +306,10 @@ async function notifyMatchingRecruitersAboutJob(jobId: string) {
             const industryMatch =
                 (recruiter.primary_industries?.includes(job.industry)) ||
                 (recruiter.specializations?.includes(job.industry));
+            const jobCountry = normalizeCountry(job.country ?? "");
             const locationMatch =
-                (recruiter.locations?.includes(job.country)) ||
-                (recruiter.countries_experience?.includes(job.country));
+                (recruiter.locations?.includes(jobCountry)) ||
+                (recruiter.countries_experience?.includes(jobCountry));
             return industryMatch || locationMatch;
         });
 

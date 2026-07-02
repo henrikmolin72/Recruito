@@ -24,6 +24,7 @@ import {
     LANGUAGE_LEVEL_OPTIONS,
     SHIFT_WORK_OPTIONS,
     COUNTRY_OPTIONS,
+    normalizeCountry,
     EUROPEAN_LANGUAGE_OPTIONS,
     INDUSTRY_OPTIONS,
     REPORTING_TO_OPTIONS,
@@ -189,7 +190,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
     const [formData, setFormData] = useState({
         // Step 1
         title: initialData?.title ?? "",
-        country: initialData?.country ?? "",
+        country: normalizeCountry(initialData?.country ?? ""),
         city: initialData?.city ?? "",
         location_code: initialData?.location_code ?? "",
         location: initialData?.location ?? "",
