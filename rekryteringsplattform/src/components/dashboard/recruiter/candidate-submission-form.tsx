@@ -621,7 +621,7 @@ export function CandidateSubmissionForm({
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-sm font-bold text-slate-700">{r.aiScreenTitle || "AI screening"}</p>
-                                    <p className="text-xs text-slate-500">{r.aiScreenHint || "Check the candidate's fit before presenting. The client never sees this."}</p>
+                                    <p className="text-xs text-slate-500">{r.aiScreenHint || "Check the candidate's fit before presenting."}</p>
                                 </div>
                                 <Button
                                     type="button"
@@ -672,7 +672,7 @@ export function CandidateSubmissionForm({
                                             </ul>
                                         </div>
                                     )}
-                                    <p className="mt-2 text-[11px] text-slate-400">{r.aiScreenDisclaimer || "Decision support only — not an automated decision. The full report stays in Recruito."}</p>
+                                    <p className="mt-2 text-[11px] text-slate-400">{r.aiScreenDisclaimer || "Decision support only — not an automated decision."}</p>
                                 </div>
                             )}
                         </div>
