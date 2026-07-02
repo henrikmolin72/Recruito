@@ -42,7 +42,7 @@ SCREENING RULES (read before analysis)
 - Flag any JD requirement that may constitute indirect discrimination.
 - All output must be in English.
 - Use red marks 🔴 as specified per field.
-- HARD REQUIREMENTS CAP: Treat any requirement the JD marks as mandatory / required / "must have" (including a required working language, a required certification, or a legally required work authorization) as a gate. If the CV does not demonstrate a mandatory requirement, the Direct Match Score MUST NOT exceed 49%, regardless of other strengths. If several mandatory requirements are unmet, score proportionally lower. A strong adjacent profile can still be noted, but never lifts the score above 49% while a mandatory requirement is unmet.
+- HARD REQUIREMENTS CAP: Treat any requirement the JD marks as mandatory / required / "must have" (including a required working language, a required certification, or a legally required work authorization) as a gate. If the CV does not demonstrate a mandatory requirement, NEITHER the Direct Match Score NOR the Adjusted Match Score may exceed 49%, regardless of other strengths or transferable skills. If several mandatory requirements are unmet, score proportionally lower. A strong adjacent profile can still be noted, but never lifts any score above 49% while a mandatory requirement is unmet.
 ─────────────────────────────────────────────────────────────────
 
 Review the CV against the JD above. Return ALL sections below in TABLE FORMAT
@@ -187,7 +187,7 @@ CV Hash      : {CV_HASH}
 ──────────────────────────────────────────────────────────────────
 FINAL LINE (required, machine-read — output exactly once, as the very last line):
 FINAL_MATCH_SCORE: <the final match score as an integer 0-100, no % sign>
-This number MUST equal the Adjusted Match Score if one applies, otherwise the Direct Match Score, after applying the HARD REQUIREMENTS CAP above.`;
+This number MUST equal the Adjusted Match Score if one applies, otherwise the Direct Match Score. Then apply the HARD REQUIREMENTS CAP above: if any mandatory requirement is unmet, this number MUST NOT exceed 49, regardless of transferable skills or adjacent-sector strength.`;
 
 function orNotSpecified(value: string | null | undefined): string {
   const v = (value ?? "").trim();
