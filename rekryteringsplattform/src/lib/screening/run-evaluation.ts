@@ -80,7 +80,10 @@ export async function runCandidateEvaluation(args: {
   const response = await anthropic.messages.create({
     model,
     max_tokens: 8000,
-    temperature: 0.1,
+    // ponytail: 0 for maximum determinism. NOTE: temperature is accepted on
+    // the default Sonnet 4.6 model but 400s on Sonnet 5 / Opus 4.7+ — if
+    // ANTHROPIC_MODEL is ever pointed at one of those, remove this field.
+    temperature: 0,
     messages: [
       {
         role: "user",
