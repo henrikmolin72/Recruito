@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
+import { getMatchLevel, type MatchTone } from "@/lib/screening/match-level";
 import { AiTransparencyCard } from "./ai-transparency-card";
 
 type ComplianceData = {
@@ -31,32 +32,17 @@ interface CandidateScoreCardProps {
   onAnalyzed?: (result: ScreeningResult) => void;
 }
 
-function getScoreTone(score: number) {
-  if (score > 70) {
-    return {
-      ring: "stroke-success-500",
-      text: "text-success-700",
-      bg: "from-success-50 to-white",
-      badge: "success" as const,
-      label: "components.scoreCardStrong",
-    };
-  }
-  if (score >= 40) {
-    return {
-      ring: "stroke-warning-500",
-      text: "text-warning-700",
-      bg: "from-warning-50 to-white",
-      badge: "warning" as const,
-      label: "components.scoreCardMedium",
-    };
-  }
-  return {
-    ring: "stroke-danger-500",
-    text: "text-danger-700",
-    bg: "from-danger-50 to-white",
-    badge: "danger" as const,
-    label: "components.scoreCardLow",
-  };
+// Visual styling per tone token. The tier/label boundaries themselves live in the
+// canonical getMatchLevel (75/85/95) so recruiter, admin and client never disagree.
+const TONE_STYLES: Record<MatchTone, { ring: string; text: string; bg: string; badge: "success" | "danger" | "outline" }> = {
+  success: { ring: "stroke-success-500", text: "text-success-700", bg: "from-success-50 to-white", badge: "success" },
+  danger: { ring: "stroke-danger-500", text: "text-danger-700", bg: "from-danger-50 to-white", badge: "danger" },
+  muted: { ring: "stroke-slate-400", text: "text-slate-500", bg: "from-slate-50 to-white", badge: "outline" },
+};
+
+function getScoreTone(score: number | null) {
+  const level = getMatchLevel(score);
+  return { ...TONE_STYLES[level.tone], label: level.labelKey };
 }
 
 export function CandidateScoreCard({
@@ -75,7 +61,9 @@ export function CandidateScoreCard({
   const { t } = useTranslations();
 
   const score = result?.score ?? 0;
-  const tone = getScoreTone(score);
+  // Feed null (not the defaulted 0) when unanalyzed so the ring shows the neutral
+  // "unscored" tone instead of the red Not-Recommended tone under the "Not analyzed" badge.
+  const tone = getScoreTone(result ? score : null);
   const circumference = 2 * Math.PI * 40;
   const progress = Math.max(0, Math.min(100, score));
   const dashOffset = circumference - (progress / 100) * circumference;

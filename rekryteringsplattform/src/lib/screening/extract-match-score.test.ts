@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractMatchScore } from "./extract-match-score";
+import { extractMatchScore, stripClientVisibleScores } from "./extract-match-score";
 
 describe("extractMatchScore", () => {
   it("prefers the Adjusted Match Score over the Direct Match Score", () => {
@@ -98,5 +98,65 @@ SECTION E — FINAL RECOMMENDATION
 
   it("returns null when neither marker nor prose score exists", () => {
     expect(extractMatchScore("no score here")).toBeNull();
+  });
+});
+
+describe("stripClientVisibleScores — no raw % reaches the client report", () => {
+  // ABSOLUTE assertion (not label-scoped): a passing scrub leaves NO digit-percent
+  // anywhere. A label-scoped check would be tautological — it would only test the
+  // formats the scrub already covers, and miss the free-prose leaks that matter.
+  const anyPercent = (s: string) => /\d{1,3}\s*%/.test(s);
+
+  it("drops the FINAL_MATCH_SCORE marker line entirely", () => {
+    const out = stripClientVisibleScores("Summary text.\n\nFINAL_MATCH_SCORE: 88");
+    expect(out).not.toMatch(/FINAL_MATCH_SCORE/);
+    expect(out).toContain("Summary text.");
+  });
+
+  it("redacts labelled prose and table rows but keeps the surrounding text", () => {
+    const out = stripClientVisibleScores(
+      "Direct Match Score: 62%\nAdjusted Match Score: 81%\n| Direct Match Score | 72% |"
+    );
+    expect(anyPercent(out)).toBe(false);
+    expect(out).toContain("Direct Match Score");
+    expect(out).toContain("Adjusted Match Score");
+  });
+
+  // The leaking shapes both reviewers proved against the real prompt output — the
+  // score appears in FREE PROSE, not next to a "Match Score" label. All must scrub.
+  it.each([
+    ["recruiter summary prose", "This candidate is an excellent fit, scoring 92% against the JD."],
+    ["Q2 heading then prose answer", "2. DIRECT MATCH SCORE\n   The CV matches the JD to about 82%."],
+    ["one-line rationale row", "| One-line rationale | Strong hire at 92% match |"],
+    ["label far from number", "Direct Match Score assessment came out at 92%."],
+    ["Overall Match phrasing", "Overall Match: 82%"],
+    ["'scored' verb, no label", "The candidate scored 82% on direct match."],
+    ["100% edge", "Perfect: 100% of must-haves met."],
+    ["generic threshold prose", "- Direct ≥ 80% → ADVANCE\n- Direct < 65% → DECLINE"],
+  ])("redacts the score in %s", (_name, input) => {
+    expect(anyPercent(stripClientVisibleScores(input))).toBe(false);
+  });
+
+  it("scrubs a full SECTION E report while keeping recommendation words", () => {
+    const report = `
+SECTION E — FINAL RECOMMENDATION
+| Direct Match Score | 72% |
+| Adjusted Match Score (if applicable) | 81% |
+| Overall Recommendation | HUMAN REVIEW |
+
+FINAL_MATCH_SCORE: 81`;
+    const out = stripClientVisibleScores(report);
+    expect(anyPercent(out)).toBe(false);
+    expect(out).not.toMatch(/\b81\b/); // the actual score never survives
+    expect(out).toContain("HUMAN REVIEW");
+  });
+
+  it("leaves non-percentage numbers (years, counts) intact", () => {
+    const out = stripClientVisibleScores("8 years of experience across 3 roles.");
+    expect(out).toBe("8 years of experience across 3 roles.");
+  });
+
+  it("is a no-op on empty input", () => {
+    expect(stripClientVisibleScores("")).toBe("");
   });
 });

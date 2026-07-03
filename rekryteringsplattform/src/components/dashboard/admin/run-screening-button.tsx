@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import { MarkdownReport } from "@/components/screening/markdown-report";
+import { getMatchLevel, type MatchTier } from "@/lib/screening/match-level";
 import type { StoredEvaluation } from "@/lib/actions/screening";
 
 // Mirrors the recruiter screening panel's error mapping so the admin sees the
@@ -34,10 +35,20 @@ export function AdminScreeningPanel({
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<StoredEvaluation | null>(initialReport);
 
-  const tier = score === null ? null : score >= 80 ? "strong" : score >= 60 ? "moderate" : "weak";
-  const tierLabel =
-    tier === "strong" ? "Strong Match" : tier === "moderate" ? "Moderate Match" : tier === "weak" ? "Weak Match" : null;
-  const scoreColor = tier === "strong" ? "text-emerald-600" : tier === "moderate" ? "text-amber-500" : "text-red-500";
+  // Admin (Recruito) sees the full four-tier scale INCLUDING "Not Recommended"
+  // plus the raw number — unlike the client, who only ever sees Excellent/Strong/
+  // Good. Boundaries come from the canonical getMatchLevel (75/85/95).
+  const level = getMatchLevel(score);
+  const ADMIN_LABELS: Record<MatchTier, string | null> = {
+    excellent: "Excellent Match",
+    strong: "Strong Match",
+    good: "Good Match",
+    notRecommended: "Not Recommended",
+    unscored: null,
+  };
+  const tierLabel = ADMIN_LABELS[level.tier];
+  const scoreColor =
+    level.tone === "success" ? "text-emerald-600" : level.tone === "danger" ? "text-red-500" : "text-slate-500";
 
   async function run() {
     setRunning(true);

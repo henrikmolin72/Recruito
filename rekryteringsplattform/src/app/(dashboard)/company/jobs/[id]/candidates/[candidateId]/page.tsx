@@ -14,6 +14,7 @@ import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
 import { CandidatePresentStatusPanel } from "@/components/dashboard/company/candidate-present-status-panel";
 import { CandidateStageHistoryTimeline } from "@/components/dashboard/company/candidate-stage-history-timeline";
 import { CompanyScreeningReport } from "@/components/screening/company-screening-report";
+import { getClientMatchLevel } from "@/lib/screening/match-level";
 import type { CandidateStageHistory } from "@/types/db-types";
 
 async function getCandidate(candidateId: string, jobId: string) {
@@ -97,6 +98,18 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
     const dict = await getDictionary();
     const c = dict.company;
 
+    // Client-facing AI match label (client request 2026-07-02): the company sees a
+    // tier — Excellent / Strong / Good — never a raw percentage, and never "Not
+    // Recommended" (getClientMatchLevel returns null below the 75% threshold, so
+    // sub-threshold candidates carry no AI badge to the client). Compute the label
+    // first, THEN drop the number from the candidate object so it never crosses to
+    // the browser via any client child component.
+    const clientMatch = getClientMatchLevel((candidate as any).ai_match_score);
+    const clientMatchLabel = clientMatch
+        ? (dict.components as Record<string, string>)[clientMatch.labelKey.split(".").pop()!]
+        : null;
+    (candidate as any).ai_match_score = null;
+
     let cvUrl = null;
     if (candidate.cv_file_path) {
         try {
@@ -153,12 +166,12 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
                 </div>
 
                 <div className="flex items-center gap-4">
-                    {candidate.ai_match_score !== null && (
+                    {clientMatchLabel && (
                         <div className="flex items-center gap-2">
-                            <span className={`text-3xl font-black tabular-nums ${candidate.ai_match_score >= 80 ? "text-emerald-600" : candidate.ai_match_score >= 60 ? "text-amber-500" : "text-red-500"}`}>
-                                {candidate.ai_match_score}%
+                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700 ring-1 ring-emerald-200">
+                                {clientMatchLabel}
                             </span>
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">AI Match</span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">AI Assessment</span>
                         </div>
                     )}
                     {cvUrl && (
