@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import { Users } from "lucide-react";
 import { TalentPoolList } from "@/components/talent-pool/talent-pool-list";
+import { getDictionary } from "@/i18n/server";
+import { getClientMatchLevel } from "@/lib/screening/match-level";
 
 async function getTalentPool() {
     const supabase = await createClient();
@@ -32,7 +34,7 @@ async function getTalentPool() {
             ),
             application:applications(
                 id, full_name, created_at, status,
-                screening:ai_screenings(match_score, analysis_json)
+                screening:ai_screenings(match_score)
             )
         `)
         .eq("company_id", company.id)
@@ -58,6 +60,31 @@ export default async function TalentPoolPage() {
     const entries = await getTalentPool();
     if (!entries) notFound();
 
+    // Client (company) sees a tier LABEL, never a raw AI % (client request
+    // 2026-07-02) — same policy as the candidate detail page. Compute the label
+    // server-side from whichever score applies (candidate eval score or the
+    // application quick-screen score), then strip BOTH raw numbers so they never
+    // cross to the client list. getClientMatchLevel returns null below 75, so
+    // Not-Recommended / unscored candidates carry no badge.
+    const dict = await getDictionary();
+    const clientEntries = entries.map((e: any) => {
+        const rawScore = e.candidate
+            ? e.candidate.ai_match_score
+            : e.application?.screening?.match_score ?? null;
+        const level = getClientMatchLevel(rawScore);
+        const matchLabel = level
+            ? (dict.components as Record<string, string>)[level.labelKey.split(".").pop()!]
+            : null;
+        return {
+            ...e,
+            matchLabel,
+            candidate: e.candidate ? { ...e.candidate, ai_match_score: null } : e.candidate,
+            application: e.application?.screening
+                ? { ...e.application, screening: { ...e.application.screening, match_score: null } }
+                : e.application,
+        };
+    });
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -72,7 +99,7 @@ export default async function TalentPoolPage() {
                 </div>
             </div>
 
-            <TalentPoolList initialEntries={entries} />
+            <TalentPoolList initialEntries={clientEntries} />
         </div>
     );
 }

@@ -13,6 +13,9 @@ interface TalentPoolEntry {
     notes: string | null;
     tags: string[];
     created_at: string;
+    // Tier label (Excellent/Strong/Good) computed server-side; null when below the
+    // 75% threshold or unscored. The raw AI % never reaches the client.
+    matchLabel: string | null;
     candidate?: {
         id: string;
         first_name: string;
@@ -21,7 +24,6 @@ interface TalentPoolEntry {
         current_company: string | null;
         years_experience: number | null;
         status: string;
-        ai_match_score: number | null;
         job?: { id: string; title: string } | null;
     } | null;
     application?: {
@@ -29,19 +31,11 @@ interface TalentPoolEntry {
         full_name: string;
         status: string;
         created_at: string;
-        screening?: { match_score: number | null; analysis_json: Record<string, unknown> } | null;
     } | null;
 }
 
 interface TalentPoolListProps {
     initialEntries: TalentPoolEntry[];
-}
-
-function scoreColor(score: number | null) {
-    if (!score) return "outline";
-    if (score > 70) return "success" as const;
-    if (score >= 40) return "warning" as const;
-    return "danger" as const;
 }
 
 export function TalentPoolList({ initialEntries }: TalentPoolListProps) {
@@ -84,9 +78,6 @@ export function TalentPoolList({ initialEntries }: TalentPoolListProps) {
                 const title = entry.candidate?.current_title ?? null;
                 const company = entry.candidate?.current_company ?? null;
                 const yearsExp = entry.candidate?.years_experience ?? null;
-                const score = isCandidate
-                    ? entry.candidate?.ai_match_score
-                    : (entry.application?.screening as any)?.match_score ?? null;
                 const jobTitle = entry.candidate?.job?.title ?? null;
                 const profileHref = isCandidate
                     ? `/company/candidates/${entry.candidate!.id}`
@@ -106,9 +97,9 @@ export function TalentPoolList({ initialEntries }: TalentPoolListProps) {
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="font-semibold text-slate-900">{name}</span>
-                                        {score != null && (
-                                            <Badge variant={scoreColor(score)} className="text-[10px]">
-                                                AI {score}/100
+                                        {entry.matchLabel && (
+                                            <Badge variant="success" className="text-[10px]">
+                                                {entry.matchLabel}
                                             </Badge>
                                         )}
                                         {entry.tags.map((tag) => (

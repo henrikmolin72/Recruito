@@ -39,3 +39,27 @@ export function extractMatchScore(markdown: string): number | null {
 
   return lastScore("Adjusted Match Score") ?? lastScore("Direct Match Score");
 }
+
+// Redacts the candidate's raw match percentage from a report before it is shown
+// to the CLIENT (client request 2026-07-02: clients see a tier label, not a
+// number). Recruiters/admin keep the full report (this is never applied to their
+// views — see getLatestEvaluation).
+//
+// The report is free-text LLM prose: the score turns up as a labelled row, on its
+// own line, in a recruiter summary ("scoring 92% against the JD"), in the one-line
+// rationale, etc. A denylist of a few labelled formats CANNOT hold against that
+// (security review 2026-07-02), so we redact EVERY 0–100 percentage. In an
+// evaluation report every %-figure is a score / relevance / weight the client is
+// not meant to see anyway, which also matches the client's "no raw percentages"
+// intent. Non-% numbers (years, counts) are untouched.
+export function stripClientVisibleScores(markdown: string): string {
+  if (!markdown) return markdown;
+  return markdown
+    // Machine marker line ("FINAL_MATCH_SCORE: NN") — drop the whole line.
+    .replace(/^.*FINAL_MATCH_SCORE:\s*\d{1,3}\s*%?.*$/gim, "")
+    // Every 0–100 percentage → dash. Denylist-proof: no labelled format required.
+    .replace(/\b(?:100|\d{1,2})\s*%/g, "—%")
+    // Collapse the blank line left by the dropped marker line.
+    .replace(/\n{3,}/g, "\n\n")
+    .trimEnd();
+}

@@ -1,6 +1,8 @@
 "use server";
 
 import { authorizeMandate } from "@/lib/screening/eval-data";
+import { stripClientVisibleScores } from "@/lib/screening/extract-match-score";
+import { getClientMatchLevel } from "@/lib/screening/match-level";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -71,13 +73,19 @@ export async function getCompanyCandidateScreening(
   // the job's company — same ownership rule the company page enforces.
   const { data: cand } = await supabase
     .from("candidates")
-    .select("job_id, recruito_screened_at, job:jobs(company:companies(user_id))")
+    .select("job_id, recruito_screened_at, ai_match_score, job:jobs(company:companies(user_id))")
     .eq("id", candidateId)
     .maybeSingle();
 
   if (!cand) return null;
   const c = cand as any;
   if (!c.recruito_screened_at) return null;
+
+  // Tier gate (client request 2026-07-02): the client never sees the AI report for
+  // a below-threshold ("Not Recommended", <75) or not-yet-scored candidate — same
+  // boundary as the header badge. Recruiter/admin use getLatestEvaluation and are
+  // unaffected.
+  if (getClientMatchLevel(c.ai_match_score) === null) return null;
 
   const jobData = Array.isArray(c.job) ? c.job[0] : c.job;
   const companyData = jobData?.company;
@@ -99,7 +107,11 @@ export async function getCompanyCandidateScreening(
   if (!data) return null;
   const d = data as any;
   return {
-    reportMarkdown: d.report_markdown,
+    // Redact the raw match percentage for the client — they get the tier label
+    // (Excellent/Strong/Good) on the candidate header, not a number (client
+    // request 2026-07-02). Recruiter/admin views use getLatestEvaluation and
+    // keep the full report with its score.
+    reportMarkdown: stripClientVisibleScores(d.report_markdown),
     modelVersion: d.model_version,
     createdAt: d.created_at,
   };
