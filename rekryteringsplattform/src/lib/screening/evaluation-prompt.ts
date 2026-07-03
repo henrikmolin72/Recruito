@@ -42,7 +42,12 @@ SCREENING RULES (read before analysis)
 - Flag any JD requirement that may constitute indirect discrimination.
 - All output must be in English.
 - Use red marks 🔴 as specified per field.
-- HARD REQUIREMENTS CAP: Treat any requirement the JD marks as mandatory / required / "must have" (including a required working language, a required certification, or a legally required work authorization) as a gate. If the CV does not demonstrate a mandatory requirement, NEITHER the Direct Match Score NOR the Adjusted Match Score may exceed 49%, regardless of other strengths or transferable skills. If several mandatory requirements are unmet, score proportionally lower. A strong adjacent profile can still be noted, but never lifts any score above 49% while a mandatory requirement is unmet.
+- DEAL-BREAKER / HARD REQUIREMENTS CAP: Treat any requirement the JD marks as mandatory / required / "must have" / a stated minimum as a GATE. A candidate who fails a gate is a near-certain client rejection, so gate failures are DEAL-BREAKERS. Gates explicitly include, but are not limited to:
+    • a required MINIMUM YEARS OF EXPERIENCE (e.g., "5+ years", "at least 3 years") the CV does not clearly meet — compare against Q4 (professional experience, with internships / part-time excluded);
+    • a required DEGREE at a specific level AND field (e.g., a Bachelor's or Master's in a named field) the candidate does not hold — a degree in an unrelated field, or a lower level than required, does NOT satisfy it;
+    • a mandatory LANGUAGE PROFICIENCY at a stated level (e.g., fluent / native / C1) not demonstrated in the CV;
+    • a required working language, certification, or legally required work authorization.
+  If the CV does not clearly demonstrate a gate requirement, the candidate is NOT RECOMMENDED: NEITHER the Direct Match Score NOR the Adjusted Match Score may exceed 49%, the Overall Recommendation (Section E) MUST be DECLINE, and this holds regardless of other strengths or transferable skills. Reduce the score further, proportionally, for each additional unmet gate. A strong adjacent profile may be noted for context but NEVER lifts any score above 49% while a gate is unmet. When unsure whether a requirement is mandatory, JD phrasing such as "required", "must", "minimum", "essential", "fluent", or "native" means mandatory.
 ─────────────────────────────────────────────────────────────────
 
 Review the CV against the JD above. Return ALL sections below in TABLE FORMAT
@@ -169,6 +174,7 @@ SECTION E — FINAL RECOMMENDATION
     | One-line rationale | |
 
     Outcome Logic Applied:
+    - Any unmet deal-breaker / hard requirement → DECLINE (Not Recommended), score ≤ 49% — overrides every rule below
     - Direct ≥ 80%                          → ADVANCE
     - Direct 65–79% + Strong adjacent       → HUMAN REVIEW
     - Direct 65–79% + Moderate adjacent     → HUMAN REVIEW
@@ -187,7 +193,7 @@ CV Hash      : {CV_HASH}
 ──────────────────────────────────────────────────────────────────
 FINAL LINE (required, machine-read — output exactly once, as the very last line):
 FINAL_MATCH_SCORE: <the final match score as an integer 0-100, no % sign>
-This number MUST equal the Adjusted Match Score if one applies, otherwise the Direct Match Score. Then apply the HARD REQUIREMENTS CAP above: if any mandatory requirement is unmet, this number MUST NOT exceed 49, regardless of transferable skills or adjacent-sector strength.`;
+This number MUST equal the Adjusted Match Score if one applies, otherwise the Direct Match Score. Then apply the DEAL-BREAKER / HARD REQUIREMENTS CAP above: if any deal-breaker / mandatory requirement is unmet, this number MUST NOT exceed 49 (which renders the candidate Not Recommended), regardless of transferable skills or adjacent-sector strength.`;
 
 function orNotSpecified(value: string | null | undefined): string {
   const v = (value ?? "").trim();
