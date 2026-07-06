@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { BonusBadge } from "@/components/shared/bonus-badge";
 import { formatCurrency, formatDateShort, calculateClientFee, cn } from "@/lib/utils";
 
 type Dict = Record<string, any>;
@@ -125,9 +126,12 @@ export function CompanyJobsTable({ jobs, dict: c }: { jobs: any[]; dict: Dict })
                     return (
                       <tr key={job.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-3 font-medium">
-                          <Link href={`/company/jobs/${job.id}`} className="hover:text-brand-600 transition-colors">
-                            {job.title}
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/company/jobs/${job.id}`} className="hover:text-brand-600 transition-colors">
+                              {job.title}
+                            </Link>
+                            {job.final_interview_bonus && <BonusBadge label={c.bonusBadge || "€100 Bonus"} />}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{job.city || job.location || "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatSalaryRange(job)}</td>

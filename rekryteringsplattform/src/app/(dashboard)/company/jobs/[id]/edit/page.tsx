@@ -66,6 +66,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                 desired_start_date: job.desired_start_date ?? "",
                 urgency_level: job.urgency_level ?? "",
                 travel_required: job.travel_required ?? false,
+                final_interview_bonus: job.final_interview_bonus ?? false,
                 screening_questions: (job.screening_questions as string[] | null) ?? [],
                 key_requirements: (job.key_requirements as string[] | null) ?? [],
                 language_requirements: (job.language_requirements as Array<{ language: string; level: string }> | null) ?? [],
