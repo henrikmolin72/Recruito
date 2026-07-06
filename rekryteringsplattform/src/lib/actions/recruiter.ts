@@ -8,7 +8,7 @@ import { Recruiter } from "@/types/db-types";
 import { createNotification } from "@/lib/notifications/create";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
-import { computeJobProcessStats } from "@/lib/mandate-stages";
+import { candidateInStage, classifyMandate, computeJobProcessStats } from "@/lib/mandate-stages";
 import { isCandidateInProcess, countCandidatesAgainstCap, candidateOccupiesCapSlot } from "@/lib/candidate-workflow";
 import { releaseDueMandates } from "@/lib/mandate-expiry-release";
 import { selectMarketplaceJobs } from "@/lib/marketplace-visibility";
@@ -301,19 +301,19 @@ export async function getRecruiterDashboard() {
         return {
             recruiter: { user_id: user.id } as Recruiter,
             mandates: [],
-            stats: { activeMandates: 0, revenue: 0, candidates: 0, availableJobs: 0 },
+            stats: { activeMandates: 0, candidates: 0, inInterview: 0, hired: 0 },
             recentActivity: [],
             userName: user.user_metadata?.full_name
         };
     }
 
-    // 2-5. Independent reads run in parallel: mandates, candidate count,
-    // placements/revenue, and available-jobs count.
+    // 2-3. Independent reads run in parallel: mandates and the recruiter's
+    // candidate statuses (powers the presented / in-interview / hired cards).
+    // No earnings figures on the dashboard — fees are confidential and were
+    // summed from unapproved placements (removed 2026-07-06).
     const [
         { data: mandates, error: mandatesError },
-        { count: candidatesCount },
-        { data: placements },
-        { count: availableJobsCount },
+        { data: myCandidates },
     ] = await Promise.all([
         supabase
             .from("job_mandates")
@@ -328,23 +328,19 @@ export async function getRecruiterDashboard() {
             .eq("is_active", true),
         supabase
             .from("candidates")
-            .select("*", { count: 'exact', head: true })
+            .select("status")
             .eq("recruiter_id", recruiter.id),
-        supabase
-            .from("placements")
-            .select("recruiter_fee")
-            .eq("recruiter_id", recruiter.id),
-        supabase
-            .from("jobs")
-            .select("*", { count: 'exact', head: true })
-            .eq("status", "active"),
     ]);
 
     if (mandatesError) {
         handleError(mandatesError);
     }
 
-    const totalRevenue = placements?.reduce((sum, p) => sum + (p.recruiter_fee || 0), 0) || 0;
+    const candidateRows = myCandidates || [];
+    const inInterview = candidateRows.filter(
+        (c) => candidateInStage(c, "interview") || candidateInStage(c, "final_interview"),
+    ).length;
+    const hiredCount = candidateRows.filter((c) => candidateInStage(c, "hired")).length;
 
     // Format mandates for easier usage
     const formattedMandates = mandates?.map((mandate: any) => ({
@@ -356,32 +352,42 @@ export async function getRecruiterDashboard() {
         candidates: 0
     })) || [];
 
-    // Candidate counts per mandate in a single query, tallied in memory
-    // (replaces a per-mandate N+1 loop).
+    // Candidate rows per mandate in a single query, tallied in memory
+    // (replaces a per-mandate N+1 loop). Statuses feed both the count badge
+    // and the active/closed/hired classification below.
+    const candidatesByMandate = new Map<string, { status: string | null }[]>();
     if (formattedMandates.length > 0) {
         const mandateIds = formattedMandates.map((m) => m.id);
         const { data: mandateCandidates } = await supabase
             .from("candidates")
-            .select("mandate_id")
+            .select("mandate_id, status")
             .in("mandate_id", mandateIds);
-        const countByMandate = new Map<string, number>();
         for (const row of mandateCandidates || []) {
-            countByMandate.set(row.mandate_id, (countByMandate.get(row.mandate_id) ?? 0) + 1);
+            const arr = candidatesByMandate.get(row.mandate_id) ?? [];
+            arr.push({ status: row.status });
+            candidatesByMandate.set(row.mandate_id, arr);
         }
         for (const m of formattedMandates) {
-            m.candidates = countByMandate.get(m.id) ?? 0;
+            m.candidates = candidatesByMandate.get(m.id)?.length ?? 0;
         }
     }
+
+    // "Active mandates" = the same bucketing as the My Mandates Active tab
+    // (classifyMandate): mandates on filled/closed jobs or with a hire drop
+    // out even though their mandate row is still is_active.
+    const activeMandates = formattedMandates.filter(
+        (m) => classifyMandate({ status: m.status, candidates: candidatesByMandate.get(m.id) ?? [] }) === "active",
+    );
 
     return {
         recruiter: recruiter,
         userName: user.user_metadata?.full_name,
-        mandates: formattedMandates,
+        mandates: activeMandates,
         stats: {
-            activeMandates: mandates?.length || 0,
-            candidates: candidatesCount || 0,
-            availableJobs: availableJobsCount || 0,
-            revenue: totalRevenue
+            activeMandates: activeMandates.length,
+            candidates: candidateRows.length,
+            inInterview,
+            hired: hiredCount
         },
         recentActivity: [] // Placeholder
     };
