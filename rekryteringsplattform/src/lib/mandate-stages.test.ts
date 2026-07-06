@@ -65,10 +65,33 @@ describe("mandateExpiryDaysLeft", () => {
         expect(result).toBeLessThanOrEqual(0);
     });
 
-    it("a non-rejection state (withdrawn) keeps the mandate alive", () => {
+    it("a withdrawn candidate does not suspend the timer — it (re)starts from the withdrawal", () => {
+        // Only candidate is withdrawn → no live candidate → 10-day timer starts
+        // from the withdrawal date (2 days ago → 8 days left).
+        const result = mandateExpiryDaysLeft({
+            claimedAt: iso(40 * DAY),
+            candidates: [{ status: "candidate_withdrawn", status_changed_at: iso(2 * DAY) }],
+            now: NOW,
+        });
+        expect(result).toBe(MANDATE_EXPIRY_DAYS - 2); // 8 days left
+    });
+
+    it("reports expired when the only candidate withdrew longer ago than the window", () => {
         const result = mandateExpiryDaysLeft({
             claimedAt: iso(40 * DAY),
             candidates: [{ status: "candidate_withdrawn", status_changed_at: iso(20 * DAY) }],
+            now: NOW,
+        });
+        expect(result).toBeLessThanOrEqual(0);
+    });
+
+    it("a live candidate still suspends the timer even alongside a withdrawal", () => {
+        const result = mandateExpiryDaysLeft({
+            claimedAt: iso(40 * DAY),
+            candidates: [
+                { status: "candidate_withdrawn", status_changed_at: iso(20 * DAY) },
+                { status: "interview_stage_1", status_changed_at: iso(1 * DAY) },
+            ],
             now: NOW,
         });
         expect(result).toBeNull();
