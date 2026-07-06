@@ -198,6 +198,8 @@
     "companyNamePlaceholder": "AS Selskapet",
     "orgNumberLabel": "Organisasjonsnummer",
     "orgNumberPlaceholder": "9xx xxx xxx",
+    "howHeardLabel": "Hvordan hørte du om oss?",
+    "howHeardPlaceholder": "Velg et alternativ",
     "industryLabel": "Bransje",
     "industryPlaceholder": "F.eks. IT & Tech, Finans",
     "contactPersonLabel": "Kontaktperson",

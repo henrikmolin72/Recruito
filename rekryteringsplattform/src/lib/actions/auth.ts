@@ -192,7 +192,6 @@ export async function registerCompany(formData: FormData) {
         const { error: companyError } = await supabaseAdmin.from("companies").insert({
             user_id: data.user.id,
             company_name: parsed.data.company_name,
-            org_number: parsed.data.org_number,
             industry: parsed.data.industry,
             approval_status: "pending",
         });
@@ -201,6 +200,25 @@ export async function registerCompany(formData: FormData) {
             logSafeError("company-create", companyError);
             await supabaseAdmin.auth.admin.deleteUser(data.user.id);
             return { error: "Kunde inte skapa företagsprofil. Försök igen." };
+        }
+
+        try {
+            await sendInternalRecruiterEmail({
+                subject: `Ny företagsregistrering: ${parsed.data.company_name}`,
+                text: [
+                    "Ny company registration form inkom.",
+                    "",
+                    `Företag: ${parsed.data.company_name}`,
+                    `Kontaktperson: ${parsed.data.full_name}`,
+                    `E-post: ${parsed.data.email}`,
+                    `Bransch: ${parsed.data.industry || "—"}`,
+                    `Hur de hörde talas om oss: ${parsed.data.how_heard}`,
+                    "",
+                    `User ID: ${data.user.id}`,
+                ].join("\n"),
+            });
+        } catch (mailError) {
+            console.error("Failed to send company registration email:", mailError);
         }
     }
 
@@ -263,6 +281,7 @@ export async function registerRecruiter(formData: FormData) {
                     `Land: ${parsed.data.current_country}`,
                     `LinkedIn: ${parsed.data.linkedin_url || "—"}`,
                     `Erfarenhet: ${parsed.data.years_experience_bracket}`,
+                    `Hur de hörde talas om oss: ${parsed.data.how_heard}`,
                     `Frilansavtal godkänt: ${parsed.data.agreement_freelance_recruiter ? "Ja" : "Nej"}`,
                     `Garantiperiod/provision godkänt: ${parsed.data.agreement_commission_after_guarantee ? "Ja" : "Nej"}`,
                     "",

@@ -24,6 +24,17 @@ export const COUNTRY_OPTIONS = [
 
 export const EXPERIENCE_BRACKET_OPTIONS = ["0-1", "2-3", "4-6", "7-10", "10+"] as const;
 
+export const HOW_HEARD_OPTIONS = [
+  "Google Search",
+  "LinkedIn",
+  "Referral from a colleague or friend",
+  "Recruito Recruiter",
+  "Online Advertisement",
+  "Event or Conference",
+  "Blog or Article",
+  "Existing Customer",
+] as const;
+
 export const PRIMARY_INDUSTRY_OPTIONS = [
   "Technology",
   "Finance",

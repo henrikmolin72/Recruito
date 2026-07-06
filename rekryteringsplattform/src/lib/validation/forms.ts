@@ -3,6 +3,7 @@ import {
   AVERAGE_TIME_TO_FILL_OPTIONS,
   AVAILABLE_HOURS_OPTIONS,
   EXPERIENCE_BRACKET_OPTIONS,
+  HOW_HEARD_OPTIONS,
   LANGUAGE_PROFICIENCY_OPTIONS,
 } from "@/lib/recruiter-onboarding-options";
 import { createTranslator } from "@/i18n/server";
@@ -165,8 +166,8 @@ const registerCompanySchema = z.object({
     .max(PASSWORD_MAX_LENGTH, `Lösenord får max vara ${PASSWORD_MAX_LENGTH} tecken`),
   full_name: requiredText("Kontaktperson", 2, 100),
   company_name: requiredText("Företagsnamn", 2, 120),
-  org_number: optionalText(32),
   industry: optionalText(80),
+  how_heard: z.enum(HOW_HEARD_OPTIONS, { message: "Välj hur du hörde talas om oss" }),
 });
 
 export function validateRegisterCompanyForm(formData: FormData) {
@@ -175,8 +176,8 @@ export function validateRegisterCompanyForm(formData: FormData) {
     password: toString(formData.get("password")),
     full_name: toString(formData.get("full_name")),
     company_name: toString(formData.get("company_name")),
-    org_number: toString(formData.get("org_number")),
     industry: toString(formData.get("industry")),
+    how_heard: toString(formData.get("how_heard")),
   });
 
   if (!parsed.success) {
@@ -198,6 +199,7 @@ const registerRecruiterSchema = z.object({
   years_experience_bracket: z.enum(EXPERIENCE_BRACKET_OPTIONS, {
     message: "Välj erfarenhetsnivå"
   }),
+  how_heard: z.enum(HOW_HEARD_OPTIONS, { message: "Välj hur du hörde talas om oss" }),
   agreement_freelance_recruiter: z
     .boolean()
     .refine((value) => value === true, { message: "Du måste godkänna frilansvillkoret" }),
@@ -214,6 +216,7 @@ export function validateRegisterRecruiterForm(formData: FormData) {
     current_country: toString(formData.get("current_country")),
     linkedin_url: toString(formData.get("linkedin_url")),
     years_experience_bracket: toString(formData.get("years_experience_bracket")),
+    how_heard: toString(formData.get("how_heard")),
     agreement_freelance_recruiter: toCheckboxBoolean(formData.get("agreement_freelance_recruiter")),
     agreement_commission_after_guarantee: toCheckboxBoolean(formData.get("agreement_commission_after_guarantee")),
   });

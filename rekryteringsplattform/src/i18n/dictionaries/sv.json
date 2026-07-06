@@ -198,6 +198,8 @@
     "companyNamePlaceholder": "AB Företaget",
     "orgNumberLabel": "Organisationsnummer",
     "orgNumberPlaceholder": "556xxx-xxxx",
+    "howHeardLabel": "Hur hörde du talas om oss?",
+    "howHeardPlaceholder": "Välj ett alternativ",
     "industryLabel": "Bransch",
     "industryPlaceholder": "T.ex. IT & Tech, Finans",
     "contactPersonLabel": "Kontaktperson",
