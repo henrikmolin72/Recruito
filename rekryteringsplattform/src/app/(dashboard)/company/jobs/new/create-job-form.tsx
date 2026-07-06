@@ -112,7 +112,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         initialData?.key_requirements?.length ? initialData.key_requirements : [""]
     );
     const [languageRequirements, setLanguageRequirements] = useState<LanguageRequirement[]>(
-        initialData?.language_requirements ?? []
+        initialData?.language_requirements?.length ? initialData.language_requirements : [{ language: "", level: "" }, { language: "", level: "" }]
     );
     const [draftJobId, setDraftJobId] = useState<string | null>(editJobId ?? null);
     const [calcState, setCalcState] = useState<CalculatorState>({
