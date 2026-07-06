@@ -2,8 +2,7 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Users, Wallet, FileCheck } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { Users, FileCheck, CalendarClock, UserCheck } from "lucide-react";
 import { getRecruiterDashboard } from "@/lib/actions/recruiter";
 import { getRecruiterPerformanceMetrics } from "@/lib/actions/placements";
 import { PerformanceMetrics } from "@/components/dashboard/recruiter/performance-metrics";
@@ -28,8 +27,8 @@ export default async function RecruiterDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard title={r.activeMandates} value={stats.activeMandates || 0} icon={FileCheck} />
         <StatsCard title={r.presentedCandidates} value={stats.candidates || 0} icon={Users} />
-        <StatsCard title={r.availableJobs} value={stats.availableJobs || 0} icon={Briefcase} />
-        <StatsCard title={r.revenueTitle} value={formatCurrency(stats.revenue || 0)} icon={Wallet} description={r.totalEarned} />
+        <StatsCard title={r.inInterview} value={stats.inInterview || 0} icon={CalendarClock} />
+        <StatsCard title={r.hired} value={stats.hired || 0} icon={UserCheck} />
       </div>
 
       {metrics && <PerformanceMetrics metrics={metrics} />}
