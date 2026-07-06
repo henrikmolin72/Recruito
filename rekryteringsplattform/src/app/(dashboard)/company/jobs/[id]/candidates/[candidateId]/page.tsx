@@ -167,11 +167,11 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
 
                 <div className="flex items-center gap-4">
                     {clientMatchLabel && (
-                        <div className="flex items-center gap-2">
-                            <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700 ring-1 ring-emerald-200">
+                        <div className="flex flex-col gap-1.5 rounded-lg border bg-card px-4 py-2.5">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">AI Assessment</span>
+                            <span className="self-start rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700 ring-1 ring-emerald-200">
                                 {clientMatchLabel}
                             </span>
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">AI Assessment</span>
                         </div>
                     )}
                     {cvUrl && (
