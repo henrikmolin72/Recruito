@@ -1365,6 +1365,8 @@
     "notificationsTitle": "Notifications",
     "notificationsUnreadCount": "You have {count} unread events",
     "markAllRead": "Mark all as read",
+    "showMore": "Show more",
+    "showLess": "Show less",
     "noNewNotifications": "No new notifications",
     "quickActionsLabel": "Quick actions",
     "quickActionsTitle": "Quick actions",

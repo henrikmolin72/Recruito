@@ -1365,6 +1365,8 @@
     "notificationsTitle": "Varsler",
     "notificationsUnreadCount": "Du har {count} uleste hendelser",
     "markAllRead": "Marker alle som lest",
+    "showMore": "Vis mer",
+    "showLess": "Vis mindre",
     "noNewNotifications": "Ingen nye varsler",
     "quickActionsLabel": "Hurtigvalg",
     "quickActionsTitle": "Hurtighandlinger",

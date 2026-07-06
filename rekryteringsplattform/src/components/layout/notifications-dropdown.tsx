@@ -6,6 +6,7 @@ import { getNotifications, markAsRead, markAllAsRead } from "@/lib/actions/notif
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
+import { ExpandableText } from "@/components/ui/expandable-text";
 
 type Notification = {
     id: string;
@@ -157,9 +158,12 @@ export function NotificationsDropdown() {
                                                         {new Date(notification.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                                                    {notification.body_key ? format(t(notification.body_key), notification.params) : notification.body}
-                                                </p>
+                                                <ExpandableText
+                                                    text={notification.body_key ? format(t(notification.body_key), notification.params) : notification.body}
+                                                    className="text-xs text-muted-foreground leading-relaxed"
+                                                    moreLabel={t("components.showMore")}
+                                                    lessLabel={t("components.showLess")}
+                                                />
                                             </div>
                                         </div>
                                     </div>

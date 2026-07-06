@@ -1365,6 +1365,8 @@
     "notificationsTitle": "Notifikationer",
     "notificationsUnreadCount": "Du har {count} ulæste hændelser",
     "markAllRead": "Marker alle som læst",
+    "showMore": "Vis mere",
+    "showLess": "Vis mindre",
     "noNewNotifications": "Ingen nye notifikationer",
     "quickActionsLabel": "Hurtigvalg",
     "quickActionsTitle": "Hurtige handlinger",

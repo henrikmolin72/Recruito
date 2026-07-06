@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bell, Send, Users, Building2, ChevronDown, ChevronUp, CheckCircle, Clock } from "lucide-react";
+import { ExpandableText } from "@/components/ui/expandable-text";
 import {
     getNotificationRecipients,
     sendAdminNotification,
@@ -252,7 +253,7 @@ export default function AdminNotificationsPage() {
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-semibold truncate">{n.title}</p>
-                                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
+                                                <ExpandableText text={n.body} className="text-xs text-muted-foreground mt-0.5" />
                                                 {n.link && (
                                                     <p className="text-xs text-emerald-600 mt-1">Link: {n.link}</p>
                                                 )}

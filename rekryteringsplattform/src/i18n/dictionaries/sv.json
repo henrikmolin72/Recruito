@@ -1365,6 +1365,8 @@
     "notificationsTitle": "Notifieringar",
     "notificationsUnreadCount": "Du har {count} olästa händelser",
     "markAllRead": "Markera alla lästa",
+    "showMore": "Visa mer",
+    "showLess": "Visa mindre",
     "noNewNotifications": "Inga nya notiser",
     "quickActionsLabel": "Snabbval",
     "quickActionsTitle": "Snabba åtgärder",
