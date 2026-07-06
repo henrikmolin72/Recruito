@@ -168,7 +168,7 @@ function ListView({ candidates, noticeAccepted }: { candidates: any[]; noticeAcc
                 )}
                 <div className="flex flex-wrap items-center gap-y-1 gap-x-4 mt-2 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">{t("components.recruiterJobsListJobLabel")} <span className="text-foreground font-medium">{candidate.job?.title}</span></span>
-                  <span className="flex items-center gap-1">{t("components.recruiterJobsListPresentedLabel")} <span className="text-foreground font-medium">{new Date(candidate.created_at).toLocaleDateString()}</span></span>
+                  <span className="flex items-center gap-1">{t("components.recruiterJobsListPresentedLabel")} <span className="text-foreground font-medium">{new Date(candidate.recruito_screened_at).toLocaleDateString()}</span></span>
                 </div>
               </div>
               <div className="flex gap-2">
