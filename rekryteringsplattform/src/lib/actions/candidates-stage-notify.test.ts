@@ -1,0 +1,122 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// ---------------------------------------------------------------------------
+// Regression test for the client-reported defect: moving a candidate to the
+// "Interview" stage (and every subsequent stage) sent NO notification to the
+// recruiter OR to Recruito admins — only the "Viewed" first-open ping fired.
+// updateCompanyStage now notifies BOTH parties on every forward company move.
+//
+// RED against the pre-fix code (interview took neither the recruiter-email nor
+// the admin branch), GREEN once the unified advancement block exists.
+// ---------------------------------------------------------------------------
+
+const createNotification = vi.fn();
+const notifyAdmins = vi.fn();
+
+let candidateStage = "viewed"; // the candidate's CURRENT company_stage
+
+const job = { id: "J", title: "Electrical Engineer", company: { user_id: "CO" }, pipeline_stages: [] };
+function candidate() {
+    return {
+        id: "C",
+        status: "under_client_review",
+        company_stage: candidateStage,
+        company_viewed_at: "2020-01-01T00:00:00Z",
+        current_pipeline_stage: null,
+        job_id: "J",
+        recruiter: { user_id: "REC" },
+        mandate_id: "M",
+        first_name: "Arqeen",
+        last_name: "Valtor",
+    };
+}
+
+function makeSupabase() {
+    return {
+        auth: { getUser: () => Promise.resolve({ data: { user: { id: "CO" } } }) },
+        from(table: string) {
+            if (table === "jobs") {
+                return {
+                    select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: job, error: null }) }) }),
+                };
+            }
+            // candidates
+            return {
+                select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: candidate(), error: null }) }) }),
+                update: () => ({
+                    eq: () => ({
+                        // stage write: .eq("id").eq("job_id")
+                        eq: () => Promise.resolve({ error: null }),
+                        // clearCompanyNextStepRequest: .eq("id").not(...)
+                        not: () => Promise.resolve({ error: null }),
+                    }),
+                }),
+            };
+        },
+    };
+}
+
+vi.mock("@/lib/supabase/server", () => ({ createClient: () => makeSupabase() }));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: () => ({}) }) }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/server", () => ({ after: (fn: () => unknown) => fn() }));
+vi.mock("@/lib/notifications/create", () => ({ createNotification }));
+vi.mock("@/lib/notifications/notify-admins", () => ({ notifyAdmins }));
+vi.mock("@/lib/candidate-stage-history", () => ({ logCandidateStageChange: vi.fn() }));
+vi.mock("@/lib/email/internal-notifications", () => ({ sendUserEmail: vi.fn() }));
+vi.mock("@/lib/screening/run-evaluation", () => ({ runCandidateEvaluation: vi.fn() }));
+vi.mock("@/lib/actions/require-admin", () => ({ requireAdmin: vi.fn() }));
+vi.mock("@/lib/job-fill", () => ({
+    markJobFilledAndReject: vi.fn(),
+    maybeNudgeReopenForReview: vi.fn(),
+    notifyRecruitersOfJobLifecycleChange: vi.fn(),
+}));
+vi.mock("@/lib/actions/placements", () => ({
+    getPlacementByCandidateId: vi.fn(),
+    sendPlacementInvoice: vi.fn(),
+    recalculateRecruiterMetrics: vi.fn(),
+}));
+
+const { updateCompanyStage } = await import("./candidates");
+
+beforeEach(() => {
+    createNotification.mockReset();
+    notifyAdmins.mockReset();
+    candidateStage = "viewed";
+});
+
+describe("updateCompanyStage notifications", () => {
+    it("notifies the recruiter AND admins when the company moves to Interview", async () => {
+        const res = await updateCompanyStage("C", "J", "interview");
+        expect(res).toEqual({ success: true });
+
+        // Recruiter got an in-app bell for the move (with its own email, since
+        // interview has no separate richer email → skipEmail falsy).
+        expect(createNotification).toHaveBeenCalledTimes(1);
+        const [recipient, content] = createNotification.mock.calls[0];
+        expect(recipient).toBe("REC");
+        expect(content.titleKey).toBe("notif.companyStageMovedTitle");
+        expect(content.params.stage).toBe("Interview");
+        expect(content.skipEmail).toBeFalsy();
+
+        // Admins were notified with the generic stage-moved message.
+        expect(notifyAdmins).toHaveBeenCalledTimes(1);
+        expect(notifyAdmins.mock.calls[0][0].titleKey).toBe("notif.adminCandidateStageMovedTitle");
+    });
+
+    it("notifies both parties on a subsequent stage (Job offer → Hired)", async () => {
+        candidateStage = "job_offer";
+        const res = await updateCompanyStage("C", "J", "hired");
+        expect(res).toEqual({ success: true });
+
+        // Recruiter bell fired; hired sends its own richer email so the bell's
+        // generic email is suppressed (skipEmail true) to avoid double-emailing.
+        expect(createNotification).toHaveBeenCalledTimes(1);
+        expect(createNotification.mock.calls[0][0]).toBe("REC");
+        expect(createNotification.mock.calls[0][1].skipEmail).toBe(true);
+
+        // Admins keep the specific "hired" copy.
+        expect(notifyAdmins).toHaveBeenCalledTimes(1);
+        expect(notifyAdmins.mock.calls[0][0].titleKey).toBe("notif.adminCandidateHiredTitle");
+    });
+});
