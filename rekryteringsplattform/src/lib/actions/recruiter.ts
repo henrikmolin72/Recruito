@@ -302,7 +302,6 @@ export async function getRecruiterDashboard() {
             recruiter: { user_id: user.id } as Recruiter,
             mandates: [],
             stats: { activeMandates: 0, candidates: 0, inInterview: 0, hired: 0 },
-            recentActivity: [],
             userName: user.user_metadata?.full_name
         };
     }
@@ -385,8 +384,7 @@ export async function getRecruiterDashboard() {
             candidates: candidateRows.length,
             inInterview,
             hired: hiredCount
-        },
-        recentActivity: [] // Placeholder
+        }
     };
 }
 
