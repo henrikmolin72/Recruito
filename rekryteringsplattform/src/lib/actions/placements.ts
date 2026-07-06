@@ -7,6 +7,7 @@ import { createNotification } from "@/lib/notifications/create";
 import { requireAdmin } from "@/lib/actions/require-admin";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { paymentCompletedEmail } from "@/lib/email/email-templates";
+import { mapRecruiterPerfRow } from "@/lib/recruiter-metrics";
 
 // =============================================
 // Placement helpers
@@ -557,16 +558,7 @@ export async function getRecruiterPerformanceMetrics() {
     // recalculateRecruiterMetrics() here because it requires admin auth and would
     // crash the recruiter dashboard with a redirect-to-login.
 
-    return {
-        totalPlacements: recruiter.total_placements ?? 0,
-        rating: recruiter.rating ?? 0,
-        hireRate: recruiter.perf_hire_rate ?? 0,
-        avgTimeToHireDays: recruiter.perf_avg_time_to_hire_days ?? 0,
-        candidatesSubmitted: recruiter.perf_candidates_submitted ?? 0,
-        candidatesHired: recruiter.perf_candidates_hired ?? 0,
-        activePlacements: recruiter.perf_active_placements ?? 0,
-        guaranteeSuccessRate: recruiter.perf_guarantee_success_rate ?? 100,
-    };
+    return mapRecruiterPerfRow(recruiter);
 }
 
 // =============================================

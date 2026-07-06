@@ -9,6 +9,7 @@ import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { createNotification } from "@/lib/notifications/create";
 import { getDictionary } from "@/i18n/server";
 import { countRecruiterCandidateBuckets, countCompanyCandidateBuckets, countCandidatesAgainstCap } from "@/lib/candidate-workflow";
+import { averageGuaranteeRate } from "@/lib/recruiter-metrics";
 import type { ClientFeeUpliftReason } from "@/types/db-types";
 
 function pickFirst<T>(value: T | T[] | null | undefined): T | null {
@@ -637,7 +638,7 @@ export async function getRecruiterAnalytics() {
     const metrics = metricsRes.data || [];
     const avgHireRate = metrics.length > 0 ? metrics.reduce((sum: number, m: any) => sum + (m.perf_hire_rate || 0), 0) / metrics.length : 0;
     const avgTimeToHire = metrics.length > 0 ? metrics.reduce((sum: number, m: any) => sum + (m.perf_avg_time_to_hire_days || 0), 0) / metrics.length : 0;
-    const avgGuaranteeRate = metrics.length > 0 ? metrics.reduce((sum: number, m: any) => sum + (m.perf_guarantee_success_rate || 0), 0) / metrics.length : 0;
+    const avgGuaranteeRate = averageGuaranteeRate(metrics.map((m: any) => m.perf_guarantee_success_rate));
 
     return {
         counts: {

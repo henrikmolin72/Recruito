@@ -12,7 +12,7 @@ interface PerformanceMetricsProps {
         candidatesSubmitted: number;
         candidatesHired: number;
         activePlacements: number;
-        guaranteeSuccessRate: number;
+        guaranteeSuccessRate: number | null;
     };
 }
 
@@ -97,8 +97,8 @@ export async function PerformanceMetrics({ metrics, openJobs }: PerformanceMetri
                     />
                     <MetricCard
                         label={t("recruiter.perfGuaranteeResult")}
-                        value={metrics.guaranteeSuccessRate}
-                        suffix="%"
+                        value={metrics.guaranteeSuccessRate ?? "—"}
+                        suffix={metrics.guaranteeSuccessRate != null ? "%" : undefined}
                         icon={Shield}
                         color="bg-green-600"
                     />
