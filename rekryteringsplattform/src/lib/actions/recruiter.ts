@@ -349,12 +349,12 @@ export async function getRecruiterDashboard() {
         company: mandate.job?.company?.company_name || "Okänt företag",
         location: mandate.job?.location || "",
         status: mandate.job?.status || "active",
-        candidates: 0
     })) || [];
 
-    // Candidate rows per mandate in a single query, tallied in memory
-    // (replaces a per-mandate N+1 loop). Statuses feed both the count badge
-    // and the active/closed/hired classification below.
+    // Candidate rows per mandate in a single query (replaces a per-mandate
+    // N+1 loop). Statuses feed the active/closed/hired classification below.
+    // No per-mandate count badge on the dashboard — candidates sit in
+    // different stages, so a bare total is misleading (removed 2026-07-06).
     const candidatesByMandate = new Map<string, { status: string | null }[]>();
     if (formattedMandates.length > 0) {
         const mandateIds = formattedMandates.map((m) => m.id);
@@ -366,9 +366,6 @@ export async function getRecruiterDashboard() {
             const arr = candidatesByMandate.get(row.mandate_id) ?? [];
             arr.push({ status: row.status });
             candidatesByMandate.set(row.mandate_id, arr);
-        }
-        for (const m of formattedMandates) {
-            m.candidates = candidatesByMandate.get(m.id)?.length ?? 0;
         }
     }
 
