@@ -593,28 +593,6 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         return { error: "Något gick fel. Försök igen." };
     }
 
-    // Email recruiter for offer-sent / hired / rejected transitions
-    const STAGE_EMAIL_LABEL: Record<string, { stage: string; subject: (name: string) => string }> = {
-        job_offer: { stage: "Job offer sent", subject: (n) => `Offer sent to ${n}` },
-        hired: { stage: "Hired", subject: (n) => `${n} was hired` },
-        rejected: { stage: "Rejected", subject: (n) => `${n} was rejected` },
-    };
-    const emailConfig = STAGE_EMAIL_LABEL[stage];
-    if (emailConfig) {
-        const ctx = await getCandidateMessagingContext(supabase, candidateId);
-        if (ctx.recruiterUserId) {
-            await sendRecruiterStageEmail(supabase, {
-                recruiterUserId: ctx.recruiterUserId,
-                candidateId,
-                jobId,
-                candidateName: ctx.candidateName,
-                jobTitle: access.job?.title || "Position",
-                stageLabel: emailConfig.stage,
-                subject: emailConfig.subject(ctx.candidateName || "candidate"),
-            });
-        }
-    }
-
     // First-view recruiter ping: surfaces the 5-day response-window UX on the
     // recruiter side. Only fires on the first transition into 'viewed'.
     if (isFirstView) {
@@ -650,19 +628,74 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         reason: rejectReasonText,
     });
 
-    // Notify admins of final company outcomes only — hire and reject. Intermediate
-    // moves (viewed/interview/offer) are intentionally not surfaced to admins.
-    if (stage === "hired" || stage === "rejected") {
+    // ── Stage-advancement notifications ──
+    // Every forward company move (interview → hired/rejected) notifies BOTH the
+    // owning recruiter (in-app bell) and Recruito admins, so no stage change goes
+    // unseen. "viewed" is handled by the first-view ping above and is deliberately
+    // not surfaced to admins. Offer/hire/reject additionally send the recruiter a
+    // richer standalone email; for those we suppress the bell's generic email
+    // (skipEmail) to avoid double-emailing.
+    const STAGE_LABELS: Record<string, string> = {
+        interview: "Interview",
+        final_interview: "Final stage interview",
+        job_offer: "Job offer",
+        hired: "Hired",
+        rejected: "Rejected",
+    };
+    const RICH_EMAIL: Record<string, { stage: string; subject: (n: string) => string }> = {
+        job_offer: { stage: "Job offer sent", subject: (n) => `Offer sent to ${n}` },
+        hired: { stage: "Hired", subject: (n) => `${n} was hired` },
+        rejected: { stage: "Rejected", subject: (n) => `${n} was rejected` },
+    };
+    if (stage !== current && STAGE_LABELS[stage]) {
+        const { recruiterUserId, mandateId, candidateName } =
+            await getCandidateMessagingContext(supabase, candidateId);
+        const stageLabel = STAGE_LABELS[stage];
+        const jobTitle = access.job?.title || "—";
+        const name = candidateName || "—";
+
+        // Recruiter: in-app bell for the move (+ richer standalone email on
+        // offer/hire/reject, whose bell email is suppressed to avoid duplicates).
+        if (recruiterUserId) {
+            const rich = RICH_EMAIL[stage];
+            try {
+                await createNotification(recruiterUserId, {
+                    titleKey: "notif.companyStageMovedTitle",
+                    bodyKey: "notif.companyStageMovedBody",
+                    params: { candidate: name, stage: stageLabel, jobTitle },
+                    link: mandateId
+                        ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}`
+                        : "/recruiter/mandates",
+                    skipEmail: Boolean(rich),
+                });
+                if (rich) {
+                    await sendRecruiterStageEmail(supabase, {
+                        recruiterUserId,
+                        candidateId,
+                        jobId,
+                        candidateName: name,
+                        jobTitle,
+                        stageLabel: rich.stage,
+                        subject: rich.subject(name),
+                    });
+                }
+            } catch (err) {
+                console.error("[updateCompanyStage advancement recruiter notify]", err);
+            }
+        }
+
+        // Admins: keep the specific hired/rejected copy; intermediate moves
+        // (interview/final_interview/job_offer) use a generic stage-moved message.
         try {
-            const { candidateName } = await getCandidateMessagingContext(supabase, candidateId);
-            await notifyAdmins({
-                titleKey: stage === "hired" ? "notif.adminCandidateHiredTitle" : "notif.adminCandidateRejectedTitle",
-                bodyKey: stage === "hired" ? "notif.adminCandidateHiredBody" : "notif.adminCandidateRejectedBody",
-                params: { candidate: candidateName || "—", jobTitle: access.job?.title || "—" },
-                link: `/admin/candidates/${candidateId}`,
-            });
+            const adminContent =
+                stage === "hired"
+                    ? { titleKey: "notif.adminCandidateHiredTitle", bodyKey: "notif.adminCandidateHiredBody", params: { candidate: name, jobTitle } }
+                    : stage === "rejected"
+                        ? { titleKey: "notif.adminCandidateRejectedTitle", bodyKey: "notif.adminCandidateRejectedBody", params: { candidate: name, jobTitle } }
+                        : { titleKey: "notif.adminCandidateStageMovedTitle", bodyKey: "notif.adminCandidateStageMovedBody", params: { candidate: name, stage: stageLabel, jobTitle } };
+            await notifyAdmins({ ...adminContent, link: `/admin/candidates/${candidateId}` });
         } catch (err) {
-            console.error("[updateCompanyStage admin notify]", err);
+            console.error("[updateCompanyStage advancement admin notify]", err);
         }
     }
 

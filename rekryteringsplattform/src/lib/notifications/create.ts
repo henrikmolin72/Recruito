@@ -46,6 +46,9 @@ export type NotificationContent = {
     /** Raw, non-translatable body (e.g. a chat message or a job title). Used only when bodyKey is absent. */
     body?: string;
     link?: string | null;
+    /** When true, create only the in-app bell and skip the email side-channel —
+     *  e.g. when the caller sends its own richer email for the same event. */
+    skipEmail?: boolean;
 };
 
 /**
@@ -95,5 +98,7 @@ export async function createNotification(userId: string, content: NotificationCo
     // function instance alive on Vercel/Fluid Compute past response close, so
     // the send isn't killed mid-flight (which `void` would do). Failures are
     // swallowed inside sendNotificationEmail so they never block the action.
-    after(() => sendNotificationEmail(userId, fallbackTitle, fallbackBody, normalizedLink));
+    if (!content.skipEmail) {
+        after(() => sendNotificationEmail(userId, fallbackTitle, fallbackBody, normalizedLink));
+    }
 }
