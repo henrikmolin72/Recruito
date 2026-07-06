@@ -285,19 +285,6 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                     </a>
                 </div>
             </div>
-
-            {/* Bottom recruiter CTA */}
-            {showCta && (
-                <div className="bg-brand-50 rounded-2xl border border-brand-100 p-6 flex items-center justify-between gap-4 flex-wrap">
-                    <div>
-                        <p className="font-bold text-slate-800">This job looks like a good fit?</p>
-                        <p className="text-sm text-slate-500">Start recruiting high-quality candidates now.</p>
-                    </div>
-                    <div className={seatsLeft <= 0 ? "opacity-50 pointer-events-none" : ""} title={seatsLeft <= 0 ? "No seats left" : undefined}>
-                        <TakeMandateButton jobId={job.id} />
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
