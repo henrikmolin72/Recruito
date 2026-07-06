@@ -20,6 +20,7 @@ import { formatCurrency, formatDate, floorToHundreds } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
+import { BonusBadge } from "@/components/shared/bonus-badge";
 
 // Job statuses where the company has ended the job (vs. a temporary pause).
 const ENDED_STATUSES = new Set(["closed", "filled", "cancelled"]);
@@ -321,6 +322,9 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                           <Badge variant="outline" className="rounded-full bg-amber-50 text-amber-700 border-amber-200 py-1 px-3">
                             {t("recruiter.workedPreviously") || "Worked Previously"}
                           </Badge>
+                        )}
+                        {job.final_interview_bonus && (
+                          <BonusBadge label={t("recruiter.finalInterviewBonus") || "€100 Final Interview Bonus"} className="rounded-full" />
                         )}
                       </div>
 
