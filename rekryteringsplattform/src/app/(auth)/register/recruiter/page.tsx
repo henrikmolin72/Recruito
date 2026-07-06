@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AppLogo } from "@/components/shared/app-logo";
 import { registerRecruiter } from "@/lib/actions/auth";
 import { useTranslations } from "@/i18n/client";
-import { COUNTRY_OPTIONS, EXPERIENCE_BRACKET_OPTIONS } from "@/lib/recruiter-onboarding-options";
+import { COUNTRY_OPTIONS, EXPERIENCE_BRACKET_OPTIONS, HOW_HEARD_OPTIONS } from "@/lib/recruiter-onboarding-options";
 
 export default function RegisterRecruiterPage() {
   const { t } = useTranslations();
@@ -169,6 +169,22 @@ export default function RegisterRecruiterPage() {
                   <div className="md:col-span-2">
                     <label className="mb-1.5 block text-sm font-medium">LinkedIn Profile</label>
                     <Input name="linkedin_url" placeholder="https://linkedin.com/in/..." />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="mb-1.5 block text-sm font-medium">How did you hear about us?</label>
+                    <select
+                      name="how_heard"
+                      required
+                      defaultValue=""
+                      className="flex h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-1"
+                    >
+                      <option value="" disabled>Select an option</option>
+                      {HOW_HEARD_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

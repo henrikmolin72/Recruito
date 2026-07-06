@@ -198,6 +198,8 @@
     "companyNamePlaceholder": "A/S Virksomheden",
     "orgNumberLabel": "CVR-nummer",
     "orgNumberPlaceholder": "12345678",
+    "howHeardLabel": "Hvordan hørte du om os?",
+    "howHeardPlaceholder": "Vælg en mulighed",
     "industryLabel": "Branche",
     "industryPlaceholder": "F.eks. IT & Tech, Finans",
     "contactPersonLabel": "Kontaktperson",
