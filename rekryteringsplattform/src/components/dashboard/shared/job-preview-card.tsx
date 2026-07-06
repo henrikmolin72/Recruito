@@ -70,7 +70,9 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
     const company = job.company;
     const seatsLeft = job.max_recruiters - job.current_recruiter_count;
     const languages = job.language_requirements ?? [];
-    const primaryLanguage = languages[0];
+    const languageLabel = languages
+        .map((l) => `${l.language}${l.level ? ` — ${l.level}` : ""}`)
+        .join(", ");
 
     return (
         <div className="space-y-6">
@@ -156,7 +158,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                     <OverviewItem label="Experience" value={job.experience_bracket} />
                     <OverviewItem
                         label="Language"
-                        value={primaryLanguage ? `${primaryLanguage.language}${primaryLanguage.level ? ` — ${primaryLanguage.level}` : ""}` : null}
+                        value={languageLabel || null}
                     />
                     <OverviewItem
                         label="Position"
