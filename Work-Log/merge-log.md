@@ -53,3 +53,10 @@ notable lines into a dated milestone summary periodically, then trim.
 
 ## 2026-07-06
 - d7d0a99 fix(recruiter): remove earnings from dashboard; In interview + Hired cards; active-mandate parity
+
+## 2026-07-06
+- cd9425f fix(recruiter): remove per-mandate candidates badge from dashboard mandate list
+
+## 2026-07-06
+- fccf4b6 fix(recruiter): dashboard perf card shows open jobs, drop guarantee bar + recent activity
+- fccf4b6 fix(recruiter): dashboard perf card shows open jobs, drop guarantee bar + recent activity
