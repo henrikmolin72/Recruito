@@ -21,12 +21,13 @@ This runbook covers a production deploy from a clean state. Follow top-to-bottom
 
 ## 1. Database — apply migrations
 
-Migrations live in `rekryteringsplattform/supabase/migrations/`, numbered `001`..`060`. They MUST be applied in order, with no gaps.
+Migrations live in `rekryteringsplattform/supabase/migrations/`, numbered `001`..`063` (`062` reserved by the unmerged email-suppression branch — a gap there is expected). They MUST be applied in order.
 
 **Critical dependencies:**
 - `052` + `053` (candidate stage-progression) — app code depends on them; deploy fails behavior without them.
 - `057` + `058` (RLS recursion fixes) — without these, company + recruiter login returns 500.
 - `059` (CVS storage policy tighten) — **already applied to prod 2026-06-24**.
+- `063` (guarantee rate NULL when no completed guarantees + backfill) — **pending as of 2026-07-06**; app code handles both states, but stored fake 100% values show until this is applied (`supabase db push` or SQL editor).
 - `060` (split shared Recruito chat into private per-party threads) — **special rollout, not a plain in-order apply.** Splits existing `conversation_type='recruito'` rows into `recruito_company`/`recruito_recruiter` and adds `UNIQUE(candidate_id, conversation_type)`. It is **idempotent**. Recommended order: **(1) apply `060` first** (safe while old code is live — old code only writes the legacy `recruito` type, which `060` re-splits), **(2) deploy the new app code** (reads/writes the per-party types), **(3) re-run `060`** to mop up any legacy rows written during the deploy overlap. Applying it first avoids a window where users see empty Recruito tabs. Prod `recruito` data is effectively empty (messaging only worked from 2026-06-22), so impact is minimal either way. See [Decisions/2026-06-24-split-recruito-threads.md](../Decisions/2026-06-24-split-recruito-threads.md).
 
 ### Apply via Supabase CLI (preferred)

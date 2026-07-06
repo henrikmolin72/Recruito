@@ -69,7 +69,7 @@ export default function RecruiterAnalytics() {
                 />
                 <TrendCard
                     title="Avg Hire Rate"
-                    value={`${(data.averages.hireRate * 100).toFixed(1)}%`}
+                    value={`${data.averages.hireRate.toFixed(1)}%`}
                     description="Percentage of submissions hired"
                 />
             </MetricGrid>
@@ -82,7 +82,7 @@ export default function RecruiterAnalytics() {
                 />
                 <TrendCard
                     title="Guarantee Success Rate"
-                    value={`${(data.averages.guaranteeSuccessRate * 100).toFixed(1)}%`}
+                    value={data.averages.guaranteeSuccessRate != null ? `${data.averages.guaranteeSuccessRate.toFixed(1)}%` : "—"}
                     description="Successful placements"
                 />
             </MetricGrid>
@@ -115,7 +115,7 @@ export default function RecruiterAnalytics() {
                                     {data.topRecruiters.map((recruiter: any) => (
                                         <tr key={recruiter.id} className="border-b hover:bg-slate-50 transition-colors">
                                             <td className="py-2 px-2 font-medium">{recruiter.name}</td>
-                                            <td className="text-right py-2 px-2 font-semibold text-emerald-600">{(recruiter.hireRate * 100).toFixed(1)}%</td>
+                                            <td className="text-right py-2 px-2 font-semibold text-emerald-600">{recruiter.hireRate.toFixed(1)}%</td>
                                             <td className="text-right py-2 px-2">{recruiter.submitted}</td>
                                             <td className="text-right py-2 px-2 font-medium">{recruiter.hired}</td>
                                             <td className="text-right py-2 px-2">{Math.round(recruiter.timeToHire)} days</td>

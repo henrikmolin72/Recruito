@@ -60,3 +60,6 @@ notable lines into a dated milestone summary periodically, then trim.
 ## 2026-07-06
 - fccf4b6 fix(recruiter): dashboard perf card shows open jobs, drop guarantee bar + recent activity
 - fccf4b6 fix(recruiter): dashboard perf card shows open jobs, drop guarantee bar + recent activity
+
+## 2026-07-06
+- 6ba7b4e fix(dashboards): guarantee result "—" when no guarantee completed (migration 063, NOT yet applied); admin analytics % double-scaling fix
