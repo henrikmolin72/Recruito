@@ -337,11 +337,12 @@ export function CandidateSubmissionForm({
         const marker = `${cvFile.name}:${cvFile.size}`;
         if (marker === screenedMarker) return;
         runScreening();
-        // Intentionally keyed on cvFile only; runScreening reads the latest state
-        // via closure and is guarded by screenedMarker so it runs exactly once per
-        // uploaded CV.
+        // Keyed on cvFile + screening; runScreening reads the latest state via
+        // closure and is guarded by screenedMarker so it runs exactly once per
+        // uploaded CV. `screening` is included so a CV uploaded while a previous
+        // run is still in flight gets screened once that run settles.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [cvFile]);
+    }, [cvFile, screening]);
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -582,6 +583,10 @@ export function CandidateSubmissionForm({
                                     name="cv_file"
                                     accept=".pdf,.doc,.docx"
                                     className="hidden"
+                                    // A programmatic .click() bubbles up to the dropzone div,
+                                    // whose onClick would open a second file dialog on top of
+                                    // the first — swallow the input's own click here.
+                                    onClick={(e) => e.stopPropagation()}
                                     onChange={async (e) => {
                                         const input = e.currentTarget;
                                         const f = input.files?.[0];
@@ -600,7 +605,20 @@ export function CandidateSubmissionForm({
                                         </div>
                                         <button
                                             type="button"
-                                            onClick={() => { setCvFile(null); cvInputRef.current?.click(); }}
+                                            onClick={(e) => {
+                                                // Don't bubble to the dropzone div — its onClick
+                                                // would queue a second file dialog on top of the
+                                                // one opened below.
+                                                e.stopPropagation();
+                                                setCvFile(null);
+                                                // Deleting the CV invalidates its screening: clear
+                                                // the note and the marker so the next upload (even
+                                                // the same file) auto-screens fresh.
+                                                setScreenResult(null);
+                                                setScreenedMarker(null);
+                                                setScreenError(null);
+                                                cvInputRef.current?.click();
+                                            }}
                                             className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
                                         >
                                             <Trash2 className="h-4 w-4" />
