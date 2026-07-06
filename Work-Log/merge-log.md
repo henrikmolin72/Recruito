@@ -63,3 +63,10 @@ notable lines into a dated milestone summary periodically, then trim.
 
 ## 2026-07-06
 - 6ba7b4e fix(dashboards): guarantee result "—" when no guarantee completed (migration 063, NOT yet applied); admin analytics % double-scaling fix
+
+## 2026-07-06
+- 1cb82ae docs: merge-log + runbook entry for guarantee-result fix (migration 063 pending)
+- 6ba7b4e fix(dashboards): guarantee result shows — when no guarantee completed; admin analytics % double-scaling
+
+## 2026-07-06
+- 4d1d383 fix(recruiter): refresh perf snapshot on read when stale (>1h/never) via service-role RPC; pre-063 guarantee guard; fixes "0 of 0 candidates" drift

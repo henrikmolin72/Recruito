@@ -28,6 +28,17 @@ export function mapRecruiterPerfRow(row: RecruiterPerfRow) {
     };
 }
 
+// ponytail: 1h staleness knob — snapshot only refreshes on placement events otherwise
+export const PERF_SNAPSHOT_STALE_MS = 60 * 60 * 1000;
+
+/** True when the perf snapshot should be recalculated: never computed, unparseable, or older than the threshold. */
+export function isPerfSnapshotStale(lastCalculatedAt: string | null, now: Date, staleMs = PERF_SNAPSHOT_STALE_MS): boolean {
+    if (!lastCalculatedAt) return true;
+    const t = Date.parse(lastCalculatedAt);
+    if (Number.isNaN(t)) return true;
+    return now.getTime() - t > staleMs;
+}
+
 /** Average guarantee success rate across recruiters, ignoring those with no completed guarantees. */
 export function averageGuaranteeRate(rates: Array<number | null>): number | null {
     const known = rates.filter((r): r is number => r != null);

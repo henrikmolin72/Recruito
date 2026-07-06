@@ -7,7 +7,7 @@ import { createNotification } from "@/lib/notifications/create";
 import { requireAdmin } from "@/lib/actions/require-admin";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { paymentCompletedEmail } from "@/lib/email/email-templates";
-import { mapRecruiterPerfRow } from "@/lib/recruiter-metrics";
+import { mapRecruiterPerfRow, isPerfSnapshotStale } from "@/lib/recruiter-metrics";
 
 // =============================================
 // Placement helpers
@@ -534,7 +534,7 @@ export async function getRecruiterPerformanceMetrics() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data: recruiter } = await supabase
+    let { data: recruiter } = await supabase
         .from("recruiters")
         .select(`
             id,
@@ -553,10 +553,48 @@ export async function getRecruiterPerformanceMetrics() {
 
     if (!recruiter) return null;
 
-    // Metrics staleness is handled by admin batch job (recalculateAllRecruiterMetrics)
-    // and by placement-create/update hooks. We deliberately do NOT call
-    // recalculateRecruiterMetrics() here because it requires admin auth and would
-    // crash the recruiter dashboard with a redirect-to-login.
+    // Refresh-on-read: the snapshot otherwise only updates on placement events or the
+    // admin batch job, so a recruiter with candidate activity but no placements shows
+    // zeros forever. The RPC needs the service role (fn not exposed to recruiters) but
+    // is scoped to the recruiter's own row; any failure falls back to the stale snapshot.
+    if (isPerfSnapshotStale(recruiter.perf_last_calculated_at, new Date())) {
+        const admin = createAdminClient();
+        const { error: recalcError } = await admin.rpc("fn_recalculate_recruiter_metrics", {
+            p_recruiter_id: recruiter.id,
+        });
+        if (!recalcError) {
+            // ponytail: pre-migration-063 the DB fn still writes a fake 100% guarantee rate
+            // when no guarantee ever completed — null it back out. No-op once 063 is applied.
+            const { count } = await supabase
+                .from("placements")
+                .select("id", { count: "exact", head: true })
+                .eq("recruiter_id", recruiter.id)
+                .in("status", ["payout_released", "guarantee_failed"]);
+            if ((count ?? 0) === 0) {
+                await admin
+                    .from("recruiters")
+                    .update({ perf_guarantee_success_rate: null })
+                    .eq("id", recruiter.id);
+            }
+            const { data: fresh } = await supabase
+                .from("recruiters")
+                .select(`
+                    id,
+                    total_placements,
+                    rating,
+                    perf_hire_rate,
+                    perf_avg_time_to_hire_days,
+                    perf_candidates_submitted,
+                    perf_candidates_hired,
+                    perf_active_placements,
+                    perf_guarantee_success_rate,
+                    perf_last_calculated_at
+                `)
+                .eq("user_id", user.id)
+                .single();
+            if (fresh) recruiter = fresh;
+        }
+    }
 
     return mapRecruiterPerfRow(recruiter);
 }
