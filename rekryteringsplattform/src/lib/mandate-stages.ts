@@ -2,7 +2,7 @@
 // mandates list (clickable count badges) and the mandate detail page (stage
 // filter) so the two stay in sync.
 
-import { candidateOccupiesCapSlot } from "./candidate-workflow";
+import { candidateOccupiesCapSlot, normalizeCandidateStatusForWorkflow } from "./candidate-workflow";
 
 export type MandateStage =
     | "draft"
@@ -212,6 +212,17 @@ export function computeJobProcessStats(rows: StageCandidate[]): JobProcessStatCo
         inInterview,
         released: submitted.length - occupying.length,
     };
+}
+
+// Whether a company-visible candidate counts as "Active" in the company Jobs
+// list "Active Candidates" column: still in an active stage (In Review →
+// Submitted → Interview → Final Interview → Offer → Hired). Mirrors
+// candidateOccupiesCapSlot (drops draft + rejected/withdrawn/declined) but also
+// drops on_hold: paused/rejected/withdrawn are the pipeline's three inactive
+// columns, and only the first six stages are "active" per product spec.
+export function isActiveCompanyCandidate(status: string | null | undefined): boolean {
+    if (!candidateOccupiesCapSlot(status)) return false;
+    return normalizeCandidateStatusForWorkflow(status ?? "") !== "on_hold";
 }
 
 export function isMandateStage(value: string | null | undefined): value is MandateStage {

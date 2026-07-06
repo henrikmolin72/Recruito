@@ -4,6 +4,7 @@ import {
     classifyMandate,
     computeJobProcessStats,
     countActiveRecruiters,
+    isActiveCompanyCandidate,
     isMandateLiveActive,
     mandateExpiryDaysLeft,
     MANDATE_EXPIRY_DAYS,
@@ -276,5 +277,28 @@ describe("computeJobProcessStats", () => {
         expect(
             computeJobProcessStats([...rejected, { status: "under_client_review" }, { status: "candidate_withdrawn" }]),
         ).toEqual({ presented: 1, inProcess: 1, inInterview: 0, released: 11 });
+    });
+});
+
+describe("isActiveCompanyCandidate", () => {
+    it("counts the six active stages: in review → submitted → interview → offer → hired", () => {
+        for (const s of [
+            "submitted", "under_client_review", "info_requested", "resubmitted",
+            "interview_stage_1", "interview_stage_2", "interview_stage_3",
+            "final_interview", "offer_in_progress", "offer_accepted",
+            "hired", "invoice_enabled", "guarantee_tracking",
+        ]) {
+            expect(isActiveCompanyCandidate(s)).toBe(true);
+        }
+    });
+
+    it("excludes drafts, rejections, withdrawals, declined offers and paused (on_hold)", () => {
+        for (const s of [
+            "draft", "rejected_client", "rejected_interview", "recruito_rejected",
+            "duplicate_rejected", "candidate_withdrawn", "offer_declined", "on_hold",
+            null, undefined, "",
+        ]) {
+            expect(isActiveCompanyCandidate(s)).toBe(false);
+        }
     });
 });
