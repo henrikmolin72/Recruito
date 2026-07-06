@@ -70,3 +70,7 @@ notable lines into a dated milestone summary periodically, then trim.
 
 ## 2026-07-06
 - 4d1d383 fix(recruiter): refresh perf snapshot on read when stale (>1h/never) via service-role RPC; pre-063 guarantee guard; fixes "0 of 0 candidates" drift
+
+## 2026-07-06
+- 89944d4 Merge fix/ai-screening-before-submit → main
+- ffa2cf6 fix(screening): run Recruito AI eval at submission (createCandidateExtended, non-blocking after()) so the admin Step-7 queue shows match score + full report before submit-to-client; approval-time run kept as idempotent fallback
