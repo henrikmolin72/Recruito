@@ -1,7 +1,6 @@
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Badge } from "@/components/ui/badge";
 import { Users, FileCheck, CalendarClock, UserCheck } from "lucide-react";
 import { getRecruiterDashboard } from "@/lib/actions/recruiter";
 import { getRecruiterPerformanceMetrics } from "@/lib/actions/placements";
@@ -50,10 +49,7 @@ export default async function RecruiterDashboard() {
                     <h3 className="font-semibold">{mandate.title}</h3>
                     <p className="text-sm text-muted-foreground">{mandate.company} — {mandate.location}</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <Badge variant="blue">{mandate.candidates} {dict.nav.candidates.toLowerCase()}</Badge>
-                    <StatusBadge status={mandate.status} />
-                  </div>
+                  <StatusBadge status={mandate.status} />
                 </div>
               ))}
             </div>
