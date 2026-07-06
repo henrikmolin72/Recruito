@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { verifyCvFileContent } from "@/lib/file-magic";
 import {
     normalizeIdentity,
@@ -205,7 +206,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
     // --- Insert candidate ---
     // Structured fields are parsed once in candidate-form.ts, shared with the
     // draft path, so a resumed draft persists exactly what a direct present does.
-    const { error: insertError } = await supabase.from("candidates").insert({
+    const { data: inserted, error: insertError } = await supabase.from("candidates").insert({
         job_id: mandate.job_id,
         recruiter_id: recruiter.id,
         mandate_id: mandateId,
@@ -217,7 +218,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
         status_changed_at: new Date().toISOString(),
         recruiter_declaration: true,
         ...parseCandidateColumns(formData),
-    });
+    }).select("id").single();
 
     if (insertError) {
         console.error("Candidate Insert Error:", insertError);
@@ -227,6 +228,30 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
     // No client-facing notification at creation: the candidate is in internal
     // review and invisible to the client until Recruito approval
     // (markCandidateRecruitoScreened) fires the "presented" notification.
+
+    // Auto-run the Recruito AI evaluation at SUBMISSION (not approval) so the admin
+    // screening queue shows the match score + full report BEFORE deciding whether to
+    // submit the candidate to the client. setScore=true: this is Recruito's own run.
+    // Non-blocking (after()) so the recruiter's submit returns immediately; the score
+    // lands a few seconds later. Best-effort — a missing/DOCX CV just yields no score.
+    // The approval-time run in markCandidateRecruitoScreened stays as an idempotent
+    // fallback (its `is null` guard means it no-ops once this has set the score).
+    if (inserted?.id) {
+        after(async () => {
+            try {
+                const res = await runCandidateEvaluation({
+                    admin: createAdminClient(),
+                    mandateId,
+                    candidateId: inserted.id,
+                    actorUserId: user.id,
+                    setScore: true,
+                });
+                if (!res.ok) console.warn("[createCandidateExtended auto-eval]", res.error);
+            } catch (e) {
+                console.error("[createCandidateExtended auto-eval]", e);
+            }
+        });
+    }
 
     revalidatePath("/recruiter/mandates");
     revalidatePath("/recruiter");
