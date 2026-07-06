@@ -73,9 +73,6 @@ export default function RegisterRecruiterPage() {
               <h1 className="mt-4 text-3xl font-black leading-tight tracking-tight">
                 {t("auth.recruiterRegHeadline")}
               </h1>
-              <p className="mt-3 max-w-md text-sm leading-6 text-slate-300">
-                {t("auth.recruiterRegSubheadline")}
-              </p>
 
               <div className="mt-8 space-y-4">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -197,7 +194,7 @@ export default function RegisterRecruiterPage() {
                     </label>
                     <label className="flex items-start gap-3 text-sm leading-5">
                       <input type="checkbox" name="agreement_commission_after_guarantee" className="mt-1 h-4 w-4 rounded border-slate-300" required />
-                      <span>I understand that commission is paid only after the successful completion of the client’s guarantee period.</span>
+                      <span>I understand that commission is paid only after the successful completion of the candidate’s guarantee period.</span>
                     </label>
                   </div>
                 </div>
