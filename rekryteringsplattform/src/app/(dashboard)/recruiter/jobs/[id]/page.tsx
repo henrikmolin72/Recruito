@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
 import { JobProcessStats } from "@/components/dashboard/shared/job-process-stats";
-import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
-import { createTranslator } from "@/i18n/server";
 
 async function getJob(id: string) {
     const supabase = await createClient();
@@ -41,16 +39,7 @@ async function getJob(id: string) {
 
     if (!job) return null;
 
-    // Slots taken = ACTIVE mandate rows only. Released rows (expired past cycles)
-    // are history and must not count against capacity, so the previous embedded
-    // job_mandates(count) — which counts every row — would over-report "full".
-    const { count: activeMandateCount } = await adminClient
-        .from("job_mandates")
-        .select("id", { count: "exact", head: true })
-        .eq("job_id", id)
-        .eq("is_active", true);
-
-    return { ...job, active_mandate_count: activeMandateCount ?? 0 };
+    return job;
 }
 
 export default async function RecruiterJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -65,12 +54,6 @@ export default async function RecruiterJobDetailPage({ params }: { params: Promi
         company: Array.isArray(job.company) ? job.company[0] ?? null : job.company,
     };
 
-    // Slots taken from active mandate rows — matches the listing's count so a
-    // full job shows no claim action here either.
-    const mandateCount = (job as any).active_mandate_count ?? 0;
-    const isFull = mandateCount >= job.max_recruiters;
-    const t = await createTranslator();
-
     return (
         <div className="max-w-5xl mx-auto py-6 space-y-6">
             <div className="flex items-center gap-3">
@@ -84,16 +67,6 @@ export default async function RecruiterJobDetailPage({ params }: { params: Promi
             <JobProcessStats jobId={id} />
 
             <JobPreviewCard job={normalized} variant="recruiter" />
-
-            {normalized.status === "active" && (
-                <div className="flex justify-end">
-                    {isFull ? (
-                        <span className="text-sm font-bold text-danger-500">{t("recruiter.slotsFull")}</span>
-                    ) : (
-                        <TakeMandateButton jobId={normalized.id} />
-                    )}
-                </div>
-            )}
         </div>
     );
 }
