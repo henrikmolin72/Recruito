@@ -240,6 +240,8 @@ export async function createJob(formData: FormData) {
         // Other
         travel_required: d.travel_required ?? rawOrNull("travel_required"),
         background_check_required: d.background_check_required ?? rawBool("background_check_required"),
+        // Optional recruiter incentive (employer opts in on the declaration step)
+        final_interview_bonus: rawBool("final_interview_bonus"),
         // Pipeline & status — non-draft jobs go to pending_approval (Step 4 of process flow);
         // Recruito admin must approve before recruiters see them (sets status='active' + published_at).
         pipeline_stages: pipelineStages,

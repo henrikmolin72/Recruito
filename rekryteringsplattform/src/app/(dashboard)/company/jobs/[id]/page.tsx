@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { BonusBadge } from "@/components/shared/bonus-badge";
 import {
     ArrowLeft,
     MapPin,
@@ -184,6 +185,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         <div className="flex items-center gap-3 flex-wrap">
                             <h1 className="text-3xl font-black tracking-tight text-slate-900">{job.title}</h1>
                             <StatusBadge status={job.status} />
+                            {job.final_interview_bonus && <BonusBadge label={c.bonusBadge || "€100 Bonus"} />}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-slate-500 font-medium">
                             <div className="flex items-center gap-1.5">

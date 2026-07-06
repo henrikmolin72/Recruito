@@ -77,6 +77,7 @@ interface InitialJobData {
     urgency_level?: string;
     travel_required?: boolean;
     background_check_required?: boolean;
+    final_interview_bonus?: boolean;
     screening_questions?: string[];
     key_requirements?: string[];
     language_requirements?: Array<{ language: string; level: string }>;
@@ -235,6 +236,8 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         // Step 8
         travel_required: initialData?.travel_required ?? false,
         background_check_required: initialData?.background_check_required ?? false,
+        // Step 7 — optional recruiter incentive
+        final_interview_bonus: initialData?.final_interview_bonus ?? false,
     });
 
     // Publish only when all required fields are filled and declaration confirmed
@@ -968,7 +971,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                                 t("jobForm.employerDecl6") || "The Employer will not bypass the platform to engage candidates directly",
                                                 t("jobForm.employerDecl7") || "All applicable fees, terms, and guarantee conditions are accepted",
                                                 t("jobForm.employerDecl8") || "The hiring process complies with local laws and regulations",
-                                                t("jobForm.employerDecl9") || "The Employer agrees to pay €100 to the recruiter if a submitted candidate reaches and attends the final interview stage (decision stage)",
                                             ].map((item, i) => (
                                                 <li key={i} className="flex gap-2">
                                                     <span className="text-slate-400 mt-0.5">•</span>
@@ -976,6 +978,20 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                                 </li>
                                             ))}
                                         </ul>
+                                        <label htmlFor="final_interview_bonus" className="flex items-start gap-3 rounded-lg border border-brand-200 bg-brand-50/60 p-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="final_interview_bonus"
+                                                id="final_interview_bonus"
+                                                checked={formData.final_interview_bonus}
+                                                onChange={handleInputChange}
+                                                className={checkboxClass}
+                                            />
+                                            <span className="text-sm text-slate-700">
+                                                <span className="mr-2 rounded bg-brand-100 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-brand-700">{t("jobForm.optional") || "Optional"}</span>
+                                                {t("jobForm.employerDecl9") || "The Employer agrees to pay €100 to the recruiter if a submitted candidate reaches and attends the final interview (decision stage)"}
+                                            </span>
+                                        </label>
                                         <div className="pt-2 border-t border-slate-200">
                                             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{t("jobForm.referencePolicies") || "Reference Policies"}</p>
                                             <div className="flex flex-wrap gap-2">
