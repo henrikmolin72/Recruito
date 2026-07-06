@@ -59,12 +59,15 @@ const REJECTED_STATUSES = new Set([
 // Withdrawn is its own tab per the workflow spec — not a kind of rejection.
 const WITHDRAWN_STATUSES = new Set(["candidate_withdrawn"]);
 
-// Statuses that make a candidate "not live" for the mandate-expiry timer.
-// Per product rule: a submitted candidate suspends the expiry; the 10-day timer
-// only (re)starts once EVERY candidate has been explicitly rejected. Only hard
-// rejections count here — a withdrawal/duplicate does NOT restart the clock.
-const EXPIRY_REJECTED_STATUSES = new Set([
+// Statuses that make a candidate "inactive" for the mandate-expiry timer.
+// Per product rule (updated 2026-07-06): a candidate in a live active stage
+// (in review → offer, or hired) suspends the expiry; the 10-day timer (re)starts
+// once EVERY candidate is inactive. Both hard rejections AND withdrawals count as
+// inactive — a withdrawn candidate no longer keeps the clock suspended.
+// (A duplicate lives under the "submitted" stage, so it is NOT inactive.)
+const EXPIRY_INACTIVE_STATUSES = new Set([
     "rejected_client", "rejected_interview", "recruito_rejected", "declined", "rejected",
+    ...WITHDRAWN_STATUSES,
 ]);
 
 export interface ExpiryCandidate {
@@ -75,9 +78,9 @@ export interface ExpiryCandidate {
 // Days left on the mandate's no-delivery expiry, or null when no expiry applies
 // (at least one live candidate exists). Single source of truth shared by the
 // recruiter mandates view and the expiry cron.
-//   - 0 candidates           → 10 days from claim.
-//   - any live candidate      → no expiry (null).
-//   - all candidates rejected → 10 days from the most recent rejection.
+//   - 0 candidates              → 10 days from claim.
+//   - any live candidate         → no expiry (null).
+//   - all candidates inactive    → 10 days from the most recent rejection/withdrawal.
 export function mandateExpiryDaysLeft(opts: {
     claimedAt: string | null;
     candidates: ExpiryCandidate[];
@@ -89,14 +92,14 @@ export function mandateExpiryDaysLeft(opts: {
     const now = opts.now ?? Date.now();
     if (!claimedAt) return null;
 
-    const hasLive = candidates.some((c) => !EXPIRY_REJECTED_STATUSES.has(c.status ?? ""));
+    const hasLive = candidates.some((c) => !EXPIRY_INACTIVE_STATUSES.has(c.status ?? ""));
     if (hasLive) return null;
 
     let baseMs: number;
     if (candidates.length === 0) {
         baseMs = new Date(claimedAt).getTime();
     } else {
-        // All candidates rejected → restart from the last rejection date.
+        // All candidates inactive → restart from the last rejection/withdrawal date.
         const lastRejectionMs = candidates.reduce((max, c) => {
             const t = c.status_changed_at ? new Date(c.status_changed_at).getTime() : 0;
             return t > max ? t : max;
