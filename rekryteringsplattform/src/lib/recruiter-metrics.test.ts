@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapRecruiterPerfRow, averageGuaranteeRate } from "./recruiter-metrics";
+import { mapRecruiterPerfRow, averageGuaranteeRate, isPerfSnapshotStale } from "./recruiter-metrics";
 
 describe("mapRecruiterPerfRow", () => {
     const emptyRow = {
@@ -34,6 +34,23 @@ describe("mapRecruiterPerfRow", () => {
             activePlacements: 0,
             guaranteeSuccessRate: null,
         });
+    });
+});
+
+describe("isPerfSnapshotStale", () => {
+    const now = new Date("2026-07-06T12:00:00Z");
+
+    it("is stale when metrics were never calculated (regression: 0-of-0 shown while 8 presented)", () => {
+        expect(isPerfSnapshotStale(null, now)).toBe(true);
+    });
+
+    it("is stale past the threshold, fresh within it", () => {
+        expect(isPerfSnapshotStale("2026-07-06T10:59:59Z", now)).toBe(true);   // 1h+1s ago
+        expect(isPerfSnapshotStale("2026-07-06T11:30:00Z", now)).toBe(false);  // 30min ago
+    });
+
+    it("treats an unparseable timestamp as stale", () => {
+        expect(isPerfSnapshotStale("not-a-date", now)).toBe(true);
     });
 });
 
