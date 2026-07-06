@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Clock, TrendingUp, Shield, Users, Award } from "lucide-react";
+import { Target, Clock, TrendingUp, Shield, Users, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createTranslator } from "@/i18n/server";
 
 interface PerformanceMetricsProps {
+    openJobs: number;
     metrics: {
-        totalPlacements: number;
         rating: number;
         hireRate: number;
         avgTimeToHireDays: number;
@@ -56,7 +56,7 @@ function ProgressBar({ value, max = 100, color }: { value: number; max?: number;
     );
 }
 
-export async function PerformanceMetrics({ metrics }: PerformanceMetricsProps) {
+export async function PerformanceMetrics({ metrics, openJobs }: PerformanceMetricsProps) {
     const t = await createTranslator();
     return (
         <Card>
@@ -84,9 +84,9 @@ export async function PerformanceMetrics({ metrics }: PerformanceMetricsProps) {
                         color="bg-blue-600"
                     />
                     <MetricCard
-                        label={t("recruiter.perfTotalPlacements")}
-                        value={metrics.totalPlacements}
-                        icon={Award}
+                        label={t("recruiter.perfOpenJobs")}
+                        value={openJobs}
+                        icon={Briefcase}
                         color="bg-amber-600"
                     />
                     <MetricCard
@@ -120,14 +120,6 @@ export async function PerformanceMetrics({ metrics }: PerformanceMetricsProps) {
                     <ProgressBar value={metrics.hireRate} color="bg-brand-600" />
                 </div>
 
-                {/* Guarantee success rate progress */}
-                <div className="space-y-1.5">
-                    <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">{t("recruiter.perfGuaranteeSuccess")}</span>
-                        <span className="font-medium">{metrics.guaranteeSuccessRate}%</span>
-                    </div>
-                    <ProgressBar value={metrics.guaranteeSuccessRate} color="bg-green-600" />
-                </div>
             </CardContent>
         </Card>
     );
