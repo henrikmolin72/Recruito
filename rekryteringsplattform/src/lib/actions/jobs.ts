@@ -9,7 +9,7 @@ import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/notifications/create";
 import { notifyAdmins } from "@/lib/notifications/notify-admins";
-import { countActiveRecruiters, type ExpiryCandidate } from "@/lib/mandate-stages";
+import { countActiveRecruiters, isActiveCompanyCandidate, type ExpiryCandidate } from "@/lib/mandate-stages";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";
@@ -369,7 +369,7 @@ export async function getCompanyJobs() {
         .from("jobs")
         .select(`
       *,
-      candidates:candidates(recruito_screened_at, recruiter_id),
+      candidates:candidates(recruito_screened_at, recruiter_id, status),
       mandates:job_mandates(recruiter_id, is_active, claimed_at)
     `)
         .eq("company_id", company.id)
@@ -412,10 +412,13 @@ export async function getCompanyJobs() {
             })),
             timingByJob.get(job.id) || new Map(),
         ),
-        // Only count candidates Recruito has presented & approved (recruito_screened_at
-        // set). Drafts and not-yet-approved submissions stay hidden from the company —
-        // same visibility gate the job-detail page applies.
-        candidates_count: (job.candidates || []).filter((cand: any) => cand.recruito_screened_at).length,
+        // "Active Candidates" = candidates Recruito has presented & approved
+        // (recruito_screened_at set) AND still in an active stage — In Review,
+        // Submitted, Interview, Final Interview, Offer or Hired. Rejected,
+        // withdrawn and paused (on_hold) candidates are excluded (isActiveCompanyCandidate).
+        candidates_count: (job.candidates || []).filter(
+            (cand: any) => cand.recruito_screened_at && isActiveCompanyCandidate(cand.status),
+        ).length,
     })) || [];
 }
 
