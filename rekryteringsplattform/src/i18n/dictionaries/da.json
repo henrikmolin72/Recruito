@@ -1398,6 +1398,7 @@
     "kanbanUpdateError": "Kunne ikke opdatere status: ",
     "kanbanUpdateSuccess": "Status opdateret",
     "pipelinePresented": "Præsenterede",
+    "candidateViewed": "Set",
     "pipelineUnderReview": "Under gennemgang",
     "pipelineInterview": "Samtale",
     "pipelineFinalInterview": "Slutsamtale",

@@ -1398,6 +1398,7 @@
     "kanbanUpdateError": "Could not update status: ",
     "kanbanUpdateSuccess": "Status updated",
     "pipelinePresented": "Presented",
+    "candidateViewed": "Viewed",
     "pipelineUnderReview": "Under review",
     "pipelineInterview": "Interview",
     "pipelineFinalInterview": "Final Interview",

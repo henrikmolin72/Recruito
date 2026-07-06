@@ -9,6 +9,7 @@ import { CandidateAccessGate } from "@/components/dashboard/company/candidate-ac
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 import { normalizeCandidateStatusForWorkflow } from "@/lib/candidate-workflow";
+import { ViewedIndicator } from "./viewed-indicator";
 
 function getColumnKey(status: string) {
   const normalized = normalizeCandidateStatusForWorkflow(status);
@@ -128,6 +129,7 @@ function PipelineView({ candidates, noticeAccepted }: { candidates: any[]; notic
                             {candidate.job?.title}
                           </p>
                         </div>
+                        <ViewedIndicator viewed={!!candidate.company_viewed_at} label={t("components.candidateViewed")} />
                       </div>
 
                       {/* Company view is now request-driven from candidate detail; keep pipeline cards read-only */}
@@ -171,7 +173,8 @@ function ListView({ candidates, noticeAccepted }: { candidates: any[]; noticeAcc
                   <span className="flex items-center gap-1">{t("components.recruiterJobsListPresentedLabel")} <span className="text-foreground font-medium">{new Date(candidate.recruito_screened_at).toLocaleDateString()}</span></span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <ViewedIndicator viewed={!!candidate.company_viewed_at} label={t("components.candidateViewed")} />
                 <CandidateAccessGate
                   href={`/company/jobs/${candidate.job_id}/candidates/${candidate.id}`}
                   noticeAccepted={noticeAccepted}
