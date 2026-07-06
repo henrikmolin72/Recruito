@@ -1398,6 +1398,7 @@
     "kanbanUpdateError": "Kunne ikke oppdatere status: ",
     "kanbanUpdateSuccess": "Status oppdatert",
     "pipelinePresented": "Presenterte",
+    "candidateViewed": "Sett",
     "pipelineUnderReview": "Under vurdering",
     "pipelineInterview": "Intervju",
     "pipelineFinalInterview": "Sluttintervju",

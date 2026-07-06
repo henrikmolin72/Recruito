@@ -1398,6 +1398,7 @@
     "kanbanUpdateError": "Kunde inte uppdatera status: ",
     "kanbanUpdateSuccess": "Status uppdaterad",
     "pipelinePresented": "Presenterade",
+    "candidateViewed": "Visad",
     "pipelineUnderReview": "Under granskning",
     "pipelineInterview": "Intervju",
     "pipelineFinalInterview": "Slutintervju",
