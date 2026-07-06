@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
@@ -51,7 +52,11 @@ export default async function AdminJobsPage() {
               ) : (
                 jobs.map((job) => (
                   <tr key={job.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                    <td className="p-4 font-medium">{job.title}</td>
+                    <td className="p-4 font-medium">
+                      <Link href={`/admin/jobs/${job.id}`} className="text-brand-600 hover:underline">
+                        {job.title}
+                      </Link>
+                    </td>
                     <td className="p-4 text-muted-foreground">{job.publishedAt ? formatDateShort(job.publishedAt) : dict.common.noDataDash}</td>
                     <td className="p-4">{job.company}</td>
                     <td className="p-4 text-muted-foreground">{job.location || dict.common.noDataDash}</td>

@@ -450,6 +450,25 @@ export async function getAdminJobs() {
     });
 }
 
+// Full job row for the admin review page — admin client bypasses RLS so admins
+// can audit any company's posting for empty/fake/unrealistic content.
+export async function getAdminJobById(id: string) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+
+    const { data, error } = await supabaseAdmin
+        .from("jobs")
+        .select(`*, company:companies (company_name, website, logo_url, linkedin_url)`)
+        .eq("id", id)
+        .single();
+
+    if (error || !data) {
+        return null;
+    }
+
+    return { ...data, company: pickFirst((data as any).company) } as any;
+}
+
 export async function getAdminPlacements() {
     await requireAdmin();
     const supabaseAdmin = createAdminClient();
