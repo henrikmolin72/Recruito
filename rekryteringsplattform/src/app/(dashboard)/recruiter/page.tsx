@@ -1,7 +1,7 @@
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Users, FileCheck, CalendarClock, UserCheck } from "lucide-react";
+import { Users, FileCheck, CalendarClock, UserCheck, Target } from "lucide-react";
 import { getRecruiterDashboard, getAvailableJobsForRecruiter } from "@/lib/actions/recruiter";
 import { getRecruiterPerformanceMetrics } from "@/lib/actions/placements";
 import { PerformanceMetrics } from "@/components/dashboard/recruiter/performance-metrics";
@@ -17,6 +17,15 @@ export default async function RecruiterDashboard() {
   const dict = await getDictionary();
   const r = dict.recruiter;
 
+  // Client-requested funnel rates, both over Candidates Submitted (= total presented,
+  // == metrics.candidatesSubmitted, same COUNT). Hire rate reuses the snapshot figure so
+  // this box matches the existing "Conversion (hire rate)" number exactly.
+  const submitted = metrics?.candidatesSubmitted ?? stats.candidates ?? 0;
+  const candidatesHired = metrics?.candidatesHired ?? stats.hired ?? 0;
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const interviewRate = submitted > 0 ? round2((stats.movedToInterview / submitted) * 100) : 0;
+  const hireRate = metrics ? metrics.hireRate : submitted > 0 ? round2((stats.hired / submitted) * 100) : 0;
+
   return (
     <div className="space-y-6">
       <div>
@@ -29,6 +38,21 @@ export default async function RecruiterDashboard() {
         <StatsCard title={r.presentedCandidates} value={stats.candidates || 0} icon={Users} />
         <StatsCard title={r.inInterview} value={stats.inInterview || 0} icon={CalendarClock} />
         <StatsCard title={r.hired} value={stats.hired || 0} icon={UserCheck} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <StatsCard
+          title={r.rateInterview}
+          value={`${interviewRate}%`}
+          icon={CalendarClock}
+          description={r.rateInterviewSub.replace("{moved}", String(stats.movedToInterview)).replace("{submitted}", String(submitted))}
+        />
+        <StatsCard
+          title={r.rateHire}
+          value={`${hireRate}%`}
+          icon={Target}
+          description={r.rateHireSub.replace("{hired}", String(candidatesHired)).replace("{submitted}", String(submitted))}
+        />
       </div>
 
       {metrics && <PerformanceMetrics metrics={metrics} openJobs={availableJobs.length} />}

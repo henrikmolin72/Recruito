@@ -8,7 +8,7 @@ import { Recruiter } from "@/types/db-types";
 import { createNotification } from "@/lib/notifications/create";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
-import { candidateInStage, classifyMandate, computeJobProcessStats } from "@/lib/mandate-stages";
+import { candidateInStage, candidateReachedInterview, classifyMandate, computeJobProcessStats } from "@/lib/mandate-stages";
 import { isCandidateInProcess, countCandidatesAgainstCap, candidateOccupiesCapSlot } from "@/lib/candidate-workflow";
 import { releaseDueMandates } from "@/lib/mandate-expiry-release";
 import { selectMarketplaceJobs } from "@/lib/marketplace-visibility";
@@ -301,7 +301,7 @@ export async function getRecruiterDashboard() {
         return {
             recruiter: { user_id: user.id } as Recruiter,
             mandates: [],
-            stats: { activeMandates: 0, candidates: 0, inInterview: 0, hired: 0 },
+            stats: { activeMandates: 0, candidates: 0, inInterview: 0, movedToInterview: 0, hired: 0 },
             userName: user.user_metadata?.full_name
         };
     }
@@ -339,6 +339,10 @@ export async function getRecruiterDashboard() {
     const inInterview = candidateRows.filter(
         (c) => candidateInStage(c, "interview") || candidateInStage(c, "final_interview"),
     ).length;
+    // "moved to interview" = reached interview at any point (incl. now at offer/hired),
+    // the numerator for the dashboard Interview rate box. Distinct from the current-stage
+    // inInterview count above.
+    const movedToInterview = candidateRows.filter((c) => candidateReachedInterview(c)).length;
     const hiredCount = candidateRows.filter((c) => candidateInStage(c, "hired")).length;
 
     // Format mandates for easier usage
@@ -383,6 +387,7 @@ export async function getRecruiterDashboard() {
             activeMandates: activeMandates.length,
             candidates: candidateRows.length,
             inInterview,
+            movedToInterview,
             hired: hiredCount
         }
     };
