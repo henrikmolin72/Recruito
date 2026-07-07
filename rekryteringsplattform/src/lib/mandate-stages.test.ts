@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
     candidateInStage,
+    candidateReachedInterview,
     classifyMandate,
     computeJobProcessStats,
     countActiveRecruiters,
@@ -186,6 +187,19 @@ describe("candidateInStage", () => {
         expect(candidateInStage({ status: "candidate_withdrawn" }, "rejected")).toBe(false);
         expect(candidateInStage({ status: "rejected_client" }, "rejected")).toBe(true);
         expect(candidateInStage({ status: "rejected_client" }, "withdrawn")).toBe(false);
+    });
+});
+
+describe("candidateReachedInterview", () => {
+    it("counts interview and every stage beyond it (offer, hired)", () => {
+        for (const s of ["interview_stage_2", "final_interview", "offer_in_progress", "hired"]) {
+            expect(candidateReachedInterview({ status: s })).toBe(true);
+        }
+    });
+    it("excludes pre-interview and off-pipeline stages", () => {
+        for (const s of ["submitted_to_client", "under_client_review", "rejected_client", "candidate_withdrawn", "draft"]) {
+            expect(candidateReachedInterview({ status: s })).toBe(false);
+        }
     });
 });
 

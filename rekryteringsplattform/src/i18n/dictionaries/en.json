@@ -598,6 +598,7 @@
     "stepProcess": "Process",
     "stepProcessDesc": "Recruitment process",
     "aiReportTitle": "AI screening report",
+    "viewAiReport": "View AI Report",
     "aiReportDisclaimer": "This AI screening is decision support only. It evaluates the CV against the job description and cannot account for interview performance, location or commuting preferences, team or cultural fit, salary expectations, or other business considerations. Final hiring decisions are always yours."
   },
   "recruiter": {
@@ -766,6 +767,10 @@
     "perfGuaranteeResult": "Guarantee result",
     "perfRating": "Rating",
     "perfConversionRate": "Conversion rate",
+    "rateInterview": "Interview rate",
+    "rateInterviewSub": "{moved} of {submitted} to interview",
+    "rateHire": "Hire rate",
+    "rateHireSub": "{hired} of {submitted} hired",
     "roleDescription": "Role description",
     "noDescriptionAvailable": "No description available.",
     "candidatesHeader": "Candidates ({count})",

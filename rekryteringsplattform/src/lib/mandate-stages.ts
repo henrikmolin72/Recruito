@@ -225,6 +225,22 @@ export function isActiveCompanyCandidate(status: string | null | undefined): boo
     return normalizeCandidateStatusForWorkflow(status ?? "") !== "on_hold";
 }
 
+// Candidates that reached the interview milestone: currently at interview /
+// final_interview, or already past it (offer / hired). Unlike the current-stage
+// "In interview" count, a candidate now at offer or hired still counts — they
+// did move to interview. Powers the recruiter dashboard "Interview rate" box.
+// ponytail: a candidate rejected AT interview is stored as a generic rejected
+// status upstream, indistinguishable from a pre-interview rejection, so it is
+// not counted here — the same limitation the rest of the app lives with.
+export function candidateReachedInterview(c: StageCandidate): boolean {
+    return (
+        candidateInStage(c, "interview") ||
+        candidateInStage(c, "final_interview") ||
+        candidateInStage(c, "offer") ||
+        candidateInStage(c, "hired")
+    );
+}
+
 export function isMandateStage(value: string | null | undefined): value is MandateStage {
     return !!value && (MANDATE_STAGE_KEYS as string[]).includes(value);
 }

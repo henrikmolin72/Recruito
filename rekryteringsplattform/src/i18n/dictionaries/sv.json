@@ -598,6 +598,7 @@
     "stepProcess": "Process",
     "stepProcessDesc": "Rekryteringsprocess",
     "aiReportTitle": "AI-screeningrapport",
+    "viewAiReport": "Visa AI-rapport",
     "aiReportDisclaimer": "Denna AI-screening är endast ett beslutsstöd. Den bedömer CV:t mot jobbeskrivningen och kan inte ta hänsyn till intervjuprestation, plats- eller pendlingspreferenser, team- eller kulturell matchning, löneförväntningar eller andra affärsmässiga överväganden. Det slutgiltiga anställningsbeslutet är alltid ditt."
   },
   "recruiter": {
@@ -766,6 +767,10 @@
     "perfGuaranteeResult": "Garantiresultat",
     "perfRating": "Betyg",
     "perfConversionRate": "Konverteringsgrad",
+    "rateInterview": "Intervjufrekvens",
+    "rateInterviewSub": "{moved} av {submitted} till intervju",
+    "rateHire": "Anställningsfrekvens",
+    "rateHireSub": "{hired} av {submitted} anställda",
     "roleDescription": "Rollbeskrivning",
     "noDescriptionAvailable": "Ingen beskrivning tillgänglig.",
     "candidatesHeader": "Kandidater ({count})",
