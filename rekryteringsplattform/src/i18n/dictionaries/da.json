@@ -598,6 +598,7 @@
     "stepProcess": "Proces",
     "stepProcessDesc": "Rekrutteringsproces",
     "aiReportTitle": "AI-screeningrapport",
+    "viewAiReport": "Se AI-rapport",
     "aiReportDisclaimer": "Denne AI-screening er kun beslutningsstøtte. Den vurderer CV'et op mod jobbeskrivelsen og kan ikke tage højde for interviewpræstation, placerings- eller pendlerpræferencer, team- eller kulturel match, lønforventninger eller andre forretningsmæssige overvejelser. Den endelige ansættelsesbeslutning er altid din."
   },
   "recruiter": {

@@ -598,6 +598,7 @@
     "stepProcess": "Process",
     "stepProcessDesc": "Recruitment process",
     "aiReportTitle": "AI screening report",
+    "viewAiReport": "View AI Report",
     "aiReportDisclaimer": "This AI screening is decision support only. It evaluates the CV against the job description and cannot account for interview performance, location or commuting preferences, team or cultural fit, salary expectations, or other business considerations. Final hiring decisions are always yours."
   },
   "recruiter": {
