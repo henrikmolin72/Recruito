@@ -74,3 +74,54 @@ notable lines into a dated milestone summary periodically, then trim.
 ## 2026-07-06
 - 89944d4 Merge fix/ai-screening-before-submit → main
 - ffa2cf6 fix(screening): run Recruito AI eval at submission (createCandidateExtended, non-blocking after()) so the admin Step-7 queue shows match score + full report before submit-to-client; approval-time run kept as idempotent fallback
+
+## 2026-07-06
+- e029b4f feat(candidates): show viewed eye icon on company candidates page
+
+## 2026-07-06
+- 6e7912a feat(screening): label match tiers as "CV Match" + box the AI assessment badge
+
+## 2026-07-06
+- dc4e8ed feat(auth): add "How did you hear about us?" dropdown to signup, replace company org-number field
+
+## 2026-07-06
+- 345678f feat(notifications): notify recruiter + admin on every company stage move
+
+## 2026-07-06
+- e826d2c feat(notifications): expand notification messages inline in the list
+
+## 2026-07-06
+- 95d951f fix(mandates): withdrawn candidate no longer suspends the 10-day expiry timer
+
+## 2026-07-06
+- eae4199 feat(company): Jobs list shows only active candidates count
+
+## 2026-07-06
+- 774257b fix(recruiter-reg): remove duplicate blurb, credit candidate's guarantee not client's
+
+## 2026-07-06
+- b3b8eae feat(company): opt-in €100 final-interview recruiter bonus + badge
+
+## 2026-07-06
+- 21bee88 feat(admin): clickable job titles open a review detail page
+
+## 2026-07-06
+- b6282e6 fix(company): show two language rows by default on new job post
+
+## 2026-07-06
+- ebfe66c feat(recruiter): show €100 Final Interview Bonus badge on Browse Jobs
+
+## 2026-07-06
+- 973c255 fix(recruiter): remove redundant bottom Take-Mandate box on job detail
+
+## 2026-07-07
+- 4f4d06d feat(recruiter): add Interview rate and Hire rate boxes to dashboard
+- ad6c553 fix(company): move AI report behind View AI Report button on candidate view
+
+## 2026-07-08
+- 5a5f1b7 fix(migrations): make fresh-DB bootstrap idempotent for 014/022
+- 914da44 feat(guarantee): admin Guarantee Completed/Failed workflow + recruiter dashboard sync
+- f643e5d refactor(company): candidate view rebuild (Kanban → filter-tab list)
+- 6dc0fba fix(company): exclude failed placements from placement counts
+- 6ece46a fix(candidates): log every stage transition to candidate_stage_history
+- d51c619 feat(placements): log guarantee-lifecycle moves to candidate timeline
