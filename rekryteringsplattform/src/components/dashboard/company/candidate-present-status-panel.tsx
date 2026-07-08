@@ -197,6 +197,7 @@ export function CandidatePresentStatusPanel({
                                         : "bg-blue-50 text-blue-700 border-blue-200"
                         }`}
                         title={`Viewed ${viewedAt ? new Date(viewedAt).toLocaleString() : ""} · ${HIRING_TIMELINE_DAYS}-day hiring timeline`}
+                        suppressHydrationWarning
                     >
                         <Clock className="h-3 w-3" />
                         {remaining === 0 ? "Timeline ended" : `${remaining}d left`}

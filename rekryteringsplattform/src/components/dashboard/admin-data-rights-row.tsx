@@ -45,7 +45,7 @@ export function AdminDataRightsRow({ row }: { row: Row }) {
 
     return (
         <tr className="border-b border-gray-200">
-            <td className="px-3 py-3 text-sm text-gray-600">
+            <td className="px-3 py-3 text-sm text-gray-600" suppressHydrationWarning>
                 {new Date(row.created_at).toLocaleString()}
             </td>
             <td className="px-3 py-3 text-sm font-medium text-gray-900">{row.request_type}</td>

@@ -131,7 +131,7 @@ export function CompanyNextStepPanel({
                         <p className="mt-1 text-sm font-bold text-slate-900">{requestLabel(pendingRequest, t)}</p>
                         <p className="mt-1 text-xs text-slate-500">
                             {t("recruiter.clientNextStepCurrentStatus")} <span className="font-semibold">{candidateStatus}</span>
-                            {pendingRequestAt && <span className="text-slate-400"> • {new Date(pendingRequestAt).toLocaleString()}</span>}
+                            {pendingRequestAt && <span className="text-slate-400" suppressHydrationWarning> • {new Date(pendingRequestAt).toLocaleString()}</span>}
                         </p>
                     </div>
                 </div>

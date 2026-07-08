@@ -76,7 +76,7 @@ export function CandidateNextStepRequestActions({
                     <div className="mt-2 text-xs text-slate-600">
                         <span className="font-semibold">{t("company.nextStepReqLastSent")}</span> {currentLabel}
                         {currentRequestAt && (
-                            <span className="text-slate-400"> • {new Date(currentRequestAt).toLocaleString()}</span>
+                            <span className="text-slate-400" suppressHydrationWarning> • {new Date(currentRequestAt).toLocaleString()}</span>
                         )}
                         {currentRequestNote && (
                             <p className="mt-1 text-slate-500 italic">&quot;{currentRequestNote}&quot;</p>

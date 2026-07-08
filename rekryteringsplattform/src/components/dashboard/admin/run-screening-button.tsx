@@ -99,7 +99,7 @@ export function AdminScreeningPanel({
 
       {report ? (
         <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
-          <p className="mb-2 text-xs text-muted-foreground">
+          <p className="mb-2 text-xs text-muted-foreground" suppressHydrationWarning>
             Full screening report · {report.modelVersion} · {new Date(report.createdAt).toLocaleString()}
           </p>
           <MarkdownReport markdown={report.reportMarkdown} />
