@@ -36,6 +36,13 @@
   --font-sans: "Inter", system-ui, sans-serif;
 }
 
+/* Double the native date-picker calendar button hit area (default ~16px). */
+.date-input-lg::-webkit-calendar-picker-indicator {
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-foreground);

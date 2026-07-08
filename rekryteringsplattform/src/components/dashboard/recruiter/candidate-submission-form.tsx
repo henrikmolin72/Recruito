@@ -941,7 +941,7 @@ export function CandidateSubmissionForm({
                         <FieldRow>
                             <div>
                                 <Label>{r.firstContactLabel || "Date of First Contact"}<Req /></Label>
-                                <Input type="date" name="first_contact_date" defaultValue={draftTextFields["first_contact_date"] || ""} className="h-11 bg-slate-50 border-slate-200" />
+                                <Input type="date" name="first_contact_date" defaultValue={draftTextFields["first_contact_date"] || ""} className="date-input-lg h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>
                                 <Label>{r.contactMethodLabel || "Method of Contact"}<Req /></Label>
