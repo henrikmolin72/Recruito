@@ -20,6 +20,7 @@ import {
     CANDIDATE_WITHDRAW_REASON_KEYS,
     CANDIDATE_WITHDRAW_BLOCKED_STATUSES,
     rejectReasonLabel,
+    withdrawReasonLabel,
     countCandidatesAgainstCap,
 } from "@/lib/candidate-workflow";
 import {
@@ -218,6 +219,16 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
         { console.error("[ServerAction]", error); return { error: "Något gick fel. Försök igen." }; }
     }
 
+    await logCandidateStageChange({
+        candidateId,
+        jobId,
+        fromStage: currentStatus ?? null,
+        toStage: status,
+        action: status === "hired" ? "hire" : "move",
+        changedBy: user.id,
+        changedByRole: "recruiter",
+    });
+
     // Recruiter/company applying a status change should clear pending company request.
     await clearCompanyNextStepRequest(supabase, candidateId);
 
@@ -355,6 +366,17 @@ export async function withdrawCandidate(candidateId: string, jobId: string, reas
         return { error: "Kunde inte dra tillbaka kandidaten." };
     }
 
+    await logCandidateStageChange({
+        candidateId,
+        jobId,
+        fromStage: (access.candidate as any)?.company_stage ?? null,
+        toStage: "withdrawn",
+        action: "withdraw",
+        changedBy: user.id,
+        changedByRole: "recruiter",
+        reason: withdrawReasonLabel(reason),
+    });
+
     revalidatePath(`/company/jobs/${jobId}`);
     if (access.mandateId) {
         revalidatePath(`/recruiter/mandates/${access.mandateId}`);
@@ -411,6 +433,21 @@ export async function moveCandidateToPipelineStage(
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
     }
+
+    // Log the move with pipeline-stage titles (statuses can collapse to the
+    // same value, e.g. screening → test both map to under_client_review).
+    const fromStageTitle = stages?.find(
+        (s) => s.id === (access.candidate as any)?.current_pipeline_stage
+    )?.title ?? null;
+    await logCandidateStageChange({
+        candidateId,
+        jobId,
+        fromStage: fromStageTitle,
+        toStage: targetStage.title,
+        action: "move",
+        changedBy: user.id,
+        changedByRole: "recruiter",
+    });
 
     await clearCompanyNextStepRequest(supabase, candidateId);
 
@@ -879,6 +916,16 @@ export async function markOfferAccepted(candidateId: string, jobId: string) {
         return { error: "Kunde inte markera erbjudande som accepterat." };
     }
 
+    await logCandidateStageChange({
+        candidateId,
+        jobId,
+        fromStage: "job_offer",
+        toStage: "offer_accepted",
+        action: "move",
+        changedBy: user.id,
+        changedByRole: "company",
+    });
+
     const ctx = await getCandidateMessagingContext(supabase, candidateId);
     if (ctx.recruiterUserId) {
         await sendRecruiterStageEmail(supabase, {
@@ -1063,6 +1110,7 @@ export async function rejectCandidateAtScreening(candidateId: string, reason: st
         .from("candidates")
         .select(`
             id,
+            job_id,
             first_name,
             last_name,
             recruito_screened_at,
@@ -1100,6 +1148,17 @@ export async function rejectCandidateAtScreening(candidateId: string, reason: st
         console.error("[rejectCandidateAtScreening]", updateError);
         return { error: "Could not reject the candidate. Please try again." };
     }
+
+    await logCandidateStageChange({
+        candidateId,
+        jobId: (candidate as any).job_id,
+        fromStage: null,
+        toStage: "recruito_rejected",
+        action: "reject",
+        changedBy: user.id,
+        changedByRole: "admin",
+        reason: trimmedReason,
+    });
 
     // Notify the submitting recruiter so they know the candidate was not passed on.
     const job = Array.isArray((candidate as any).job) ? (candidate as any).job[0] : (candidate as any).job;

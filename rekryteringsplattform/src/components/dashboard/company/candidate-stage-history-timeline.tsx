@@ -13,7 +13,9 @@ type StageHistoryLabels = {
 
 function stageLabel(value: string | null, stageNames: Record<string, string>) {
     if (!value) return "—";
-    return stageNames[value] ?? value;
+    // Humanize raw enum values (e.g. "under_client_review") that have no
+    // per-page label so recruiter-side status moves stay readable.
+    return stageNames[value] ?? value.replace(/_/g, " ");
 }
 
 export function CandidateStageHistoryTimeline({

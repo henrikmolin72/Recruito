@@ -325,6 +325,10 @@ export function rejectReasonLabel(key: string): string | null {
   return CANDIDATE_REJECT_REASONS.find((r) => r.key === key)?.label ?? null;
 }
 
+export function withdrawReasonLabel(key: string): string | null {
+  return CANDIDATE_WITHDRAW_REASONS.find((r) => r.key === key)?.label ?? null;
+}
+
 export function canTransitionCandidateStatus(currentStatus: string | null | undefined, nextStatus: string): boolean {
   if (!isCandidateStatusValue(nextStatus)) return false;
   if (!currentStatus) return nextStatus === "submitted" || nextStatus === "under_client_review";

@@ -219,6 +219,9 @@ export default async function AdminCandidateDetailPage({
                             hired: "Hired",
                             rejected: "Rejected",
                             withdrawn: "Withdrawn",
+                            offer_accepted: "Offer accepted",
+                            recruito_rejected: "Rejected at screening",
+                            under_client_review: "Under client review",
                         },
                     }}
                 />
