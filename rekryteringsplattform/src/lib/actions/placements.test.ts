@@ -64,6 +64,8 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: async () => makeClient()
 vi.mock("@/lib/actions/require-admin", () => ({
   requireAdmin: async () => ({ supabase: makeClient(), user: { id: "admin-1" } }),
 }));
+const { logCandidateStageChange } = vi.hoisted(() => ({ logCandidateStageChange: vi.fn() }));
+vi.mock("@/lib/candidate-stage-history", () => ({ logCandidateStageChange }));
 vi.mock("@/lib/notifications/create", () => ({ createNotification: vi.fn() }));
 vi.mock("@/lib/email/internal-notifications", () => ({ sendUserEmail: vi.fn() }));
 vi.mock("@/lib/email/email-templates", () => ({ paymentCompletedEmail: () => "<html></html>" }));
@@ -77,6 +79,7 @@ beforeEach(() => {
   writes.length = 0;
   rpcCalls.length = 0;
   updateErrorByTable = {};
+  logCandidateStageChange.mockReset();
   recruiterRow = { user_id: "user-1" };
   // email_opt_out short-circuits the email branch (keeps the test focused).
   profileRow = { email: "r@example.com", full_name: "Rec", email_opt_out: true };
@@ -87,7 +90,7 @@ describe("recordPlacementPayment — payment branch", () => {
     const future = new Date(Date.now() + 30 * 86_400_000).toISOString();
     placementRow = {
       id: "p1", status: "invoice_sent", guarantee_end_date: future,
-      recruiter_id: "r1", candidate_id: "c1",
+      recruiter_id: "r1", candidate_id: "c1", job_id: "j1",
       candidate: { first_name: "Cand", last_name: "Idate" },
     };
 
@@ -100,9 +103,12 @@ describe("recordPlacementPayment — payment branch", () => {
     // Must NOT release payout while the guarantee is active.
     expect(upd.payout_released_at).toBeUndefined();
     expect(upd.completed_at).toBeUndefined();
-    // Candidate is moved into guarantee tracking.
+    // Candidate is moved into guarantee tracking + the move hits the timeline.
     const candWrite = writes.find((w) => w.table === "candidates");
     expect(candWrite?.patch.status).toBe("guarantee_tracking");
+    expect(logCandidateStageChange).toHaveBeenCalledWith(expect.objectContaining({
+      candidateId: "c1", jobId: "j1", toStage: "guarantee_tracking", action: "move", changedByRole: "admin",
+    }));
     // Audit trail: the admin payment-recording action is logged.
     const audit = writes.find((w) => w.table === "audit_log");
     expect(audit?.patch).toMatchObject({
@@ -212,7 +218,7 @@ describe("reportGuaranteeFailure — refund audit trail", () => {
   it("records a guarantee-failure audit entry on success", async () => {
     placementRow = {
       id: "p1", status: "guarantee_active", total_fee: 1000,
-      recruiter_id: "r1", candidate_id: "c1", company_id: "co1",
+      recruiter_id: "r1", candidate_id: "c1", company_id: "co1", job_id: "j1",
       candidate: { first_name: "Cand", last_name: "Idate" }, job: { title: "Developer" },
     };
 
@@ -220,6 +226,11 @@ describe("reportGuaranteeFailure — refund audit trail", () => {
 
     expect(res).toEqual({ success: true });
     expect(placementWrites().at(0)?.patch.status).toBe("guarantee_failed");
+    // The failure lands in the candidate timeline with its reason.
+    expect(logCandidateStageChange).toHaveBeenCalledWith(expect.objectContaining({
+      candidateId: "c1", jobId: "j1", fromStage: "guarantee_tracking",
+      toStage: "guarantee_failed", action: "move", changedByRole: "admin", reason: "left early",
+    }));
     const audit = writes.find((w) => w.table === "audit_log");
     expect(audit?.patch).toMatchObject({
       action_type: "placement_guarantee_failed",
@@ -232,7 +243,7 @@ describe("reportGuaranteeFailure — refund audit trail", () => {
 describe("completeGuarantee — admin marks guarantee period completed", () => {
   const activePlacement = {
     id: "p1", status: "guarantee_active", recruiter_fee: 300, salary_currency: "SEK",
-    recruiter_id: "r1", candidate_id: "c1", company_id: "co1",
+    recruiter_id: "r1", candidate_id: "c1", company_id: "co1", job_id: "j1",
     candidate: { first_name: "Cand", last_name: "Idate" }, job: { title: "Developer" },
   };
 
@@ -248,6 +259,11 @@ describe("completeGuarantee — admin marks guarantee period completed", () => {
     expect(upd.completed_at).toBeTruthy();
     const candWrite = writes.find((w) => w.table === "candidates");
     expect(candWrite?.patch.status).toBe("completed");
+    // Guarantee completion lands in the candidate timeline.
+    expect(logCandidateStageChange).toHaveBeenCalledWith(expect.objectContaining({
+      candidateId: "c1", jobId: "j1", fromStage: "guarantee_tracking",
+      toStage: "completed", action: "move", changedByRole: "admin",
+    }));
     const audit = writes.find((w) => w.table === "audit_log");
     expect(audit?.patch).toMatchObject({
       action_type: "placement_guarantee_completed",

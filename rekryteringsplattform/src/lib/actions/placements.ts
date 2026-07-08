@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/actions/require-admin";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { paymentCompletedEmail } from "@/lib/email/email-templates";
 import { mapRecruiterPerfRow, isPerfSnapshotStale } from "@/lib/recruiter-metrics";
+import { logCandidateStageChange } from "@/lib/candidate-stage-history";
 
 // =============================================
 // Placement helpers
@@ -190,6 +191,16 @@ export async function recordPlacementPayment(placementId: string) {
                 `[recordPlacementPayment] candidate ${placement.candidate_id} not moved to guarantee_tracking:`,
                 candidateError
             );
+        } else {
+            await logCandidateStageChange({
+                candidateId: placement.candidate_id,
+                jobId: placement.job_id,
+                fromStage: "hired",
+                toStage: "guarantee_tracking",
+                action: "move",
+                changedBy: adminUser.id,
+                changedByRole: "admin",
+            });
         }
     }
 
@@ -262,6 +273,7 @@ export async function recordPlacementPayment(placementId: string) {
 type GuaranteePlacementRow = {
     id: string;
     candidate_id: string;
+    job_id: string;
     recruiter_id: string;
     company_id: string;
     recruiter_fee: number;
@@ -319,6 +331,16 @@ async function releaseGuaranteePayout(
             `[releaseGuaranteePayout] candidate ${placement.candidate_id} not moved to completed:`,
             candidateError
         );
+    } else {
+        await logCandidateStageChange({
+            candidateId: placement.candidate_id,
+            jobId: placement.job_id,
+            fromStage: "guarantee_tracking",
+            toStage: "completed",
+            action: "move",
+            changedBy: adminUserId,
+            changedByRole: "admin",
+        });
     }
 
     // Notify recruiter
@@ -377,7 +399,7 @@ export async function completeGuarantee(placementId: string) {
         .from("placements")
         // candidates!placements_candidate_id_fkey: candidates.placement_id (018) makes the
         // plain `candidates` embed ambiguous on newer PostgREST versions.
-        .select("id, status, candidate_id, recruiter_id, company_id, recruiter_fee, salary_currency, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
+        .select("id, status, candidate_id, job_id, recruiter_id, company_id, recruiter_fee, salary_currency, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
         .eq("id", placementId)
         .single();
 
@@ -409,7 +431,7 @@ export async function processGuaranteeExpirations() {
     // Find all guarantee_active placements past their end date
     const { data: expired } = await admin
         .from("placements")
-        .select("id, candidate_id, recruiter_id, company_id, recruiter_fee, salary_currency, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
+        .select("id, candidate_id, job_id, recruiter_id, company_id, recruiter_fee, salary_currency, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
         .eq("status", "guarantee_active")
         .lte("guarantee_end_date", new Date().toISOString().split("T")[0]);
 
@@ -489,6 +511,17 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
             `[reportGuaranteeFailure] candidate ${placement.candidate_id} not moved to completed:`,
             candidateError
         );
+    } else {
+        await logCandidateStageChange({
+            candidateId: placement.candidate_id,
+            jobId: placement.job_id,
+            fromStage: "guarantee_tracking",
+            toStage: "guarantee_failed",
+            action: "move",
+            changedBy: adminUser.id,
+            changedByRole: "admin",
+            reason: failureReason,
+        });
     }
 
     const candidateData = Array.isArray(placement.candidate) ? placement.candidate[0] : placement.candidate;
