@@ -458,11 +458,14 @@ export async function getAdminJobById(id: string) {
 
     const { data, error } = await supabaseAdmin
         .from("jobs")
-        .select(`*, company:companies (company_name, website, logo_url, linkedin_url)`)
+        .select(`*, company:companies (company_name, website, logo_url)`)
         .eq("id", id)
         .single();
 
     if (error || !data) {
+        // Query failures surface as a 404 upstream — log so they're diagnosable
+        // (a phantom companies.linkedin_url column 404'd every job until 2026-07-08).
+        if (error) console.error("[getAdminJobById]", error.message);
         return null;
     }
 

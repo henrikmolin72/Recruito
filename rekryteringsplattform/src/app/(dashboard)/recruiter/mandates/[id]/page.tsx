@@ -80,7 +80,7 @@ export default async function RecruiterMandateDetailsPage({
       if (companyId) {
         const { data: companyData, error: companyError } = await adminClient
           .from("companies")
-          .select("company_name, website, logo_url, linkedin_url")
+          .select("company_name, website, logo_url")
           .eq("id", companyId)
           .maybeSingle();
         if (companyError) {

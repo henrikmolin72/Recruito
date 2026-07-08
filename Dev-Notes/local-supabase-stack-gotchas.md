@@ -52,3 +52,13 @@ fresh DB because these two columns were added ad hoc in prod and never migrated
 2. Apply the grants (above) via `docker exec supabase_db_rekryteringsplattform psql -U postgres`
 3. Seed users/placements: session scratchpad `seed-local.mjs` pattern — `auth.admin.createUser` (with `app_metadata.role`) + rows for recruiter/company/job/mandate/candidate/placement
 4. Point dev at local: `.env.development.local` with the local URL/keys (Next dev prefers it over `.env.local`) — **delete afterwards**
+
+## 6. Phantom `companies.linkedin_url` column (admin job 404)
+
+`Company` type declares `linkedin_url` but NO migration ever added it to
+`companies` (only recruiters/candidates/applications have it). Selects that
+listed it got 42703 from PostgREST everywhere (prod + local). `getAdminJobById`
+swallowed the error → `notFound()` → every admin job-detail click 404'd.
+Fixed 2026-07-08 by dropping the column from the selects (admin.ts +
+recruiter/mandates/[id]/page.tsx). Lesson: db-types.ts is hand-written and can
+lie — verify a column exists in migrations before selecting it explicitly.
