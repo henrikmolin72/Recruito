@@ -3,7 +3,14 @@
 APP="$(git rev-parse --show-toplevel)/rekryteringsplattform"
 if [ -f "$APP/tsconfig.json" ]; then
   echo "→ Type-checking..."
-  cd "$APP" && npx tsc --noEmit --pretty 2>&1
+  # Generated .next/dev types can be half-written (dev server killed mid-write)
+  # and fail the commit on files that aren't part of the diff. Two guards:
+  # `next typegen` re-points next-env.d.ts at fresh build types (covers the
+  # direct import), and tsconfig.typecheck.json excludes .next/dev (covers the
+  # tsconfig include glob). Ceiling: a dev server running DURING the commit may
+  # rewrite next-env.d.ts back — but then its dev types are freshly valid.
+  cd "$APP" && npx next typegen >/dev/null 2>&1
+  npx tsc --noEmit --pretty -p tsconfig.typecheck.json 2>&1
   if [ $? -ne 0 ]; then
     echo "✗ Type errors found. Fix before committing (or use --no-verify to skip)."
     exit 1
