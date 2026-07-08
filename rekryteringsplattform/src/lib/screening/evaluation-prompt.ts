@@ -1,9 +1,9 @@
 // Structured candidate pre-submission evaluation prompt.
 //
 // The template is the client's final prompt, verbatim, with {PLACEHOLDER}
-// tokens. Phase 1 (this file) fills it and assembles a clipboard payload so a
-// recruiter can paste it into an external AI tool. Phase 2 reuses the same
-// filled prompt for a server-side Anthropic call.
+// tokens. fillEvaluationPrompt() fills it for the server-side Anthropic call
+// (run-evaluation.ts). The former Phase-1 copy-to-clipboard flow was removed
+// once the server-side eval superseded it.
 
 export type EvalConfig = {
   targetSector: string | null;
@@ -19,8 +19,6 @@ export type EvalMetadata = {
   jdId: string;
   cvHash: string;
 };
-
-export type ScreeningAnswer = { question: string; answer: string };
 
 const PROMPT_TEMPLATE = `You are an expert Recruiter and Compliance-Aware Screening Specialist.
 
@@ -227,40 +225,3 @@ export function fillEvaluationPrompt(input: {
     .replace("{CV_HASH}", metadata.cvHash);
 }
 
-/**
- * Build the full clipboard payload: the filled prompt followed by a Candidate
- * Materials appendix (CV + screening Q&A) the prompt refers to but has no
- * placeholder for. cvText is optional — when absent the recruiter attaches the
- * downloaded CV file in their AI tool instead.
- */
-export function assembleClipboardPayload(input: {
-  prompt: string;
-  cvText: string | null;
-  screeningAnswers: ScreeningAnswer[];
-}): string {
-  const { prompt, cvText, screeningAnswers } = input;
-
-  const cvBlock = cvText && cvText.trim().length > 0
-    ? cvText.trim()
-    : "[Attach the candidate's CV file in your AI tool — download it from the candidate page.]";
-
-  const qaBlock = screeningAnswers.length > 0
-    ? screeningAnswers
-        .map((qa, i) => `Q${i + 1}: ${qa.question}\nA${i + 1}: ${qa.answer || "(no answer provided)"}`)
-        .join("\n\n")
-    : "(no screening questions for this role)";
-
-  return [
-    prompt,
-    "",
-    "══════════════════════════════════════════════════════════════════",
-    "CANDIDATE MATERIALS (reviewed against the JD above)",
-    "══════════════════════════════════════════════════════════════════",
-    "",
-    "CV:",
-    cvBlock,
-    "",
-    "SCREENING QUESTIONS & ANSWERS:",
-    qaBlock,
-  ].join("\n");
-}
