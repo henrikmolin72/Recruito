@@ -39,6 +39,13 @@ Since `018` added `candidates.placement_id`, there are TWO FK paths between `pla
 **Rule:** embeds from `placements` (including nested via `placement:placements(...)`) must use the hint
 `candidate:candidates!placements_candidate_id_fkey(...)`. Fixed 2026-07-08 in `placements.ts`, `api/guarantee/{reminders,breach}`, `admin/guarantees/page.tsx`.
 
+## 5. `candidates.company_stage` / `company_viewed_at` were prod-only
+
+The whole company-stage engine (updateCompanyStage → stage history) 500s on a
+fresh DB because these two columns were added ad hoc in prod and never migrated
+(the 2026-06-29 vault-sync drift finding). **FIXED 2026-07-08:** migration
+`066_add_company_stage_columns.sql` adds both with `IF NOT EXISTS` (no-op on prod).
+
 ## Local e2e recipe (as used)
 
 1. Reorder 014/022 (above) → `npx supabase start`
