@@ -59,7 +59,6 @@ enable_signup = true
 double_confirm_changes = true
 # Email confirmation is required — enforced in production via Supabase dashboard.
 enable_confirmations = true
-secure_email_change_enabled = true
 max_frequency = "1s"
 otp_length = 6
 otp_expiry = 3600

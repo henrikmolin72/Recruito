@@ -44,7 +44,7 @@ export async function sendPlacementInvoice(placementId: string) {
 
     const { data: placement } = await admin
         .from("placements")
-        .select("*, candidate:candidates(first_name, last_name, job_id), job:jobs(title), company:companies(user_id, company_name)")
+        .select("*, candidate:candidates!placements_candidate_id_fkey(first_name, last_name, job_id), job:jobs(title), company:companies(user_id, company_name)")
         .eq("id", placementId)
         .single();
 
@@ -133,7 +133,7 @@ export async function recordPlacementPayment(placementId: string) {
 
     const { data: placement } = await admin
         .from("placements")
-        .select("*, candidate:candidates(first_name, last_name)")
+        .select("*, candidate:candidates!placements_candidate_id_fkey(first_name, last_name)")
         .eq("id", placementId)
         .single();
 
@@ -245,6 +245,10 @@ export async function recordPlacementPayment(placementId: string) {
         }
     }
 
+    // Recruiter dashboard sync: Active guarantees / guarantee result update immediately
+    // instead of waiting for the hourly refresh-on-read.
+    await recalculateRecruiterMetrics(placement.recruiter_id);
+
     revalidatePath("/admin/placements");
     revalidatePath("/company/billing");
     revalidatePath("/recruiter/earnings");
@@ -254,6 +258,142 @@ export async function recordPlacementPayment(placementId: string) {
 // =============================================
 // Guarantee Period Automation
 // =============================================
+
+type GuaranteePlacementRow = {
+    id: string;
+    candidate_id: string;
+    recruiter_id: string;
+    company_id: string;
+    recruiter_fee: number;
+    salary_currency: string;
+    candidate: { first_name: string; last_name: string } | { first_name: string; last_name: string }[] | null;
+    job: { title: string } | { title: string }[] | null;
+};
+
+/**
+ * Shared completion path for a guarantee_active placement: release payout,
+ * complete the candidate, write the audit trail, notify both parties and
+ * resync the recruiter's dashboard metrics. Used by both the batch
+ * expiration processor and the admin's manual "guarantee completed" action.
+ */
+async function releaseGuaranteePayout(
+    admin: ReturnType<typeof createAdminClient>,
+    adminUserId: string,
+    placement: GuaranteePlacementRow,
+    auditActionType: "placement_payout_auto_released" | "placement_guarantee_completed",
+): Promise<boolean> {
+    const { error } = await admin
+        .from("placements")
+        .update({
+            status: "payout_released",
+            payout_released_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+        })
+        .eq("id", placement.id);
+
+    if (error) {
+        console.error(`Failed to complete placement ${placement.id}:`, error);
+        return false;
+    }
+
+    // Audit trail: guarantee period ended, payout released. Best-effort; log on failure.
+    const { error: auditError } = await admin.from("audit_log").insert({
+        action_type: auditActionType,
+        target_type: "placement",
+        target_id: placement.id,
+        performed_by: adminUserId,
+        metadata: { recruiter_fee: placement.recruiter_fee, currency: placement.salary_currency },
+    });
+    if (auditError) console.error(`[audit:${auditActionType}]`, { code: auditError.code, message: auditError.message });
+
+    // Update candidate to completed
+    const { error: candidateError } = await admin
+        .from("candidates")
+        .update({
+            status: "completed",
+            status_changed_at: new Date().toISOString(),
+        })
+        .eq("id", placement.candidate_id);
+    if (candidateError) {
+        console.error(
+            `[releaseGuaranteePayout] candidate ${placement.candidate_id} not moved to completed:`,
+            candidateError
+        );
+    }
+
+    // Notify recruiter
+    const { data: recruiter } = await admin
+        .from("recruiters")
+        .select("user_id")
+        .eq("id", placement.recruiter_id)
+        .single();
+
+    const candidateData = Array.isArray(placement.candidate) ? placement.candidate[0] : placement.candidate;
+    const candidateName = candidateData
+        ? `${candidateData.first_name} ${candidateData.last_name}`
+        : "kandidaten";
+    const jobTitle = Array.isArray(placement.job) ? placement.job[0]?.title : (placement.job as any)?.title;
+
+    if (recruiter?.user_id) {
+        await createNotification(recruiter.user_id, {
+            titleKey: "notif.guaranteeReleasedTitle",
+            bodyKey: "notif.guaranteeReleasedBody",
+            params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget", fee: placement.recruiter_fee, currency: placement.salary_currency },
+            link: `/recruiter/earnings`,
+        });
+    }
+
+    // Notify company
+    const { data: company } = await admin
+        .from("companies")
+        .select("user_id")
+        .eq("id", placement.company_id)
+        .single();
+
+    if (company?.user_id) {
+        await createNotification(company.user_id, {
+            titleKey: "notif.guaranteeEndedCompanyTitle",
+            bodyKey: "notif.guaranteeEndedCompanyBody",
+            params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget" },
+            link: `/company/billing`,
+        });
+    }
+
+    // Recalculate recruiter metrics
+    await recalculateRecruiterMetrics(placement.recruiter_id);
+
+    return true;
+}
+
+/**
+ * Admin marks a guarantee period as completed — releases the payout
+ * without waiting for the guarantee end date to pass.
+ */
+export async function completeGuarantee(placementId: string) {
+    const { user: adminUser } = await requireAdmin();
+    const admin = createAdminClient();
+
+    const { data: placement } = await admin
+        .from("placements")
+        // candidates!placements_candidate_id_fkey: candidates.placement_id (018) makes the
+        // plain `candidates` embed ambiguous on newer PostgREST versions.
+        .select("id, status, candidate_id, recruiter_id, company_id, recruiter_fee, salary_currency, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
+        .eq("id", placementId)
+        .single();
+
+    if (!placement) return { error: "Placering hittades inte" };
+    if (placement.status !== "guarantee_active") {
+        return { error: "Placeringen är inte i aktiv garantiperiod" };
+    }
+
+    const ok = await releaseGuaranteePayout(admin, adminUser.id, placement as GuaranteePlacementRow, "placement_guarantee_completed");
+    if (!ok) return { error: "Något gick fel. Försök igen." };
+
+    revalidatePath("/admin/placements");
+    revalidatePath("/company/billing");
+    revalidatePath("/recruiter/earnings");
+    return { success: true };
+}
 
 /**
  * Process all placements where guarantee period has expired.
@@ -269,7 +409,7 @@ export async function processGuaranteeExpirations() {
     // Find all guarantee_active placements past their end date
     const { data: expired } = await admin
         .from("placements")
-        .select("id, candidate_id, recruiter_id, company_id, recruiter_fee, salary_currency, candidate:candidates(first_name, last_name), job:jobs(title)")
+        .select("id, candidate_id, recruiter_id, company_id, recruiter_fee, salary_currency, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
         .eq("status", "guarantee_active")
         .lte("guarantee_end_date", new Date().toISOString().split("T")[0]);
 
@@ -280,88 +420,8 @@ export async function processGuaranteeExpirations() {
     let processed = 0;
 
     for (const placement of expired) {
-        // Release payout
-        const { error } = await admin
-            .from("placements")
-            .update({
-                status: "payout_released",
-                payout_released_at: new Date().toISOString(),
-                completed_at: new Date().toISOString(),
-            })
-            .eq("id", placement.id);
-
-        if (error) {
-            console.error(`Failed to complete placement ${placement.id}:`, error);
-            continue;
-        }
-
-        // Audit trail: guarantee period expired, payout auto-released.
-        const { error: auditError } = await admin.from("audit_log").insert({
-            action_type: "placement_payout_auto_released",
-            target_type: "placement",
-            target_id: placement.id,
-            performed_by: adminUser.id,
-            metadata: { recruiter_fee: placement.recruiter_fee, currency: placement.salary_currency },
-        });
-        if (auditError) console.error("[audit:placement_payout_auto_released]", { code: auditError.code, message: auditError.message });
-
-        // Update candidate to completed
-        const { error: candidateError } = await admin
-            .from("candidates")
-            .update({
-                status: "completed",
-                status_changed_at: new Date().toISOString(),
-            })
-            .eq("id", placement.candidate_id);
-        if (candidateError) {
-            console.error(
-                `[processGuaranteeExpirations] candidate ${placement.candidate_id} not moved to completed:`,
-                candidateError
-            );
-        }
-
-        // Notify recruiter
-        const { data: recruiter } = await admin
-            .from("recruiters")
-            .select("user_id")
-            .eq("id", placement.recruiter_id)
-            .single();
-
-        const candidateData = Array.isArray(placement.candidate) ? placement.candidate[0] : placement.candidate;
-        const candidateName = candidateData
-            ? `${candidateData.first_name} ${candidateData.last_name}`
-            : "kandidaten";
-        const jobTitle = Array.isArray(placement.job) ? placement.job[0]?.title : (placement.job as any)?.title;
-
-        if (recruiter?.user_id) {
-            await createNotification(recruiter.user_id, {
-                titleKey: "notif.guaranteeReleasedTitle",
-                bodyKey: "notif.guaranteeReleasedBody",
-                params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget", fee: placement.recruiter_fee, currency: placement.salary_currency },
-                link: `/recruiter/earnings`,
-            });
-        }
-
-        // Notify company
-        const { data: company } = await admin
-            .from("companies")
-            .select("user_id")
-            .eq("id", placement.company_id)
-            .single();
-
-        if (company?.user_id) {
-            await createNotification(company.user_id, {
-                titleKey: "notif.guaranteeEndedCompanyTitle",
-                bodyKey: "notif.guaranteeEndedCompanyBody",
-                params: { candidate: candidateName, jobTitle: jobTitle || "uppdraget" },
-                link: `/company/billing`,
-            });
-        }
-
-        // Recalculate recruiter metrics
-        await recalculateRecruiterMetrics(placement.recruiter_id);
-
-        processed++;
+        const ok = await releaseGuaranteePayout(admin, adminUser.id, placement as unknown as GuaranteePlacementRow, "placement_payout_auto_released");
+        if (ok) processed++;
     }
 
     revalidatePath("/admin/placements");
@@ -378,7 +438,7 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
 
     const { data: placement } = await admin
         .from("placements")
-        .select("*, candidate:candidates(first_name, last_name), job:jobs(title)")
+        .select("*, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
         .eq("id", placementId)
         .single();
 
@@ -610,7 +670,7 @@ export async function getAdminPlacements() {
         .from("placements")
         .select(`
             *,
-            candidate:candidates(first_name, last_name, email, status),
+            candidate:candidates!placements_candidate_id_fkey(first_name, last_name, email, status),
             job:jobs(title),
             company:companies(company_name),
             recruiter:recruiters(id, user_id)

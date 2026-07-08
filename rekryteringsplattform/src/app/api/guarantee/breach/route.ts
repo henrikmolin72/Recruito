@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const { data: placement } = await admin
         .from("placements")
-        .select("id, company_id, total_fee, salary_currency, start_date, guarantee_end_date, status, candidate:candidates(first_name, last_name), job:jobs(title)")
+        .select("id, company_id, total_fee, salary_currency, start_date, guarantee_end_date, status, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
         .eq("id", placementId)
         .eq("company_id", company.id)
         .single();

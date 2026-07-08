@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         .from("placements")
         .select(`
             id, guarantee_end_date, total_fee, salary_currency, company_id, recruiter_id,
-            candidate:candidates(first_name, last_name),
+            candidate:candidates!placements_candidate_id_fkey(first_name, last_name),
             job:jobs(title),
             company:companies(user_id)
         `)

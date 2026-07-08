@@ -159,6 +159,12 @@
     "guaranteeActive": "Garantiperiod",
     "payoutReleased": "Utbetald",
     "guaranteeFailed": "Garanti fallerad",
+    "guarantee_active": "Garantiperiod",
+    "payout_released": "Utbetald",
+    "guarantee_failed": "Garanti fallerad",
+    "invoice_sent": "Faktura skickad",
+    "payment_received": "Betald",
+    "refund_processing": "Återbetalning",
     "refundProcessing": "Återbetalning"
   },
   "auth": {
@@ -1081,6 +1087,7 @@
     "placementInvoice": "Fakturera",
     "placementPayment": "Betalning",
     "placementFailed": "Misslyckad",
+    "placementGuaranteeCompleted": "Slutförd",
     "placementGuaranteesProcessed": "{n} garantier behandlade",
     "placementProcessing": "Behandlar...",
     "placementProcessGuarantees": "Processera garantier",

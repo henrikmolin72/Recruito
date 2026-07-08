@@ -159,6 +159,12 @@
     "guaranteeActive": "Guarantee period",
     "payoutReleased": "Paid out",
     "guaranteeFailed": "Guarantee failed",
+    "guarantee_active": "Guarantee period",
+    "payout_released": "Paid out",
+    "guarantee_failed": "Guarantee failed",
+    "invoice_sent": "Invoice sent",
+    "payment_received": "Paid",
+    "refund_processing": "Refund processing",
     "refundProcessing": "Refund processing"
   },
   "auth": {
@@ -1081,6 +1087,7 @@
     "placementInvoice": "Invoice",
     "placementPayment": "Payment",
     "placementFailed": "Failed",
+    "placementGuaranteeCompleted": "Completed",
     "placementGuaranteesProcessed": "{n} guarantees processed",
     "placementProcessing": "Processing…",
     "placementProcessGuarantees": "Process guarantees",

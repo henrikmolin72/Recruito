@@ -6,11 +6,12 @@ import {
     sendPlacementInvoice,
     recordPlacementPayment,
     reportGuaranteeFailure,
+    completeGuarantee,
     processGuaranteeExpirations,
 } from "@/lib/actions/placements";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { FileText, CreditCard, AlertTriangle, Clock } from "lucide-react";
+import { FileText, CreditCard, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { useTranslations } from "@/i18n/client";
 
 interface PlacementActionButtonsProps {
@@ -37,6 +38,9 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
                     break;
                 case "guarantee_failure":
                     result = await reportGuaranteeFailure(placementId);
+                    break;
+                case "guarantee_complete":
+                    result = await completeGuarantee(placementId);
                     break;
             }
         } catch {
@@ -81,16 +85,28 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
                 </Button>
             )}
             {status === "guarantee_active" && (
-                <Button
-                    size="sm"
-                    variant="danger"
-                    className="h-7 text-xs gap-1"
-                    disabled={loading !== null}
-                    onClick={() => handleAction("guarantee_failure")}
-                >
-                    <AlertTriangle className="h-3 w-3" />
-                    {loading === "guarantee_failure" ? "..." : t("admin.placementFailed")}
-                </Button>
+                <>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        disabled={loading !== null}
+                        onClick={() => handleAction("guarantee_complete")}
+                    >
+                        <CheckCircle2 className="h-3 w-3" />
+                        {loading === "guarantee_complete" ? "..." : t("admin.placementGuaranteeCompleted")}
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="danger"
+                        className="h-7 text-xs gap-1"
+                        disabled={loading !== null}
+                        onClick={() => handleAction("guarantee_failure")}
+                    >
+                        <AlertTriangle className="h-3 w-3" />
+                        {loading === "guarantee_failure" ? "..." : t("admin.placementFailed")}
+                    </Button>
+                </>
             )}
         </div>
     );

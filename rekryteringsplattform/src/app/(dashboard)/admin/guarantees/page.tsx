@@ -19,7 +19,7 @@ async function getGuaranteeData() {
         .from("placements")
         .select(`
             id, total_fee, salary_currency, guarantee_end_date, status,
-            candidate:candidates(first_name, last_name),
+            candidate:candidates!placements_candidate_id_fkey(first_name, last_name),
             company:companies(company_name),
             job:jobs(title)
         `)
@@ -34,7 +34,7 @@ async function getGuaranteeData() {
             admin_status, created_at,
             placement:placements(
                 id, total_fee, salary_currency,
-                candidate:candidates(first_name, last_name),
+                candidate:candidates!placements_candidate_id_fkey(first_name, last_name),
                 job:jobs(title),
                 company:companies(company_name)
             )
