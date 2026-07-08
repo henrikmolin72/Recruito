@@ -896,7 +896,7 @@
     "aiScreenRunning": "Screenar…",
     "aiScreenProcessing": "Rapporten genereras — det kan ta upp till en minut. Vänligen vänta.",
     "aiScreenScore": "AI-matchningspoäng",
-    "aiScreenGaps": "Kritiska brister",
+    "aiScreenGaps": "Brister",
     "aiScreenNoScore": "Screeningen kördes, men ingen poäng kunde tas fram.",
     "aiScreenDisclaimer": "Endast beslutsstöd — inte ett automatiserat beslut.",
     "aiScreenErrNoCv": "Ladda upp ett CV först för att köra AI-screening.",

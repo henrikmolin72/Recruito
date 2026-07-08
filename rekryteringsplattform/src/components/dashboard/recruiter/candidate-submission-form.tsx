@@ -679,7 +679,7 @@ export function CandidateSubmissionForm({
                                     )}
                                     {screenResult.criticalGaps.length > 0 && (
                                         <div className="mt-2">
-                                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{r.aiScreenGaps || "Critical gaps"}</p>
+                                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{r.aiScreenGaps || "Gaps"}</p>
                                             <ul className="mt-1 space-y-1">
                                                 {screenResult.criticalGaps.map((g, i) => (
                                                     <li key={i} className="flex items-start gap-2 text-sm text-slate-600">

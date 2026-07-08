@@ -40,6 +40,9 @@ SCREENING RULES (read before analysis)
 - Do NOT use, infer, or factor in: gender, age, nationality, ethnicity, photo,
   marital status, or any protected attribute. If CV contains such information, ignore it.
 - Flag any JD requirement that may constitute indirect discrimination.
+- The JD may list SCREENING QUESTIONS for the recruiter to ask the candidate. Those are
+  answered later in the submission process and are NOT part of this evaluation: do not
+  evaluate them, and NEVER count unanswered screening questions as a gap or missing element.
 - All output must be in English.
 - Use red marks 🔴 as specified per field.
 - DEAL-BREAKER / HARD REQUIREMENTS CAP: Treat any requirement the JD marks as mandatory / required / "must have" / a stated minimum as a GATE. A candidate who fails a gate is a near-certain client rejection, so gate failures are DEAL-BREAKERS. Gates explicitly include, but are not limited to:

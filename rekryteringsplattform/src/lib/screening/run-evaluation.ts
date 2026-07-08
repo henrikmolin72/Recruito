@@ -70,12 +70,6 @@ export async function runCandidateEvaluation(args: {
     },
   });
 
-  const qaBlock = data.screeningAnswers.length > 0
-    ? data.screeningAnswers
-        .map((qa, i) => `Q${i + 1}: ${qa.question}\nA${i + 1}: ${qa.answer || "(no answer provided)"}`)
-        .join("\n\n")
-    : "(no screening questions for this role)";
-
   const anthropic = new Anthropic({ apiKey });
   const response = await anthropic.messages.create({
     model,
@@ -92,10 +86,11 @@ export async function runCandidateEvaluation(args: {
             type: "document",
             source: { type: "base64", media_type: mediaType, data: base64 },
           } as any,
-          {
-            type: "text",
-            text: `${prompt}\n\n══════════════════════════════════════════════════════════════════\nSCREENING QUESTIONS & ANSWERS\n══════════════════════════════════════════════════════════════════\n${qaBlock}`,
-          },
+          // Screening Q&A deliberately NOT sent (client req 2026-07-08): the
+          // recruiter answers them after this pre-submission screening runs, so
+          // including them made the model flag "screening questions unanswered"
+          // as a false gap. The eval is CV-vs-JD only.
+          { type: "text", text: prompt },
         ],
       },
     ],

@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminUser } from "@/lib/auth/is-admin";
 import { stripHtml } from "@/lib/sanitize";
-import type { EvalConfig, ScreeningAnswer } from "./evaluation-prompt";
+import type { EvalConfig } from "./evaluation-prompt";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -57,12 +57,13 @@ export type EvalData = {
   jdText: string;
   config: EvalConfig;
   cvPath: string | null;
-  screeningAnswers: ScreeningAnswer[];
 };
 
 /**
  * Assemble the role JD (title + description + requirements + key points), the
- * per-mandate scoring config, the candidate's CV path and screening answers.
+ * per-mandate scoring config and the candidate's CV path. Screening answers are
+ * deliberately NOT gathered (client req 2026-07-08): recruiters fill them in
+ * after the pre-submission screening runs, so the eval is CV-vs-JD only.
  * Enforces that the candidate actually belongs to the mandate's job (IDOR).
  */
 export async function gatherEvalData(
@@ -86,7 +87,7 @@ export async function gatherEvalData(
 
   const { data: candidate } = await admin
     .from("candidates")
-    .select("id, job_id, cv_file_path, screening_answers")
+    .select("id, job_id, cv_file_path")
     .eq("id", candidateId)
     .single();
   if (!candidate) return { error: "Candidate not found" };
@@ -113,6 +114,5 @@ export async function gatherEvalData(
       customKeywords: m.eval_custom_keywords ?? null,
     },
     cvPath: c.cv_file_path ?? null,
-    screeningAnswers: Array.isArray(c.screening_answers) ? c.screening_answers : [],
   };
 }

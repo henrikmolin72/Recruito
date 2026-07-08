@@ -896,7 +896,7 @@
     "aiScreenRunning": "Screening…",
     "aiScreenProcessing": "Generating report — this can take up to a minute. Please stand by.",
     "aiScreenScore": "AI Match Score",
-    "aiScreenGaps": "Critical gaps",
+    "aiScreenGaps": "Gaps",
     "aiScreenNoScore": "Screening ran, but no score could be extracted.",
     "aiScreenDisclaimer": "Decision support only — not an automated decision.",
     "aiScreenErrNoCv": "Upload a CV first to run AI screening.",

@@ -896,7 +896,7 @@
     "aiScreenRunning": "Screener…",
     "aiScreenProcessing": "Rapporten genereres — det kan ta opptil ett minutt. Vennligst vent.",
     "aiScreenScore": "AI-matchpoeng",
-    "aiScreenGaps": "Kritiske mangler",
+    "aiScreenGaps": "Mangler",
     "aiScreenNoScore": "Screeningen kjørte, men ingen poengsum kunne hentes ut.",
     "aiScreenDisclaimer": "Kun beslutningsstøtte — ikke en automatisert beslutning.",
     "aiScreenErrNoCv": "Last opp en CV først for å kjøre AI-screening.",

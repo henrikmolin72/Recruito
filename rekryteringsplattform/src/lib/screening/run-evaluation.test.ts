@@ -114,6 +114,20 @@ describe("runCandidateEvaluation", () => {
     expect(admin.candidatesUpdate).not.toHaveBeenCalled();
   });
 
+  it("never sends screening questions to the model — answered or not (client req 2026-07-08)", async () => {
+    gather.mockResolvedValue({
+      ...evalData("cvs/jane.pdf"),
+      screeningAnswers: [{ question: "Why AWS cost optimisation?", answer: "" }],
+    });
+    const res = await runCandidateEvaluation(baseArgs(makeAdmin(), true));
+    expect(res.ok).toBe(true);
+    const textBlock = anthropicCreate.mock.calls[0][0].messages[0].content
+      .find((b: any) => b.type === "text").text;
+    expect(textBlock).not.toMatch(/SCREENING QUESTIONS/i);
+    expect(textBlock).not.toContain("Why AWS cost optimisation?");
+    expect(textBlock).not.toContain("no answer provided");
+  });
+
   it("returns a 500 when the API key is missing", async () => {
     delete process.env.ANTHROPIC_API_KEY;
     gather.mockResolvedValue(evalData("cvs/jane.pdf"));

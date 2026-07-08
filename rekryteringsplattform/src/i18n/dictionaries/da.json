@@ -896,7 +896,7 @@
     "aiScreenRunning": "Screener…",
     "aiScreenProcessing": "Rapporten genereres — det kan tage op til et minut. Vent venligst.",
     "aiScreenScore": "AI-matchscore",
-    "aiScreenGaps": "Kritiske mangler",
+    "aiScreenGaps": "Mangler",
     "aiScreenNoScore": "Screeningen blev kørt, men der kunne ikke udledes en score.",
     "aiScreenDisclaimer": "Kun beslutningsstøtte — ikke en automatiseret beslutning.",
     "aiScreenErrNoCv": "Upload et CV først for at køre AI-screening.",
