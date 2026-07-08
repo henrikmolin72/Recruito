@@ -16,6 +16,7 @@ let profileRow: any;
 // Per-table error injected into awaited update chains (simulates RLS/constraint failures).
 let updateErrorByTable: Record<string, any> = {};
 const writes: Array<{ table: string; patch: any }> = [];
+const rpcCalls: Array<{ fn: string; args: any }> = [];
 
 // Minimal chainable Supabase mock. select chains resolve via single()/maybeSingle()
 // returning the fixture for that table; update/insert chains are awaited directly
@@ -49,7 +50,13 @@ function makeClient() {
     };
     return chain;
   }
-  return { from, rpc: async () => ({ data: null, error: null }) };
+  return {
+    from,
+    rpc: async (fn: string, args: any) => {
+      rpcCalls.push({ fn, args });
+      return { data: null, error: null };
+    },
+  };
 }
 
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => makeClient() }));
@@ -62,12 +69,13 @@ vi.mock("@/lib/email/internal-notifications", () => ({ sendUserEmail: vi.fn() })
 vi.mock("@/lib/email/email-templates", () => ({ paymentCompletedEmail: () => "<html></html>" }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
-import { sendPlacementInvoice, recordPlacementPayment, reportGuaranteeFailure } from "./placements";
+import { sendPlacementInvoice, recordPlacementPayment, reportGuaranteeFailure, completeGuarantee } from "./placements";
 
 const placementWrites = () => writes.filter((w) => w.table === "placements");
 
 beforeEach(() => {
   writes.length = 0;
+  rpcCalls.length = 0;
   updateErrorByTable = {};
   recruiterRow = { user_id: "user-1" };
   // email_opt_out short-circuits the email branch (keeps the test focused).
@@ -217,6 +225,69 @@ describe("reportGuaranteeFailure — refund audit trail", () => {
       action_type: "placement_guarantee_failed",
       target_id: "p1",
       reason: "left early",
+    });
+  });
+});
+
+describe("completeGuarantee — admin marks guarantee period completed", () => {
+  const activePlacement = {
+    id: "p1", status: "guarantee_active", recruiter_fee: 300, salary_currency: "SEK",
+    recruiter_id: "r1", candidate_id: "c1", company_id: "co1",
+    candidate: { first_name: "Cand", last_name: "Idate" }, job: { title: "Developer" },
+  };
+
+  it("transitions guarantee_active -> payout_released and completes the candidate", async () => {
+    placementRow = { ...activePlacement };
+
+    const res = await completeGuarantee("p1");
+
+    expect(res).toEqual({ success: true });
+    const upd = placementWrites().at(0)?.patch;
+    expect(upd.status).toBe("payout_released");
+    expect(upd.payout_released_at).toBeTruthy();
+    expect(upd.completed_at).toBeTruthy();
+    const candWrite = writes.find((w) => w.table === "candidates");
+    expect(candWrite?.patch.status).toBe("completed");
+    const audit = writes.find((w) => w.table === "audit_log");
+    expect(audit?.patch).toMatchObject({
+      action_type: "placement_guarantee_completed",
+      target_type: "placement",
+      target_id: "p1",
+      performed_by: "admin-1",
+    });
+    // Recruiter dashboard sync: metrics recalculated immediately.
+    expect(rpcCalls).toContainEqual({
+      fn: "fn_recalculate_recruiter_metrics",
+      args: { p_recruiter_id: "r1" },
+    });
+  });
+
+  it("rejects completion when the placement is not in guarantee_active", async () => {
+    placementRow = { ...activePlacement, status: "invoice_sent" };
+
+    const res = await completeGuarantee("p1");
+
+    expect(res.error).toBeTruthy();
+    expect(placementWrites()).toHaveLength(0);
+    expect(rpcCalls).toHaveLength(0);
+  });
+});
+
+describe("recordPlacementPayment — recruiter metrics sync", () => {
+  it("recalculates recruiter metrics when the guarantee goes active", async () => {
+    const future = new Date(Date.now() + 30 * 86_400_000).toISOString();
+    placementRow = {
+      id: "p1", status: "invoice_sent", guarantee_end_date: future,
+      recruiter_id: "r1", candidate_id: "c1",
+      candidate: { first_name: "Cand", last_name: "Idate" },
+    };
+
+    const res = await recordPlacementPayment("p1");
+
+    expect(res).toEqual({ success: true });
+    expect(rpcCalls).toContainEqual({
+      fn: "fn_recalculate_recruiter_metrics",
+      args: { p_recruiter_id: "r1" },
     });
   });
 });

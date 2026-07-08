@@ -159,6 +159,12 @@
     "guaranteeActive": "Garantiperiode",
     "payoutReleased": "Utbetalt",
     "guaranteeFailed": "Garanti feilet",
+    "guarantee_active": "Garantiperiode",
+    "payout_released": "Utbetalt",
+    "guarantee_failed": "Garanti feilet",
+    "invoice_sent": "Faktura sendt",
+    "payment_received": "Betalt",
+    "refund_processing": "Tilbakebetaling",
     "refundProcessing": "Tilbakebetaling"
   },
   "auth": {
@@ -1081,6 +1087,7 @@
     "placementInvoice": "Fakturer",
     "placementPayment": "Betaling",
     "placementFailed": "Mislyktes",
+    "placementGuaranteeCompleted": "Fullført",
     "placementGuaranteesProcessed": "{n} garantier behandlet",
     "placementProcessing": "Behandler...",
     "placementProcessGuarantees": "Behandle garantier",
