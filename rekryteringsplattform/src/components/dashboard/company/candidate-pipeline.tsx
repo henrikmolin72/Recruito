@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -8,141 +8,136 @@ import { Button } from "@/components/ui/button";
 import { CandidateAccessGate } from "@/components/dashboard/company/candidate-access-gate";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
-import { normalizeCandidateStatusForWorkflow } from "@/lib/candidate-workflow";
+import {
+  companyStageBucket,
+  COMPANY_STAGE_BUCKETS,
+  type CompanyStageBucket,
+} from "@/lib/company-candidate-buckets";
 import { ViewedIndicator } from "./viewed-indicator";
-
-function getColumnKey(status: string) {
-  const normalized = normalizeCandidateStatusForWorkflow(status);
-  if (["submitted", "under_client_review", "info_requested", "resubmitted"].includes(normalized)) return "reviewing";
-  if (["interview_stage_1", "interview_stage_2", "interview_stage_3"].includes(normalized)) return "interview";
-  if (normalized === "final_interview") return "final_interview";
-  if (["offer_in_progress", "offer_accepted"].includes(normalized)) return "offered";
-  if (["on_hold"].includes(normalized)) return "paused";
-  if (normalized === "candidate_withdrawn") return "withdrawn";
-  if (["duplicate_rejected", "client_already_engaged", "rejected_client", "rejected_interview", "offer_declined"].includes(normalized)) return "rejected";
-  if (["invoice_enabled", "guarantee_tracking"].includes(normalized)) return "hired";
-  return normalized;
-}
 
 interface CandidatePipelineProps {
   candidates: any[];
   noticeAccepted: boolean;
 }
 
+const BUCKET_META: Record<CompanyStageBucket, { labelKey: string; dot: string }> = {
+  under_review: { labelKey: "components.pipelineUnderReview", dot: "bg-yellow-500" },
+  interview: { labelKey: "components.pipelineInterview", dot: "bg-purple-500" },
+  offered: { labelKey: "components.pipelineOffer", dot: "bg-brand-500" },
+  hired: { labelKey: "components.pipelineHired", dot: "bg-success-500" },
+  rejected: { labelKey: "components.pipelineRejected", dot: "bg-slate-400" },
+  withdrawn: { labelKey: "components.pipelineWithdrawn", dot: "bg-zinc-400" },
+};
+
 export function CandidatePipeline({ candidates, noticeAccepted }: CandidatePipelineProps) {
-  const [view, setView] = useState<"pipeline" | "list">("pipeline");
   const { t } = useTranslations();
+  const [activeTab, setActiveTab] = useState<"all" | CompanyStageBucket>("all");
+  const [search, setSearch] = useState("");
+  const [jobFilter, setJobFilter] = useState("all");
+
+  const counts = useMemo(() => {
+    const c = {} as Record<CompanyStageBucket, number>;
+    for (const bucket of COMPANY_STAGE_BUCKETS) c[bucket] = 0;
+    for (const cand of candidates) c[companyStageBucket(cand.status)]++;
+    return c;
+  }, [candidates]);
+
+  const jobs = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const cand of candidates) {
+      if (cand.job?.id) map.set(cand.job.id, cand.job.title);
+    }
+    return [...map.entries()].map(([id, title]) => ({ id, title }));
+  }, [candidates]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return candidates.filter((cand) => {
+      if (activeTab !== "all" && companyStageBucket(cand.status) !== activeTab) return false;
+      if (jobFilter !== "all" && cand.job?.id !== jobFilter) return false;
+      if (q && !`${cand.first_name || ""} ${cand.last_name || ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [candidates, activeTab, jobFilter, search]);
 
   return (
     <div className="space-y-4">
-      {/* View toggle */}
-      <div className="flex items-center gap-2">
+      {/* Stage tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto rounded-xl border bg-card p-2">
         <button
-          onClick={() => setView("pipeline")}
+          onClick={() => setActiveTab("all")}
           className={cn(
-            "px-4 py-2 text-xs font-bold rounded-lg transition-all",
-            view === "pipeline" ? "bg-brand-600 text-white shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"
+            "flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
+            activeTab === "all"
+              ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200"
+              : "text-muted-foreground hover:bg-muted"
           )}
         >
-          {t("common.pipeline")}
+          {t("components.pipelineAll")}
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold">
+            {candidates.length}
+          </span>
         </button>
-        <button
-          onClick={() => setView("list")}
-          className={cn(
-            "px-4 py-2 text-xs font-bold rounded-lg transition-all",
-            view === "list" ? "bg-brand-600 text-white shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"
-          )}
+        {COMPANY_STAGE_BUCKETS.map((bucket) => (
+          <button
+            key={bucket}
+            onClick={() => setActiveTab(bucket)}
+            className={cn(
+              "flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
+              activeTab === bucket
+                ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200"
+                : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <span className={cn("h-2 w-2 rounded-full", BUCKET_META[bucket].dot)} />
+            {t(BUCKET_META[bucket].labelKey)}
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold">
+              {counts[bucket]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t("components.candidateSearchPlaceholder")}
+          className="h-9 w-full rounded-lg border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-brand-200 sm:max-w-xs"
+        />
+        <select
+          value={jobFilter}
+          onChange={(e) => setJobFilter(e.target.value)}
+          className="h-9 w-full rounded-lg border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-brand-200 sm:w-auto"
         >
-          {t("common.list")}
-        </button>
-        <div className="ml-auto text-sm text-muted-foreground font-medium">
-          {t("common.candidatesTotalCount").replace("{count}", String(candidates.length))}
+          <option value="all">{t("components.candidateAllJobs")}</option>
+          {jobs.map((job) => (
+            <option key={job.id} value={job.id}>{job.title}</option>
+          ))}
+        </select>
+        <div className="text-sm font-medium text-muted-foreground sm:ml-auto">
+          {t("common.candidatesTotalCount").replace("{count}", String(filtered.length))}
         </div>
       </div>
 
-      {view === "pipeline" ? (
-        <PipelineView candidates={candidates} noticeAccepted={noticeAccepted} />
+      {/* Candidate list */}
+      {filtered.length === 0 ? (
+        <div className="rounded-xl border-2 border-dashed bg-muted/10 p-8 text-center text-sm text-muted-foreground">
+          {t("common.noCandidates")}
+        </div>
       ) : (
-        <ListView candidates={candidates} noticeAccepted={noticeAccepted} />
+        <ListView candidates={filtered} noticeAccepted={noticeAccepted} />
       )}
     </div>
   );
 }
 
-function PipelineView({ candidates, noticeAccepted }: { candidates: any[]; noticeAccepted: boolean }) {
-  const { t } = useTranslations();
-
-  const PIPELINE_STAGES = [
-    { key: "submitted", label: t("components.pipelinePresented"), color: "bg-blue-500" },
-    { key: "reviewing", label: t("components.pipelineUnderReview"), color: "bg-yellow-500" },
-    { key: "interview", label: t("components.pipelineInterview"), color: "bg-purple-500" },
-    { key: "final_interview", label: t("components.pipelineFinalInterview"), color: "bg-violet-500" },
-    { key: "offered", label: t("components.pipelineOffer"), color: "bg-brand-500" },
-    { key: "hired", label: t("components.pipelineHired"), color: "bg-success-500" },
-    { key: "paused", label: t("components.pipelinePaused"), color: "bg-orange-400" },
-    { key: "rejected", label: t("components.pipelineRejected"), color: "bg-slate-400" },
-    { key: "withdrawn", label: t("components.pipelineWithdrawn"), color: "bg-zinc-400" },
-  ] as const;
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      {PIPELINE_STAGES.map((stage) => {
-        const stageCandidates = candidates.filter(c => getColumnKey(c.status) === stage.key);
-
-        return (
-          <div key={stage.key} className="space-y-3">
-            {/* Stage header */}
-            <div className="flex items-center gap-2 px-1">
-              <div className={cn("h-2.5 w-2.5 rounded-full", stage.color)} />
-              <span className="text-sm font-bold text-slate-700">{stage.label}</span>
-              <span className="ml-auto text-xs font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                {stageCandidates.length}
-              </span>
-            </div>
-
-            {/* Candidates in stage */}
-            <div className="space-y-2 min-h-[80px]">
-              {stageCandidates.length === 0 ? (
-                <div className="p-4 text-center text-xs text-muted-foreground border-2 border-dashed rounded-xl bg-muted/10">
-                  {t("common.noCandidates")}
-                </div>
-              ) : (
-                stageCandidates.map((candidate: any) => (
-                  <Card key={candidate.id} className="shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Avatar initials={(candidate.first_name?.[0] || "") + (candidate.last_name?.[0] || "")} />
-                        <div className="flex-1 min-w-0">
-                          <CandidateAccessGate
-                            href={`/company/jobs/${candidate.job_id}/candidates/${candidate.id}`}
-                            noticeAccepted={noticeAccepted}
-                            className="font-semibold text-sm hover:text-brand-600 transition-colors"
-                          >
-                            {candidate.first_name} {candidate.last_name}
-                          </CandidateAccessGate>
-                          {candidate.current_title && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {candidate.current_title}
-                            </p>
-                          )}
-                          <p className="text-[10px] text-brand-600 font-medium mt-1">
-                            {candidate.job?.title}
-                          </p>
-                        </div>
-                        <ViewedIndicator viewed={!!candidate.company_viewed_at} label={t("components.candidateViewed")} />
-                      </div>
-
-                      {/* Company view is now request-driven from candidate detail; keep pipeline cards read-only */}
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+// Company must never see a "Paused" status (client req 2026-07-08): mask the
+// badge to Under Review. Display-only — the stored status is untouched.
+function companyDisplayStatus(status: string) {
+  return status === "on_hold" || status === "paused" ? "under_client_review" : status;
 }
 
 function ListView({ candidates, noticeAccepted }: { candidates: any[]; noticeAccepted: boolean }) {
@@ -158,7 +153,7 @@ function ListView({ candidates, noticeAccepted }: { candidates: any[]; noticeAcc
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3">
                   <h3 className="font-semibold">{candidate.first_name} {candidate.last_name}</h3>
-                  <StatusBadge status={candidate.status} />
+                  <StatusBadge status={companyDisplayStatus(candidate.status)} />
                 </div>
                 {candidate.current_title && (
                   <p className="text-sm text-muted-foreground line-clamp-2 break-words">{candidate.current_title}</p>
