@@ -1,4 +1,4 @@
-import { Briefcase, MapPin, Globe, Linkedin, TrendingUp, Gift, Heart, Shield, Landmark, BarChart2, Package, Car, CheckCircle2, CircleHelp, Phone } from "lucide-react";
+import { Briefcase, MapPin, Globe, TrendingUp, Gift, Heart, Shield, Landmark, BarChart2, Package, Car, CheckCircle2, CircleHelp, Phone } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
 import { sanitizeRichText } from "@/lib/sanitize";
@@ -19,7 +19,6 @@ type JobWithCompany = Omit<Partial<Job>, "company"> & {
         company_name: string;
         website?: string | null;
         logo_url?: string | null;
-        linkedin_url?: string | null;
     } | null;
 };
 
@@ -112,12 +111,6 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                         <a href={company.website} target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-slate-600 font-medium hover:bg-slate-200 transition-colors">
                             <Globe className="h-3.5 w-3.5" /> Website
-                        </a>
-                    )}
-                    {company?.linkedin_url && (
-                        <a href={company.linkedin_url} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1 px-3 py-1 bg-blue-50 rounded-full text-blue-600 font-medium hover:bg-blue-100 transition-colors">
-                            <Linkedin className="h-3.5 w-3.5" /> LinkedIn
                         </a>
                     )}
                 </div>
