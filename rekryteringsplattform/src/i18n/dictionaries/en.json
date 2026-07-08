@@ -418,6 +418,7 @@
     "noJobsInTab": "No jobs in this category",
     "chatWithRecruiter": "Chat with Recruiter",
     "recentActivity": "Recent activity",
+    "activityStageChange": "{name} moved to {stage}",
     "noActivityYet": "No activity to show yet.",
     "jobsPageTitle": "Jobs",
     "jobsPageSubtitle": "Manage your job listings",

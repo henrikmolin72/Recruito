@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { validateCompanyProfileForm } from "@/lib/validation/forms";
 import { FAILED_PLACEMENT_STATUSES_FILTER, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { INTERVIEW_WORKFLOW_STATUSES } from "@/lib/candidate-workflow";
+import { isActiveCompanyCandidate } from "@/lib/mandate-stages";
 
 // Helper to handle errors or redirect
 function handleError(error: any) {
@@ -136,7 +137,7 @@ export async function getCompanyDashboard() {
         return {
             company: { company_name: user.user_metadata?.full_name || "Mitt Företag" } as Company,
             jobs: [],
-            stats: { activeJobs: 0, candidates: 0, interviews: 0, placements: 0, recentPlacements: 0 },
+            stats: { activeJobs: 0, candidates: 0, activeCandidates: 0, interviews: 0, placements: 0, recentPlacements: 0 },
             recentActivity: []
         };
     }
@@ -181,7 +182,7 @@ export async function getCompanyDashboard() {
                 .not("recruito_screened_at", "is", null),
             supabase
                 .from("candidates")
-                .select("job_id")
+                .select("job_id, status")
                 .in("job_id", jobIds)
                 .not("recruito_screened_at", "is", null),
         ])
@@ -195,6 +196,48 @@ export async function getCompanyDashboard() {
     (candidateJobRows || []).forEach((row: any) => {
         if (!row?.job_id) return;
         candidatesCountByJob[row.job_id] = (candidatesCountByJob[row.job_id] || 0) + 1;
+    });
+
+    // Same rule as the Jobs-list "Active Candidates" column: screened + active
+    // company stage (In Review→Hired, minus on_hold/withdrawn/rejected).
+    const activeCandidates = (candidateJobRows || []).filter(
+        (row: any) => isActiveCompanyCandidate(row.status)
+    ).length;
+
+    // Recent activity = latest stage-history rows for this company's jobs
+    // (RLS grants SELECT via job_id → company ownership, migration 052).
+    const { data: historyRows } = jobIds.length > 0
+        ? await supabase
+            .from("candidate_stage_history")
+            .select("id, candidate_id, to_stage, created_at")
+            .in("job_id", jobIds)
+            .order("created_at", { ascending: false })
+            .limit(8)
+        : { data: [] as any[] };
+
+    const historyCandidateIds = [...new Set((historyRows || []).map((r: any) => r.candidate_id))];
+    const { data: historyCandidates } = historyCandidateIds.length > 0
+        ? await supabase
+            .from("candidates")
+            .select("id, first_name, last_name")
+            .in("id", historyCandidateIds)
+        : { data: [] as any[] };
+
+    const candidateNameById: Record<string, string> = {};
+    (historyCandidates || []).forEach((cand: any) => {
+        candidateNameById[cand.id] = `${cand.first_name} ${cand.last_name}`.trim();
+    });
+
+    // Rows whose candidate the company can't see (RLS: not yet screened) are dropped.
+    const recentActivity = (historyRows || []).flatMap((row: any) => {
+        const candidateName = candidateNameById[row.candidate_id];
+        if (!candidateName) return [];
+        return [{
+            id: row.id as string,
+            candidateName,
+            toStage: row.to_stage as string,
+            createdAt: row.created_at as string,
+        }];
     });
 
     const { count: successfulPlacements } = await supabase
@@ -232,12 +275,12 @@ export async function getCompanyDashboard() {
             draftJobs: draftJobsCount,
             closedJobs: closedJobsCount,
             candidates: totalCandidates || 0,
+            activeCandidates,
             interviews: activeInterviews || 0,
             placements: successfulPlacements || 0,
             recentPlacements: recentPlacements ?? 0,
         },
-        // We don't have activity log yet populated, return empty or mock
-        recentActivity: []
+        recentActivity,
     };
 }
 

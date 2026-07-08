@@ -418,6 +418,7 @@
     "noJobsInTab": "Ingen jobber i denne kategorien",
     "chatWithRecruiter": "Chat med rekrutterer",
     "recentActivity": "Siste aktivitet",
+    "activityStageChange": "{name} ble flyttet til {stage}",
     "noActivityYet": "Ingen aktivitet å vise ennå.",
     "jobsPageTitle": "Jobber",
     "jobsPageSubtitle": "Administrer jobbannonser",

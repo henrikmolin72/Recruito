@@ -418,6 +418,7 @@
     "noJobsInTab": "Inga jobb i denna kategori",
     "chatWithRecruiter": "Chatta med rekryterare",
     "recentActivity": "Senaste aktiviteten",
+    "activityStageChange": "{name} flyttades till {stage}",
     "noActivityYet": "Ingen aktivitet att visa än.",
     "jobsPageTitle": "Jobb",
     "jobsPageSubtitle": "Hantera dina jobbannonser",
