@@ -42,13 +42,11 @@ export function CandidatePipeline({ candidates, noticeAccepted }: CandidatePipel
     return c;
   }, [candidates]);
 
-  const jobs = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const cand of candidates) {
-      if (cand.job?.id) map.set(cand.job.id, cand.job.title);
-    }
-    return [...map.entries()].map(([id, title]) => ({ id, title }));
-  }, [candidates]);
+  const jobs = useMemo(
+    () => [...new Map(candidates.filter((c) => c.job?.id).map((c) => [c.job.id as string, c.job.title as string]))]
+      .map(([id, title]) => ({ id, title })),
+    [candidates]
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -64,21 +62,7 @@ export function CandidatePipeline({ candidates, noticeAccepted }: CandidatePipel
     <div className="space-y-4">
       {/* Stage tabs */}
       <div className="flex items-center gap-2 overflow-x-auto rounded-xl border bg-card p-2">
-        <button
-          onClick={() => setActiveTab("all")}
-          className={cn(
-            "flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-bold transition-all",
-            activeTab === "all"
-              ? "bg-brand-50 text-brand-700 ring-1 ring-brand-200"
-              : "text-muted-foreground hover:bg-muted"
-          )}
-        >
-          {t("components.pipelineAll")}
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold">
-            {candidates.length}
-          </span>
-        </button>
-        {COMPANY_STAGE_BUCKETS.map((bucket) => (
+        {(["all", ...COMPANY_STAGE_BUCKETS] as const).map((bucket) => (
           <button
             key={bucket}
             onClick={() => setActiveTab(bucket)}
@@ -89,10 +73,10 @@ export function CandidatePipeline({ candidates, noticeAccepted }: CandidatePipel
                 : "text-muted-foreground hover:bg-muted"
             )}
           >
-            <span className={cn("h-2 w-2 rounded-full", BUCKET_META[bucket].dot)} />
-            {t(BUCKET_META[bucket].labelKey)}
+            {bucket !== "all" && <span className={cn("h-2 w-2 rounded-full", BUCKET_META[bucket].dot)} />}
+            {t(bucket === "all" ? "components.pipelineAll" : BUCKET_META[bucket].labelKey)}
             <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold">
-              {counts[bucket]}
+              {bucket === "all" ? candidates.length : counts[bucket]}
             </span>
           </button>
         ))}
