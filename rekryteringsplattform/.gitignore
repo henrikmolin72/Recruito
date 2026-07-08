@@ -32,6 +32,7 @@ yarn-error.log*
 /debug-*.ts
 /test_*.py
 /supabase/.temp/
+/supabase/.branches/
 
 # env files (can opt-in for committing if needed)
 .env*
