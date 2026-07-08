@@ -17,6 +17,15 @@ export const PRICING_TIERS: PricingTier[] = [
 /** Rolling window in months for tier qualification */
 export const TIER_WINDOW_MONTHS = 12;
 
+/**
+ * Placement statuses that do NOT count as successful placements — excluded
+ * from the dashboard stat and from tier/fee placement counts.
+ */
+export const FAILED_PLACEMENT_STATUSES = ["guarantee_failed", "refund_processing"] as const;
+
+/** PostgREST `in`-filter string for excluding failed placements via `.not("status", "in", ...)`. */
+export const FAILED_PLACEMENT_STATUSES_FILTER = `(${FAILED_PLACEMENT_STATUSES.join(",")})`;
+
 /** Returns the matching tier for a given placement count. */
 export function getTierForPlacementCount(completedPlacements: number): PricingTier {
     for (const tier of PRICING_TIERS) {

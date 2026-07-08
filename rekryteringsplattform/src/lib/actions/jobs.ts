@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { validateJobForm, validatePipelineStages } from "@/lib/validation/forms";
-import { getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
+import { FAILED_PLACEMENT_STATUSES_FILTER, getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/notifications/create";
@@ -117,7 +117,8 @@ export async function createJob(formData: FormData) {
         .from("placements")
         .select("*", { count: "exact", head: true })
         .eq("company_id", company.id)
-        .gte("created_at", twelveMonthsAgo.toISOString());
+        .gte("created_at", twelveMonthsAgo.toISOString())
+        .not("status", "in", FAILED_PLACEMENT_STATUSES_FILTER);
 
     const feePercentage = getFeePercentage(recentPlacements ?? 0);
 

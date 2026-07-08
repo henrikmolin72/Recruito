@@ -6,7 +6,7 @@ import { Company } from "@/types/db-types";
 
 import { revalidatePath } from "next/cache";
 import { validateCompanyProfileForm } from "@/lib/validation/forms";
-import { TIER_WINDOW_MONTHS } from "@/lib/pricing";
+import { FAILED_PLACEMENT_STATUSES_FILTER, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { INTERVIEW_WORKFLOW_STATUSES } from "@/lib/candidate-workflow";
 
 // Helper to handle errors or redirect
@@ -200,7 +200,8 @@ export async function getCompanyDashboard() {
     const { count: successfulPlacements } = await supabase
         .from("placements")
         .select("*", { count: 'exact', head: true })
-        .eq("company_id", company.id);
+        .eq("company_id", company.id)
+        .not("status", "in", FAILED_PLACEMENT_STATUSES_FILTER);
 
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - TIER_WINDOW_MONTHS);
@@ -209,7 +210,8 @@ export async function getCompanyDashboard() {
         .from("placements")
         .select("*", { count: "exact", head: true })
         .eq("company_id", company.id)
-        .gte("created_at", twelveMonthsAgo.toISOString());
+        .gte("created_at", twelveMonthsAgo.toISOString())
+        .not("status", "in", FAILED_PLACEMENT_STATUSES_FILTER);
 
     const activeJobsCount = jobs?.filter(j => j.status === 'active').length || 0;
     const draftJobsCount = jobs?.filter(j => j.status === 'draft').length || 0;
@@ -259,7 +261,8 @@ export async function getCompanyPlacementCountRecent(): Promise<number> {
         .from("placements")
         .select("*", { count: "exact", head: true })
         .eq("company_id", company.id)
-        .gte("created_at", twelveMonthsAgo.toISOString());
+        .gte("created_at", twelveMonthsAgo.toISOString())
+        .not("status", "in", FAILED_PLACEMENT_STATUSES_FILTER);
 
     return count ?? 0;
 }
