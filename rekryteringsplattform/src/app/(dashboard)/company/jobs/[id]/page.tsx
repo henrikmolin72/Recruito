@@ -248,6 +248,14 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                                         : `${job.fee_percentage}%`}
                             </span>
                         </div>
+                        {(job.guarantee_period_months ?? 0) > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-50 rounded-lg border border-brand-100 text-brand-700">
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                                {c.jobDetailsGuarantee}: <span>
+                                    {(job.guarantee_period_months > 1 ? c.guaranteeMonthsPlural : c.guaranteeMonths).replace("{count}", String(job.guarantee_period_months))}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
 

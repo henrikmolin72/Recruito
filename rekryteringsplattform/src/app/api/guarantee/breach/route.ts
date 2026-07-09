@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const { data: placement } = await admin
         .from("placements")
-        .select("id, company_id, total_fee, salary_currency, start_date, guarantee_end_date, status, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
+        .select("id, company_id, total_fee, salary_currency, start_date, joining_date, guarantee_end_date, status, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(title)")
         .eq("id", placementId)
         .eq("company_id", company.id)
         .single();
@@ -46,12 +46,15 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Placement is not in an active guarantee period" }, { status: 400 });
     }
 
-    // Calculate proportional refund over the real start_date → guarantee_end_date
-    // window (company picks a 1–2 month guarantee). Fraction is clamped to [0,1].
+    // Calculate proportional refund over the real guarantee window: the guarantee
+    // runs from the client-confirmed joining_date (067) — fall back to start_date
+    // for legacy rows. Fraction is clamped to [0,1].
     const refundAmount = placement.guarantee_end_date
         ? computeProportionalRefund(
             placement.total_fee,
-            (placement as { start_date?: string | null }).start_date ?? null,
+            (placement as { joining_date?: string | null; start_date?: string | null }).joining_date
+                ?? (placement as { start_date?: string | null }).start_date
+                ?? null,
             placement.guarantee_end_date,
         )
         : placement.total_fee;
@@ -85,7 +88,7 @@ export async function POST(request: NextRequest) {
             titleKey: "notif.newBreachReportedTitle",
             bodyKey: "notif.newBreachReportedBody",
             params: { name, jobTitle, amount: refundAmount, currency: placement.salary_currency ?? "SEK" },
-            link: "/admin/placements",
+            link: "/admin/guarantees",
         });
     }
 

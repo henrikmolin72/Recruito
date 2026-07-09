@@ -51,7 +51,9 @@ export default async function RecruiterEarningsPage() {
                     const candidate = Array.isArray(p.candidate) ? p.candidate[0] : p.candidate;
                     const job = Array.isArray(p.job) ? p.job[0] : p.job;
                     const company = Array.isArray(p.company) ? p.company[0] : p.company;
-                    const isPaid = p.status === "payout_released" || p.status === "payment_received";
+                    // payment_received = client paid, candidate not joined yet (067):
+                    // payout not released, so it shows as pending — not paid.
+                    const isPaid = p.status === "payout_released";
                     const isGuarantee = p.status === "guarantee_active";
 
                     return (

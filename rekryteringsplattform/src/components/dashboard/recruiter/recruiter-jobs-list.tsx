@@ -389,6 +389,14 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                           <span className="text-slate-400 font-bold uppercase tracking-wider">{t("recruiter.salaryIndication")}</span>
                           <span className="text-slate-600 font-black">{(job.salary_max || job.salary_min) ? formatCurrency(job.salary_max || job.salary_min) : t("common.notSpecifiedNeutral")}</span>
                         </div>
+                        {(job.guarantee_period_months ?? 0) > 0 && (
+                          <div className="flex items-center justify-between text-xs px-2">
+                            <span className="text-slate-400 font-bold uppercase tracking-wider">{t("recruiter.guaranteeLabel")}</span>
+                            <span className="text-brand-600 font-black">
+                              {t(job.guarantee_period_months > 1 ? "company.guaranteeMonthsPlural" : "company.guaranteeMonths").replace("{count}", String(job.guarantee_period_months))}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="mt-8">

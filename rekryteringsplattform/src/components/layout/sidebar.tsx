@@ -17,7 +17,6 @@ import {
   Wallet,
   UserCircle,
   UserCheck,
-  Banknote,
   Settings,
   BarChart3,
   Bell,
@@ -41,6 +40,7 @@ const COMPANY_NAV: NavItem[] = [
   { labelKey: "nav.analytics", href: "/company/analytics", icon: BarChart3 },
   { labelKey: "nav.messages", href: "/company/messages", icon: MessageSquare, isMessages: true },
   { labelKey: "nav.billing", href: "/company/billing", icon: CreditCard },
+  { labelKey: "nav.guarantees", href: "/company/guarantees", icon: ShieldCheck },
   { labelKey: "nav.profile", href: "/company/profile", icon: Building2 },
   { labelKey: "nav.aiPolicy", href: "/company/ai-policy", icon: ShieldCheck },
 ];
@@ -52,6 +52,7 @@ const RECRUITER_NAV: NavItem[] = [
   { labelKey: "nav.candidates", href: "/recruiter/candidates", icon: Users },
   { labelKey: "nav.messages", href: "/recruiter/messages", icon: MessageSquare, isMessages: true },
   { labelKey: "nav.earnings", href: "/recruiter/earnings", icon: Wallet },
+  { labelKey: "nav.guarantees", href: "/recruiter/guarantees", icon: ShieldCheck },
   { labelKey: "nav.profile", href: "/recruiter/profile", icon: UserCircle },
   { labelKey: "nav.aiPolicy", href: "/recruiter/ai-policy", icon: ShieldCheck },
 ];
@@ -63,7 +64,6 @@ const ADMIN_NAV: NavItem[] = [
   { labelKey: "nav.jobs", href: "/admin/jobs", icon: Briefcase },
   { labelKey: "nav.candidates", href: "/admin/candidates", icon: Users },
   { labelKey: "nav.messages", href: "/admin/messages", icon: MessageSquare },
-  { labelKey: "nav.placements", href: "/admin/placements", icon: Banknote },
   { labelKey: "nav.analytics", href: "/admin/analytics", icon: BarChart3 },
   { labelKey: "nav.guarantees", href: "/admin/guarantees", icon: ShieldCheck },
   { labelKey: "nav.notifications", href: "/admin/notifications", icon: Bell },
@@ -112,7 +112,7 @@ export function Sidebar({ role }: { role: string }) {
             "/admin/recruiters": String(stats.recruiters),
             "/admin/companies": String(stats.companies),
             "/admin/jobs": String(stats.activeJobs),
-            "/admin/placements": String(stats.totalPlacements),
+            "/admin/guarantees": String(stats.totalPlacements),
           });
         }).catch(() => {});
       });

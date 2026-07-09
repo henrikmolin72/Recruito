@@ -9,6 +9,7 @@ import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { paymentCompletedEmail } from "@/lib/email/email-templates";
 import { mapRecruiterPerfRow, isPerfSnapshotStale } from "@/lib/recruiter-metrics";
 import { logCandidateStageChange } from "@/lib/candidate-stage-history";
+import { computeGuaranteeEndDate } from "@/lib/guarantee";
 
 // =============================================
 // Placement helpers
@@ -119,9 +120,11 @@ export async function sendPlacementInvoice(placementId: string) {
         });
     }
 
-    revalidatePath("/admin/placements");
+    revalidatePath("/admin/guarantees");
     revalidatePath("/company/billing");
+    revalidatePath("/company/guarantees");
     revalidatePath("/recruiter/earnings");
+    revalidatePath("/recruiter/guarantees");
     return { success: true };
 }
 
@@ -134,7 +137,7 @@ export async function recordPlacementPayment(placementId: string) {
 
     const { data: placement } = await admin
         .from("placements")
-        .select("*, candidate:candidates!placements_candidate_id_fkey(first_name, last_name)")
+        .select("*, candidate:candidates!placements_candidate_id_fkey(first_name, last_name), job:jobs(guarantee_period_months)")
         .eq("id", placementId)
         .single();
 
@@ -143,9 +146,17 @@ export async function recordPlacementPayment(placementId: string) {
         return { error: `Kan inte registrera betalning i status: ${placement.status}` };
     }
 
+    const jobData = Array.isArray(placement.job) ? placement.job[0] : placement.job;
+    const guaranteeMonths = jobData?.guarantee_period_months ?? 0;
+
+    // The guarantee runs from the client-confirmed joining date (migration 067).
+    // Paid but not yet joined on a guarantee job → park as payment_received;
+    // setPlacementJoiningDate activates the guarantee once the date is entered.
     const nextStatus = placement.guarantee_end_date && new Date(placement.guarantee_end_date) > new Date()
         ? "guarantee_active"
-        : "payout_released";
+        : !placement.guarantee_end_date && guaranteeMonths > 0
+            ? "payment_received"
+            : "payout_released";
 
     const updatePatch: Record<string, any> = {
         status: nextStatus,
@@ -221,7 +232,9 @@ export async function recordPlacementPayment(placementId: string) {
             titleKey: "notif.paymentReceivedTitle",
             bodyKey: nextStatus === "guarantee_active"
                 ? "notif.paymentReceivedGuaranteeBody"
-                : "notif.paymentReceivedReleasedBody",
+                : nextStatus === "payment_received"
+                    ? "notif.paymentReceivedPendingJoinBody"
+                    : "notif.paymentReceivedReleasedBody",
             params: { candidate: candidateName },
             link: `/recruiter/earnings`,
         });
@@ -260,9 +273,124 @@ export async function recordPlacementPayment(placementId: string) {
     // instead of waiting for the hourly refresh-on-read.
     await recalculateRecruiterMetrics(placement.recruiter_id);
 
-    revalidatePath("/admin/placements");
+    revalidatePath("/admin/guarantees");
     revalidatePath("/company/billing");
+    revalidatePath("/company/guarantees");
     revalidatePath("/recruiter/earnings");
+    revalidatePath("/recruiter/guarantees");
+    return { success: true };
+}
+
+/**
+ * Admin enters the client-confirmed joining date — the day the candidate
+ * actually started (after their notice period). The guarantee period runs
+ * from this date: guarantee_end_date = joining_date + the job's
+ * guarantee_period_months, unless an explicit end date override is given.
+ * Activates the guarantee when the placement isn't blocked on payment state.
+ */
+export async function setPlacementJoiningDate(
+    placementId: string,
+    joiningDate: string,
+    guaranteeEndOverride?: string,
+) {
+    const { user: adminUser } = await requireAdmin();
+    const admin = createAdminClient();
+
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    if (!DATE_RE.test(joiningDate) || Number.isNaN(new Date(joiningDate).getTime())) {
+        return { error: "Ogiltigt tillträdesdatum" };
+    }
+    if (guaranteeEndOverride !== undefined && guaranteeEndOverride !== "") {
+        if (!DATE_RE.test(guaranteeEndOverride) || Number.isNaN(new Date(guaranteeEndOverride).getTime())) {
+            return { error: "Ogiltigt slutdatum" };
+        }
+        if (guaranteeEndOverride < joiningDate) {
+            return { error: "Slutdatumet kan inte vara före tillträdesdatumet" };
+        }
+    }
+
+    const { data: placement } = await admin
+        .from("placements")
+        .select("id, status, candidate_id, job_id, job:jobs(guarantee_period_months)")
+        .eq("id", placementId)
+        .single();
+
+    if (!placement) return { error: "Placering hittades inte" };
+    if (["payout_released", "guarantee_failed", "refund_processing"].includes(placement.status)) {
+        return { error: `Tillträdesdatum kan inte ändras i status: ${placement.status}` };
+    }
+
+    const jobData = Array.isArray(placement.job) ? placement.job[0] : placement.job;
+    const guaranteeMonths = jobData?.guarantee_period_months ?? 0;
+    const guaranteeEnd = guaranteeEndOverride?.trim()
+        ? guaranteeEndOverride
+        : computeGuaranteeEndDate(joiningDate, guaranteeMonths);
+
+    // Activate when there is a live guarantee window and the placement isn't
+    // waiting on an invoice payment (invoice_sent flips via recordPlacementPayment,
+    // which now sees the end date). Mirrors the pre-067 trigger behavior where a
+    // placement could be guarantee_active before invoicing.
+    const activate =
+        guaranteeMonths > 0 &&
+        new Date(guaranteeEnd) > new Date() &&
+        (placement.status === "confirmed" || placement.status === "payment_received");
+
+    const { error } = await admin
+        .from("placements")
+        .update({
+            joining_date: joiningDate,
+            guarantee_end_date: guaranteeEnd,
+            ...(activate ? { status: "guarantee_active" } : {}),
+        })
+        .eq("id", placementId);
+
+    if (error) {
+        console.error("[ServerAction]", error);
+        return { error: "Något gick fel. Försök igen." };
+    }
+
+    // Keep the candidate mirrors (018) in sync — used by candidate views.
+    const { error: mirrorError } = await admin
+        .from("candidates")
+        .update({ guarantee_start_date: joiningDate, guarantee_end_date: guaranteeEnd })
+        .eq("id", placement.candidate_id);
+    if (mirrorError) console.error("[setPlacementJoiningDate mirror]", mirrorError);
+
+    // Audit trail: guarantee window set/changed (admin-performed). Best-effort.
+    const { error: auditError } = await admin.from("audit_log").insert({
+        action_type: "placement_joining_date_set",
+        target_type: "placement",
+        target_id: placementId,
+        performed_by: adminUser.id,
+        metadata: { joining_date: joiningDate, guarantee_end_date: guaranteeEnd, activated: activate },
+    });
+    if (auditError) console.error("[audit:placement_joining_date_set]", { code: auditError.code, message: auditError.message });
+
+    if (activate) {
+        const { error: candidateError } = await admin
+            .from("candidates")
+            .update({ status: "guarantee_tracking", status_changed_at: new Date().toISOString() })
+            .eq("id", placement.candidate_id);
+        if (candidateError) {
+            console.error(`[setPlacementJoiningDate] candidate ${placement.candidate_id} not moved to guarantee_tracking:`, candidateError);
+        } else {
+            await logCandidateStageChange({
+                candidateId: placement.candidate_id,
+                jobId: placement.job_id,
+                fromStage: "hired",
+                toStage: "guarantee_tracking",
+                action: "move",
+                changedBy: adminUser.id,
+                changedByRole: "admin",
+            });
+        }
+    }
+
+    revalidatePath("/admin/guarantees");
+    revalidatePath("/company/billing");
+    revalidatePath("/company/guarantees");
+    revalidatePath("/recruiter/earnings");
+    revalidatePath("/recruiter/guarantees");
     return { success: true };
 }
 
@@ -411,9 +539,11 @@ export async function completeGuarantee(placementId: string) {
     const ok = await releaseGuaranteePayout(admin, adminUser.id, placement as GuaranteePlacementRow, "placement_guarantee_completed");
     if (!ok) return { error: "Något gick fel. Försök igen." };
 
-    revalidatePath("/admin/placements");
+    revalidatePath("/admin/guarantees");
     revalidatePath("/company/billing");
+    revalidatePath("/company/guarantees");
     revalidatePath("/recruiter/earnings");
+    revalidatePath("/recruiter/guarantees");
     return { success: true };
 }
 
@@ -446,7 +576,7 @@ export async function processGuaranteeExpirations() {
         if (ok) processed++;
     }
 
-    revalidatePath("/admin/placements");
+    revalidatePath("/admin/guarantees");
     return { success: true, processed };
 }
 
@@ -565,9 +695,11 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
     // Recalculate recruiter metrics
     await recalculateRecruiterMetrics(placement.recruiter_id);
 
-    revalidatePath("/admin/placements");
+    revalidatePath("/admin/guarantees");
     revalidatePath("/company/billing");
+    revalidatePath("/company/guarantees");
     revalidatePath("/recruiter/earnings");
+    revalidatePath("/recruiter/guarantees");
     return { success: true };
 }
 

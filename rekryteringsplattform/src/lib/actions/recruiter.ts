@@ -268,7 +268,9 @@ export async function getRecruiterEarnings() {
 
     const data = placements || [];
     const total = data.reduce((sum: number, p: any) => sum + (p.recruiter_fee || 0), 0);
-    const paid = data.filter((p: any) => p.status === "payout_released" || p.status === "payment_received").reduce((sum: number, p: any) => sum + (p.recruiter_fee || 0), 0);
+    // payment_received = client paid but the candidate hasn't joined yet (067) —
+    // the recruiter payout is NOT released, so it stays out of "paid".
+    const paid = data.filter((p: any) => p.status === "payout_released").reduce((sum: number, p: any) => sum + (p.recruiter_fee || 0), 0);
     const guarantee = data.filter((p: any) => p.status === "guarantee_active").reduce((sum: number, p: any) => sum + (p.recruiter_fee || 0), 0);
 
     return { placements: data, stats: { total, paid, guarantee } };

@@ -489,13 +489,16 @@ export async function getAdminPlacements() {
             company_id,
             recruiter_id,
             start_date,
+            joining_date,
             guarantee_end_date,
             invoice_sent_at,
             payment_received_at,
             created_at
         `)
         .order("created_at", { ascending: false })
-        .limit(10);
+        // ponytail: was limit(10) — silently hid rows on the admin's only
+        // guarantee-management surface. Paginate if this ever grows past 200.
+        .limit(200);
 
     if (error) {
         console.error("Error fetching placements:", error);
@@ -542,6 +545,7 @@ export async function getAdminPlacements() {
             recruiterFee: placement.recruiter_fee ?? Math.max(totalFee - (placement.platform_fee || 0), 0),
             status: placement.status,
             date: placement.created_at,
+            joiningDate: placement.joining_date,
             guaranteeEndDate: placement.guarantee_end_date,
             invoiceSentAt: placement.invoice_sent_at,
             paymentReceivedAt: placement.payment_received_at,

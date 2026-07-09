@@ -116,7 +116,7 @@ export default async function AdminRecruiterDetailPage({ params }: { params: Pro
                         {recruiter.placements.map((p) => (
                             <li key={p.id} className="py-2 flex items-center justify-between">
                                 <div>
-                                    <Link href="/admin/placements" className="font-medium hover:underline">{p.jobTitle}</Link>
+                                    <Link href="/admin/guarantees" className="font-medium hover:underline">{p.jobTitle}</Link>
                                     <p className="text-xs text-muted-foreground">{p.companyName}</p>
                                 </div>
                                 <div className="text-right">

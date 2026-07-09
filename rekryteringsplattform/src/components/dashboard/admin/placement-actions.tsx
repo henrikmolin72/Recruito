@@ -8,11 +8,13 @@ import {
     reportGuaranteeFailure,
     completeGuarantee,
     processGuaranteeExpirations,
+    setPlacementJoiningDate,
 } from "@/lib/actions/placements";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { FileText, CreditCard, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { FileText, CreditCard, AlertTriangle, CheckCircle2, Clock, Pencil, Check, X } from "lucide-react";
 import { useTranslations } from "@/i18n/client";
+import { formatDate } from "@/lib/utils";
 
 interface PlacementActionButtonsProps {
     placementId: string;
@@ -108,6 +110,93 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
                     </Button>
                 </>
             )}
+        </div>
+    );
+}
+
+interface JoiningDateCellProps {
+    placementId: string;
+    joiningDate: string | null;
+    /** Editable until the placement reaches a terminal state. */
+    locked: boolean;
+}
+
+/**
+ * Inline editor for the client-confirmed joining date. Guarantee Ends is
+ * auto-computed from the job's guarantee period; the optional end field
+ * overrides it (client request: "OR we can enter the end date manually").
+ */
+export function JoiningDateCell({ placementId, joiningDate, locked }: JoiningDateCellProps) {
+    const router = useRouter();
+    const { t } = useTranslations();
+    const [editing, setEditing] = useState(false);
+    const [joining, setJoining] = useState(joiningDate ?? "");
+    const [endOverride, setEndOverride] = useState("");
+    const [saving, setSaving] = useState(false);
+
+    async function handleSave() {
+        if (!joining) return;
+        setSaving(true);
+        try {
+            const result = await setPlacementJoiningDate(placementId, joining, endOverride || undefined);
+            if (result?.error) {
+                toast.error(result.error);
+            } else {
+                toast.success(t("admin.placementActionDone"));
+                setEditing(false);
+                router.refresh();
+            }
+        } catch {
+            toast.error(t("admin.placementErrorOccurred"));
+        }
+        setSaving(false);
+    }
+
+    if (!editing) {
+        return (
+            <div className="flex items-center gap-1.5">
+                {joiningDate ? (
+                    <span>{formatDate(joiningDate)}</span>
+                ) : (
+                    <span className="text-amber-600 font-medium">{t("admin.placementAwaitingJoining")}</span>
+                )}
+                {!locked && (
+                    <button
+                        type="button"
+                        className="text-slate-400 hover:text-slate-700 transition-colors"
+                        title={t("admin.placementSetJoiningDate")}
+                        onClick={() => setEditing(true)}
+                    >
+                        <Pencil className="h-3 w-3" />
+                    </button>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-1 flex-wrap">
+            <input
+                type="date"
+                value={joining}
+                onChange={(e) => setJoining(e.target.value)}
+                className="h-7 rounded border border-border bg-white px-1.5 text-xs"
+                aria-label={t("admin.placementSetJoiningDate")}
+            />
+            <input
+                type="date"
+                value={endOverride}
+                onChange={(e) => setEndOverride(e.target.value)}
+                className="h-7 rounded border border-border bg-white px-1.5 text-xs"
+                aria-label={t("admin.placementEndDateOptional")}
+                title={t("admin.placementEndDateOptional")}
+            />
+            <Button size="sm" variant="outline" className="h-7 px-2" disabled={saving || !joining} onClick={handleSave}>
+                <Check className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 px-2" disabled={saving} onClick={() => setEditing(false)}>
+                <X className="h-3 w-3" />
+            </Button>
         </div>
     );
 }

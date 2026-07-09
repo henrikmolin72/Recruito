@@ -6,12 +6,45 @@ import { getRecruiterDashboard, getAvailableJobsForRecruiter } from "@/lib/actio
 import { getRecruiterPerformanceMetrics } from "@/lib/actions/placements";
 import { PerformanceMetrics } from "@/components/dashboard/recruiter/performance-metrics";
 import { getDictionary } from "@/i18n/server";
+import { createClient } from "@/lib/supabase/server";
+import { GuaranteeTimer } from "@/components/guarantee/guarantee-timer";
+
+// Live guarantee countdowns for the dashboard — own placements via RLS, only
+// rows with a confirmed joining date and a still-running guarantee window.
+async function getActiveGuaranteeTimers() {
+  const supabase = await createClient();
+  const today = new Date().toISOString().split("T")[0];
+  const { data } = await supabase
+    .from("placements")
+    .select(`
+      id, joining_date, guarantee_end_date, status,
+      candidate:candidates!placements_candidate_id_fkey(first_name, last_name),
+      job:jobs(title)
+    `)
+    .not("joining_date", "is", null)
+    .gte("guarantee_end_date", today)
+    .in("status", ["confirmed", "invoice_sent", "payment_received", "guarantee_active"])
+    .order("guarantee_end_date", { ascending: true });
+
+  return (data ?? []).map((p: any) => {
+    const candidate = Array.isArray(p.candidate) ? p.candidate[0] : p.candidate;
+    const job = Array.isArray(p.job) ? p.job[0] : p.job;
+    return {
+      id: p.id,
+      joiningDate: p.joining_date as string,
+      guaranteeEndDate: p.guarantee_end_date as string,
+      candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : "—",
+      jobTitle: job?.title ?? "—",
+    };
+  });
+}
 
 export default async function RecruiterDashboard() {
-  const [dashboardData, metrics, availableJobs] = await Promise.all([
+  const [dashboardData, metrics, availableJobs, activeGuarantees] = await Promise.all([
     getRecruiterDashboard(),
     getRecruiterPerformanceMetrics(),
     getAvailableJobsForRecruiter(),
+    getActiveGuaranteeTimers(),
   ]);
   const { userName, mandates, stats } = dashboardData;
   const dict = await getDictionary();
@@ -56,6 +89,27 @@ export default async function RecruiterDashboard() {
       </div>
 
       {metrics && <PerformanceMetrics metrics={metrics} openJobs={availableJobs.length} />}
+
+      {activeGuarantees.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{r.activeGuaranteesTitle}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeGuarantees.map((g) => (
+                <GuaranteeTimer
+                  key={g.id}
+                  guaranteeEndDate={g.guaranteeEndDate}
+                  guaranteeStartDate={g.joiningDate}
+                  candidateName={g.candidateName}
+                  jobTitle={g.jobTitle}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

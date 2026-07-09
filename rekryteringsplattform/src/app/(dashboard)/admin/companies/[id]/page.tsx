@@ -102,7 +102,7 @@ export default async function AdminCompanyDetailPage({ params }: { params: Promi
                     <ul className="divide-y divide-border">
                         {company.placements.map((p) => (
                             <li key={p.id} className="py-2 flex items-center justify-between">
-                                <Link href="/admin/placements" className="font-medium hover:underline">{p.jobTitle}</Link>
+                                <Link href="/admin/guarantees" className="font-medium hover:underline">{p.jobTitle}</Link>
                                 <div className="text-right">
                                     <p className="font-medium">{p.totalFee.toLocaleString()}</p>
                                     <p className="text-xs text-muted-foreground">{p.status}</p>
