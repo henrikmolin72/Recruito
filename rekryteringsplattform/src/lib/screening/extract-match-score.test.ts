@@ -160,3 +160,46 @@ FINAL_MATCH_SCORE: 81`;
     expect(stripClientVisibleScores("")).toBe("");
   });
 });
+
+describe("stripClientVisibleScores — client-view polish (client request 2026-07-10)", () => {
+  it("never leaves an orphan '—%' — masked percentages read as a plain dash", () => {
+    const out = stripClientVisibleScores("The candidate scored 82% on direct match.");
+    expect(out).not.toContain("—%");
+    expect(out).toContain("—");
+  });
+
+  it("drops table rows whose value cell is fully masked instead of showing '| — |'", () => {
+    const out = stripClientVisibleScores(
+      "| Direct Match Score | 72% |\n| Overall Recommendation | ADVANCE |"
+    );
+    expect(out).not.toMatch(/Direct Match Score/);
+    expect(out).toContain("ADVANCE");
+  });
+
+  it("drops masked rows that carry trailing flag cells too", () => {
+    const out = stripClientVisibleScores("| Direct Match Score | 72% | ✅ Meets threshold |");
+    expect(out.trim()).toBe("");
+  });
+
+  it("keeps rows whose value cell still carries words after masking", () => {
+    const out = stripClientVisibleScores("| One-line rationale | Strong hire at 92% match |");
+    expect(out).toContain("Strong hire at — match");
+  });
+
+  it("drops JD Match rows — they contradict the tier label once numbers are hidden", () => {
+    const out = stripClientVisibleScores(
+      "| JD Match — Direct | Partial |\n| Overall Recommendation | ADVANCE |"
+    );
+    expect(out).not.toMatch(/JD Match/i);
+    expect(out).not.toMatch(/Partial/);
+    expect(out).toContain("ADVANCE");
+  });
+
+  it("drops the Outcome Logic line — internal machinery is meaningless without numbers", () => {
+    const out = stripClientVisibleScores(
+      "Outcome Logic Applied: Direct Match Score ≥ 80% → ADVANCE. No deal-breakers.\nProbing is advisable."
+    );
+    expect(out).not.toMatch(/Outcome Logic/i);
+    expect(out).toContain("Probing is advisable.");
+  });
+});

@@ -258,7 +258,9 @@ export async function getCompanyDashboard() {
 
     const activeJobsCount = jobs?.filter(j => j.status === 'active').length || 0;
     const draftJobsCount = jobs?.filter(j => j.status === 'draft').length || 0;
-    const closedJobsCount = jobs?.filter(j => j.status === 'closed' || j.status === 'paused').length || 0;
+    // Dashboard breakdown says "Closed" (client request 2026-07-10) — count must
+    // match the label, so paused jobs no longer inflate it.
+    const closedJobsCount = jobs?.filter(j => j.status === 'closed').length || 0;
 
     // Transform jobs for display
     const jobsFormatted = jobs?.map((job) => ({

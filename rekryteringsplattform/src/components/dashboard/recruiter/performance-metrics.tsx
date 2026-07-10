@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Clock, TrendingUp, Shield, Users, Briefcase } from "lucide-react";
+import { Clock, TrendingUp, Shield, Users, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createTranslator } from "@/i18n/server";
 
@@ -47,15 +47,6 @@ function MetricCard({
     );
 }
 
-function ProgressBar({ value, max = 100, color }: { value: number; max?: number; color: string }) {
-    const pct = Math.min(Math.max((value / max) * 100, 0), 100);
-    return (
-        <div className="h-2 w-full rounded-full bg-muted">
-            <div className={cn("h-2 rounded-full transition-all", color)} style={{ width: `${pct}%` }} />
-        </div>
-    );
-}
-
 export async function PerformanceMetrics({ metrics, openJobs }: PerformanceMetricsProps) {
     const t = await createTranslator();
     return (
@@ -67,15 +58,9 @@ export async function PerformanceMetrics({ metrics, openJobs }: PerformanceMetri
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+                {/* Hire rate lives ONLY in the dashboard "Hire rate" stat box —
+                    client request 2026-07-10: it was shown 3x (tile + box + bar). */}
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                    <MetricCard
-                        label={t("recruiter.perfHireRate")}
-                        value={metrics.hireRate}
-                        suffix="%"
-                        icon={Target}
-                        color="bg-brand-600"
-                        description={t("recruiter.perfHiredOf", { hired: metrics.candidatesHired, submitted: metrics.candidatesSubmitted })}
-                    />
                     <MetricCard
                         label={t("recruiter.perfAvgTimeToHire")}
                         value={metrics.avgTimeToHireDays}
@@ -110,16 +95,6 @@ export async function PerformanceMetrics({ metrics, openJobs }: PerformanceMetri
                         color="bg-purple-600"
                     />
                 </div>
-
-                {/* Hire rate progress */}
-                <div className="space-y-1.5 pt-1">
-                    <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">{t("recruiter.perfConversionRate")}</span>
-                        <span className="font-medium">{metrics.hireRate}%</span>
-                    </div>
-                    <ProgressBar value={metrics.hireRate} color="bg-brand-600" />
-                </div>
-
             </CardContent>
         </Card>
     );

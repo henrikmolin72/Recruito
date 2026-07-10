@@ -57,9 +57,19 @@ export function stripClientVisibleScores(markdown: string): string {
   return markdown
     // Machine marker line ("FINAL_MATCH_SCORE: NN") — drop the whole line.
     .replace(/^.*FINAL_MATCH_SCORE:\s*\d{1,3}\s*%?.*$/gim, "")
-    // Every 0–100 percentage → dash. Denylist-proof: no labelled format required.
-    .replace(/\b(?:100|\d{1,2})\s*%/g, "—%")
-    // Collapse the blank line left by the dropped marker line.
+    // Internal screening machinery reads as a contradiction once the numbers
+    // are hidden ("JD Match — Partial" next to "Overall Recommendation —
+    // ADVANCE"; "Outcome Logic Applied: ≥ — → ADVANCE") — drop those lines
+    // for the client view (client request 2026-07-10).
+    .replace(/^.*JD Match.*$/gim, "")
+    .replace(/^.*Outcome Logic.*$/gim, "")
+    // Every 0–100 percentage → dash. Denylist-proof: no labelled format
+    // required. Plain "—", not "—%" (client request 2026-07-10).
+    .replace(/\b(?:100|\d{1,2})\s*%/g, "—")
+    // A table row whose value cell got fully masked carries no information —
+    // drop the row instead of rendering "| Direct Match Score | — |".
+    .replace(/^\s*\|[^|\n]*\|\s*—\s*(\|[^\n]*)?$/gim, "")
+    // Collapse the blank lines left by the dropped lines.
     .replace(/\n{3,}/g, "\n\n")
     .trimEnd();
 }

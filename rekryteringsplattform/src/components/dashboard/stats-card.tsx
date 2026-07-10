@@ -17,7 +17,9 @@ export async function StatsCard({ title, value, description, icon: Icon, trend }
     <Card className="p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
+          {/* min-h-10 reserves two title lines so the numbers sit at the same
+              height across a card row (client request 2026-07-10) */}
+          <p className="text-sm text-muted-foreground min-h-10">{title}</p>
           <p className="text-2xl font-bold mt-1">{value}</p>
           {trend && (
             <p className={cn("text-xs mt-1", trend.positive ? "text-success-500" : "text-danger-500")}>

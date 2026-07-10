@@ -108,6 +108,9 @@ export function CandidateSubmissionForm({
 
     // --- Section 4: notice negotiable ---
     const [noticeNegotiable, setNoticeNegotiable] = useState(draft?.notice_negotiable ? "yes" : "");
+    // Tracked only to hide the negotiable question for immediately-available
+    // candidates (client request 2026-07-10); the radio itself stays uncontrolled.
+    const [noticePeriod, setNoticePeriod] = useState(ds("notice_period"));
 
     // --- Section 4: compensation (linked currency + below-current reason) ---
     const [currentCurrency, setCurrentCurrency] = useState(draft?.current_salary_currency || "EUR");
@@ -261,7 +264,8 @@ export function CandidateSubmissionForm({
         fd.set("employment_status", employmentStatus);
         fd.set("other_processes", otherProcesses);
         fd.set("other_processes_stage", otherProcessesStage);
-        fd.set("notice_negotiable", noticeNegotiable);
+        // Immediately available → no notice period, so "negotiable" is moot.
+        fd.set("notice_negotiable", noticePeriod === "immediately" ? "" : noticeNegotiable);
         fd.set("contact_method", contactMethod);
         fd.set("language_proficiency", JSON.stringify(languages.filter((l) => l.language)));
         fd.set(
@@ -902,12 +906,13 @@ export function CandidateSubmissionForm({
                                         { value: "3_months", label: r.notice3Months || "3 Months" },
                                     ].map((opt) => (
                                         <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="notice_period" value={opt.value} defaultChecked={draftTextFields["notice_period"] === opt.value} className="accent-brand-600 h-4 w-4" />
+                                            <input type="radio" name="notice_period" value={opt.value} defaultChecked={draftTextFields["notice_period"] === opt.value} onChange={() => setNoticePeriod(opt.value)} className="accent-brand-600 h-4 w-4" />
                                             <span className="text-sm text-slate-700">{opt.label}</span>
                                         </label>
                                     ))}
                                 </div>
                             </div>
+                            {noticePeriod !== "immediately" && (
                             <div className="mt-4">
                                 <Label>{r.noticeNegotiableLabel || "Is notice period negotiable?"}</Label>
                                 <div className="flex gap-3 mt-1">
@@ -929,6 +934,7 @@ export function CandidateSubmissionForm({
                                     ))}
                                 </div>
                             </div>
+                            )}
                         </div>
                     </div>
                 </div>

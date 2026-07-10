@@ -33,11 +33,11 @@ export default async function CompanyDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        <StatsCard title={c.activeJobs} value={stats.activeJobs} icon={Briefcase} description={`Draft ${stats.draftJobs} / ${c.statusPaused || "Paused"} ${stats.closedJobs}`} />
+        <StatsCard title={c.activeJobs} value={stats.activeJobs} icon={Briefcase} description={`Draft ${stats.draftJobs} / ${c.statusClosed} ${stats.closedJobs}`} />
         <StatsCard title={c.presentedCandidates} value={stats.candidates} icon={Users} />
         <StatsCard title={c.tableCandidates} value={stats.activeCandidates} icon={UserCheck} />
         <StatsCard title={c.ongoingInterviews} value={stats.interviews} icon={Clock} />
-        <StatsCard title={c.successfulPlacements} value={stats.placements} icon={CheckCircle} description={c.totalCount} />
+        <StatsCard title={c.successfulPlacements} value={stats.placements} icon={CheckCircle} />
       </div>
 
       {activeGuarantees.length > 0 && (
