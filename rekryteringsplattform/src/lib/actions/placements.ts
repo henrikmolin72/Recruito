@@ -394,6 +394,39 @@ export async function setPlacementJoiningDate(
     return { success: true };
 }
 
+/**
+ * Live guarantee countdowns for the recruiter/company dashboards — own
+ * placements via RLS, only rows with a confirmed joining date and a
+ * still-running guarantee window.
+ */
+export async function getMyActiveGuaranteeTimers() {
+    const supabase = await createClient();
+    const today = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+        .from("placements")
+        .select(`
+            id, joining_date, guarantee_end_date, status,
+            candidate:candidates!placements_candidate_id_fkey(first_name, last_name),
+            job:jobs(title)
+        `)
+        .not("joining_date", "is", null)
+        .gte("guarantee_end_date", today)
+        .in("status", ["confirmed", "invoice_sent", "payment_received", "guarantee_active"])
+        .order("guarantee_end_date", { ascending: true });
+
+    return (data ?? []).map((p: any) => {
+        const candidate = Array.isArray(p.candidate) ? p.candidate[0] : p.candidate;
+        const job = Array.isArray(p.job) ? p.job[0] : p.job;
+        return {
+            id: p.id as string,
+            joiningDate: p.joining_date as string,
+            guaranteeEndDate: p.guarantee_end_date as string,
+            candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : "—",
+            jobTitle: job?.title ?? "—",
+        };
+    });
+}
+
 // =============================================
 // Guarantee Period Automation
 // =============================================
@@ -824,23 +857,3 @@ export async function getRecruiterPerformanceMetrics() {
     return mapRecruiterPerfRow(recruiter);
 }
 
-// =============================================
-// Admin: get all placements with full details
-// =============================================
-
-export async function getAdminPlacements() {
-    await requireAdmin();
-    const admin = createAdminClient();
-    const { data } = await admin
-        .from("placements")
-        .select(`
-            *,
-            candidate:candidates!placements_candidate_id_fkey(first_name, last_name, email, status),
-            job:jobs(title),
-            company:companies(company_name),
-            recruiter:recruiters(id, user_id)
-        `)
-        .order("created_at", { ascending: false });
-
-    return data || [];
-}

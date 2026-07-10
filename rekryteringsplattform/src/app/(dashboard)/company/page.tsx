@@ -2,44 +2,14 @@ import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Briefcase, Users, UserCheck, Clock, CheckCircle } from "lucide-react";
 import { getCompanyDashboard } from "@/lib/actions/company";
+import { getMyActiveGuaranteeTimers } from "@/lib/actions/placements";
 import { getDictionary } from "@/i18n/server";
-import { createClient } from "@/lib/supabase/server";
 import { GuaranteeTimer } from "@/components/guarantee/guarantee-timer";
-
-// Live guarantee countdowns for the dashboard — own placements via RLS, only
-// rows with a confirmed joining date and a still-running guarantee window.
-async function getActiveGuaranteeTimers() {
-  const supabase = await createClient();
-  const today = new Date().toISOString().split("T")[0];
-  const { data } = await supabase
-    .from("placements")
-    .select(`
-      id, joining_date, guarantee_end_date, status,
-      candidate:candidates!placements_candidate_id_fkey(first_name, last_name),
-      job:jobs(title)
-    `)
-    .not("joining_date", "is", null)
-    .gte("guarantee_end_date", today)
-    .in("status", ["confirmed", "invoice_sent", "payment_received", "guarantee_active"])
-    .order("guarantee_end_date", { ascending: true });
-
-  return (data ?? []).map((p: any) => {
-    const candidate = Array.isArray(p.candidate) ? p.candidate[0] : p.candidate;
-    const job = Array.isArray(p.job) ? p.job[0] : p.job;
-    return {
-      id: p.id,
-      joiningDate: p.joining_date as string,
-      guaranteeEndDate: p.guarantee_end_date as string,
-      candidateName: candidate ? `${candidate.first_name} ${candidate.last_name}` : "—",
-      jobTitle: job?.title ?? "—",
-    };
-  });
-}
 
 export default async function CompanyDashboard() {
   const [{ company, stats, recentActivity }, activeGuarantees] = await Promise.all([
     getCompanyDashboard(),
-    getActiveGuaranteeTimers(),
+    getMyActiveGuaranteeTimers(),
   ]);
   const dict = await getDictionary();
   const c = dict.company;
