@@ -8,7 +8,7 @@ import { Recruiter } from "@/types/db-types";
 import { createNotification } from "@/lib/notifications/create";
 import { validateRecruiterOnboardingProfileForm, validateRecruiterProfileForm } from "@/lib/validation/forms";
 import { sendInternalRecruiterEmail } from "@/lib/email/internal-notifications";
-import { candidateInStage, candidateReachedInterview, classifyMandate, computeJobProcessStats } from "@/lib/mandate-stages";
+import { candidateInStage, candidateReachedInterview, classifyMandate, computeJobProcessStats, groupStageReasons } from "@/lib/mandate-stages";
 import { isCandidateInProcess, countCandidatesAgainstCap, candidateOccupiesCapSlot } from "@/lib/candidate-workflow";
 import { releaseDueMandates } from "@/lib/mandate-expiry-release";
 import { selectMarketplaceJobs } from "@/lib/marketplace-visibility";
@@ -709,6 +709,30 @@ export async function getJobProcessStats(jobId: string) {
     }
 
     return computeJobProcessStats(data || []);
+}
+
+// Client-rejection reasons for a job, grouped ("Salary expectations ×2"),
+// shown to any recruiter on the job under the "Ongoing process" card so they
+// can align their search (client request 2026-07-11). Structured reason labels
+// only — no candidate PII crosses recruiters.
+export async function getJobRejectionReasons(jobId: string) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const admin = createAdminClient();
+    const { data, error } = await admin
+        .from("candidate_stage_history")
+        .select("reason")
+        .eq("job_id", jobId)
+        .eq("action", "reject")
+        .not("reason", "is", null);
+
+    if (error) {
+        console.error("[getJobRejectionReasons]", error);
+        return [];
+    }
+    return groupStageReasons(data || []);
 }
 
 export async function getRecruiterMandateById(mandateId: string) {

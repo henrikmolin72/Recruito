@@ -5,6 +5,7 @@ import {
     classifyMandate,
     computeJobProcessStats,
     countActiveRecruiters,
+    groupStageReasons,
     isActiveCompanyCandidate,
     isMandateLiveActive,
     mandateExpiryDaysLeft,
@@ -314,5 +315,34 @@ describe("isActiveCompanyCandidate", () => {
         ]) {
             expect(isActiveCompanyCandidate(s)).toBe(false);
         }
+    });
+});
+
+describe("groupStageReasons — rejection reasons list (client request 2026-07-11)", () => {
+    it("groups by reason, counts, sorts by count desc then alphabetically", () => {
+        expect(
+            groupStageReasons([
+                { reason: "Salary expectations" },
+                { reason: "Missing certification" },
+                { reason: "Salary expectations" },
+                { reason: "Location" },
+                { reason: "Missing certification" },
+                { reason: "Salary expectations" },
+            ])
+        ).toEqual([
+            { reason: "Salary expectations", count: 3 },
+            { reason: "Missing certification", count: 2 },
+            { reason: "Location", count: 1 },
+        ]);
+    });
+
+    it("skips null/blank reasons and trims before grouping", () => {
+        expect(
+            groupStageReasons([{ reason: null }, { reason: "  " }, { reason: " Location " }, { reason: "Location" }])
+        ).toEqual([{ reason: "Location", count: 2 }]);
+    });
+
+    it("returns an empty list for no rejections", () => {
+        expect(groupStageReasons([])).toEqual([]);
     });
 });

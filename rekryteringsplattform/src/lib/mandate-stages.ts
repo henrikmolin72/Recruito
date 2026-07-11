@@ -214,6 +214,22 @@ export function computeJobProcessStats(rows: StageCandidate[]): JobProcessStatCo
     };
 }
 
+// Client-rejection reasons for a job, grouped for the "Ongoing process" card
+// (client request 2026-07-11): recruiters see WHY the client rejects so they
+// can align their search. Reasons are structured labels (no PII), so they are
+// safe to show across all recruiters on the job.
+export function groupStageReasons(rows: { reason: string | null }[]): { reason: string; count: number }[] {
+    const counts = new Map<string, number>();
+    for (const row of rows) {
+        const reason = row.reason?.trim();
+        if (!reason) continue;
+        counts.set(reason, (counts.get(reason) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+        .map(([reason, count]) => ({ reason, count }))
+        .sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason));
+}
+
 // Whether a company-visible candidate counts as "Active" in the company Jobs
 // list "Active Candidates" column: still in an active stage (In Review →
 // Submitted → Interview → Final Interview → Offer → Hired). Mirrors
