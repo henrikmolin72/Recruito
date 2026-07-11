@@ -94,7 +94,7 @@ export async function getCompanyCandidateScreening(
 
   const { data, error } = await createAdminClient()
     .from("candidate_screenings")
-    .select("report_markdown, model_version, created_at")
+    .select("report_markdown, client_report_markdown, model_version, created_at")
     .eq("candidate_id", candidateId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -107,11 +107,12 @@ export async function getCompanyCandidateScreening(
   if (!data) return null;
   const d = data as any;
   return {
-    // Redact the raw match percentage for the client — they get the tier label
-    // (Excellent/Strong/Good) on the candidate header, not a number (client
-    // request 2026-07-02). Recruiter/admin views use getLatestEvaluation and
-    // keep the full report with its score.
-    reportMarkdown: stripClientVisibleScores(d.report_markdown),
+    // Preferred: the dedicated client-facing report (own prompt, no scores —
+    // client request 2026-07-11). Legacy rows / failed generation fall back to
+    // the internal report. stripClientVisibleScores stays on BOTH as the
+    // no-raw-percentages guarantee (a no-op on a well-formed client report);
+    // recruiter/admin views use getLatestEvaluation and keep the full report.
+    reportMarkdown: stripClientVisibleScores(d.client_report_markdown ?? d.report_markdown),
     modelVersion: d.model_version,
     createdAt: d.created_at,
   };

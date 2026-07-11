@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/screening/eval-data", () => ({ authorizeMandate: vi.fn() }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: vi.fn() }));
 
-import { getLatestEvaluation } from "./screening";
+import { getLatestEvaluation, getCompanyCandidateScreening } from "./screening";
 import { authorizeMandate } from "@/lib/screening/eval-data";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const authMock = authorizeMandate as unknown as ReturnType<typeof vi.fn>;
 
@@ -58,5 +62,60 @@ describe("getLatestEvaluation", () => {
       userId: "u-1", isAdmin: false,
     });
     expect(await getLatestEvaluation("victim-candidate", "m-1")).toBeNull();
+  });
+});
+
+// Company view: an owning, screened, client-visible-tier candidate — the fixture
+// only varies which report markdown is stored on the newest screenings row.
+function stubCompanyStack(screeningRow: any) {
+  (createClient as any).mockResolvedValue({
+    auth: { getUser: () => Promise.resolve({ data: { user: { id: "owner-1" } } }) },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({
+            data: {
+              job_id: "j-1",
+              recruito_screened_at: "2026-07-01T00:00:00Z",
+              ai_match_score: 90,
+              job: { company: { user_id: "owner-1" } },
+            },
+          }),
+        }),
+      }),
+    }),
+  });
+  const chain: any = {
+    select: () => chain, eq: () => chain, order: () => chain, limit: () => chain,
+    maybeSingle: () => Promise.resolve({ data: screeningRow, error: null }),
+  };
+  (createAdminClient as any).mockReturnValue({ from: () => chain });
+}
+
+describe("getCompanyCandidateScreening — client-facing report (client request 2026-07-11)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const base = { model_version: "claude-x", created_at: "2026-07-11T00:00:00Z" };
+
+  it("serves the dedicated client report untouched when present", async () => {
+    stubCompanyStack({
+      ...base,
+      report_markdown: "| Direct Match Score | 85% |",
+      client_report_markdown: "## Candidate Overview\nStrong profile for the role.",
+    });
+    const res = await getCompanyCandidateScreening("c-1");
+    expect(res?.reportMarkdown).toBe("## Candidate Overview\nStrong profile for the role.");
+  });
+
+  it("legacy row (no client report) falls back to the masked internal report", async () => {
+    stubCompanyStack({ ...base, report_markdown: "Direct Match Score: 85%", client_report_markdown: null });
+    const res = await getCompanyCandidateScreening("c-1");
+    expect(res?.reportMarkdown).not.toContain("85%");
+  });
+
+  it("safety net: a percentage slipping into the client report is still stripped", async () => {
+    stubCompanyStack({ ...base, report_markdown: "internal", client_report_markdown: "Matches around 90% of needs." });
+    const res = await getCompanyCandidateScreening("c-1");
+    expect(res?.reportMarkdown).not.toContain("90%");
   });
 });

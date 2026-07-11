@@ -63,6 +63,11 @@ export function stripClientVisibleScores(markdown: string): string {
     // for the client view (client request 2026-07-10).
     .replace(/^.*JD Match.*$/gim, "")
     .replace(/^.*Outcome Logic.*$/gim, "")
+    // "Human Review Recommended: NO — Reason: score of — meets…" is internal
+    // machinery that alarmed the client (report 2026-07-11, image 6) — drop the
+    // flag line. The "| Overall Recommendation | HUMAN REVIEW |" value stays
+    // (2026-07-10 decision: recommendation words survive).
+    .replace(/^.*Human Review Recommended.*$/gim, "")
     // Every 0–100 percentage → dash. Denylist-proof: no labelled format
     // required. Plain "—", not "—%" (client request 2026-07-10).
     .replace(/\b(?:100|\d{1,2})\s*%/g, "—")

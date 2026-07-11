@@ -128,6 +128,38 @@ describe("runCandidateEvaluation", () => {
     expect(textBlock).not.toContain("no answer provided");
   });
 
+  it("generates a separate client-facing report and stores it alongside the internal one", async () => {
+    gather.mockResolvedValue(evalData("cvs/jane.pdf"));
+    anthropicCreate
+      .mockResolvedValueOnce({ content: [{ type: "text", text: "INTERNAL 85%" }] })
+      .mockResolvedValueOnce({ content: [{ type: "text", text: "## Candidate Overview\nClient-friendly." }] });
+    const admin = makeAdmin();
+    const res = await runCandidateEvaluation(baseArgs(admin, true));
+    expect(res.ok).toBe(true);
+    expect(anthropicCreate).toHaveBeenCalledTimes(2);
+    // Second call rewrites the internal report with the client prompt…
+    expect(anthropicCreate.mock.calls[1][0].messages[0].content).toContain("INTERNAL 85%");
+    // …and both land on the same stored row.
+    expect(admin.screeningsInsert).toHaveBeenCalledWith(expect.objectContaining({
+      report_markdown: "INTERNAL 85%",
+      client_report_markdown: "## Candidate Overview\nClient-friendly.",
+    }));
+  });
+
+  it("a failed client-report call never sinks the evaluation — stores null, still ok", async () => {
+    gather.mockResolvedValue(evalData("cvs/jane.pdf"));
+    anthropicCreate
+      .mockResolvedValueOnce({ content: [{ type: "text", text: "INTERNAL 85%" }] })
+      .mockRejectedValueOnce(new Error("client call down"));
+    const admin = makeAdmin();
+    const res = await runCandidateEvaluation(baseArgs(admin, true));
+    expect(res.ok).toBe(true);
+    expect(admin.screeningsInsert).toHaveBeenCalledWith(expect.objectContaining({
+      report_markdown: "INTERNAL 85%",
+      client_report_markdown: null,
+    }));
+  });
+
   it("returns a 500 when the API key is missing", async () => {
     delete process.env.ANTHROPIC_API_KEY;
     gather.mockResolvedValue(evalData("cvs/jane.pdf"));

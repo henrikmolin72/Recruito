@@ -13,6 +13,7 @@ import { gatherEvalData } from "@/lib/screening/eval-data";
 import { extractMatchScore } from "@/lib/screening/extract-match-score";
 import { extractCriticalGaps } from "@/lib/screening/extract-critical-gaps";
 import { fillEvaluationPrompt } from "@/lib/screening/evaluation-prompt";
+import { fillClientReportPrompt } from "@/lib/screening/client-report-prompt";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -104,6 +105,32 @@ export async function runCandidateEvaluation(args: {
 
   if (!reportMarkdown) return { ok: false, error: "Empty AI response", status: 500 };
 
+  // Second pass — separate CLIENT-FACING report (client request 2026-07-11):
+  // rewrites the internal report qualitatively (no scores), replacing the old
+  // regex-masked view that showed broken "—" sentences to the company. Failure
+  // must never sink the evaluation: null falls back to the masked report.
+  let clientReportMarkdown: string | null = null;
+  try {
+    const clientResponse = await anthropic.messages.create({
+      model,
+      max_tokens: 3000,
+      temperature: 0, // same Sonnet 4.6 caveat as above
+      messages: [
+        {
+          role: "user",
+          content: fillClientReportPrompt({ jdText: data.jdText, internalReport: reportMarkdown }),
+        },
+      ],
+    });
+    clientReportMarkdown = clientResponse.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as any).text)
+      .join("")
+      .trim() || null;
+  } catch (clientReportError) {
+    console.error("[run-evaluation] client report generation failed", clientReportError);
+  }
+
   // Store for re-views + audit trail. Failure to store must NOT lose the report:
   // callers surface it from this return value (render-from-response), so a missing
   // candidate_screenings row only costs persisted re-views, not the live result.
@@ -115,6 +142,7 @@ export async function runCandidateEvaluation(args: {
     job_id: data.jobId,
     recruiter_user_id: actorUserId,
     report_markdown: reportMarkdown,
+    client_report_markdown: clientReportMarkdown,
     model_version: model,
     cv_hash: cvHash,
   });

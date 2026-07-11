@@ -202,4 +202,13 @@ describe("stripClientVisibleScores — client-view polish (client request 2026-0
     expect(out).not.toMatch(/Outcome Logic/i);
     expect(out).toContain("Probing is advisable.");
   });
+
+  it("drops the Human Review Recommended flag line — internal machinery that alarmed the client (2026-07-11, image 6)", () => {
+    const out = stripClientVisibleScores(
+      "**Human Review Recommended:** NO **Reason:** Direct Match Score of 88% meets the ADVANCE threshold.\nKubernetes probing is advisable.\n| Overall Recommendation | HUMAN REVIEW |"
+    );
+    expect(out).not.toMatch(/Human Review Recommended/i);
+    expect(out).toContain("Kubernetes probing is advisable.");
+    expect(out).toContain("HUMAN REVIEW"); // the recommendation VALUE survives (2026-07-10 decision)
+  });
 });
