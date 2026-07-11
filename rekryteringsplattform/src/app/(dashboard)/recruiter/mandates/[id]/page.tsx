@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { DraftRowActions } from "@/components/dashboard/recruiter/draft-row-actions";
 import { DownloadJobDescription } from "@/components/dashboard/recruiter/download-job-description";
-import { ShortlistGenerator } from "@/components/screening/shortlist-generator";
+import { PresentationGenerator } from "@/components/screening/presentation-generator";
 import { getRecruiterMandateById, getJobProcessStats } from "@/lib/actions/recruiter";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -146,7 +146,6 @@ export default async function RecruiterMandateDetailsPage({
         </div>
 
         <div className="flex items-center gap-2">
-          {jobId ? <ShortlistGenerator jobId={jobId} /> : null}
           <DownloadJobDescription mandate={mandate} />
           {presentBlocked ? (
             <Button size="sm" disabled className="bg-success-500 gap-1 opacity-60 cursor-not-allowed">
@@ -242,9 +241,12 @@ export default async function RecruiterMandateDetailsPage({
                           confirmLabel={(r as any).removeDraftConfirm || "Ta bort detta utkast?"}
                         />
                       ) : (
-                        <Link href={`/recruiter/mandates/${mandate.id}/candidates/${candidate.id}`} className="text-brand-600 hover:text-brand-700 font-medium">
-                          {r.openCandidate}
-                        </Link>
+                        <div className="flex items-center gap-3">
+                          <Link href={`/recruiter/mandates/${mandate.id}/candidates/${candidate.id}`} className="text-brand-600 hover:text-brand-700 font-medium">
+                            {r.openCandidate}
+                          </Link>
+                          <PresentationGenerator candidateId={candidate.id} candidateName={candidate.name} />
+                        </div>
                       )}
                     </td>
                   </tr>
