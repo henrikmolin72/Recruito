@@ -125,3 +125,25 @@ notable lines into a dated milestone summary periodically, then trim.
 - 6dc0fba fix(company): exclude failed placements from placement counts
 - 6ece46a fix(candidates): log every stage transition to candidate_stage_history
 - d51c619 feat(placements): log guarantee-lifecycle moves to candidate timeline
+
+## 2026-07-08 (cont.)
+- 7c184e5 fix(db): capture prod-only candidates.company_stage columns in migration 066
+- fbbcd55 fix(ui): suppress hydration warnings on locale-formatted timestamps
+- 1166f50 feat(company): add Active Candidates stat + real Recent activity feed
+- eb21ab8 fix(hooks): stop pre-commit typecheck failing on half-written .next/dev types
+- 93536f2 fix(admin): job detail 404 — select referenced non-existent companies.linkedin_url
+- 19f6596 chore(ui): drop dead LinkedIn branch from JobPreviewCard
+
+## 2026-07-09
+- 61dfa0d feat(guarantee): start guarantee at client-confirmed joining date (migration 067)
+
+## 2026-07-10
+- a72a7c1 chore(guarantee): ponytail cleanup — dedupe dashboard loader, drop dead code
+- 8e94815 fix(ui): client-reported fixes from annotated screenshots (images 1-7, 15-17)
+
+## 2026-07-11
+- 2832f61 feat(screening): dedicated client-facing AI report — separate prompt replaces masking (migration 068)
+- 1c1450e fix(ui): client-reported fixes — guarantee bars, mandate stats heading, rejection reasons, payout copy
+- de0c1e0 chore(screening): ponytail shrink — dedupe response-text extraction into textOf()
+- 9e94aca feat(screening): per-candidate AI presentation replaces batch Top-5 shortlist
+- 98f0fec chore(repo): stop tracking machine state — OMC replays/sessions, graphify cache, traces
