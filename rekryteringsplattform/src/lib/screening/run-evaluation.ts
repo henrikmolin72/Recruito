@@ -97,11 +97,10 @@ export async function runCandidateEvaluation(args: {
     ],
   });
 
-  const reportMarkdown = response.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b as any).text)
-    .join("")
-    .trim();
+  const textOf = (r: typeof response) =>
+    r.content.filter((b) => b.type === "text").map((b) => (b as any).text).join("").trim();
+
+  const reportMarkdown = textOf(response);
 
   if (!reportMarkdown) return { ok: false, error: "Empty AI response", status: 500 };
 
@@ -122,11 +121,7 @@ export async function runCandidateEvaluation(args: {
         },
       ],
     });
-    clientReportMarkdown = clientResponse.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b as any).text)
-      .join("")
-      .trim() || null;
+    clientReportMarkdown = textOf(clientResponse) || null;
   } catch (clientReportError) {
     console.error("[run-evaluation] client report generation failed", clientReportError);
   }
