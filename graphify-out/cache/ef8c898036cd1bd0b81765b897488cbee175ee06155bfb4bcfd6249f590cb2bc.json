@@ -1,1 +1,0 @@
-{"nodes": [{"id": "candidate-identity_module", "label": "candidate-identity", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/candidate-identity.ts", "domain": "candidate workflow / dedup", "summary": "Identity normalization + email/LinkedIn matching for duplicate detection and active client-engagement check."}], "edges": [], "hyperedges": []}

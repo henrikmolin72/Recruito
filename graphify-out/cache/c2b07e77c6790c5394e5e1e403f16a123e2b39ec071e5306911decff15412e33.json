@@ -1,1 +1,0 @@
-{"nodes": [{"id": "job-form-options_module", "label": "job-form-options", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/job-form-options.ts", "domain": "options/enums", "summary": "Static dropdown/select option lists for job posting form (employment, salary, benefits, industries, countries in Swedish, etc.)."}], "edges": [], "hyperedges": []}

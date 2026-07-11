@@ -1,13 +1,23 @@
 .DS_Store
+node_modules/
 
 # Claude Code local-only config (may contain personal allow rules)
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 
-# OMC ephemeral state
-.omc/state/
-.omc/sessions/
-.omc/notepad.md
+# OMC ephemeral state — **/ so the app-level .omc/ is covered too
+# (.omc/project-memory.json stays tracked on purpose)
+**/.omc/state/
+**/.omc/sessions/
+**/.omc/notepad.md
+
+# Claude Code run traces (regenerable)
+**/.claude/traces/
+
+# graphify machine state (report + graph.json stay tracked)
+graphify-out/cache/
+graphify-out/.stale
+graphify-out/.graphify_python
 
 # eval-harness
 eval-runs/

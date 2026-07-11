@@ -1,7 +1,0 @@
-{
-  "tool_name": "mcp__e87c9d91-8b21-44df-a276-f0d7f92c2c03__execute_sql",
-  "tool_input_preview": "{\"project_id\":\"zzskjstnozqqpevkvswc\",\"query\":\"select id, first_name, last_name, status,\\n  created_at,\\n  location_city, location_country, location_status,\\n  current_salary, desired_salary, notice_pe...",
-  "error": "{\"error\":{\"name\":\"McpError\",\"message\":\"MCP error -32600: You do not have permission to perform this action\"}}",
-  "timestamp": "2026-06-22T16:44:30.864Z",
-  "retry_count": 1
-}

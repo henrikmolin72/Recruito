@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"sed -n '100,120p' rekryteringsplattform/src/components/dashboard/company/company-candidates-overview.tsx\",\"description\":\"Check company overview active filter\"}",
-  "error": "Exit code 1\nsed: rekryteringsplattform/src/components/dashboard/company/company-candidates-overview.tsx: No such file or directory",
-  "timestamp": "2026-06-10T12:39:36.747Z",
-  "retry_count": 1
-}

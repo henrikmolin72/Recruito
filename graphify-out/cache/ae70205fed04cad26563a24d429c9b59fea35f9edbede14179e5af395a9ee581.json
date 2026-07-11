@@ -1,1 +1,0 @@
-{"nodes": [{"id": "site-url_module", "label": "site-url", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/site-url.ts", "domain": "url helpers", "summary": "Synchronous getSiteUrl building canonical base URL purely from NEXT_PUBLIC_APP_URL (adds https://, strips trailing slash), localhost fallback."}], "edges": [], "hyperedges": []}

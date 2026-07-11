@@ -1,1 +1,0 @@
-{"nodes": [{"id": "cookie-consent_module", "label": "cookie-consent", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/cookie-consent.ts", "domain": "consent/privacy", "summary": "Cookie-based GDPR consent state (necessary/analytics) with versioned JSON cookie, read/write helpers, and a consent-updated DOM event."}], "edges": [], "hyperedges": []}

@@ -1,1 +1,0 @@
-{"nodes": [{"id": "client_createClient", "label": "createClient (browser)", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/supabase/client.ts", "summary": "Browser Supabase client built from the anon key."}], "edges": [], "hyperedges": []}

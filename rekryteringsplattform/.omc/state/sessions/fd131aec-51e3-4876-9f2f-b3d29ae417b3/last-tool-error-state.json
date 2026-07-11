@@ -1,7 +1,0 @@
-{
-  "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"/Users/henrikmolin/Desktop/Recruito/rekryteringsplattform/e2e/smoke.spec.ts\"}",
-  "error": "File does not exist. Note: your current working directory is /Users/henrikmolin/Desktop/Recruito/rekryteringsplattform.",
-  "timestamp": "2026-06-23T18:26:14.045Z",
-  "retry_count": 1
-}

@@ -1,1 +1,0 @@
-{"nodes": [{"id": "guarantee-test_computeProportionalRefund", "label": "guarantee.test", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/guarantee.test.ts", "summary": "Vitest suite pinning computeProportionalRefund behavior (3x-refund regression, proportional, expiry, missing-start fallback)."}], "edges": [], "hyperedges": []}

@@ -1,1 +1,0 @@
-{"nodes": [{"id": "file-magic_module", "label": "file-magic", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/file-magic.ts", "domain": "validation/security", "summary": "Server-side magic-byte content validation for CV (pdf/doc/docx/rtf/txt) and image (jpg/png/webp) uploads per CLAUDE.md \u00a76."}], "edges": [], "hyperedges": []}

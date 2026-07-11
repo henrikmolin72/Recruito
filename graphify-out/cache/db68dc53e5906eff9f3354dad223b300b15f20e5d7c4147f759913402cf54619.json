@@ -1,1 +1,0 @@
-{"nodes": [{"id": "sanitize_module", "label": "sanitize", "file_type": "code", "source_file": "rekryteringsplattform/src/lib/sanitize.ts", "domain": "validation/security", "summary": "HTML sanitization (sanitizeRichText allows safe formatting tags; stripHtml for AI prompts/plain text) via sanitize-html."}], "edges": [], "hyperedges": []}
