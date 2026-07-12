@@ -148,6 +148,8 @@
     "candidate_withdrawn": "Kandidat trak sig",
     "recruito_rejected": "Afvist - Recruito",
     "pending": "Afventer",
+    "pending_approval": "Afventer godkendelse",
+    "pending_client_reconfirm": "Afventer ny bekræftelse",
     "approved": "Godkendt",
     "suspended": "Suspenderet",
     "confirmed": "Bekræftet",

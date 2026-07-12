@@ -148,6 +148,8 @@
     "candidate_withdrawn": "Candidate withdrawn",
     "recruito_rejected": "Rejected - Recruito",
     "pending": "Pending",
+    "pending_approval": "Pending Approval",
+    "pending_client_reconfirm": "Pending Re-confirmation",
     "approved": "Approved",
     "suspended": "Suspended",
     "confirmed": "Confirmed",

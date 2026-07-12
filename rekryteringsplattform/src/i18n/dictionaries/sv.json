@@ -148,6 +148,8 @@
     "candidate_withdrawn": "Kandidat drog sig ur",
     "recruito_rejected": "Avvisad - Recruito",
     "pending": "Väntande",
+    "pending_approval": "Väntar på godkännande",
+    "pending_client_reconfirm": "Väntar på ny bekräftelse",
     "approved": "Godkänd",
     "suspended": "Avstängd",
     "confirmed": "Bekräftad",
