@@ -82,7 +82,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
 
   const filteredJobs = useMemo(() => {
     const filtered = jobs.filter((job: any) => {
-      const searchStr = `${job.title} ${job.company_name} ${job.industry} ${job.location} ${job.description || ""}`.toLowerCase();
+      const searchStr = `${job.title} ${job.company_name || ""} ${job.industry} ${job.location} ${job.description || ""}`.toLowerCase();
       const matchesSearch = !search || searchStr.includes(search.toLowerCase());
       const matchesIndustry = industry === "all" || job.industry === industry;
       const matchesLocation = location === "all" || job.location === location;
@@ -336,7 +336,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
 
                       <div className="flex items-center flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500 font-medium">
                         <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 opacity-40" /> {job.company_name}
+                          <Building2 className="h-4 w-4 opacity-40" /> {job.company_name ?? t("recruiter.confidentialCompany")}
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 opacity-40" /> {job.location}

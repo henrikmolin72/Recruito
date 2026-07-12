@@ -122,7 +122,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                             <Shield className="h-3.5 w-3.5" /> Guarantee: {formatGuaranteeMonths(job.guarantee_period_months!)}
                         </span>
                     )}
-                    {company?.website && (
+                    {!job.is_confidential && company?.website && (
                         <a href={company.website} target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-slate-600 font-medium hover:bg-slate-200 transition-colors">
                             <Globe className="h-3.5 w-3.5" /> Website

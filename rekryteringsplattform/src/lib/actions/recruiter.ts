@@ -473,7 +473,7 @@ export async function getAvailableJobsForRecruiter() {
 
     return availableJobs.map(job => ({
         ...job,
-        company_name: job.company?.company_name || 'Okänt företag',
+        company_name: job.is_confidential ? null : (job.company?.company_name || 'Okänt företag'),
         recruiters_count: mandateCountOf(job),
         worked_previously: everClaimedJobIds.has(job.id),
         // Candidates "in process" — shared predicate excludes terminal AND

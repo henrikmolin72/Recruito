@@ -190,6 +190,11 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         <div className="flex items-center gap-4 text-sm text-slate-500 font-medium">
                             <div className="flex items-center gap-1.5">
                                 <Building className="h-4 w-4 opacity-50" /> {job.company?.company_name}
+                                {job.is_confidential && (
+                                    <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold">
+                                        {c.confidentialBadge || "Confidential"}
+                                    </span>
+                                )}
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <MapPin className="h-4 w-4 opacity-50" /> {job.location}
