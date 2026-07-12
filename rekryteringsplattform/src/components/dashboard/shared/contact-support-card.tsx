@@ -21,15 +21,20 @@ export function ContactSupportCard({ jobId, jobTitle }: Props) {
 
     async function handleSend() {
         setBusy(true);
-        const result = await sendSupportRequest(jobId, message);
-        setBusy(false);
-        if ("error" in result) {
-            toast.error(result.error);
-            return;
+        try {
+            const result = await sendSupportRequest(jobId, message);
+            if ("error" in result) {
+                toast.error(t("support.sendFailed"));
+                return;
+            }
+            toast.success(t("support.sent"));
+            setOpen(false);
+            setMessage("");
+        } catch {
+            toast.error(t("support.sendFailed"));
+        } finally {
+            setBusy(false);
         }
-        toast.success(t("support.sent"));
-        setOpen(false);
-        setMessage("");
     }
 
     return (
