@@ -1,6 +1,7 @@
-import { Briefcase, MapPin, Globe, TrendingUp, Gift, Heart, Shield, Landmark, BarChart2, Package, Car, CheckCircle2, CircleHelp, Phone } from "lucide-react";
+import { Briefcase, MapPin, Globe, TrendingUp, Gift, Heart, Shield, Landmark, BarChart2, Package, Car, CheckCircle2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
+import { ContactSupportCard } from "@/components/dashboard/shared/contact-support-card";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Job } from "@/types/db-types";
@@ -284,19 +285,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                     </div>
                 </div>
 
-                <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 flex flex-col justify-between">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <CircleHelp className="h-5 w-5 text-brand-500" />
-                            <h3 className="font-bold text-slate-700">Need Help?</h3>
-                        </div>
-                        <p className="text-sm text-slate-500">Our support team is here to help if you have any questions.</p>
-                    </div>
-                    <a href="mailto:support@recruito.eu"
-                        className="mt-4 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
-                        <Phone className="h-4 w-4" /> Contact Support
-                    </a>
-                </div>
+                <ContactSupportCard jobId={job.id} jobTitle={job.title} />
             </div>
         </div>
     );

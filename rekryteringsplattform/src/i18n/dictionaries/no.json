@@ -12,6 +12,17 @@
     "analyticsTitle": "Analyse",
     "analyticsDescription": "Hjelper oss å forstå hvordan plattformen brukes så vi kan forbedre den. Ingen personopplysninger deles med tredjeparter for markedsføring."
   },
+  "support": {
+    "needHelp": "Trenger du hjelp?",
+    "helpText": "Supportteamet vårt hjelper deg gjerne hvis du har spørsmål.",
+    "contactSupport": "Kontakt support",
+    "messageLabel": "Din melding",
+    "messagePlaceholder": "Beskriv spørsmålet eller problemet ditt…",
+    "send": "Send",
+    "cancel": "Avbryt",
+    "sent": "Meldingen er sendt – vi tar kontakt via e-post.",
+    "sendFailed": "Kunne ikke sende meldingen din. Prøv igjen."
+  },
   "common": {
     "myDataTitleMeta": "Mine data — Recruito",
     "myDataHeading": "Mine data",

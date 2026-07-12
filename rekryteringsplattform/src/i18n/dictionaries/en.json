@@ -12,6 +12,17 @@
     "analyticsTitle": "Analytics",
     "analyticsDescription": "Helps us understand how the platform is used so we can improve it. No personal data is shared with third parties for marketing."
   },
+  "support": {
+    "needHelp": "Need Help?",
+    "helpText": "Our support team is here to help if you have any questions.",
+    "contactSupport": "Contact Support",
+    "messageLabel": "Your message",
+    "messagePlaceholder": "Describe your question or issue…",
+    "send": "Send",
+    "cancel": "Cancel",
+    "sent": "Message sent — we'll get back to you by email.",
+    "sendFailed": "Could not send your message. Please try again."
+  },
   "common": {
     "myDataTitleMeta": "My data — Recruito",
     "myDataHeading": "My data",
