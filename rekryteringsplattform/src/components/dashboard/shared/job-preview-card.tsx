@@ -34,7 +34,7 @@ interface JobPreviewCardProps {
 
 // 1 → "1 Month", 2 → "2 Months" (card labels are hardcoded English by design)
 function formatGuaranteeMonths(months: number): string {
-    return `${months} Month${months > 1 ? "s" : ""}`;
+    return `${months} Month${months === 1 ? "" : "s"}`;
 }
 
 // "full_time" → "Full Time"
@@ -99,7 +99,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                                     ? formatCurrency(job.recruiter_fee_amount, job.salary_currency ?? "EUR")
                                     : "—"}
                             </p>
-                            {(job.guarantee_period_months ?? 0) > 0 && (
+                            {job.guarantee_period_months != null && (
                                 <p className="text-xs font-semibold text-brand-600">
                                     Guarantee: {formatGuaranteeMonths(job.guarantee_period_months!)}
                                 </p>
@@ -117,7 +117,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                     {job.work_type && (
                         <span className="px-3 py-1 bg-slate-100 rounded-full text-slate-600 font-medium capitalize">{job.work_type}</span>
                     )}
-                    {!isRecruiter && (job.guarantee_period_months ?? 0) > 0 && (
+                    {!isRecruiter && job.guarantee_period_months != null && (
                         <span className="flex items-center gap-1 px-3 py-1 bg-brand-50 rounded-full text-brand-700 font-medium">
                             <Shield className="h-3.5 w-3.5" /> Guarantee: {formatGuaranteeMonths(job.guarantee_period_months!)}
                         </span>

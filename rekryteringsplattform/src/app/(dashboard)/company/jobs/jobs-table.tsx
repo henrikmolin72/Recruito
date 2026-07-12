@@ -22,7 +22,7 @@ export function CompanyJobsTable({ jobs, dict: c }: { jobs: any[]; dict: Dict })
   const [tab, setTab] = useState<TabKey>("live");
 
   function formatGuarantee(months: number | null | undefined) {
-    if (!months) return "—";
+    if (months == null) return "—";
     return months === 1
       ? (c.guaranteeMonths || "{count} month").replace("{count}", String(months))
       : (c.guaranteeMonthsPlural || "{count} months").replace("{count}", String(months));
