@@ -147,3 +147,19 @@ notable lines into a dated milestone summary periodically, then trim.
 - de0c1e0 chore(screening): ponytail shrink — dedupe response-text extraction into textOf()
 - 9e94aca feat(screening): per-candidate AI presentation replaces batch Top-5 shortlist
 - 98f0fec chore(repo): stop tracking machine state — OMC replays/sessions, graphify cache, traces
+
+## 2026-07-12
+- 6ea3356 docs: implementation plan for client launch fixes
+- 71d7525 docs(vault): ADR — launch scope full-time/annual only + request-changes loop
+- 5c2c305 feat(admin): request-changes review loop (pending_approval->draft->resubmit) with notifications + badges
+- 9a73822 fix(support): guard support-modal send with try/finally + localize error toast
+- 3aa5d67 feat(support): in-app contact support form (auto-context + email via dispatch)
+- 2e9c455 fix(ui): company job detail — remove duplicated title/company/location block in Description tab
+- 6100ee8 fix(security): strip raw company join from recruiter marketplace payload (confidential leak)
+- 5b4d273 fix(security): mask confidential company name in recruiter marketplace + hide website; owner sees Confidential pill
+- 78afd09 feat(jobs): field-level validation feedback in job wizard (Next/Publish highlight + server field mapping)
+- 616025c feat(jobs): salary period fixed to Annual; wizard fee chip reuses calculateClientFee
+- c0c2bf6 feat(jobs): restrict employment type to full_time for launch (form + server validation)
+- b060e39 fix(ui): guarantee 0 months displays as '0 months' instead of dash/hidden (5 sites)
+- d363278 fix(admin): exclude drafts from admin jobs listing
+- 457a519 fix(i18n): add status.pending_approval + pending_client_reconfirm labels (all 4 dicts)

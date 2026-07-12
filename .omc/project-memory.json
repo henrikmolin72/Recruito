@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1782238055262,
+  "lastScanned": 1783875377915,
   "projectRoot": "/Users/henrikmolin/Desktop/Recruito",
   "techStack": {
     "languages": [],
@@ -9,8 +9,8 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd /Users/henrikmolin/Desktop/Recruito/rekryteringsplattform && npm run build 2>&1 | tail -25",
-    "testCommand": "cd /Users/henrikmolin/Desktop/Recruito/rekryteringsplattform && npx vitest run src/lib/actions/admin-messages.test.ts 2>&1 | tail -20",
+    "buildCommand": "cd /Users/henrikmolin/Desktop/Recruito/rekryteringsplattform && npm run build > /private/tmp/claude-501/-Users-henrikmolin-Desktop-Recruito/6d642733-0763-4cb8-bb6d-9514e3ae648f/scratchpad/build.log 2>&1; echo \"BUILD_EXIT=$?\"; npm run lint > /private/tmp/claude-501/-Users-henrikmolin-Desktop-Recruito/6d642733-0763-4cb8-bb6d-9514e3ae648f/scratchpad/lint.log 2>&1; echo \"LINT_EXIT=$?\"",
+    "testCommand": "cd /Users/henrikmolin/Desktop/Recruito/rekryteringsplattform && npx vitest run src/lib/actions/request-job-changes.test.ts 2>&1 | tail -25",
     "lintCommand": null,
     "devCommand": null,
     "scripts": {}
@@ -38,7 +38,7 @@
       "path": "Architecture",
       "purpose": null,
       "fileCount": 13,
-      "lastAccessed": 1782238055248,
+      "lastAccessed": 1783875377911,
       "keyFiles": [
         "00-MASTER-PLAN.md",
         "01-PROJECT-SETUP.md",
@@ -50,8 +50,8 @@
     "Decisions": {
       "path": "Decisions",
       "purpose": null,
-      "fileCount": 13,
-      "lastAccessed": 1782238055248,
+      "fileCount": 21,
+      "lastAccessed": 1783875377911,
       "keyFiles": [
         "2026-04-22-no-gstack.md",
         "2026-04-22-tooling-cleanup.md",
@@ -63,35 +63,41 @@
     "Dev-Notes": {
       "path": "Dev-Notes",
       "purpose": null,
-      "fileCount": 3,
-      "lastAccessed": 1782238055249,
+      "fileCount": 7,
+      "lastAccessed": 1783875377911,
       "keyFiles": [
         "README.md",
+        "deployment-runbook.md",
         "e2e-ci-secrets-setup.md",
+        "local-supabase-stack-gotchas.md",
         "migration-grant-snippet.md"
       ]
     },
     "Work-Log": {
       "path": "Work-Log",
       "purpose": null,
-      "fileCount": 1,
-      "lastAccessed": 1782238055250,
+      "fileCount": 5,
+      "lastAccessed": 1783875377911,
       "keyFiles": [
-        "README.md"
+        "2026-06-25-compliance-gap-analysis.md",
+        "2026-28.md",
+        "2026-H1-milestone-log.md",
+        "README.md",
+        "merge-log.md"
       ]
     },
     "docs": {
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 0,
-      "lastAccessed": 1782238055251,
+      "lastAccessed": 1783875377911,
       "keyFiles": []
     },
     "evals": {
       "path": "evals",
       "purpose": null,
       "fileCount": 2,
-      "lastAccessed": 1782238055251,
+      "lastAccessed": 1783875377912,
       "keyFiles": [
         "recruito.json",
         "recruito.judge-example.json"
@@ -100,8 +106,8 @@
     "graphify-out": {
       "path": "graphify-out",
       "purpose": null,
-      "fileCount": 10,
-      "lastAccessed": 1782238055251,
+      "fileCount": 8,
+      "lastAccessed": 1783875377912,
       "keyFiles": [
         "GRAPH_REPORT.md",
         "cost.json",
@@ -113,323 +119,323 @@
     "rekryteringsplattform": {
       "path": "rekryteringsplattform",
       "purpose": null,
-      "fileCount": 28,
-      "lastAccessed": 1782238055252,
+      "fileCount": 31,
+      "lastAccessed": 1783875377912,
       "keyFiles": [
         "README.md",
         "components.json",
-        "debug-check.ts",
         "env.local.rtf",
-        "env.local.rtf.sb-74644962-w4v1ft"
+        "env.local.rtf.sb-74644962-w4v1ft",
+        "eslint.config.mjs"
       ]
     },
     "tools": {
       "path": "tools",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1782238055252,
+      "lastAccessed": 1783875377913,
       "keyFiles": []
     }
   },
   "hotPaths": [
     {
-      "path": "rekryteringsplattform/src/lib/actions/placements.ts",
-      "accessCount": 51,
-      "lastAccessed": 1782295147536,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/actions/candidates.ts",
+      "path": "rekryteringsplattform/src/lib/actions/admin.ts",
       "accessCount": 49,
-      "lastAccessed": 1782070364220,
+      "lastAccessed": 1783882648294,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/lib/actions/recruiter.ts",
-      "accessCount": 27,
-      "lastAccessed": 1782328379543,
+      "accessCount": 42,
+      "lastAccessed": 1783880895185,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/i18n/dictionaries/sv.json",
-      "accessCount": 24,
-      "lastAccessed": 1782318180530,
+      "path": "rekryteringsplattform/src/lib/actions/jobs.ts",
+      "accessCount": 38,
+      "lastAccessed": 1783882739996,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/[id]/candidates/[candidateId]/page.tsx",
+      "accessCount": 32,
+      "lastAccessed": 1783667882150,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/actions/screening.ts",
+      "accessCount": 32,
+      "lastAccessed": 1783765713610,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/screening/run-evaluation.ts",
+      "accessCount": 30,
+      "lastAccessed": 1783770521528,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/actions/candidates.ts",
+      "accessCount": 29,
+      "lastAccessed": 1783516244141,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/components/dashboard/recruiter/candidate-submission-form.tsx",
+      "accessCount": 26,
+      "lastAccessed": 1783667848076,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/i18n/dictionaries/en.json",
       "accessCount": 23,
-      "lastAccessed": 1782318204310,
+      "lastAccessed": 1783882308819,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/i18n/dictionaries/da.json",
-      "accessCount": 21,
-      "lastAccessed": 1782318206365,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/i18n/dictionaries/no.json",
-      "accessCount": 21,
-      "lastAccessed": 1782318208487,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/actions/jobs.ts",
-      "accessCount": 21,
-      "lastAccessed": 1782327667044,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/actions/messages.ts",
-      "accessCount": 20,
-      "lastAccessed": 1782326622538,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/candidate-workflow.ts",
-      "accessCount": 19,
-      "lastAccessed": 1781511939683,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/actions/applications.ts",
-      "accessCount": 15,
-      "lastAccessed": 1782070366451,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/actions/candidates-extended.ts",
-      "accessCount": 13,
-      "lastAccessed": 1782055194326,
+      "path": "rekryteringsplattform/src/lib/screening/extract-match-score.ts",
+      "accessCount": 22,
+      "lastAccessed": 1783765977931,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/lib/mandate-stages.ts",
-      "accessCount": 12,
-      "lastAccessed": 1781511925122,
+      "accessCount": 20,
+      "lastAccessed": 1783456149666,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/actions/admin.ts",
+      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/[id]/page.tsx",
+      "accessCount": 20,
+      "lastAccessed": 1783880739246,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/screening/evaluation-prompt.ts",
+      "accessCount": 19,
+      "lastAccessed": 1783764537367,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/app/(dashboard)/recruiter/mandates/[id]/candidates/[candidateId]/page.tsx",
+      "accessCount": 18,
+      "lastAccessed": 1782997286893,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/actions/candidates-extended.ts",
+      "accessCount": 18,
+      "lastAccessed": 1783325553457,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/app/api/screening-report/route.ts",
+      "accessCount": 17,
+      "lastAccessed": 1783667823656,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/types/db-types.ts",
+      "accessCount": 14,
+      "lastAccessed": 1783882114020,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/supabase/migrations/047_candidate_screenings.sql",
+      "accessCount": 12,
+      "lastAccessed": 1783325494091,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/candidate-workflow.ts",
       "accessCount": 11,
-      "lastAccessed": 1782151791799,
+      "lastAccessed": 1782977087594,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/screening/eval-data.ts",
+      "accessCount": 10,
+      "lastAccessed": 1783764652406,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/lib/actions/company.ts",
-      "accessCount": 11,
-      "lastAccessed": 1782240504394,
+      "accessCount": 9,
+      "lastAccessed": 1783515631847,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/job-fill.ts",
-      "accessCount": 7,
-      "lastAccessed": 1781435285659,
+      "path": "rekryteringsplattform/src/app/(dashboard)/admin/candidates/[id]/page.tsx",
+      "accessCount": 9,
+      "lastAccessed": 1783517829152,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/validation/forms.ts",
+      "path": "rekryteringsplattform/src/components/dashboard/recruiter/recruiter-jobs-list.tsx",
+      "accessCount": 9,
+      "lastAccessed": 1783877891648,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/jobs-table.tsx",
+      "accessCount": 8,
+      "lastAccessed": 1783877884828,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/components/screening/evaluation-prompt-panel.tsx",
       "accessCount": 7,
-      "lastAccessed": 1781436061310,
+      "lastAccessed": 1782817350173,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/components/screening/markdown-report.tsx",
+      "accessCount": 7,
+      "lastAccessed": 1783764560671,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/supabase/migrations/046_mandate_eval_config.sql",
+      "accessCount": 6,
+      "lastAccessed": 1783325494155,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/components/shared/candidate-detail-sections.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1783325512932,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/screening/run-evaluation.test.ts",
+      "accessCount": 6,
+      "lastAccessed": 1783764638200,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/actions/screening.test.ts",
+      "accessCount": 6,
+      "lastAccessed": 1783881780990,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/lib/actions/require-admin.ts",
-      "accessCount": 7,
-      "lastAccessed": 1782151945109,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/candidate-identity.ts",
       "accessCount": 6,
-      "lastAccessed": 1781160806305,
+      "lastAccessed": 1783881814877,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/utils.ts",
-      "accessCount": 6,
-      "lastAccessed": 1781245741805,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/actions/auth.ts",
-      "accessCount": 6,
-      "lastAccessed": 1782293817507,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/job-form-options.ts",
+      "path": "rekryteringsplattform/src/components/dashboard/admin/run-screening-button.tsx",
       "accessCount": 5,
-      "lastAccessed": 1781436118927,
+      "lastAccessed": 1782817355912,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/app/api/screen/route.ts",
       "accessCount": 5,
-      "lastAccessed": 1782055215774,
+      "lastAccessed": 1783004632814,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/actions/screening.ts",
+      "path": "rekryteringsplattform/supabase/migrations/058_decouple_rls_cross_table_subqueries.sql",
       "accessCount": 5,
-      "lastAccessed": 1782073100358,
+      "lastAccessed": 1783325592593,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/screening/evaluation-prompt.ts",
+      "path": "rekryteringsplattform/src/app/(dashboard)/recruiter/candidates/page.tsx",
       "accessCount": 5,
-      "lastAccessed": 1782073269686,
+      "lastAccessed": 1783339073897,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/actions/notifications.ts",
+      "path": "rekryteringsplattform/src/app/(dashboard)/admin/candidates/page.tsx",
       "accessCount": 4,
-      "lastAccessed": 1781160036933,
+      "lastAccessed": 1782723597426,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/fee-reconfirm.ts",
+      "path": "rekryteringsplattform/supabase/migrations/027_ai_compliance.sql",
       "accessCount": 4,
-      "lastAccessed": 1781160046104,
+      "lastAccessed": 1782995335477,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/pricing.ts",
+      "path": "rekryteringsplattform/src/components/screening/candidate-score-card.tsx",
       "accessCount": 4,
-      "lastAccessed": 1781160301820,
+      "lastAccessed": 1783025907222,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/guarantee.ts",
+      "path": "rekryteringsplattform/src/app/(dashboard)/recruiter/mandates/[id]/candidates/new/page.tsx",
       "accessCount": 4,
-      "lastAccessed": 1781160309305,
+      "lastAccessed": 1783325524014,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/actions/data-rights.ts",
+      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/page.tsx",
       "accessCount": 4,
-      "lastAccessed": 1782070367101,
+      "lastAccessed": 1783347346690,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/supabase/migrations/021_fix_all_supabase_lint_issues.sql",
+      "accessCount": 4,
+      "lastAccessed": 1783882694145,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/lib/supabase/admin.ts",
-      "accessCount": 4,
-      "lastAccessed": 1782146920252,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/security/rate-limit.ts",
-      "accessCount": 4,
-      "lastAccessed": 1782293800367,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/app-url.ts",
       "accessCount": 3,
-      "lastAccessed": 1781160312196,
+      "lastAccessed": 1782718529542,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/site-url.ts",
+      "path": "rekryteringsplattform/src/lib/candidate-form.ts",
       "accessCount": 3,
-      "lastAccessed": 1781160312448,
+      "lastAccessed": 1782819086905,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/file-magic.ts",
+      "path": "rekryteringsplattform/supabase/migrations/020_candidate_submission_extended_fields.sql",
       "accessCount": 3,
-      "lastAccessed": 1781160530815,
+      "lastAccessed": 1782995360805,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/csv.ts",
-      "accessCount": 3,
-      "lastAccessed": 1781160639998,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/supabase/middleware.ts",
-      "accessCount": 3,
-      "lastAccessed": 1782238886914,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/components/screening/evaluation-prompt-panel.tsx",
+      "path": "rekryteringsplattform/src/lib/recruiter-search-count.ts",
       "accessCount": 2,
-      "lastAccessed": 1780514226857,
+      "lastAccessed": 1782672917583,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/actions/user.ts",
+      "path": "rekryteringsplattform/src/app/(dashboard)/admin/page.tsx",
       "accessCount": 2,
-      "lastAccessed": 1781159935353,
+      "lastAccessed": 1782718456479,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/sanitize.ts",
-      "accessCount": 2,
-      "lastAccessed": 1781159957334,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/supabase/client.ts",
-      "accessCount": 2,
-      "lastAccessed": 1781160011287,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/supabase/server.ts",
-      "accessCount": 2,
-      "lastAccessed": 1781160011485,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/email/email-templates.ts",
-      "accessCount": 2,
-      "lastAccessed": 1782055145902,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/notifications/create.ts",
-      "accessCount": 2,
-      "lastAccessed": 1782151767409,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/actions/placements.test.ts",
-      "accessCount": 2,
-      "lastAccessed": 1782317287483,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/app/page.tsx",
+      "path": "rekryteringsplattform/src/components/dashboard/admin/take-action-button.tsx",
       "accessCount": 1,
-      "lastAccessed": 1780505979304,
+      "lastAccessed": 1782667832253,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/cookie-consent.ts",
+      "path": "rekryteringsplattform/src/components/analytics/recruiter-performance-table.tsx",
       "accessCount": 1,
-      "lastAccessed": 1780829650020,
+      "lastAccessed": 1782667851126,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/recruiter-onboarding-options.ts",
+      "path": "rekryteringsplattform/vitest.config.ts",
       "accessCount": 1,
-      "lastAccessed": 1780829661804,
+      "lastAccessed": 1782668808783,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/email/internal-notifications.ts",
+      "path": "rekryteringsplattform/supabase/migrations/017_expand_job_fields.sql",
       "accessCount": 1,
-      "lastAccessed": 1780829663250,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/email/notification-email.ts",
-      "accessCount": 1,
-      "lastAccessed": 1780829664070,
+      "lastAccessed": 1782718313967,
       "type": "file"
     }
   ],
