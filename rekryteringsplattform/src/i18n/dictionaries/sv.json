@@ -1241,6 +1241,7 @@
     "fieldLocation": "Plats",
     "fieldIndustry": "Bransch",
     "fieldEmploymentType": "Anställningsform",
+    "employmentTypeUnavailable": "Endast heltidstjänster stöds för närvarande",
     "fieldDescription": "Beskrivning"
   },
   "legal": {

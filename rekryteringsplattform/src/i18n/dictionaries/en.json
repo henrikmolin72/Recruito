@@ -1241,6 +1241,7 @@
     "fieldLocation": "Location",
     "fieldIndustry": "Industry",
     "fieldEmploymentType": "Employment type",
+    "employmentTypeUnavailable": "Only Full-time positions are supported at the moment",
     "fieldDescription": "Description"
   },
   "legal": {

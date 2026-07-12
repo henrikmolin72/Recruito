@@ -16,7 +16,7 @@ import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { useTranslations } from "@/i18n/client";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
-    EMPLOYMENT_TYPE_OPTIONS,
+    ACTIVE_EMPLOYMENT_TYPE_OPTIONS,
     WORK_TYPE_OPTIONS,
     REMOTE_TYPE_OPTIONS,
     SALARY_PERIOD_OPTIONS,
@@ -198,7 +198,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         industry: initialData?.industry ?? "",
         is_confidential: initialData?.is_confidential ?? false,
         // Step 2
-        employment_type: initialData?.employment_type ?? "full_time",
+        employment_type: (ACTIVE_EMPLOYMENT_TYPE_OPTIONS as readonly string[]).includes(initialData?.employment_type ?? "") ? initialData!.employment_type! : "full_time",
         contract_duration: initialData?.contract_duration ?? "",
         work_type: initialData?.work_type ?? "",
         remote_type: initialData?.remote_type ?? "",
@@ -643,7 +643,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.employmentType")} *</label>
                                             <select name="employment_type" value={formData.employment_type} onChange={handleInputChange} className={selectClass}>
-                                                {EMPLOYMENT_TYPE_OPTIONS.map(et => <option key={et} value={et}>{EMPLOYMENT_TYPE_LABELS[et]}</option>)}
+                                                {ACTIVE_EMPLOYMENT_TYPE_OPTIONS.map(et => <option key={et} value={et}>{EMPLOYMENT_TYPE_LABELS[et]}</option>)}
                                             </select>
                                         </div>
                                         {(formData.employment_type === "consultant" || formData.employment_type === "contract") && (

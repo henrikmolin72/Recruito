@@ -1241,6 +1241,7 @@
     "fieldLocation": "Sted",
     "fieldIndustry": "Branche",
     "fieldEmploymentType": "Ansættelsesform",
+    "employmentTypeUnavailable": "Kun fuldtidsstillinger understøttes i øjeblikket",
     "fieldDescription": "Beskrivelse"
   },
   "legal": {
