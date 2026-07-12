@@ -186,6 +186,9 @@ export interface Job {
     client_fee_reconfirm_requested_at: string | null;
     client_fee_reconfirm_resolved_at: string | null;
     client_fee_reconfirm_decision: ClientFeeReconfirmDecision | null;
+    changes_requested_note: string | null;
+    changes_requested_at: string | null;
+    resubmitted_at: string | null;
     max_recruiters: number;
     current_recruiter_count: number;
     status: JobStatus;

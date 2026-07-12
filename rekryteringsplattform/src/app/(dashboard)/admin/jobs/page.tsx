@@ -8,6 +8,7 @@ import { JobFeeAmountEditor } from "@/components/dashboard/admin/job-fee-amount-
 import { RecruiterFeeEditor } from "@/components/dashboard/admin/recruiter-fee-editor";
 import { ApproveJobButton } from "@/components/dashboard/admin/approve-job-button";
 import { ApproveJobModal } from "@/components/dashboard/admin/approve-job-modal";
+import { RequestChangesModal } from "@/components/dashboard/admin/request-changes-modal";
 import { WithdrawReconfirmButton } from "@/components/dashboard/admin/withdraw-reconfirm-button";
 import { formatDateShort } from "@/lib/utils";
 import { MaxCandidatesEditor } from "@/components/dashboard/admin/max-candidates-editor";
@@ -61,7 +62,14 @@ export default async function AdminJobsPage() {
                     <td className="p-4">{job.company}</td>
                     <td className="p-4 text-muted-foreground">{job.location || dict.common.noDataDash}</td>
                     <td className="p-4">{job.salary ? formatCurrency(job.salary) : dict.common.notSpecifiedNeutral}</td>
-                    <td className="p-4"><StatusBadge status={job.status} /></td>
+                    <td className="p-4">
+                      <StatusBadge status={job.status} />
+                      {job.status === "pending_approval" && job.resubmittedAt && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] font-bold uppercase">
+                          {a.resubmittedBadge}
+                        </span>
+                      )}
+                    </td>
                     <td className="p-4">
                       <MaxRecruitersEditor
                         jobId={job.id}
@@ -102,15 +110,18 @@ export default async function AdminJobsPage() {
                     </td>
                     <td className="p-4">
                       {job.status === "pending_approval" && (
-                        <ApproveJobModal
-                          jobId={job.id}
-                          status={job.status}
-                          requiresUplift={
-                            job.clientFeeAmount != null &&
-                            job.clientFeeEstimated != null &&
-                            Number(job.clientFeeAmount) > Number(job.clientFeeEstimated)
-                          }
-                        />
+                        <div className="space-y-1">
+                          <ApproveJobModal
+                            jobId={job.id}
+                            status={job.status}
+                            requiresUplift={
+                              job.clientFeeAmount != null &&
+                              job.clientFeeEstimated != null &&
+                              Number(job.clientFeeAmount) > Number(job.clientFeeEstimated)
+                            }
+                          />
+                          <RequestChangesModal jobId={job.id} />
+                        </div>
                       )}
                       {job.status === "pending_client_reconfirm" && (
                         <div className="space-y-1">

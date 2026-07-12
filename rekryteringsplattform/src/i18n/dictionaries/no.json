@@ -1035,6 +1035,12 @@
     "copyrightText": "© 2026 Recruito. Alle rettigheter forbeholdt."
   },
   "admin": {
+    "resubmittedBadge": "Sendt inn på nytt",
+    "requestChangesButton": "Be om endringer",
+    "requestChangesTitle": "Be om endringer",
+    "requestChangesNoteLabel": "Hva må endres?",
+    "requestChangesSubmit": "Send forespørsel",
+    "requestChangesCancel": "Avbryt",
     "dashboardTitle": "Admin Dashboard",
     "messagesPartyCompany": "Selskap",
     "messagesPartyRecruiter": "Rekrutterer",
@@ -1509,6 +1515,7 @@
     "kanbanStatusLabel": "Status"
   },
   "jobForm": {
+    "changesRequestedBanner": "Admin ba om endringer:",
     "createTitle": "Opprett nytt oppdrag",
     "editTitle": "Rediger oppdrag",
     "deleteDraft": "Slett utkast",
@@ -1748,6 +1755,10 @@
     }
   },
   "notif": {
+    "jobChangesRequestedTitle": "Endringer forespurt for jobben din",
+    "jobChangesRequestedBody": "Recruito ba om endringer i \"{jobTitle}\". Åpne utkastet for å oppdatere og sende inn på nytt.",
+    "adminJobResubmittedTitle": "Jobb sendt inn til godkjenning på nytt",
+    "adminJobResubmittedBody": "\"{jobTitle}\" ble oppdatert og sendt inn på nytt etter forespurte endringer.",
     "adminJobClosedTitle": "Et selskap stengte en jobb",
     "adminJobClosedBody": "{company} stengte {jobTitle}.",
     "adminJobPausedTitle": "Et selskap satte en jobb på pause",

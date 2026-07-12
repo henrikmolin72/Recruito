@@ -249,6 +249,15 @@ export async function createJob(formData: FormData) {
         status: isDraft ? "draft" : "pending_approval",
     };
 
+    // Re-publishing a draft that had admin-requested changes marks it Resubmitted.
+    if (existingDraftId && !isDraft) {
+        const { data: prevJob } = await supabase
+            .from("jobs").select("changes_requested_at").eq("id", existingDraftId).single();
+        if (prevJob?.changes_requested_at) {
+            (jobPayload as any).resubmitted_at = new Date().toISOString();
+        }
+    }
+
     const { data: jobData, error: jobError } = existingDraftId
         ? await supabase.from("jobs").update(jobPayload).eq("id", existingDraftId).eq("status", "draft").select("id").single()
         : await supabase.from("jobs").insert(jobPayload).select("id").single();
@@ -263,6 +272,16 @@ export async function createJob(formData: FormData) {
     }
 
     // Job is now pending_approval — recruiters are notified later in approveJob().
+
+    // Resubmission after admin-requested changes: let admins know it's back for review.
+    if (existingDraftId && (jobPayload as any).resubmitted_at) {
+        await notifyAdmins({
+            titleKey: "notif.adminJobResubmittedTitle",
+            bodyKey: "notif.adminJobResubmittedBody",
+            params: { jobTitle: jobPayload.title as string },
+            link: "/admin/jobs",
+        });
+    }
 
     revalidatePath("/company");
     revalidatePath("/company/jobs");

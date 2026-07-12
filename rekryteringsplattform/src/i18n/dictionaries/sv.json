@@ -1035,6 +1035,12 @@
     "copyrightText": "© 2026 Recruito. Alla rättigheter förbehållna."
   },
   "admin": {
+    "resubmittedBadge": "Återinskickad",
+    "requestChangesButton": "Begär ändringar",
+    "requestChangesTitle": "Begär ändringar",
+    "requestChangesNoteLabel": "Vad behöver ändras?",
+    "requestChangesSubmit": "Skicka begäran",
+    "requestChangesCancel": "Avbryt",
     "dashboardTitle": "Admin Dashboard",
     "messagesPartyCompany": "Företag",
     "messagesPartyRecruiter": "Rekryterare",
@@ -1509,6 +1515,7 @@
     "kanbanStatusLabel": "Status"
   },
   "jobForm": {
+    "changesRequestedBanner": "Admin begärde ändringar:",
     "createTitle": "Skapa nytt uppdrag",
     "editTitle": "Redigera uppdrag",
     "deleteDraft": "Radera utkast",
@@ -1748,6 +1755,10 @@
     }
   },
   "notif": {
+    "jobChangesRequestedTitle": "Ändringar begärda för ditt jobb",
+    "jobChangesRequestedBody": "Recruito begärde ändringar av \"{jobTitle}\". Öppna utkastet för att uppdatera och skicka in igen.",
+    "adminJobResubmittedTitle": "Jobb inskickat för godkännande igen",
+    "adminJobResubmittedBody": "\"{jobTitle}\" uppdaterades och skickades in igen efter begärda ändringar.",
     "adminJobClosedTitle": "Ett företag stängde ett jobb",
     "adminJobClosedBody": "{company} stängde {jobTitle}.",
     "adminJobPausedTitle": "Ett företag pausade ett jobb",

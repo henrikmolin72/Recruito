@@ -1035,6 +1035,12 @@
     "copyrightText": "© 2026 Recruito. Alle rettigheder forbeholdt."
   },
   "admin": {
+    "resubmittedBadge": "Genindsendt",
+    "requestChangesButton": "Anmod om ændringer",
+    "requestChangesTitle": "Anmod om ændringer",
+    "requestChangesNoteLabel": "Hvad skal ændres?",
+    "requestChangesSubmit": "Send anmodning",
+    "requestChangesCancel": "Annuller",
     "dashboardTitle": "Admin Dashboard",
     "messagesPartyCompany": "Virksomhed",
     "messagesPartyRecruiter": "Rekrutterer",
@@ -1509,6 +1515,7 @@
     "kanbanStatusLabel": "Status"
   },
   "jobForm": {
+    "changesRequestedBanner": "Admin anmodede om ændringer:",
     "createTitle": "Opret nyt opdrag",
     "editTitle": "Rediger opgave",
     "deleteDraft": "Slet kladde",
@@ -1748,6 +1755,10 @@
     }
   },
   "notif": {
+    "jobChangesRequestedTitle": "Ændringer anmodet for dit job",
+    "jobChangesRequestedBody": "Recruito anmodede om ændringer til \"{jobTitle}\". Åbn udkastet for at opdatere og indsende igen.",
+    "adminJobResubmittedTitle": "Job genindsendt til godkendelse",
+    "adminJobResubmittedBody": "\"{jobTitle}\" blev opdateret og genindsendt efter anmodede ændringer.",
     "adminJobClosedTitle": "En virksomhed lukkede et job",
     "adminJobClosedBody": "{company} lukkede {jobTitle}.",
     "adminJobPausedTitle": "En virksomhed satte et job på pause",

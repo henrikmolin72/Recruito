@@ -1035,6 +1035,12 @@
     "copyrightText": "© 2026 Recruito. All rights reserved."
   },
   "admin": {
+    "resubmittedBadge": "Resubmitted",
+    "requestChangesButton": "Request changes",
+    "requestChangesTitle": "Request changes",
+    "requestChangesNoteLabel": "What needs to change?",
+    "requestChangesSubmit": "Send request",
+    "requestChangesCancel": "Cancel",
     "dashboardTitle": "Admin Dashboard",
     "messagesPartyCompany": "Company",
     "messagesPartyRecruiter": "Recruiter",
@@ -1509,6 +1515,7 @@
     "kanbanStatusLabel": "Status"
   },
   "jobForm": {
+    "changesRequestedBanner": "Admin requested changes:",
     "createTitle": "Create new assignment",
     "editTitle": "Edit assignment",
     "deleteDraft": "Delete draft",
@@ -1748,6 +1755,10 @@
     }
   },
   "notif": {
+    "jobChangesRequestedTitle": "Changes requested on your job",
+    "jobChangesRequestedBody": "Recruito requested changes to \"{jobTitle}\". Open the draft to update and resubmit.",
+    "adminJobResubmittedTitle": "Job resubmitted for approval",
+    "adminJobResubmittedBody": "\"{jobTitle}\" was updated and resubmitted after requested changes.",
     "adminJobClosedTitle": "A company closed a job",
     "adminJobClosedBody": "{company} closed {jobTitle}.",
     "adminJobPausedTitle": "A company paused a job",
