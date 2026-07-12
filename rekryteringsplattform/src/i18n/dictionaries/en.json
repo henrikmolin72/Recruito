@@ -1592,7 +1592,7 @@
     "salaryPeriod": "Salary period",
     "selectPeriod": "Select period",
     "periodMonthly": "Monthly",
-    "periodYearly": "Annual (recommended)",
+    "periodYearly": "Annual",
     "periodHourly": "Hourly",
     "bonusStructure": "Bonus structure",
     "bonusPlaceholder": "Describe any bonus structure...",

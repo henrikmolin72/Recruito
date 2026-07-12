@@ -10,7 +10,7 @@ import { ArrowLeft, Check, ChevronRight, ChevronLeft, Sparkles, Plus, X, Externa
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn, calculateClientFee } from "@/lib/utils";
 import { RecruitmentCalculator, CALCULATOR_DEFAULTS, type CalculatorState } from "@/components/layout/recruitment-calculator";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { useTranslations } from "@/i18n/client";
@@ -19,7 +19,6 @@ import {
     ACTIVE_EMPLOYMENT_TYPE_OPTIONS,
     WORK_TYPE_OPTIONS,
     REMOTE_TYPE_OPTIONS,
-    SALARY_PERIOD_OPTIONS,
     BENEFITS_OPTIONS,
     LANGUAGE_LEVEL_OPTIONS,
     SHIFT_WORK_OPTIONS,
@@ -131,11 +130,10 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         { id: 7, title: t("jobForm.step7Title"), description: t("jobForm.step7Desc") },
     ];
 
-    const recruitmentFee = useMemo(() => {
-        const commission = 0.11 + calcState.guaranteeMonths * 0.01;
-        const discount = calcState.isExclusive ? 0.10 : 0;
-        return Math.max(calcState.salary * commission * (1 - discount), 3500);
-    }, [calcState]);
+    const recruitmentFee = useMemo(
+        () => calculateClientFee(calcState.salary, calcState.guaranteeMonths, calcState.isExclusive),
+        [calcState]
+    );
 
     const BENEFIT_LABELS: Record<string, string> = {
         bonus: t("jobForm.benefitBonus"),
@@ -166,12 +164,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
     const REMOTE_TYPE_LABELS: Record<string, string> = {
         local: t("jobForm.remoteLocal"),
         international: t("jobForm.remoteInternational"),
-    };
-
-    const SALARY_PERIOD_LABELS: Record<string, string> = {
-        monthly: t("jobForm.periodMonthly"),
-        yearly: t("jobForm.periodYearly"),
-        hourly: t("jobForm.periodHourly"),
     };
 
     const LANGUAGE_LEVEL_LABELS: Record<string, string> = {
@@ -357,6 +349,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         // Pass calculator inputs so server can lock the client fee using the same formula
         data.set("guarantee_period_months", String(calcState.guaranteeMonths));
         data.set("is_exclusive", calcState.isExclusive ? "true" : "false");
+        data.set("salary_period", "yearly");
 
         if (isDraft) {
             data.append("status", "draft");
@@ -811,13 +804,8 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                             </span>
                                             <span className="text-xs text-slate-400">{t("jobForm.salaryFromCalculator") || "Set in calculator (step 1)"}</span>
                                         </div>
-                                        <div className="max-w-xs">
-                                            <select name="salary_period" value={formData.salary_period} onChange={handleInputChange} className={selectClass}>
-                                                <option value="">{t("jobForm.selectPeriod")}</option>
-                                                {SALARY_PERIOD_OPTIONS.map(p => (
-                                                    <option key={p} value={p}>{SALARY_PERIOD_LABELS[p]}</option>
-                                                ))}
-                                            </select>
+                                        <div className="max-w-xs rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700">
+                                            {t("jobForm.periodYearly")}
                                         </div>
                                     </div>
                                     <div className="space-y-3">
