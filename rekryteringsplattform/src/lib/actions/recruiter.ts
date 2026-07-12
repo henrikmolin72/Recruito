@@ -471,17 +471,25 @@ export async function getAvailableJobsForRecruiter() {
     // full", no claim action).
     const availableJobs = selectMarketplaceJobs(jobs || [], activeClaimedJobIds);
 
-    return availableJobs.map(job => ({
-        ...job,
-        company_name: job.is_confidential ? null : (job.company?.company_name || 'Okänt företag'),
-        recruiters_count: mandateCountOf(job),
-        worked_previously: everClaimedJobIds.has(job.id),
-        // Candidates "in process" — shared predicate excludes terminal AND
-        // hired-pipeline statuses (invoice_enabled etc. are not pending).
-        pending_candidates_count: (job.candidates || []).filter(
-            (c: { status: string | null }) => isCandidateInProcess(c.status),
-        ).length,
-    }));
+    return availableJobs.map(job => {
+        // Strip the raw nested join before it crosses the client boundary:
+        // RecruiterJobsList is a Client Component, so anything on this object
+        // is serialized into the RSC flight payload. Keeping `company` here
+        // would ship the real name for confidential jobs despite the mask.
+        const { company, candidates, ...rest } = job;
+        return {
+            ...rest,
+            company_name: job.is_confidential ? null : (company?.company_name || 'Okänt företag'),
+            company_id: job.is_confidential ? null : job.company_id,
+            recruiters_count: mandateCountOf(job),
+            worked_previously: everClaimedJobIds.has(job.id),
+            // Candidates "in process" — shared predicate excludes terminal AND
+            // hired-pipeline statuses (invoice_enabled etc. are not pending).
+            pending_candidates_count: (candidates || []).filter(
+                (c: { status: string | null }) => isCandidateInProcess(c.status),
+            ).length,
+        };
+    });
 }
 
 export async function claimMandate(jobId: string) {

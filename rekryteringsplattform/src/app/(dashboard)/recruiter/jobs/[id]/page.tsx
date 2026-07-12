@@ -20,7 +20,7 @@ async function getJob(id: string) {
         .from("jobs")
         .select(`
             *,
-            company:companies(company_name, website, logo_url)
+            company:companies(company_name, website)
         `)
         .eq("id", id)
         // Closed/filled/cancelled jobs are not discoverable by recruiters (they
