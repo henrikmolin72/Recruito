@@ -1654,6 +1654,8 @@
     "publishing": "Publishing...",
     "completeAndPublish": "Complete & Publish",
     "jobPublished": "The job has been published!",
+    "fieldRequired": "This field is required",
+    "fixHighlightedFields": "Please fix the highlighted field(s)",
     "calculatorTitle": "Calculator",
     "recruitmentFeeLabel": "Recruitment Fee",
     "employerDeclarationTitle": "Employer Declaration",

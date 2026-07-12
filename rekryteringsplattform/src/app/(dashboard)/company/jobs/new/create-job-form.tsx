@@ -98,7 +98,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
     const { t } = useTranslations();
     const isEditing = Boolean(editJobId);
     const [step, setStep] = useState(1);
-    const [maxStepReached, setMaxStepReached] = useState(isEditing ? 7 : 1);
     const [loading, setLoading] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -232,18 +231,45 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
         final_interview_bonus: initialData?.final_interview_bonus ?? false,
     });
 
-    // Publish only when all required fields are filled and declaration confirmed
-    const canPublish = Boolean(
-        formData.title.trim() &&
-        formData.location.trim() &&
-        formData.industry.trim() &&
-        formData.employment_type.trim() &&
-        formData.description.trim() &&
-        maxStepReached >= 6 &&
-        declarationConfirmed
-    );
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    const FIELD_TO_STEP: Record<string, number> = {
+        title: 1, country: 1, city: 1, location_code: 1, location: 1, industry: 1,
+        employment_type: 2, contract_duration: 2, work_type: 2, remote_type: 2,
+        description: 3, key_requirements: 3, language_requirements: 3, team_size: 3,
+        reporting_to: 3, position_type: 3, open_positions: 3,
+        salary_min: 4, salary_max: 4, salary_currency: 4, salary_period: 4,
+        bonus_structure: 4, benefits: 4, benefits_other: 4,
+        application_deadline: 5, guarantee_period_months: 1, screening_questions: 5,
+        num_interviews: 6, interview_conductors: 6, assessment_type: 6,
+        working_hours: 6, shift_work: 6, shift_timings: 6, overtime_policy: 6,
+        desired_start_date: 6, urgency_level: 6,
+        declaration: 7,
+    };
+
+    const REQUIRED_FIELDS_BY_STEP: Record<number, string[]> = {
+        1: ["title", "location", "industry"],
+        2: ["employment_type"],
+        3: ["description"],
+    };
+
+    function validateStep(s: number): Record<string, string> {
+        const errors: Record<string, string> = {};
+        for (const field of REQUIRED_FIELDS_BY_STEP[s] ?? []) {
+            const value = (formData as Record<string, unknown>)[field];
+            if (typeof value === "string" && !value.trim()) {
+                errors[field] = t("jobForm.fieldRequired");
+            }
+        }
+        return errors;
+    }
+
+    const fieldError = (name: string) =>
+        fieldErrors[name] ? <p className="text-xs font-medium text-red-600 mt-1">{fieldErrors[name]}</p> : null;
+    const errClass = (name: string) => (fieldErrors[name] ? "border-red-500 focus:border-red-500" : "");
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        setFieldErrors(prev => (prev[e.target.name] ? { ...prev, [e.target.name]: "" } : prev));
         const { name, value, type } = e.target;
         if (type === "checkbox") {
             const checked = (e.target as HTMLInputElement).checked;
@@ -305,15 +331,18 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
 
     const goToStep = (targetStep: number) => {
         setStep(targetStep);
-        setMaxStepReached(prev => Math.max(prev, targetStep));
     };
 
     const nextStep = () => {
-        if (step < 7) {
-            const next = step + 1;
-            setStep(next);
-            setMaxStepReached(prev => Math.max(prev, next));
+        if (step >= 7) return;
+        const errors = validateStep(step);
+        if (Object.values(errors).some(Boolean)) {
+            setFieldErrors(prev => ({ ...prev, ...errors }));
+            toast.error(t("jobForm.fixHighlightedFields"));
+            return;
         }
+        const next = step + 1;
+        setStep(next);
     };
 
     const prevStep = () => {
@@ -390,12 +419,14 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
     }
 
     async function handleSubmit() {
-        if (!canPublish) {
-            if (!declarationConfirmed) {
-                toast.error(t("jobForm.declarationRequired") || "You must confirm the declaration to submit.");
-            } else {
-                toast.error(t("jobForm.fillAllRequired") || "Please fill all required fields before publishing.");
-            }
+        const allErrors: Record<string, string> = {};
+        for (const s of [1, 2, 3]) Object.assign(allErrors, validateStep(s));
+        if (!declarationConfirmed) allErrors.declaration = t("jobForm.declarationRequired");
+        const firstBad = Object.keys(allErrors).find(k => allErrors[k]);
+        if (firstBad) {
+            setFieldErrors(prev => ({ ...prev, ...allErrors }));
+            goToStep(FIELD_TO_STEP[firstBad] ?? 1);
+            toast.error(allErrors[firstBad]);
             return;
         }
         // Soft warning (not a hard block) if no complete language requirement was added.
@@ -437,6 +468,11 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
 
         const result = await createJob(data);
         if (result && "error" in result) {
+            const field = "field" in result ? (result.field as string | null) : null;
+            if (field) {
+                setFieldErrors(prev => ({ ...prev, [field]: String(result.error) }));
+                goToStep(FIELD_TO_STEP[field] ?? step);
+            }
             toast.error(result.error);
         } else {
             toast.success(t("jobForm.jobPublished"));
@@ -583,7 +619,8 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                         <label className={labelClass}>{t("jobForm.jobTitle")} *</label>
                                         <Input name="title" value={formData.title} onChange={handleInputChange}
                                             placeholder={t("jobForm.jobTitlePlaceholder")}
-                                            className="h-12 border-slate-200 focus:border-brand-500 transition-all font-medium" required />
+                                            className={cn("h-12 border-slate-200 focus:border-brand-500 transition-all font-medium", errClass("title"))} required />
+                                        {fieldError("title")}
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
@@ -602,17 +639,19 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.locationFreeText")} *</label>
                                             <Input name="location" value={formData.location} onChange={handleInputChange}
-                                                placeholder={t("jobForm.locationPlaceholder")} required />
+                                                placeholder={t("jobForm.locationPlaceholder")} className={cn(errClass("location"))} required />
+                                            {fieldError("location")}
                                         </div>
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.industry")} *</label>
                                             <select name="industry" value={formData.industry} onChange={handleInputChange}
-                                                className={selectClass} required>
+                                                className={cn(selectClass, errClass("industry"))} required>
                                                 <option value="">{t("jobForm.industryPlaceholder")}</option>
                                                 {INDUSTRY_OPTIONS.map((opt) => (
                                                     <option key={opt} value={opt}>{opt}</option>
                                                 ))}
                                             </select>
+                                            {fieldError("industry")}
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 pt-1">
@@ -635,9 +674,10 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.employmentType")} *</label>
-                                            <select name="employment_type" value={formData.employment_type} onChange={handleInputChange} className={selectClass}>
+                                            <select name="employment_type" value={formData.employment_type} onChange={handleInputChange} className={cn(selectClass, errClass("employment_type"))}>
                                                 {ACTIVE_EMPLOYMENT_TYPE_OPTIONS.map(et => <option key={et} value={et}>{EMPLOYMENT_TYPE_LABELS[et]}</option>)}
                                             </select>
+                                            {fieldError("employment_type")}
                                         </div>
                                         {(formData.employment_type === "consultant" || formData.employment_type === "contract") && (
                                             <div className="space-y-2">
@@ -716,9 +756,14 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                         <label className={labelClass}>{t("jobForm.roleDescription")} *</label>
                                         <RichTextEditor
                                             value={formData.description}
-                                            onChange={(html) => setFormData(prev => ({ ...prev, description: html }))}
+                                            onChange={(html) => {
+                                                setFieldErrors(prev => (prev.description ? { ...prev, description: "" } : prev));
+                                                setFormData(prev => ({ ...prev, description: html }));
+                                            }}
                                             placeholder={t("jobForm.roleDescPlaceholder")}
+                                            className={errClass("description")}
                                         />
+                                        {fieldError("description")}
                                     </div>
 
                                     {/* Team size & Reporting to */}
@@ -1003,13 +1048,17 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                             type="checkbox"
                                             id="declaration_confirmed"
                                             checked={declarationConfirmed}
-                                            onChange={(e) => setDeclarationConfirmed(e.target.checked)}
+                                            onChange={(e) => {
+                                                setDeclarationConfirmed(e.target.checked);
+                                                setFieldErrors(prev => ({ ...prev, declaration: "" }));
+                                            }}
                                             className={checkboxClass}
                                         />
                                         <label htmlFor="declaration_confirmed" className="text-sm font-medium text-slate-700 cursor-pointer">
                                             {t("jobForm.declarationConfirmText") || "I confirm that I have read and agree to the above declaration and all applicable policies."}
                                         </label>
                                     </div>
+                                    {fieldError("declaration")}
                                 </div>
                             )}
                         </motion.div>
@@ -1028,13 +1077,11 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                             </Button>
                             {step < 7 ? (
                                 <Button onClick={nextStep}
-                                    className="bg-brand-600 hover:bg-brand-700 text-white gap-2 px-6 shadow-md shadow-brand-500/20"
-                                    disabled={step === 1 && !formData.title}>
+                                    className="bg-brand-600 hover:bg-brand-700 text-white gap-2 px-6 shadow-md shadow-brand-500/20">
                                     {t("jobForm.nextStep")} <ChevronRight className="h-4 w-4" />
                                 </Button>
                             ) : (
-                                <Button onClick={handleSubmit} disabled={loading || !canPublish}
-                                    title={!canPublish ? (t("jobForm.fillAllRequired") || "Fill all required fields and confirm the declaration") : undefined}
+                                <Button onClick={handleSubmit} disabled={loading}
                                     className="bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20 disabled:opacity-50">
                                     {loading ? t("jobForm.publishing") : t("jobForm.completeAndPublish")}
                                     <Sparkles className="h-4 w-4 fill-current" />

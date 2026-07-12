@@ -406,7 +406,12 @@ export async function validateJobForm(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { success: false as const, error: firstError(parsed.error, t("validation.invalidInput")) };
+    const issue = parsed.error.issues[0];
+    return {
+      success: false as const,
+      error: issue?.message || t("validation.invalidInput"),
+      field: typeof issue?.path?.[0] === "string" ? (issue.path[0] as string) : null,
+    };
   }
 
   return { success: true as const, data: parsed.data };

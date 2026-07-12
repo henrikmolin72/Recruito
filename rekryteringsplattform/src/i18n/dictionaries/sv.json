@@ -1654,6 +1654,8 @@
     "publishing": "Publicerar...",
     "completeAndPublish": "Slutför och publicera",
     "jobPublished": "Jobbet har publicerats!",
+    "fieldRequired": "Det här fältet är obligatoriskt",
+    "fixHighlightedFields": "Åtgärda de markerade fälten",
     "calculatorTitle": "Kalkylator",
     "recruitmentFeeLabel": "Rekryteringsavgift",
     "employerDeclarationTitle": "Arbetsgivardeklaration",

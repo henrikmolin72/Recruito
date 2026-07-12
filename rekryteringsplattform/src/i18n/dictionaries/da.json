@@ -1654,6 +1654,8 @@
     "publishing": "Publicerer...",
     "completeAndPublish": "Fuldfør og publicer",
     "jobPublished": "Jobbet er blevet publiceret!",
+    "fieldRequired": "Dette felt er obligatorisk",
+    "fixHighlightedFields": "Ret de markerede felter",
     "calculatorTitle": "Beregner",
     "recruitmentFeeLabel": "Rekrutteringsgebyr",
     "employerDeclarationTitle": "Arbejdsgivererklæring",

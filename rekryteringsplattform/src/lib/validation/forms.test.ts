@@ -37,4 +37,12 @@ describe("validateJobForm", () => {
     const r = await validateJobForm(fd);
     expect(r.success).toBe(false);
   });
+
+  it("reports the failing field on validation error", async () => {
+    const fd = buildValidJobFormData();
+    fd.set("location", "");
+    const r = await validateJobForm(fd);
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.field).toBe("location");
+  });
 });

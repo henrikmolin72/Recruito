@@ -48,7 +48,7 @@ export async function createJob(formData: FormData) {
 
     const parsed = await validateJobForm(formData);
     if (!parsed.success && !isDraft) {
-        return { error: parsed.error };
+        return { error: parsed.error, field: parsed.field };
     }
 
     // 1. Get current user
@@ -442,7 +442,7 @@ export async function updateJob(jobId: string, formData: FormData) {
 
     const parsed = await validateJobForm(formData);
     if (!parsed.success) {
-        return { error: parsed.error };
+        return { error: parsed.error, field: parsed.field };
     }
 
     const d = parsed.data;
