@@ -30,6 +30,9 @@ interface JobPreviewCardProps {
     /** Localized label for the "Shift Work" info row. Defaults to English to
      * match the card's other hardcoded labels when no dict is wired in. */
     shiftWorkLabel?: string;
+    /** Hide the title/company-name group and city pill, e.g. when the page
+     * header above the card already shows them (company Description tab). */
+    hideHeading?: boolean;
 }
 
 // 1 → "1 Month", 2 → "2 Months" (card labels are hardcoded English by design)
@@ -68,7 +71,7 @@ const BENEFIT_ICONS: Record<string, LucideIcon> = {
     company_car: Car,
 };
 
-export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkLabel = "Shift Work" }: JobPreviewCardProps) {
+export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkLabel = "Shift Work", hideHeading = false }: JobPreviewCardProps) {
     const isRecruiter = variant === "recruiter";
     const showCta = isRecruiter && showMandateCta;
     const company = job.company;
@@ -83,13 +86,15 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
             {/* Header */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-3">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900">{job.title}</h1>
-                        <div className="flex items-center gap-2 text-slate-500 font-medium text-sm">
-                            <Briefcase className="h-4 w-4 opacity-60" />
-                            <span>{job.is_confidential ? "Confidential" : (company?.company_name ?? "")}</span>
+                    {!hideHeading && (
+                        <div className="space-y-1">
+                            <h1 className="text-3xl font-black tracking-tight text-slate-900">{job.title}</h1>
+                            <div className="flex items-center gap-2 text-slate-500 font-medium text-sm">
+                                <Briefcase className="h-4 w-4 opacity-60" />
+                                <span>{job.is_confidential ? "Confidential" : (company?.company_name ?? "")}</span>
+                            </div>
                         </div>
-                    </div>
+                    )}
                     {isRecruiter && (
                         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 min-w-[180px] text-center space-y-1">
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Recruiter Earnings</p>
@@ -109,7 +114,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-sm">
-                    {job.city && (
+                    {!hideHeading && job.city && (
                         <span className="flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-slate-600 font-medium">
                             <MapPin className="h-3.5 w-3.5" /> {job.city}{job.country ? `, ${job.country}` : ""}
                         </span>

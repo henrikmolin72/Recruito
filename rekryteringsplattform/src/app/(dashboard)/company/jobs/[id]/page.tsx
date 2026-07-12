@@ -279,7 +279,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                 </TabsContent>
 
                 <TabsContent value="details" className="mt-0">
-                    <JobPreviewCard job={job} variant="company" />
+                    <JobPreviewCard job={job} variant="company" hideHeading />
                 </TabsContent>
 
                 <TabsContent value="recruiters" className="mt-0">
