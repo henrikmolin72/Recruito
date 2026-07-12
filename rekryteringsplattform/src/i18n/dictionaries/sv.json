@@ -12,6 +12,17 @@
     "analyticsTitle": "Analys",
     "analyticsDescription": "Hjälper oss förstå hur plattformen används så vi kan förbättra den. Inga personuppgifter delas med tredje part i marknadsföringssyfte."
   },
+  "support": {
+    "needHelp": "Behöver du hjälp?",
+    "helpText": "Vårt supportteam hjälper dig gärna om du har frågor.",
+    "contactSupport": "Kontakta support",
+    "messageLabel": "Ditt meddelande",
+    "messagePlaceholder": "Beskriv din fråga eller ditt problem…",
+    "send": "Skicka",
+    "cancel": "Avbryt",
+    "sent": "Meddelandet har skickats – vi återkommer via e-post.",
+    "sendFailed": "Kunde inte skicka ditt meddelande. Försök igen."
+  },
   "common": {
     "myDataTitleMeta": "Mina data — Recruito",
     "myDataHeading": "Mina data",
@@ -148,6 +159,8 @@
     "candidate_withdrawn": "Kandidat drog sig ur",
     "recruito_rejected": "Avvisad - Recruito",
     "pending": "Väntande",
+    "pending_approval": "Väntar på godkännande",
+    "pending_client_reconfirm": "Väntar på ny bekräftelse",
     "approved": "Godkänd",
     "suspended": "Avstängd",
     "confirmed": "Bekräftad",
@@ -408,6 +421,7 @@
     "importantNote4": "När ett jobb har publicerats finns det inget alternativ för klienten att permanent stänga jobbet.",
     "statusLive": "Aktiv",
     "bonusBadge": "€100 bonus",
+    "confidentialBadge": "Konfidentiell",
     "statusPaused": "Pausad",
     "statusClosed": "Stängd",
     "statusDraft": "Utkast",
@@ -645,6 +659,7 @@
     "tabHired": "Anställda",
     "workedPreviously": "Tidigare arbetat med",
     "finalInterviewBonus": "€100 slutintervju-bonus",
+    "confidentialCompany": "Konfidentiellt företag",
     "unnamedDraft": "Namnlöst utkast",
     "emailLabel": "E-postadress *",
     "expiredLabel": "Utgånget",
@@ -1020,6 +1035,12 @@
     "copyrightText": "© 2026 Recruito. Alla rättigheter förbehållna."
   },
   "admin": {
+    "resubmittedBadge": "Återinskickad",
+    "requestChangesButton": "Begär ändringar",
+    "requestChangesTitle": "Begär ändringar",
+    "requestChangesNoteLabel": "Vad behöver ändras?",
+    "requestChangesSubmit": "Skicka begäran",
+    "requestChangesCancel": "Avbryt",
     "dashboardTitle": "Admin Dashboard",
     "messagesPartyCompany": "Företag",
     "messagesPartyRecruiter": "Rekryterare",
@@ -1239,6 +1260,7 @@
     "fieldLocation": "Plats",
     "fieldIndustry": "Bransch",
     "fieldEmploymentType": "Anställningsform",
+    "employmentTypeUnavailable": "Endast heltidstjänster stöds för närvarande",
     "fieldDescription": "Beskrivning"
   },
   "legal": {
@@ -1493,6 +1515,7 @@
     "kanbanStatusLabel": "Status"
   },
   "jobForm": {
+    "changesRequestedBanner": "Admin begärde ändringar:",
     "createTitle": "Skapa nytt uppdrag",
     "editTitle": "Redigera uppdrag",
     "deleteDraft": "Radera utkast",
@@ -1589,7 +1612,7 @@
     "salaryPeriod": "Löneperiod",
     "selectPeriod": "Välj period",
     "periodMonthly": "Månad",
-    "periodYearly": "År (rekommenderat)",
+    "periodYearly": "År",
     "periodHourly": "Timme",
     "bonusStructure": "Bonusstruktur",
     "bonusPlaceholder": "Beskriv eventuell bonusstruktur...",
@@ -1651,6 +1674,8 @@
     "publishing": "Publicerar...",
     "completeAndPublish": "Slutför och publicera",
     "jobPublished": "Jobbet har publicerats!",
+    "fieldRequired": "Det här fältet är obligatoriskt",
+    "fixHighlightedFields": "Åtgärda de markerade fälten",
     "calculatorTitle": "Kalkylator",
     "recruitmentFeeLabel": "Rekryteringsavgift",
     "employerDeclarationTitle": "Arbetsgivardeklaration",
@@ -1730,6 +1755,10 @@
     }
   },
   "notif": {
+    "jobChangesRequestedTitle": "Ändringar begärda för ditt jobb",
+    "jobChangesRequestedBody": "Recruito begärde ändringar av \"{jobTitle}\". Öppna utkastet för att uppdatera och skicka in igen.",
+    "adminJobResubmittedTitle": "Jobb inskickat för godkännande igen",
+    "adminJobResubmittedBody": "\"{jobTitle}\" uppdaterades och skickades in igen efter begärda ändringar.",
     "adminJobClosedTitle": "Ett företag stängde ett jobb",
     "adminJobClosedBody": "{company} stängde {jobTitle}.",
     "adminJobPausedTitle": "Ett företag pausade ett jobb",

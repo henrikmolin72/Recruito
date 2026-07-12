@@ -190,6 +190,11 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                         <div className="flex items-center gap-4 text-sm text-slate-500 font-medium">
                             <div className="flex items-center gap-1.5">
                                 <Building className="h-4 w-4 opacity-50" /> {job.company?.company_name}
+                                {job.is_confidential && (
+                                    <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold">
+                                        {c.confidentialBadge || "Confidential"}
+                                    </span>
+                                )}
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <MapPin className="h-4 w-4 opacity-50" /> {job.location}
@@ -248,11 +253,11 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                                         : `${job.fee_percentage}%`}
                             </span>
                         </div>
-                        {(job.guarantee_period_months ?? 0) > 0 && (
+                        {job.guarantee_period_months != null && (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-brand-50 rounded-lg border border-brand-100 text-brand-700">
                                 <ShieldCheck className="h-3.5 w-3.5" />
                                 {c.jobDetailsGuarantee}: <span>
-                                    {(job.guarantee_period_months > 1 ? c.guaranteeMonthsPlural : c.guaranteeMonths).replace("{count}", String(job.guarantee_period_months))}
+                                    {(job.guarantee_period_months === 1 ? c.guaranteeMonths : c.guaranteeMonthsPlural).replace("{count}", String(job.guarantee_period_months))}
                                 </span>
                             </div>
                         )}
@@ -274,7 +279,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                 </TabsContent>
 
                 <TabsContent value="details" className="mt-0">
-                    <JobPreviewCard job={job} variant="company" />
+                    <JobPreviewCard job={job} variant="company" hideHeading />
                 </TabsContent>
 
                 <TabsContent value="recruiters" className="mt-0">

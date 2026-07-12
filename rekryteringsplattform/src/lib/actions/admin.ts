@@ -399,6 +399,8 @@ export async function getAdminJobs() {
             client_fee_reconfirm_requested_at,
             client_fee_reconfirm_resolved_at,
             client_fee_reconfirm_decision,
+            changes_requested_at,
+            resubmitted_at,
             is_exclusive,
             guarantee_period_months,
             status,
@@ -409,6 +411,7 @@ export async function getAdminJobs() {
             company:companies (company_name),
             candidates:candidates ( status )
         `)
+        .neq("status", "draft")
         .order("created_at", { ascending: false });
 
     if (error) {
@@ -435,6 +438,7 @@ export async function getAdminJobs() {
             upliftNote: job.client_fee_uplift_note ?? null,
             reconfirmRequestedAt: job.client_fee_reconfirm_requested_at ?? null,
             reconfirmDecision: job.client_fee_reconfirm_decision ?? null,
+            resubmittedAt: job.resubmitted_at ?? null,
             isExclusive: !!job.is_exclusive,
             guaranteePeriodMonths: job.guarantee_period_months ?? 0,
             status: job.status,
@@ -1438,6 +1442,65 @@ export async function requestClientFeeReconfirm(
 
     revalidatePath("/admin/jobs");
     revalidatePath(`/company/jobs/${jobId}`);
+    return { success: true as const };
+}
+
+// Admin "Request changes" on a pending_approval job: returns it to draft on the
+// company side with the admin's note, then notifies the company so they can edit
+// and resubmit. Mirrors approveJob's status-guarded update and
+// requestClientFeeReconfirm's notify. The .eq("status","pending_approval") guard
+// prevents a race with a parallel approve.
+export async function requestJobChanges(jobId: string, note: string) {
+    const { supabase } = await requireAdmin();
+
+    const trimmed = (note ?? "").trim();
+    if (trimmed.length < 5 || trimmed.length > 1000) {
+        return { error: "Please describe the requested changes (5–1000 characters)." };
+    }
+
+    const { data: job } = await supabase
+        .from("jobs")
+        .select("id, title, status, company:companies(user_id)")
+        .eq("id", jobId)
+        .single();
+
+    if (!job) return { error: "Job not found." };
+    if (job.status !== "pending_approval") {
+        return { error: "Job is not pending approval." };
+    }
+
+    const { data: updated, error: updateError } = await supabase
+        .from("jobs")
+        .update({
+            status: "draft",
+            changes_requested_note: trimmed,
+            changes_requested_at: new Date().toISOString(),
+            resubmitted_at: null,
+        })
+        .eq("id", jobId)
+        .eq("status", "pending_approval")
+        .select("id");
+
+    if (updateError) {
+        console.error("[requestJobChanges]", updateError);
+        return { error: "Could not request changes. Please try again." };
+    }
+    if (!updated || updated.length === 0) {
+        return { error: "Job state changed; please refresh." };
+    }
+
+    const companyUserId = pickFirst((job as any).company)?.user_id ?? null;
+    if (companyUserId) {
+        await createNotification(companyUserId, {
+            titleKey: "notif.jobChangesRequestedTitle",
+            bodyKey: "notif.jobChangesRequestedBody",
+            params: { jobTitle: job.title },
+            link: `/company/jobs/${jobId}/edit`,
+        });
+    }
+
+    revalidatePath("/admin/jobs");
+    revalidatePath("/company/jobs");
     return { success: true as const };
 }
 

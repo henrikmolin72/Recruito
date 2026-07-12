@@ -82,7 +82,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
 
   const filteredJobs = useMemo(() => {
     const filtered = jobs.filter((job: any) => {
-      const searchStr = `${job.title} ${job.company_name} ${job.industry} ${job.location} ${job.description || ""}`.toLowerCase();
+      const searchStr = `${job.title} ${job.company_name || ""} ${job.industry} ${job.location} ${job.description || ""}`.toLowerCase();
       const matchesSearch = !search || searchStr.includes(search.toLowerCase());
       const matchesIndustry = industry === "all" || job.industry === industry;
       const matchesLocation = location === "all" || job.location === location;
@@ -336,7 +336,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
 
                       <div className="flex items-center flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500 font-medium">
                         <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 opacity-40" /> {job.company_name}
+                          <Building2 className="h-4 w-4 opacity-40" /> {job.company_name ?? t("recruiter.confidentialCompany")}
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 opacity-40" /> {job.location}
@@ -389,11 +389,11 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                           <span className="text-slate-400 font-bold uppercase tracking-wider">{t("recruiter.salaryIndication")}</span>
                           <span className="text-slate-600 font-black">{(job.salary_max || job.salary_min) ? formatCurrency(job.salary_max || job.salary_min) : t("common.notSpecifiedNeutral")}</span>
                         </div>
-                        {(job.guarantee_period_months ?? 0) > 0 && (
+                        {job.guarantee_period_months != null && (
                           <div className="flex items-center justify-between text-xs px-2">
                             <span className="text-slate-400 font-bold uppercase tracking-wider">{t("recruiter.guaranteeLabel")}</span>
                             <span className="text-brand-600 font-black">
-                              {t(job.guarantee_period_months > 1 ? "company.guaranteeMonthsPlural" : "company.guaranteeMonths").replace("{count}", String(job.guarantee_period_months))}
+                              {t(job.guarantee_period_months === 1 ? "company.guaranteeMonths" : "company.guaranteeMonthsPlural").replace("{count}", String(job.guarantee_period_months))}
                             </span>
                           </div>
                         )}

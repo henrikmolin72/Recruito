@@ -12,6 +12,17 @@
     "analyticsTitle": "Analyse",
     "analyticsDescription": "Hjelper oss å forstå hvordan plattformen brukes så vi kan forbedre den. Ingen personopplysninger deles med tredjeparter for markedsføring."
   },
+  "support": {
+    "needHelp": "Trenger du hjelp?",
+    "helpText": "Supportteamet vårt hjelper deg gjerne hvis du har spørsmål.",
+    "contactSupport": "Kontakt support",
+    "messageLabel": "Din melding",
+    "messagePlaceholder": "Beskriv spørsmålet eller problemet ditt…",
+    "send": "Send",
+    "cancel": "Avbryt",
+    "sent": "Meldingen er sendt – vi tar kontakt via e-post.",
+    "sendFailed": "Kunne ikke sende meldingen din. Prøv igjen."
+  },
   "common": {
     "myDataTitleMeta": "Mine data — Recruito",
     "myDataHeading": "Mine data",
@@ -148,6 +159,8 @@
     "candidate_withdrawn": "Kandidat trakk seg",
     "recruito_rejected": "Avvist - Recruito",
     "pending": "Ventende",
+    "pending_approval": "Venter på godkjenning",
+    "pending_client_reconfirm": "Venter på ny bekreftelse",
     "approved": "Godkjent",
     "suspended": "Suspendert",
     "confirmed": "Bekreftet",
@@ -408,6 +421,7 @@
     "importantNote4": "Når den er publisert, finnes det ingen mulighet for klienten å permanent lukke jobben.",
     "statusLive": "Aktiv",
     "bonusBadge": "€100 bonus",
+    "confidentialBadge": "Konfidensiell",
     "statusPaused": "Pauset",
     "statusClosed": "Lukket",
     "statusDraft": "Utkast",
@@ -645,6 +659,7 @@
     "tabHired": "Ansatte",
     "workedPreviously": "Tidligere jobbet med",
     "finalInterviewBonus": "€100 sluttintervju-bonus",
+    "confidentialCompany": "Konfidensielt selskap",
     "unnamedDraft": "Utkast uten navn",
     "emailLabel": "E-postadresse *",
     "expiredLabel": "Utgått",
@@ -1020,6 +1035,12 @@
     "copyrightText": "© 2026 Recruito. Alle rettigheter forbeholdt."
   },
   "admin": {
+    "resubmittedBadge": "Sendt inn på nytt",
+    "requestChangesButton": "Be om endringer",
+    "requestChangesTitle": "Be om endringer",
+    "requestChangesNoteLabel": "Hva må endres?",
+    "requestChangesSubmit": "Send forespørsel",
+    "requestChangesCancel": "Avbryt",
     "dashboardTitle": "Admin Dashboard",
     "messagesPartyCompany": "Selskap",
     "messagesPartyRecruiter": "Rekrutterer",
@@ -1239,6 +1260,7 @@
     "fieldLocation": "Sted",
     "fieldIndustry": "Bransje",
     "fieldEmploymentType": "Ansettelsesform",
+    "employmentTypeUnavailable": "Kun heltidsstillinger støttes for øyeblikket",
     "fieldDescription": "Beskrivelse"
   },
   "legal": {
@@ -1493,6 +1515,7 @@
     "kanbanStatusLabel": "Status"
   },
   "jobForm": {
+    "changesRequestedBanner": "Admin ba om endringer:",
     "createTitle": "Opprett nytt oppdrag",
     "editTitle": "Rediger oppdrag",
     "deleteDraft": "Slett utkast",
@@ -1589,7 +1612,7 @@
     "salaryPeriod": "Lønnsperiode",
     "selectPeriod": "Velg periode",
     "periodMonthly": "Månedlig",
-    "periodYearly": "Årlig (anbefalt)",
+    "periodYearly": "Årlig",
     "periodHourly": "Time",
     "bonusStructure": "Bonusstruktur",
     "bonusPlaceholder": "Beskriv evt. bonusstruktur...",
@@ -1651,6 +1674,8 @@
     "publishing": "Publiserer...",
     "completeAndPublish": "Fullfør og publiser",
     "jobPublished": "Jobben er publisert!",
+    "fieldRequired": "Dette feltet er obligatorisk",
+    "fixHighlightedFields": "Rett de markerte feltene",
     "calculatorTitle": "Kalkulator",
     "recruitmentFeeLabel": "Rekrutteringsgebyr",
     "employerDeclarationTitle": "Arbeidsgiverserklæring",
@@ -1730,6 +1755,10 @@
     }
   },
   "notif": {
+    "jobChangesRequestedTitle": "Endringer forespurt for jobben din",
+    "jobChangesRequestedBody": "Recruito ba om endringer i \"{jobTitle}\". Åpne utkastet for å oppdatere og sende inn på nytt.",
+    "adminJobResubmittedTitle": "Jobb sendt inn til godkjenning på nytt",
+    "adminJobResubmittedBody": "\"{jobTitle}\" ble oppdatert og sendt inn på nytt etter forespurte endringer.",
     "adminJobClosedTitle": "Et selskap stengte en jobb",
     "adminJobClosedBody": "{company} stengte {jobTitle}.",
     "adminJobPausedTitle": "Et selskap satte en jobb på pause",

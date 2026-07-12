@@ -11,6 +11,9 @@ export const EMPLOYMENT_TYPE_OPTIONS = [
   "internship",
 ] as const;
 
+// ponytail: launch scope is full-time only — restore types here when per-type pricing exists
+export const ACTIVE_EMPLOYMENT_TYPE_OPTIONS = ["full_time"] as const;
+
 // Maps employment_type DB key to the employment dict key
 export const EMPLOYMENT_TYPE_DICT_KEY: Record<string, string> = {
   full_time: "fullTime",

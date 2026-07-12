@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCompanyPlacementCountRecent } from "@/lib/actions/company";
 import { getFeePercentage } from "@/lib/pricing";
+import { getDictionary } from "@/i18n/server";
 import { CreateJobForm } from "../../new/create-job-form";
 
 async function getJob(id: string) {
@@ -25,11 +26,19 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
 
     const recentPlacements = await getCompanyPlacementCountRecent();
     const feePercentage = job.fee_percentage ?? getFeePercentage(recentPlacements);
+    const dict = await getDictionary();
 
     return (
-        <CreateJobForm
-            feePercentage={feePercentage}
-            editJobId={id}
+        <>
+            {job.changes_requested_note && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 mb-4 text-sm text-amber-800">
+                    <span className="font-semibold">{dict.jobForm.changesRequestedBanner}</span>{" "}
+                    {job.changes_requested_note}
+                </div>
+            )}
+            <CreateJobForm
+                feePercentage={feePercentage}
+                editJobId={id}
             initialData={{
                 title: job.title,
                 country: job.country ?? "",
@@ -71,6 +80,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                 key_requirements: (job.key_requirements as string[] | null) ?? [],
                 language_requirements: (job.language_requirements as Array<{ language: string; level: string }> | null) ?? [],
             }}
-        />
+            />
+        </>
     );
 }

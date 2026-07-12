@@ -6,6 +6,7 @@ import {
   HOW_HEARD_OPTIONS,
   LANGUAGE_PROFICIENCY_OPTIONS,
 } from "@/lib/recruiter-onboarding-options";
+import { ACTIVE_EMPLOYMENT_TYPE_OPTIONS } from "@/lib/job-form-options";
 import { createTranslator } from "@/i18n/server";
 
 const EMAIL_MAX_LENGTH = 254;
@@ -247,7 +248,11 @@ function createJobSchema(t: TranslatorFn) {
       is_confidential: optionalBoolean,
 
       // Step 2 — Employment & work type
-      employment_type: i18nRequiredText(t, "validation.fieldEmploymentType", 2, 40),
+      employment_type: i18nRequiredText(t, "validation.fieldEmploymentType", 2, 40)
+        .refine(
+          (v) => (ACTIVE_EMPLOYMENT_TYPE_OPTIONS as readonly string[]).includes(v),
+          t("validation.employmentTypeUnavailable")
+        ),
       contract_duration: optionalText(80),
       work_type: z.enum(["onsite", "hybrid", "remote"]).nullable().optional(),
       remote_type: z.enum(["local", "international"]).nullable().optional(),
@@ -401,7 +406,12 @@ export async function validateJobForm(formData: FormData) {
   });
 
   if (!parsed.success) {
-    return { success: false as const, error: firstError(parsed.error, t("validation.invalidInput")) };
+    const issue = parsed.error.issues[0];
+    return {
+      success: false as const,
+      error: issue?.message || t("validation.invalidInput"),
+      field: typeof issue?.path?.[0] === "string" ? (issue.path[0] as string) : null,
+    };
   }
 
   return { success: true as const, data: parsed.data };

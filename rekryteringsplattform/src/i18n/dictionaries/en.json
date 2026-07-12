@@ -12,6 +12,17 @@
     "analyticsTitle": "Analytics",
     "analyticsDescription": "Helps us understand how the platform is used so we can improve it. No personal data is shared with third parties for marketing."
   },
+  "support": {
+    "needHelp": "Need Help?",
+    "helpText": "Our support team is here to help if you have any questions.",
+    "contactSupport": "Contact Support",
+    "messageLabel": "Your message",
+    "messagePlaceholder": "Describe your question or issue…",
+    "send": "Send",
+    "cancel": "Cancel",
+    "sent": "Message sent — we'll get back to you by email.",
+    "sendFailed": "Could not send your message. Please try again."
+  },
   "common": {
     "myDataTitleMeta": "My data — Recruito",
     "myDataHeading": "My data",
@@ -148,6 +159,8 @@
     "candidate_withdrawn": "Candidate withdrawn",
     "recruito_rejected": "Rejected - Recruito",
     "pending": "Pending",
+    "pending_approval": "Pending Approval",
+    "pending_client_reconfirm": "Pending Re-confirmation",
     "approved": "Approved",
     "suspended": "Suspended",
     "confirmed": "Confirmed",
@@ -408,6 +421,7 @@
     "importantNote4": "Once published, there is no option for the client to permanently close the job.",
     "statusLive": "Live",
     "bonusBadge": "€100 Bonus",
+    "confidentialBadge": "Confidential",
     "statusPaused": "Paused",
     "statusClosed": "Closed",
     "statusDraft": "Draft",
@@ -645,6 +659,7 @@
     "tabHired": "Hired",
     "workedPreviously": "Worked Previously",
     "finalInterviewBonus": "€100 Final Interview Bonus",
+    "confidentialCompany": "Confidential company",
     "unnamedDraft": "Unnamed draft",
     "emailLabel": "Email Address *",
     "expiredLabel": "Expired",
@@ -1020,6 +1035,12 @@
     "copyrightText": "© 2026 Recruito. All rights reserved."
   },
   "admin": {
+    "resubmittedBadge": "Resubmitted",
+    "requestChangesButton": "Request changes",
+    "requestChangesTitle": "Request changes",
+    "requestChangesNoteLabel": "What needs to change?",
+    "requestChangesSubmit": "Send request",
+    "requestChangesCancel": "Cancel",
     "dashboardTitle": "Admin Dashboard",
     "messagesPartyCompany": "Company",
     "messagesPartyRecruiter": "Recruiter",
@@ -1239,6 +1260,7 @@
     "fieldLocation": "Location",
     "fieldIndustry": "Industry",
     "fieldEmploymentType": "Employment type",
+    "employmentTypeUnavailable": "Only Full-time positions are supported at the moment",
     "fieldDescription": "Description"
   },
   "legal": {
@@ -1493,6 +1515,7 @@
     "kanbanStatusLabel": "Status"
   },
   "jobForm": {
+    "changesRequestedBanner": "Admin requested changes:",
     "createTitle": "Create new assignment",
     "editTitle": "Edit assignment",
     "deleteDraft": "Delete draft",
@@ -1589,7 +1612,7 @@
     "salaryPeriod": "Salary period",
     "selectPeriod": "Select period",
     "periodMonthly": "Monthly",
-    "periodYearly": "Annual (recommended)",
+    "periodYearly": "Annual",
     "periodHourly": "Hourly",
     "bonusStructure": "Bonus structure",
     "bonusPlaceholder": "Describe any bonus structure...",
@@ -1651,6 +1674,8 @@
     "publishing": "Publishing...",
     "completeAndPublish": "Complete & Publish",
     "jobPublished": "The job has been published!",
+    "fieldRequired": "This field is required",
+    "fixHighlightedFields": "Please fix the highlighted field(s)",
     "calculatorTitle": "Calculator",
     "recruitmentFeeLabel": "Recruitment Fee",
     "employerDeclarationTitle": "Employer Declaration",
@@ -1730,6 +1755,10 @@
     }
   },
   "notif": {
+    "jobChangesRequestedTitle": "Changes requested on your job",
+    "jobChangesRequestedBody": "Recruito requested changes to \"{jobTitle}\". Open the draft to update and resubmit.",
+    "adminJobResubmittedTitle": "Job resubmitted for approval",
+    "adminJobResubmittedBody": "\"{jobTitle}\" was updated and resubmitted after requested changes.",
     "adminJobClosedTitle": "A company closed a job",
     "adminJobClosedBody": "{company} closed {jobTitle}.",
     "adminJobPausedTitle": "A company paused a job",

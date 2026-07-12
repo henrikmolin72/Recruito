@@ -1,6 +1,7 @@
-import { Briefcase, MapPin, Globe, TrendingUp, Gift, Heart, Shield, Landmark, BarChart2, Package, Car, CheckCircle2, CircleHelp, Phone } from "lucide-react";
+import { Briefcase, MapPin, Globe, TrendingUp, Gift, Heart, Shield, Landmark, BarChart2, Package, Car, CheckCircle2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate-button";
+import { ContactSupportCard } from "@/components/dashboard/shared/contact-support-card";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Job } from "@/types/db-types";
@@ -30,11 +31,14 @@ interface JobPreviewCardProps {
     /** Localized label for the "Shift Work" info row. Defaults to English to
      * match the card's other hardcoded labels when no dict is wired in. */
     shiftWorkLabel?: string;
+    /** Hide the title/company-name group and city pill, e.g. when the page
+     * header above the card already shows them (company Description tab). */
+    hideHeading?: boolean;
 }
 
 // 1 → "1 Month", 2 → "2 Months" (card labels are hardcoded English by design)
 function formatGuaranteeMonths(months: number): string {
-    return `${months} Month${months > 1 ? "s" : ""}`;
+    return `${months} Month${months === 1 ? "" : "s"}`;
 }
 
 // "full_time" → "Full Time"
@@ -68,7 +72,7 @@ const BENEFIT_ICONS: Record<string, LucideIcon> = {
     company_car: Car,
 };
 
-export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkLabel = "Shift Work" }: JobPreviewCardProps) {
+export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkLabel = "Shift Work", hideHeading = false }: JobPreviewCardProps) {
     const isRecruiter = variant === "recruiter";
     const showCta = isRecruiter && showMandateCta;
     const company = job.company;
@@ -83,13 +87,15 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
             {/* Header */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-3">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="space-y-1">
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900">{job.title}</h1>
-                        <div className="flex items-center gap-2 text-slate-500 font-medium text-sm">
-                            <Briefcase className="h-4 w-4 opacity-60" />
-                            <span>{job.is_confidential ? "Confidential" : (company?.company_name ?? "")}</span>
+                    {!hideHeading && (
+                        <div className="space-y-1">
+                            <h1 className="text-3xl font-black tracking-tight text-slate-900">{job.title}</h1>
+                            <div className="flex items-center gap-2 text-slate-500 font-medium text-sm">
+                                <Briefcase className="h-4 w-4 opacity-60" />
+                                <span>{job.is_confidential ? "Confidential" : (company?.company_name ?? "")}</span>
+                            </div>
                         </div>
-                    </div>
+                    )}
                     {isRecruiter && (
                         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 min-w-[180px] text-center space-y-1">
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Recruiter Earnings</p>
@@ -99,7 +105,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                                     ? formatCurrency(job.recruiter_fee_amount, job.salary_currency ?? "EUR")
                                     : "—"}
                             </p>
-                            {(job.guarantee_period_months ?? 0) > 0 && (
+                            {job.guarantee_period_months != null && (
                                 <p className="text-xs font-semibold text-brand-600">
                                     Guarantee: {formatGuaranteeMonths(job.guarantee_period_months!)}
                                 </p>
@@ -109,7 +115,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-sm">
-                    {job.city && (
+                    {!hideHeading && job.city && (
                         <span className="flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-slate-600 font-medium">
                             <MapPin className="h-3.5 w-3.5" /> {job.city}{job.country ? `, ${job.country}` : ""}
                         </span>
@@ -117,12 +123,12 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                     {job.work_type && (
                         <span className="px-3 py-1 bg-slate-100 rounded-full text-slate-600 font-medium capitalize">{job.work_type}</span>
                     )}
-                    {!isRecruiter && (job.guarantee_period_months ?? 0) > 0 && (
+                    {!isRecruiter && job.guarantee_period_months != null && (
                         <span className="flex items-center gap-1 px-3 py-1 bg-brand-50 rounded-full text-brand-700 font-medium">
                             <Shield className="h-3.5 w-3.5" /> Guarantee: {formatGuaranteeMonths(job.guarantee_period_months!)}
                         </span>
                     )}
-                    {company?.website && (
+                    {!job.is_confidential && company?.website && (
                         <a href={company.website} target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-slate-600 font-medium hover:bg-slate-200 transition-colors">
                             <Globe className="h-3.5 w-3.5" /> Website
@@ -279,19 +285,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                     </div>
                 </div>
 
-                <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 flex flex-col justify-between">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <CircleHelp className="h-5 w-5 text-brand-500" />
-                            <h3 className="font-bold text-slate-700">Need Help?</h3>
-                        </div>
-                        <p className="text-sm text-slate-500">Our support team is here to help if you have any questions.</p>
-                    </div>
-                    <a href="mailto:support@recruito.eu"
-                        className="mt-4 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors">
-                        <Phone className="h-4 w-4" /> Contact Support
-                    </a>
-                </div>
+                <ContactSupportCard jobId={job.id} jobTitle={job.title} />
             </div>
         </div>
     );
