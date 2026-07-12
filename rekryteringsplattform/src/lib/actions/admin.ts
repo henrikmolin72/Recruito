@@ -409,6 +409,7 @@ export async function getAdminJobs() {
             company:companies (company_name),
             candidates:candidates ( status )
         `)
+        .neq("status", "draft")
         .order("created_at", { ascending: false });
 
     if (error) {
