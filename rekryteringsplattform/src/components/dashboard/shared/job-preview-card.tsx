@@ -36,9 +36,9 @@ interface JobPreviewCardProps {
     hideHeading?: boolean;
 }
 
-// 1 → "1 Month", 2 → "2 Months" (card labels are hardcoded English by design)
+// 0 → "0 Month", 1 → "1 Month", 2 → "2 Months" (card labels are hardcoded English by design)
 function formatGuaranteeMonths(months: number): string {
-    return `${months} Month${months === 1 ? "" : "s"}`;
+    return `${months} Month${months <= 1 ? "" : "s"}`;
 }
 
 // "full_time" → "Full Time"

@@ -4,6 +4,7 @@ import { ArrowLeft, Building2, Briefcase, MapPin, Users, Plus, Megaphone } from 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { BonusBadge } from "@/components/shared/bonus-badge";
 import { DraftRowActions } from "@/components/dashboard/recruiter/draft-row-actions";
 import { DownloadJobDescription } from "@/components/dashboard/recruiter/download-job-description";
 import { PresentationGenerator } from "@/components/screening/presentation-generator";
@@ -137,6 +138,9 @@ export default async function RecruiterMandateDetailsPage({
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-2xl font-bold">{mandate.title}</h1>
             <StatusBadge status={mandate.status} />
+            {fullJob?.final_interview_bonus && (
+              <BonusBadge label={(r as any).finalInterviewBonus || "€100 Final Interview Bonus"} />
+            )}
           </div>
           <div className="flex items-center flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1"><Building2 className="h-3.5 w-3.5" /> {mandate.company}</span>

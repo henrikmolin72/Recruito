@@ -54,6 +54,12 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
 
   const selectClass = "h-10 rounded-xl border-none bg-slate-50 px-4 text-xs font-bold text-slate-600 focus:ring-2 focus:ring-brand-500/20 outline-none cursor-pointer";
 
+  const workTypeLabel = (wt: string) =>
+    wt === "onsite" ? (t("recruiter.workOnsite") || "On-site")
+      : wt === "hybrid" ? (t("recruiter.workHybrid") || "Hybrid")
+        : wt === "remote" ? (t("recruiter.workRemote") || "Remote")
+          : wt;
+
   // Extract unique values from actual data
   const industries = useMemo(() => {
     const set = new Set(jobs.map((j: any) => j.industry).filter(Boolean));
@@ -231,7 +237,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
               <option value="all">{t("recruiter.allWorkTypes") || "All work types"}</option>
               {workTypes.map((wt) => (
                 <option key={wt} value={wt}>
-                  {wt === "onsite" ? (t("recruiter.workOnsite") || "On-site") : wt === "hybrid" ? (t("recruiter.workHybrid") || "Hybrid") : wt === "remote" ? (t("recruiter.workRemote") || "Remote") : wt}
+                  {workTypeLabel(wt)}
                 </option>
               ))}
             </select>
@@ -305,6 +311,11 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                         <Badge variant="outline" className="rounded-full bg-blue-50 text-blue-600 border-blue-100 py-1 px-3">
                           {t(`employment.${EMPLOYMENT_TYPE_DICT_KEY[job.employment_type] || "fullTime"}`)}
                         </Badge>
+                        {job.work_type && (
+                          <Badge variant="outline" className="rounded-full bg-indigo-50 text-indigo-600 border-indigo-100 py-1 px-3">
+                            {workTypeLabel(job.work_type)}
+                          </Badge>
+                        )}
                         {job.status !== "active" && (
                           <Badge
                             variant="outline"
@@ -393,7 +404,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                           <div className="flex items-center justify-between text-xs px-2">
                             <span className="text-slate-400 font-bold uppercase tracking-wider">{t("recruiter.guaranteeLabel")}</span>
                             <span className="text-brand-600 font-black">
-                              {t(job.guarantee_period_months === 1 ? "company.guaranteeMonths" : "company.guaranteeMonthsPlural").replace("{count}", String(job.guarantee_period_months))}
+                              {t(job.guarantee_period_months <= 1 ? "company.guaranteeMonths" : "company.guaranteeMonthsPlural").replace("{count}", String(job.guarantee_period_months))}
                             </span>
                           </div>
                         )}

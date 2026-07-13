@@ -1081,7 +1081,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                     {t("jobForm.nextStep")} <ChevronRight className="h-4 w-4" />
                                 </Button>
                             ) : (
-                                <Button onClick={handleSubmit} disabled={loading}
+                                <Button onClick={handleSubmit} disabled={loading || !declarationConfirmed}
                                     className="bg-success-600 hover:bg-success-700 text-white gap-2 px-8 shadow-md shadow-success-500/20 disabled:opacity-50">
                                     {loading ? t("jobForm.publishing") : t("jobForm.completeAndPublish")}
                                     <Sparkles className="h-4 w-4 fill-current" />
