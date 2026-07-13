@@ -189,7 +189,7 @@ export function CandidateChat({ candidateId, jobId, initialMessages, currentUser
                                 </div>
                                 <div
                                     className={cn(
-                                        "rounded-2xl px-5 py-3 text-sm transition-all duration-200",
+                                        "rounded-2xl px-5 py-3 text-sm transition-all duration-200 whitespace-pre-wrap break-words",
                                         isMe
                                             ? "bg-brand-600 text-white rounded-tr-none shadow-lg shadow-brand-500/20"
                                             : "bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200"
