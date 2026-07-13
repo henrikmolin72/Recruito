@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1783875377915,
+  "lastScanned": 1783964535138,
   "projectRoot": "/Users/henrikmolin/Desktop/Recruito",
   "techStack": {
     "languages": [],
@@ -9,8 +9,8 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd /Users/henrikmolin/Desktop/Recruito/rekryteringsplattform && npm run build > /private/tmp/claude-501/-Users-henrikmolin-Desktop-Recruito/6d642733-0763-4cb8-bb6d-9514e3ae648f/scratchpad/build.log 2>&1; echo \"BUILD_EXIT=$?\"; npm run lint > /private/tmp/claude-501/-Users-henrikmolin-Desktop-Recruito/6d642733-0763-4cb8-bb6d-9514e3ae648f/scratchpad/lint.log 2>&1; echo \"LINT_EXIT=$?\"",
-    "testCommand": "cd /Users/henrikmolin/Desktop/Recruito/rekryteringsplattform && npx vitest run src/lib/actions/request-job-changes.test.ts 2>&1 | tail -25",
+    "buildCommand": null,
+    "testCommand": null,
     "lintCommand": null,
     "devCommand": null,
     "scripts": {}
@@ -38,7 +38,7 @@
       "path": "Architecture",
       "purpose": null,
       "fileCount": 13,
-      "lastAccessed": 1783875377911,
+      "lastAccessed": 1783964535120,
       "keyFiles": [
         "00-MASTER-PLAN.md",
         "01-PROJECT-SETUP.md",
@@ -50,8 +50,8 @@
     "Decisions": {
       "path": "Decisions",
       "purpose": null,
-      "fileCount": 21,
-      "lastAccessed": 1783875377911,
+      "fileCount": 22,
+      "lastAccessed": 1783964535120,
       "keyFiles": [
         "2026-04-22-no-gstack.md",
         "2026-04-22-tooling-cleanup.md",
@@ -64,7 +64,7 @@
       "path": "Dev-Notes",
       "purpose": null,
       "fileCount": 7,
-      "lastAccessed": 1783875377911,
+      "lastAccessed": 1783964535120,
       "keyFiles": [
         "README.md",
         "deployment-runbook.md",
@@ -77,7 +77,7 @@
       "path": "Work-Log",
       "purpose": null,
       "fileCount": 5,
-      "lastAccessed": 1783875377911,
+      "lastAccessed": 1783964535121,
       "keyFiles": [
         "2026-06-25-compliance-gap-analysis.md",
         "2026-28.md",
@@ -90,14 +90,14 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 0,
-      "lastAccessed": 1783875377911,
+      "lastAccessed": 1783964535121,
       "keyFiles": []
     },
     "evals": {
       "path": "evals",
       "purpose": null,
       "fileCount": 2,
-      "lastAccessed": 1783875377912,
+      "lastAccessed": 1783964535122,
       "keyFiles": [
         "recruito.json",
         "recruito.judge-example.json"
@@ -107,7 +107,7 @@
       "path": "graphify-out",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1783875377912,
+      "lastAccessed": 1783964535122,
       "keyFiles": [
         "GRAPH_REPORT.md",
         "cost.json",
@@ -120,7 +120,7 @@
       "path": "rekryteringsplattform",
       "purpose": null,
       "fileCount": 31,
-      "lastAccessed": 1783875377912,
+      "lastAccessed": 1783964535122,
       "keyFiles": [
         "README.md",
         "components.json",
@@ -133,7 +133,7 @@
       "path": "tools",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1783875377913,
+      "lastAccessed": 1783964535123,
       "keyFiles": []
     }
   },
