@@ -40,9 +40,16 @@ describe("validateJobForm", () => {
 
   it("reports the failing field on validation error", async () => {
     const fd = buildValidJobFormData();
-    fd.set("location", "");
+    fd.set("industry", "");
     const r = await validateJobForm(fd);
     expect(r.success).toBe(false);
-    if (!r.success) expect(r.field).toBe("location");
+    if (!r.success) expect(r.field).toBe("industry");
+  });
+
+  it("accepts a job with no free-text location (area/zip is optional)", async () => {
+    const fd = buildValidJobFormData();
+    fd.delete("location");
+    const r = await validateJobForm(fd);
+    expect(r.success).toBe(true);
   });
 });
