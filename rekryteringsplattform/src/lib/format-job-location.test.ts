@@ -30,4 +30,24 @@ describe("formatJobLocation", () => {
   it("falls back to free text alone when city/country missing", () => {
     expect(formatJobLocation({ city: "", location: "Remote", country: "" })).toBe("Remote");
   });
+  it("does not chop concatenated place names sharing the city prefix", () => {
+    expect(formatJobLocation({ city: "Stockholm", location: "Stockholmsmässan", country: "Sweden" }))
+      .toBe("Stockholm, Stockholmsmässan, Sweden");
+  });
+  it("strips a comma-separated legacy city prefix", () => {
+    expect(formatJobLocation({ city: "Stockholm", location: "Stockholm, Down Town", country: "Sweden" }))
+      .toBe("Stockholm, Down Town, Sweden");
+  });
+  it("drops a trailing country embedded in legacy free text", () => {
+    expect(formatJobLocation({ city: "Stockholm", location: "Downtown, Sweden", country: "Sweden" }))
+      .toBe("Stockholm, Downtown, Sweden");
+  });
+  it("drops a trailing legacy-language country too", () => {
+    expect(formatJobLocation({ city: "Stockholm", location: "Downtown, Sverige", country: "Sverige" }))
+      .toBe("Stockholm, Downtown, Sweden");
+  });
+  it("keeps a city name that appears mid-area", () => {
+    expect(formatJobLocation({ city: "Stockholm", location: "Norra Stockholm", country: "Sweden" }))
+      .toBe("Stockholm, Norra Stockholm, Sweden");
+  });
 });
