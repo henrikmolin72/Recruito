@@ -14,6 +14,7 @@ import { extractMatchScore } from "@/lib/screening/extract-match-score";
 import { extractCriticalGaps } from "@/lib/screening/extract-critical-gaps";
 import { fillEvaluationPrompt } from "@/lib/screening/evaluation-prompt";
 import { fillClientReportPrompt } from "@/lib/screening/client-report-prompt";
+import { isAiUnavailableError } from "@/lib/screening/ai-error";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -69,33 +70,46 @@ export async function runCandidateEvaluation(args: {
       jdId: data.jobId,
       cvHash,
     },
+    declared: {
+      employmentStatus: data.declaredEmploymentStatus,
+      yearsExperience: data.declaredYearsExperience,
+    },
   });
 
   const anthropic = new Anthropic({ apiKey });
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: 8000,
-    // ponytail: 0 for maximum determinism. NOTE: temperature is accepted on
-    // the default Sonnet 4.6 model but 400s on Sonnet 5 / Opus 4.7+ — if
-    // ANTHROPIC_MODEL is ever pointed at one of those, remove this field.
-    temperature: 0,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "document",
-            source: { type: "base64", media_type: mediaType, data: base64 },
-          } as any,
-          // Screening Q&A deliberately NOT sent (client req 2026-07-08): the
-          // recruiter answers them after this pre-submission screening runs, so
-          // including them made the model flag "screening questions unanswered"
-          // as a false gap. The eval is CV-vs-JD only.
-          { type: "text", text: prompt },
-        ],
-      },
-    ],
-  });
+  let response: Anthropic.Message;
+  try {
+    response = await anthropic.messages.create({
+      model,
+      max_tokens: 8000,
+      // ponytail: 0 for maximum determinism. NOTE: temperature is accepted on
+      // the default Sonnet 4.6 model but 400s on Sonnet 5 / Opus 4.7+ — if
+      // ANTHROPIC_MODEL is ever pointed at one of those, remove this field.
+      temperature: 0,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "document",
+              source: { type: "base64", media_type: mediaType, data: base64 },
+            } as any,
+            // Screening Q&A deliberately NOT sent (client req 2026-07-08): the
+            // recruiter answers them after this pre-submission screening runs, so
+            // including them made the model flag "screening questions unanswered"
+            // as a false gap. The eval is CV-vs-JD only.
+            { type: "text", text: prompt },
+          ],
+        },
+      ],
+    });
+  } catch (err) {
+    if (isAiUnavailableError(err)) {
+      console.error("[run-evaluation] AI unavailable", err);
+      return { ok: false, error: "ai_unavailable", status: 503 };
+    }
+    throw err;
+  }
 
   const textOf = (r: typeof response) =>
     r.content.filter((b) => b.type === "text").map((b) => (b as any).text).join("").trim();

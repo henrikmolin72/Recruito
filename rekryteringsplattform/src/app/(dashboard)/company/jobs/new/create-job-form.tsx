@@ -248,7 +248,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
     };
 
     const REQUIRED_FIELDS_BY_STEP: Record<number, string[]> = {
-        1: ["title", "location", "industry"],
+        1: ["title", "industry"],
         2: ["employment_type"],
         3: ["description"],
     };
@@ -350,13 +350,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
     };
 
     function buildFormData(isDraft = false) {
-        // Auto-populate location from city + country if empty
         const finalData = { ...formData };
-        if (!finalData.location.trim() && finalData.city.trim()) {
-            finalData.location = finalData.country
-                ? `${finalData.city}, ${finalData.country}`
-                : finalData.city;
-        }
 
         const data = new FormData();
 
@@ -637,9 +631,9 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>{t("jobForm.locationFreeText")} *</label>
+                                            <label className={labelClass}>{t("jobForm.locationFreeText")}</label>
                                             <Input name="location" value={formData.location} onChange={handleInputChange}
-                                                placeholder={t("jobForm.locationPlaceholder")} className={cn(errClass("location"))} required />
+                                                placeholder={t("jobForm.locationPlaceholder")} className={cn(errClass("location"))} />
                                             {fieldError("location")}
                                         </div>
                                         <div className="space-y-2">

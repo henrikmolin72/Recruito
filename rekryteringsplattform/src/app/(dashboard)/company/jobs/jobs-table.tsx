@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BonusBadge } from "@/components/shared/bonus-badge";
 import { formatCurrency, formatDateShort, calculateClientFee, cn } from "@/lib/utils";
+import { formatJobLocation } from "@/lib/format-job-location";
 
 type Dict = Record<string, any>;
 
@@ -133,7 +134,7 @@ export function CompanyJobsTable({ jobs, dict: c }: { jobs: any[]; dict: Dict })
                             {job.final_interview_bonus && <BonusBadge label={c.bonusBadge || "€100 Bonus"} />}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">{job.city || job.location || "—"}</td>
+                        <td className="px-4 py-3 text-muted-foreground">{formatJobLocation(job) || "—"}</td>
                         <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{formatSalaryRange(job)}</td>
                         <td className="px-4 py-3 text-center">{job.candidates_count}</td>
                         <td className="px-4 py-3 text-right whitespace-nowrap">{calculateJobFee(job)}</td>

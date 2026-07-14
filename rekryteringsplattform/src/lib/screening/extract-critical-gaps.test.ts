@@ -76,4 +76,30 @@ The CV lacks formal PLC certification; there is no evidence of safety compliance
     expect(gaps[0].length).toBeLessThanOrEqual(140);
     expect(gaps[0].endsWith("…")).toBe(true);
   });
+
+  it("strips leading criterion numbers from gap lines (client 14-07-06)", () => {
+    const md = [
+      "3. KEY GAPS",
+      "- 4. Years of Professional Experience (20%)",
+      "- 5. Current Employment Status (15%)",
+      "- 6. Short-Term Positions (10%)",
+      "- 7. Overqualification (5%)",
+    ].join("\n");
+    expect(extractCriticalGaps(md)).toEqual([
+      "Years of Professional Experience (20%)",
+      "Current Employment Status (15%)",
+      "Short-Term Positions (10%)",
+      "Overqualification (5%)",
+    ]);
+  });
+
+  it("does not corrupt decimal numbers at the start of a gap", () => {
+    const md = [
+      "3. KEY GAPS",
+      "- 3.5 years of Kubernetes experience required (10%)",
+    ].join("\n");
+    expect(extractCriticalGaps(md)).toEqual([
+      "3.5 years of Kubernetes experience required (10%)",
+    ]);
+  });
 });

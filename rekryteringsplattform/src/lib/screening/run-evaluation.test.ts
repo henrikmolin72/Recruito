@@ -8,10 +8,16 @@ vi.mock("@/lib/screening/extract-match-score", () => ({ extractMatchScore: vi.fn
 const anthropicCreate = vi.fn();
 vi.mock("@anthropic-ai/sdk", () => ({
   default: class {
+    // ai-error.ts checks `err instanceof Anthropic.APIError` — the mock must
+    // carry a real class here or that instanceof throws a TypeError.
+    static APIError = class APIError extends Error {
+      status?: number;
+    };
     messages = { create: anthropicCreate };
   },
 }));
 
+import Anthropic from "@anthropic-ai/sdk";
 import { runCandidateEvaluation } from "./run-evaluation";
 import { gatherEvalData } from "./eval-data";
 
@@ -165,5 +171,22 @@ describe("runCandidateEvaluation", () => {
     gather.mockResolvedValue(evalData("cvs/jane.pdf"));
     const res = await runCandidateEvaluation(baseArgs(makeAdmin(), true));
     expect(res).toEqual({ ok: false, error: "AI service not configured", status: 500 });
+  });
+
+  it("maps an Anthropic outage on the primary call to ai_unavailable (503), not a throw", async () => {
+    gather.mockResolvedValue(evalData("cvs/jane.pdf"));
+    const outage = Object.assign(new (Anthropic as any).APIError(), {
+      status: 400,
+      message: "Your credit balance is too low to access the Anthropic API.",
+    });
+    anthropicCreate.mockRejectedValueOnce(outage);
+    const res = await runCandidateEvaluation(baseArgs(makeAdmin(), true));
+    expect(res).toEqual({ ok: false, error: "ai_unavailable", status: 503 });
+  });
+
+  it("rethrows non-classified primary-call failures (callers' catch-alls own those)", async () => {
+    gather.mockResolvedValue(evalData("cvs/jane.pdf"));
+    anthropicCreate.mockRejectedValueOnce(new Error("boom"));
+    await expect(runCandidateEvaluation(baseArgs(makeAdmin(), true))).rejects.toThrow("boom");
   });
 });

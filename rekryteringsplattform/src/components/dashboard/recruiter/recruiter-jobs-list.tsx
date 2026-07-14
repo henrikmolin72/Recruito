@@ -20,6 +20,7 @@ import { formatCurrency, formatDate, floorToHundreds } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
+import { formatJobLocation } from "@/lib/format-job-location";
 import { BonusBadge } from "@/components/shared/bonus-badge";
 
 // Job statuses where the company has ended the job (vs. a temporary pause).
@@ -88,7 +89,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
 
   const filteredJobs = useMemo(() => {
     const filtered = jobs.filter((job: any) => {
-      const searchStr = `${job.title} ${job.company_name || ""} ${job.industry} ${job.location} ${job.description || ""}`.toLowerCase();
+      const searchStr = `${job.title} ${job.company_name || ""} ${job.industry} ${job.location || ""} ${job.description || ""}`.toLowerCase();
       const matchesSearch = !search || searchStr.includes(search.toLowerCase());
       const matchesIndustry = industry === "all" || job.industry === industry;
       const matchesLocation = location === "all" || job.location === location;
@@ -350,7 +351,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                           <Building2 className="h-4 w-4 opacity-40" /> {job.company_name ?? t("recruiter.confidentialCompany")}
                         </div>
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 opacity-40" /> {job.location}
+                          <MapPin className="h-4 w-4 opacity-40" /> {formatJobLocation(job) || job.location}
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 opacity-40" /> {t("recruiter.publishedDate").replace("{date}", formatDate(job.created_at))}

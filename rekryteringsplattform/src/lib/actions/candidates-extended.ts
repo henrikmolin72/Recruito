@@ -455,7 +455,10 @@ export async function screenDraftCandidate(
     });
     if (!result.ok) {
         // Surface only safe, actionable codes; mask internal failures (§6).
-        const known = result.error === "no_cv" || result.error === "unsupported_cv_format";
+        const known =
+            result.error === "no_cv" ||
+            result.error === "unsupported_cv_format" ||
+            result.error === "ai_unavailable";
         return { error: known ? result.error : "screening_failed" };
     }
 

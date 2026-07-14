@@ -4,6 +4,7 @@ import { TakeMandateButton } from "@/components/dashboard/recruiter/take-mandate
 import { ContactSupportCard } from "@/components/dashboard/shared/contact-support-card";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatJobLocation } from "@/lib/format-job-location";
 import type { Job } from "@/types/db-types";
 
 // Partial<Job> so callers can pass narrowed SELECT projections (e.g.
@@ -115,9 +116,9 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-sm">
-                    {!hideHeading && job.city && (
+                    {!hideHeading && (job.city || job.location) && (
                         <span className="flex items-center gap-1 px-3 py-1 bg-slate-100 rounded-full text-slate-600 font-medium">
-                            <MapPin className="h-3.5 w-3.5" /> {job.city}{job.country ? `, ${job.country}` : ""}
+                            <MapPin className="h-3.5 w-3.5" /> {formatJobLocation(job)}
                         </span>
                     )}
                     {job.work_type && (

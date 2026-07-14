@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, UserPlus } from "lucide-react";
 import { formatDateShort, cn } from "@/lib/utils";
 import { candidateInStage, classifyMandate, mandateExpiryDaysLeft, type MandateStage, type MandateTabKey } from "@/lib/mandate-stages";
+import { formatJobLocation } from "@/lib/format-job-location";
 
 // A count badge that links through to the mandate's candidate list, filtered
 // to the matching stage.
@@ -43,6 +44,8 @@ interface Mandate {
     title: string;
     company: string;
     location: string | null;
+    city?: string | null;
+    country?: string | null;
     status: string | null;
     application_deadline: string | null;
     claimed_at: string | null;
@@ -229,7 +232,7 @@ export function RecruiterMandatesView({ mandates, dict: r }: Props) {
                                                 </td>
 
                                                 <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
-                                                    {mandate.location || "—"}
+                                                    {formatJobLocation(mandate) || "—"}
                                                 </td>
 
                                                 <td className="px-3 py-3 text-center border-l border-border">

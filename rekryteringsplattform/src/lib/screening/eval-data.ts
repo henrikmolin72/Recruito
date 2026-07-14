@@ -57,6 +57,8 @@ export type EvalData = {
   jdText: string;
   config: EvalConfig;
   cvPath: string | null;
+  declaredEmploymentStatus: string | null;
+  declaredYearsExperience: number | null;
 };
 
 /**
@@ -87,12 +89,20 @@ export async function gatherEvalData(
 
   const { data: candidate } = await admin
     .from("candidates")
-    .select("id, job_id, cv_file_path")
+    .select("id, job_id, cv_file_path, employment_status, years_experience")
     .eq("id", candidateId)
     .single();
   if (!candidate) return { error: "Candidate not found" };
   const c = candidate as any;
   if (c.job_id !== job.id) return { error: "Candidate not found" };
+
+  // Allowlist the declared status: it's a UI toggle, but raw form POSTs could
+  // put arbitrary text here — never inject unvalidated input into the prompt.
+  const rawStatus = c.employment_status as string | null;
+  const declaredEmploymentStatus =
+    rawStatus === "employed" ? "employed"
+    : rawStatus === "not_employed" ? "not employed"
+    : null;
 
   const keyPoints: string[] = Array.isArray(job.key_requirements) ? job.key_requirements : [];
   const jdText = [
@@ -114,5 +124,7 @@ export async function gatherEvalData(
       customKeywords: m.eval_custom_keywords ?? null,
     },
     cvPath: c.cv_file_path ?? null,
+    declaredEmploymentStatus,
+    declaredYearsExperience: (c.years_experience as number | null) ?? null,
   };
 }

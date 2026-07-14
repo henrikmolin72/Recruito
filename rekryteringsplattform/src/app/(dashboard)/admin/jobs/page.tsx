@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
 import { getAdminJobs } from "@/lib/actions/admin";
+import { formatJobLocation } from "@/lib/format-job-location";
 import { getDictionary } from "@/i18n/server";
 import { JobFeeAmountEditor } from "@/components/dashboard/admin/job-fee-amount-editor";
 import { RecruiterFeeEditor } from "@/components/dashboard/admin/recruiter-fee-editor";
@@ -60,7 +61,7 @@ export default async function AdminJobsPage() {
                     </td>
                     <td className="p-4 text-muted-foreground">{job.publishedAt ? formatDateShort(job.publishedAt) : dict.common.noDataDash}</td>
                     <td className="p-4">{job.company}</td>
-                    <td className="p-4 text-muted-foreground">{job.location || dict.common.noDataDash}</td>
+                    <td className="p-4 text-muted-foreground">{formatJobLocation(job) || dict.common.noDataDash}</td>
                     <td className="p-4">{job.salary ? formatCurrency(job.salary) : dict.common.notSpecifiedNeutral}</td>
                     <td className="p-4">
                       <StatusBadge status={job.status} />

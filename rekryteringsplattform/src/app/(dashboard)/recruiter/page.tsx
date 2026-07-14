@@ -6,6 +6,7 @@ import { getRecruiterDashboard, getAvailableJobsForRecruiter } from "@/lib/actio
 import { getRecruiterPerformanceMetrics, getMyActiveGuaranteeTimers } from "@/lib/actions/placements";
 import { PerformanceMetrics } from "@/components/dashboard/recruiter/performance-metrics";
 import { getDictionary } from "@/i18n/server";
+import { formatJobLocation } from "@/lib/format-job-location";
 import { GuaranteeTimer } from "@/components/guarantee/guarantee-timer";
 
 export default async function RecruiterDashboard() {
@@ -95,7 +96,7 @@ export default async function RecruiterDashboard() {
                 <div key={mandate.id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <div>
                     <h3 className="font-semibold">{mandate.title}</h3>
-                    <p className="text-sm text-muted-foreground">{mandate.company} — {mandate.location}</p>
+                    <p className="text-sm text-muted-foreground">{mandate.company} — {formatJobLocation(mandate) || mandate.location}</p>
                   </div>
                   <StatusBadge status={mandate.status} />
                 </div>

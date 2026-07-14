@@ -59,3 +59,19 @@ describe("deal-breaker cap → client-facing 'Not Recommended' (end-to-end deter
     expect(getClientMatchLevel(49)).toBeNull();
   });
 });
+
+describe("evaluation prompt — candidate-declared facts (client 14-07-06)", () => {
+  it("includes candidate-declared facts and forbids numbered gap bullets", () => {
+    const prompt = fillEvaluationPrompt({
+      jdText: "JD",
+      config: { targetSector: null, adjacentSectors: [], transferableSkills: [], customKeywords: [] },
+      metadata: { screeningId: "s", modelVersion: "m", isoTimestamp: "t", jdId: "j", cvHash: "h" },
+      declared: { employmentStatus: "employed", yearsExperience: 7 },
+    });
+    expect(prompt).toContain("CANDIDATE-DECLARED FACTS");
+    expect(prompt).toContain("employed");
+    expect(prompt).toContain("7");
+    expect(prompt).toContain("Do NOT number the bullets");
+    expect(prompt).toContain("If the CV clearly contradicts a declared fact");
+  });
+});

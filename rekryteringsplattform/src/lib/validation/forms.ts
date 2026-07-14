@@ -243,7 +243,7 @@ function createJobSchema(t: TranslatorFn) {
       country: optionalText(80),
       city: optionalText(120),
       location_code: optionalText(40),
-      location: i18nRequiredText(t, "validation.fieldLocation", 2, 120),
+      location: optionalText(120),
       industry: i18nRequiredText(t, "validation.fieldIndustry", 2, 80),
       is_confidential: optionalBoolean,
 

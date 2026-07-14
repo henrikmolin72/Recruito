@@ -100,7 +100,7 @@ export interface Job {
     title: string;
     description: string;
     requirements: string | null;
-    location: string;
+    location: string | null;
     employment_type: string;
     contract_duration: string | null;
     // Structured location
