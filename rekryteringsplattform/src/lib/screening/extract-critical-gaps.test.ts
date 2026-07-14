@@ -92,4 +92,14 @@ The CV lacks formal PLC certification; there is no evidence of safety compliance
       "Overqualification (5%)",
     ]);
   });
+
+  it("does not corrupt decimal numbers at the start of a gap", () => {
+    const md = [
+      "3. KEY GAPS",
+      "- 3.5 years of Kubernetes experience required (10%)",
+    ].join("\n");
+    expect(extractCriticalGaps(md)).toEqual([
+      "3.5 years of Kubernetes experience required (10%)",
+    ]);
+  });
 });

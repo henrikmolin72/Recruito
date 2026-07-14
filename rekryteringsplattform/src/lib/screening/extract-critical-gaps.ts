@@ -20,7 +20,7 @@ const BOUNDARY =
 function clean(s: string): string {
   return s
     .replace(/^[\s>*\-•|]+/, "") // leading bullet/table/quote marks
-    .replace(/^\d+[.)]\s*/, "") // leading criterion numbers ("4. ") — client 14-07-06
+    .replace(/^\d+[.)]\s+/, "") // leading criterion numbers ("4. ") — client 14-07-06
     .replace(/[*_`]+/g, "") // markdown emphasis
     .replace(/\|/g, " ") // stray table pipes
     .replace(/^🔴\s*/, "")
