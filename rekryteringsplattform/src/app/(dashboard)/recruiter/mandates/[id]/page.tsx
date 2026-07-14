@@ -14,6 +14,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
 import { JobProcessStats } from "@/components/dashboard/shared/job-process-stats";
 import { formatDate } from "@/lib/utils";
+import { formatJobLocation } from "@/lib/format-job-location";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { getDictionary } from "@/i18n/server";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
@@ -144,7 +145,7 @@ export default async function RecruiterMandateDetailsPage({
           </div>
           <div className="flex items-center flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1"><Building2 className="h-3.5 w-3.5" /> {mandate.company}</span>
-            <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {mandate.location || dict.common.notSpecified}</span>
+            <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {formatJobLocation(mandate) || dict.common.notSpecified}</span>
             <span className="inline-flex items-center gap-1"><Briefcase className="h-3.5 w-3.5" /> {mandate.employment_type ? (dict.employment as any)[EMPLOYMENT_TYPE_DICT_KEY[mandate.employment_type]] || mandate.employment_type : dict.common.notSpecified}</span>
           </div>
         </div>

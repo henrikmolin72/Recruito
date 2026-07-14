@@ -20,6 +20,7 @@ import {
     ShieldCheck,
 } from "lucide-react";
 import { formatDate, formatCurrency, calculateClientFee } from "@/lib/utils";
+import { formatJobLocation } from "@/lib/format-job-location";
 import { FeeReconfirmCard } from "@/components/dashboard/company/fee-reconfirm-card";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
 import { JobActions } from "@/components/dashboard/company/job-actions";
@@ -199,7 +200,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                                 )}
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <MapPin className="h-4 w-4 opacity-50" /> {job.location}
+                                <MapPin className="h-4 w-4 opacity-50" /> {formatJobLocation(job) || job.location}
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <Clock className="h-4 w-4 opacity-50" /> {formatDate(job.created_at)}

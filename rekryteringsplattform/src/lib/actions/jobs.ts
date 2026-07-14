@@ -15,6 +15,7 @@ import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";
 import { rejectRemainingCandidates, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
 import { normalizeCountry } from "@/lib/job-form-options";
+import { formatJobLocation } from "@/lib/format-job-location";
 import type { PipelineStage } from "@/types/db-types";
 
 async function verifyJobOwnership(jobId: string) {
@@ -296,7 +297,7 @@ async function notifyMatchingRecruitersAboutJob(jobId: string) {
 
         const { data: job } = await supabase
             .from("jobs")
-            .select("title, industry, location, country, fee_percentage, company_id")
+            .select("title, industry, city, location, country, fee_percentage, company_id")
             .eq("id", jobId)
             .single();
 
@@ -356,7 +357,7 @@ async function notifyMatchingRecruitersAboutJob(jobId: string) {
                 recruiterName,
                 jobTitle: job.title,
                 companyName: company?.company_name || "Partner Company",
-                location: job.location || "Not specified",
+                location: formatJobLocation(job) || "Not specified",
                 feePercentage: job.fee_percentage || 0,
                 jobUrl,
             });

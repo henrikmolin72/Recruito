@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2 } from "lucide-react";
 import { getAdminCompanyById } from "@/lib/actions/admin";
+import { formatJobLocation } from "@/lib/format-job-location";
 import { CompanyEditForm } from "@/components/dashboard/admin/company-edit-form";
 import { getDictionary } from "@/i18n/server";
 
@@ -85,7 +86,7 @@ export default async function AdminCompanyDetailPage({ params }: { params: Promi
                             <li key={j.id} className="py-2 flex items-center justify-between">
                                 <div>
                                     <Link href="/admin/jobs" className="font-medium hover:underline">{j.title}</Link>
-                                    <p className="text-xs text-muted-foreground">{j.location}</p>
+                                    <p className="text-xs text-muted-foreground">{formatJobLocation(j) || j.location}</p>
                                 </div>
                                 <Badge variant="outline">{j.status}</Badge>
                             </li>

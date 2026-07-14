@@ -384,7 +384,9 @@ export async function getAdminJobs() {
         .select(`
             id,
             title,
+            city,
             location,
+            country,
             salary_min,
             salary_max,
             salary_currency,
@@ -426,6 +428,8 @@ export async function getAdminJobs() {
             title: job.title,
             company: company?.company_name || "Okänt",
             location: job.location || "",
+            city: job.city ?? null,
+            country: job.country ?? null,
             salary: job.salary_max || job.salary_min,
             salaryCurrency: job.salary_currency || "EUR",
             feePercentage: job.fee_percentage,
@@ -1685,7 +1689,7 @@ export async function getAdminCompanyById(companyId: string) {
 
     const { data: jobs } = await supabaseAdmin
         .from("jobs")
-        .select("id, title, status, location, created_at")
+        .select("id, title, status, city, location, country, created_at")
         .eq("company_id", companyId)
         .order("created_at", { ascending: false });
 
@@ -1721,6 +1725,8 @@ export async function getAdminCompanyById(companyId: string) {
             title: j.title,
             status: j.status,
             location: j.location || "",
+            city: j.city ?? null,
+            country: j.country ?? null,
             createdAt: j.created_at,
         })),
         placements: (placements || []).map((p: any) => {

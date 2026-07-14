@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { verifyCvFileContent } from "@/lib/file-magic";
+import { formatJobLocation } from "@/lib/format-job-location";
 
 export type PublicApplicationFormState = {
   error?: string;
@@ -78,7 +79,7 @@ function normalizeMandateRow(row: any): PublicMandateContext | null {
     jobStatus: job.status ?? null,
     jobTitle: job.title || "Untitled role",
     jobDescription: job.description ?? null,
-    location: [job.city, job.country].filter(Boolean).join(", ") || null,
+    location: formatJobLocation(job) || null,
     companyName: company?.company_name ?? null,
     companyLogoUrl: company?.logo_url ?? null,
     companyWebsite: company?.website ?? null,
@@ -99,6 +100,7 @@ export async function getPublicMandateApplicationContext(mandateId: string) {
         title,
         description,
         city,
+        location,
         country,
         status,
         screening_questions,
