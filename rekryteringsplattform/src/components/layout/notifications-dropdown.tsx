@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, MessageSquare, Briefcase, UserPlus, CreditCard, CheckCircle2, XCircle } from "lucide-react";
+import { Bell, MessageSquare, Briefcase, UserPlus, CreditCard, CheckCircle2, XCircle, LifeBuoy } from "lucide-react";
 import { getNotifications, markAsRead, markAllAsRead } from "@/lib/actions/notifications";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ const getNotificationIcon = (titleKey: string | null, title: string) => {
     const k = (titleKey || "").toLowerCase();
     if (k) {
         if (k.includes("message")) return <MessageSquare className="h-4 w-4 text-blue-500" />;
+        if (k.includes("support")) return <LifeBuoy className="h-4 w-4 text-danger-500" />;
         if (k.includes("invoice") || k.includes("payment")) return <CreditCard className="h-4 w-4 text-success-500" />;
         if (k.includes("rejected") || k.includes("failed") || k.includes("expired")) return <XCircle className="h-4 w-4 text-danger-500" />;
         if (k.includes("approved") || k.includes("completed") || k.includes("released") || k.includes("ended")) return <CheckCircle2 className="h-4 w-4 text-success-500" />;
