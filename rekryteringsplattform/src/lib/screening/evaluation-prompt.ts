@@ -54,6 +54,13 @@ SCREENING RULES (read before analysis)
 Review the CV against the JD above. Return ALL sections below in TABLE FORMAT
 unless otherwise specified.
 
+CANDIDATE-DECLARED FACTS (from the recruiter's submission form — not screening Q&A)
+- Current employment status: {DECLARED_EMPLOYMENT_STATUS}
+- Total years of professional experience: {DECLARED_YEARS_EXPERIENCE}
+Treat these as authoritative context for criteria 4 and 5 when the CV is
+ambiguous. Only raise a criteria 4–7 concern when the CV itself clearly
+evidences it; never flag a criterion these facts contradict.
+
 ══════════════════════════════════════════════════════════════════
 SECTION A — CORE SCREENING
 ══════════════════════════════════════════════════════════════════
@@ -69,6 +76,10 @@ SECTION A — CORE SCREENING
 3. KEY GAPS
    What key JD elements are missing from the CV?
    (Short reply. Include approximate % weight of each gap.)
+   Output as plain "- " bullets, each naming the missing JD element in words.
+   Do NOT number the bullets, and do NOT repeat the numbered criteria titles
+   below (years of experience, employment status, short-term positions,
+   overqualification) as gap lines — those are reported in their own sections.
 
 4. YEARS OF PROFESSIONAL EXPERIENCE
    Total full-time professional experience in years.
@@ -211,13 +222,17 @@ export function fillEvaluationPrompt(input: {
   jdText: string;
   config: EvalConfig;
   metadata: EvalMetadata;
+  declared?: { employmentStatus: string | null; yearsExperience: number | null };
 }): string {
-  const { jdText, config, metadata } = input;
+  const { jdText, config, metadata, declared } = input;
   return PROMPT_TEMPLATE.replace("{JD_TEXT}", jdText.trim() || "(missing)")
     .replace("{TARGET_SECTOR}", orNotSpecified(config.targetSector))
     .replace("{ADJACENT_SECTORS}", listOrNotSpecified(config.adjacentSectors))
     .replace("{TRANSFERABLE_SKILLS}", listOrNotSpecified(config.transferableSkills))
     .replace("{CUSTOM_KEYWORDS}", listOrNotSpecified(config.customKeywords))
+    .replace("{DECLARED_EMPLOYMENT_STATUS}", orNotSpecified(declared?.employmentStatus))
+    .replace("{DECLARED_YEARS_EXPERIENCE}",
+      declared?.yearsExperience != null ? String(declared.yearsExperience) : "(not specified)")
     .replace("{SCREENING_ID}", metadata.screeningId)
     .replace("{MODEL_VERSION}", metadata.modelVersion)
     .replace("{ISO_TIMESTAMP}", metadata.isoTimestamp)

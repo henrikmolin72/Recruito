@@ -69,6 +69,10 @@ export async function runCandidateEvaluation(args: {
       jdId: data.jobId,
       cvHash,
     },
+    declared: {
+      employmentStatus: data.declaredEmploymentStatus,
+      yearsExperience: data.declaredYearsExperience,
+    },
   });
 
   const anthropic = new Anthropic({ apiKey });

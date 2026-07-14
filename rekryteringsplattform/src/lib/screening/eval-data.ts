@@ -57,6 +57,8 @@ export type EvalData = {
   jdText: string;
   config: EvalConfig;
   cvPath: string | null;
+  declaredEmploymentStatus: string | null;
+  declaredYearsExperience: number | null;
 };
 
 /**
@@ -87,7 +89,7 @@ export async function gatherEvalData(
 
   const { data: candidate } = await admin
     .from("candidates")
-    .select("id, job_id, cv_file_path")
+    .select("id, job_id, cv_file_path, employment_status, years_experience")
     .eq("id", candidateId)
     .single();
   if (!candidate) return { error: "Candidate not found" };
@@ -114,5 +116,7 @@ export async function gatherEvalData(
       customKeywords: m.eval_custom_keywords ?? null,
     },
     cvPath: c.cv_file_path ?? null,
+    declaredEmploymentStatus: (c.employment_status as string | null) ?? null,
+    declaredYearsExperience: (c.years_experience as number | null) ?? null,
   };
 }
