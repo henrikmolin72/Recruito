@@ -72,5 +72,6 @@ describe("evaluation prompt — candidate-declared facts (client 14-07-06)", () 
     expect(prompt).toContain("employed");
     expect(prompt).toContain("7");
     expect(prompt).toContain("Do NOT number the bullets");
+    expect(prompt).toContain("If the CV clearly contradicts a declared fact");
   });
 });

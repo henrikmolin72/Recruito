@@ -96,6 +96,14 @@ export async function gatherEvalData(
   const c = candidate as any;
   if (c.job_id !== job.id) return { error: "Candidate not found" };
 
+  // Allowlist the declared status: it's a UI toggle, but raw form POSTs could
+  // put arbitrary text here — never inject unvalidated input into the prompt.
+  const rawStatus = c.employment_status as string | null;
+  const declaredEmploymentStatus =
+    rawStatus === "employed" ? "employed"
+    : rawStatus === "not_employed" ? "not employed"
+    : null;
+
   const keyPoints: string[] = Array.isArray(job.key_requirements) ? job.key_requirements : [];
   const jdText = [
     job.title && `Title: ${job.title}`,
@@ -116,7 +124,7 @@ export async function gatherEvalData(
       customKeywords: m.eval_custom_keywords ?? null,
     },
     cvPath: c.cv_file_path ?? null,
-    declaredEmploymentStatus: (c.employment_status as string | null) ?? null,
+    declaredEmploymentStatus,
     declaredYearsExperience: (c.years_experience as number | null) ?? null,
   };
 }

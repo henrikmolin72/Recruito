@@ -58,8 +58,11 @@ CANDIDATE-DECLARED FACTS (from the recruiter's submission form — not screening
 - Current employment status: {DECLARED_EMPLOYMENT_STATUS}
 - Total years of professional experience: {DECLARED_YEARS_EXPERIENCE}
 Treat these as authoritative context for criteria 4 and 5 when the CV is
-ambiguous. Only raise a criteria 4–7 concern when the CV itself clearly
-evidences it; never flag a criterion these facts contradict.
+ambiguous or silent: in that case defer to these facts and do not flag.
+Only raise a criteria 4–7 concern when the CV itself clearly evidences it.
+If the CV clearly contradicts a declared fact, apply the CV evidence as
+normal, note the discrepancy under Section D ambiguities, and set
+Human Review Recommended: YES.
 
 ══════════════════════════════════════════════════════════════════
 SECTION A — CORE SCREENING
@@ -91,6 +94,7 @@ SECTION A — CORE SCREENING
    - Current employer name and start date
    - Employment type if stated
    🔴 Red mark if: unemployed, in internship, apprenticeship, or freelance-only status.
+   (Apply the CANDIDATE-DECLARED FACTS rule above when the CV is ambiguous.)
 
 6. SHORT-TERM POSITIONS
    How many roles in the CV lasted approximately 3–4 months or less?
