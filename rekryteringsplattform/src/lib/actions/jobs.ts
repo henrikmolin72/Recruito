@@ -169,7 +169,7 @@ export async function createJob(formData: FormData) {
         // Basics
         title: d.title || raw("title") || "Untitled Draft",
         description: d.description ?? rawOrNull("description") ?? "",
-        location: d.location || raw("location") || null,
+        location: d.location || (raw("location").trim() || null),
         industry: d.industry ?? raw("industry") ?? "",
         country: d.country ?? rawOrNull("country"),
         city: d.city ?? rawOrNull("city"),
