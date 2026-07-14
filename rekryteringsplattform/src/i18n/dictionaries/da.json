@@ -1828,6 +1828,7 @@
     "newRecruiterTitle": "Ny rekrutteringskonsulent på opgaven!",
     "newRecruiterBody": "En rekrutteringskonsulent har taget din opgave: {jobTitle}",
     "newMessageTitle": "Ny besked fra {sender}",
+    "supportRequestTitle": "Supportanmodning fra {sender}",
     "invoiceSentCompanyTitle": "Faktura sendt",
     "invoiceSentCompanyBody": "En faktura for {candidate} ({jobTitle}) er blevet sendt. Beløb: {amount} {currency}.",
     "invoiceSentRecruiterTitle": "Faktura sendt til virksomheden",

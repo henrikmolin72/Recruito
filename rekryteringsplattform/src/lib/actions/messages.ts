@@ -791,7 +791,7 @@ export async function sendRecruiterSupportMessage(_candidateId: string, _jobId: 
         await Promise.all(
             admins.map((a: { id: string }) =>
                 createNotification(a.id, {
-                    titleKey: "notif.newMessageTitle",
+                    titleKey: "notif.supportRequestTitle",
                     params: { sender: senderName },
                     body,
                     link: `/admin/messages/thread/${conversationId}`,

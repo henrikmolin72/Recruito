@@ -1828,6 +1828,7 @@
     "newRecruiterTitle": "New recruiter on the mandate!",
     "newRecruiterBody": "A recruiter has taken your mandate: {jobTitle}",
     "newMessageTitle": "New message from {sender}",
+    "supportRequestTitle": "Support request from {sender}",
     "invoiceSentCompanyTitle": "Invoice sent",
     "invoiceSentCompanyBody": "An invoice for {candidate} ({jobTitle}) has been sent. Amount: {amount} {currency}.",
     "invoiceSentRecruiterTitle": "Invoice sent to the company",

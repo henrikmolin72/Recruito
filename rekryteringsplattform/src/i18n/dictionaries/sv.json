@@ -1828,6 +1828,7 @@
     "newRecruiterTitle": "Ny rekryterare på uppdraget!",
     "newRecruiterBody": "En rekryterare har tagit ditt uppdrag: {jobTitle}",
     "newMessageTitle": "Nytt meddelande från {sender}",
+    "supportRequestTitle": "Supportförfrågan från {sender}",
     "invoiceSentCompanyTitle": "Faktura skickad",
     "invoiceSentCompanyBody": "Faktura för {candidate} ({jobTitle}) har skickats. Belopp: {amount} {currency}.",
     "invoiceSentRecruiterTitle": "Faktura har skickats till företaget",
