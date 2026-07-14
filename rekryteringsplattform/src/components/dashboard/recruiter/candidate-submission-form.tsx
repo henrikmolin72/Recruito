@@ -302,6 +302,9 @@ export function CandidateSubmissionForm({
             r.aiScreenErrUnsupportedCv ||
             "AI screening supports PDF or TXT CVs only. Upload one of those to get a score.",
         rate_limited: r.aiScreenErrRateLimited || "Too many screenings — wait a few minutes and try again.",
+        ai_unavailable:
+            r.aiScreenErrUnavailable ||
+            "AI screening is temporarily unavailable. Your draft is saved — try again later.",
     };
 
     // Persist the in-progress candidate as a draft (incl. CV), run the AI

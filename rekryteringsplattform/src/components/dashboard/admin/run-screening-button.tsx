@@ -13,6 +13,7 @@ import type { StoredEvaluation } from "@/lib/actions/screening";
 const RUN_ERRORS: Record<string, string> = {
   no_cv: "No CV is uploaded for this candidate.",
   unsupported_cv_format: "CV format not supported for automatic screening (PDF/TXT only).",
+  ai_unavailable: "AI screening is temporarily unavailable (provider/billing issue). Try again later.",
 };
 
 // Admin AI-Match panel: score + Run/Re-run + full report. Renders the report from

@@ -923,6 +923,7 @@
     "aiScreenErrUnsupportedCv": "AI screening supports PDF or TXT CVs only. Upload one of those to get a score.",
     "aiScreenErrRateLimited": "Too many screenings — wait a few minutes and try again.",
     "aiScreenErrFailed": "Screening failed. Please try again.",
+    "aiScreenErrUnavailable": "AI screening is temporarily unavailable. Your draft is saved — try again later.",
     "presentCandidateButton": "Present candidate",
     "completeRequiredFields": "Please complete all required fields (marked with *) before presenting the candidate.",
     "tipsTitle": "Presentation tips",
