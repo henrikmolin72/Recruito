@@ -923,7 +923,7 @@
     "aiScreenErrUnsupportedCv": "AI-screening stöder endast PDF- eller TXT-CV. Ladda upp ett sådant för att få poäng.",
     "aiScreenErrRateLimited": "För många screeningar — vänta några minuter och försök igen.",
     "aiScreenErrFailed": "Screeningen misslyckades. Försök igen.",
-    "aiScreenErrUnavailable": "AI-granskningen är tillfälligt otillgänglig. Ditt utkast är sparat — försök igen senare.",
+    "aiScreenErrUnavailable": "AI-screeningen är tillfälligt otillgänglig. Ditt utkast är sparat — försök igen senare.",
     "presentCandidateButton": "Presentera kandidat",
     "completeRequiredFields": "Fyll i alla obligatoriska fält (markerade med *) innan du presenterar kandidaten.",
     "tipsTitle": "Tips för presentation",
