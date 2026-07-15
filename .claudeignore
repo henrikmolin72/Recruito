@@ -1,0 +1,33 @@
+# What Claude Code should NOT read/index (Strict Ignorance guardrail).
+# Keeps the agent focused and blocks it from secrets & generated junk.
+
+# Dependencies & build output
+node_modules/
+**/node_modules/
+rekryteringsplattform/.next/
+rekryteringsplattform/build/
+rekryteringsplattform/out/
+rekryteringsplattform/coverage/
+rekryteringsplattform/.vercel/
+rekryteringsplattform/playwright-report/
+rekryteringsplattform/test-results/
+*.tsbuildinfo
+
+# Secrets — never expose values to the agent (names live in .env.example)
+.env
+.env.*
+rekryteringsplattform/.env
+rekryteringsplattform/.env.*
+!**/.env.example
+!**/.env.test.local.example
+
+# Ephemeral agent / tooling state
+.omc/state/
+.omc/sessions/
+.omc/notepad.md
+.claude/worktrees/
+graphify-out/
+**/graphify-out/
+
+# OS noise
+.DS_Store

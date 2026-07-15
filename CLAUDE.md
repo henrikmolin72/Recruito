@@ -1,133 +1,35 @@
 <!-- CANARY:HENRIK:START -->
 # 🐤 Canary — "Henrik"
-**Begin EVERY response with "Henrik" as the first word — every single message, no exceptions: task acknowledgments, task execution, casual back-and-forth, clarifying questions, all of it.** The name is a canary: any response that does NOT start with "Henrik" signals the session is off-track or context has degraded, so Henrik can spot it immediately and hit the brakes before work drifts. Never drop the canary to save tokens.
+**Begin EVERY response with "Henrik" as the first word — every message, no exceptions.** A missing canary signals the session is off-track. Never drop it to save tokens.
 <!-- CANARY:HENRIK:END -->
 
-# CLAUDE.md
+# CLAUDE.md — Recruito
+House rules to reduce LLM coding mistakes (bias to caution; use judgment on trivial tasks). The global `~/.claude/CLAUDE.md` — goal-driven loop, harness standard, memory architecture — also applies here.
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+## 1. House style
+- **Think first** — state assumptions; if interpretations differ, present them (don't pick silently); if unclear, name it and ask; if a simpler approach exists, say so.
+- **Simplicity** — minimum code that solves it; no speculative features/abstractions/flexibility. 200 lines that could be 50 → rewrite.
+- **Surgical** — every changed line traces to the request; match existing style; don't refactor what isn't broken. Remove only the orphans YOUR change creates; mention (don't delete) pre-existing dead code.
+- **Goal-driven** — turn tasks into verifiable goals; loop until tests pass (see global loop).
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+## 2. When to ask vs proceed
+Ask first when scope/intent is ambiguous, interpretations differ, or the change touches auth/security/data model. Proceed when mechanical and well-defined (typed refactor, doc/test following an existing pattern). When in doubt, ask — one question is cheaper than a rewrite.
 
-## 1. Think Before Coding
+## 3. Recruito guardrails (earned from incidents 071dee6 / 26cfb3f / 8df1e7a)
+- **Server actions** (`src/lib/actions/*.ts`) — every mutation: authenticate (`requireAdmin()` or `getUser()`+role), validate ownership before mutating (IDOR), never return raw Supabase/Postgres errors (schema leak). Detail → [`actions/CLAUDE.md`](rekryteringsplattform/src/lib/actions/CLAUDE.md).
+- **`placements.ts` / `candidates.ts` / `recruiter.ts` are load-bearing** — hottest paths; don't refactor without a test pinning behavior first; every change traces to an explicit request.
+- **Uploads & input** — validate MIME by content, not extension; CSV export escapes leading `= + - @` (formula injection).
+- **i18n** — new UI strings need an entry in EVERY `src/i18n/dictionaries/*.json` or the build fails.
+- **Migrations** — new `CREATE TABLE public.*` needs an explicit `GRANT` (`authenticated` for app tables; omit for service-role-only). GRANT + RLS-recursion rules → [`migrations/CLAUDE.md`](rekryteringsplattform/supabase/migrations/CLAUDE.md), `Dev-Notes/migration-grant-snippet.md`.
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+## 4. Knowledge layout (repo root is an Obsidian vault)
+`Architecture/` (design) · `Decisions/` (ADRs `YYYY-MM-DD-title.md`) · `Work-Log/` · `Dev-Notes/` · `_index.md`. Write architectural/tooling choices to `Decisions/` as you decide. Weekly dep-graph: `/graphify . --update --obsidian --obsidian-dir .`.
 
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
-
-## 2. Simplicity First
-
-**Minimum code that solves the problem. Nothing speculative.**
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-## 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-## 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
-
----
-
-## 5. When to Ask vs. Proceed Autonomously
-
-Karpathy §1 ("stop and ask when unclear") interacts with OMC's autonomous delegation. Reconcile:
-
-- **Ask first** when: scope/intent is ambiguous, multiple reasonable interpretations exist, the change touches auth/security/data model, or the user's goal isn't obvious from the request.
-- **Proceed autonomously** when: the target is mechanical and well-defined (rename, typed refactor with clear boundaries, verification passes, doc/test updates following an existing pattern).
-- **When in doubt, ask.** One clarifying question is cheaper than a rewrite.
-
-## 6. Recruito-Specific Guardrails
-
-Earned from recent incidents (see commits `071dee6`, `26cfb3f`, `8df1e7a`).
-
-**Server actions (`src/lib/actions/*.ts`)**
-- Every mutating action must authenticate. Use `requireAdmin()` for admin-only; check `supabase.auth.getUser()` + role for recruiter/candidate scope.
-- Never return raw Supabase/Postgres errors to the client — they leak schema. Map to generic messages.
-- Validate ownership before mutation (IDOR prevention): confirm the current user owns or is authorized for the row being modified.
-
-**`placements.ts` is load-bearing**
-- Hot path (14x recent edits). Do not refactor without a test that pins current behavior first.
-- Changes here must trace to an explicit request — no opportunistic cleanup.
-
-**Uploads & user input**
-- Validate MIME by content, not just extension.
-- CSV export: escape leading `=`, `+`, `-`, `@` to prevent formula injection.
-
-**i18n keys**
-- New UI strings require entries in every dictionary under `src/i18n/dictionaries/`. Build fails otherwise (see `8df1e7a`).
-
-**Before claiming done on server-action or security-adjacent work**
-- Run `npm run build` in `rekryteringsplattform/`. Type errors here have shipped twice.
-
-**New `CREATE TABLE public.*` migrations need explicit `GRANT`**
-- From Oct 30, 2026 Supabase will stop auto-exposing new `public` tables to the Data API. Adding the grant earlier is harmless and avoids a flag-day cliff.
-- For app-facing tables: `GRANT SELECT, INSERT, UPDATE, DELETE ON public.<name> TO authenticated;` (add `anon` only if truly public).
-- For service-role-only tables (audit logs, admin internals): omit the grant — `createAdminClient()` still works.
-- See [Dev-Notes/migration-grant-snippet.md](Dev-Notes/migration-grant-snippet.md) and [Decisions/2026-05-27-supabase-public-grant-default.md](Decisions/2026-05-27-supabase-public-grant-default.md).
-
-## 7. Knowledge layout
-
-This repo root is an Obsidian vault. Canonical locations:
-- `Architecture/` — system design (was `files/`, migrated 2026-04-22)
-- `Decisions/` — ADRs, one per decision, dated `YYYY-MM-DD-title.md`
-- `Work-Log/` — weekly/milestone summaries
-- `Dev-Notes/` — runbooks, hot-path docs, gotchas
-- `_index.md` — vault entry point
-
-When making an architectural or tooling choice, write it to `Decisions/` as you decide — do not rely on conversation recall.
-
-Refresh the dep graph into the vault weekly: `/graphify . --update --obsidian --obsidian-dir .`
-
-## 8. Production-ready gate
-
-Before claiming a coding task done:
-1. `npm run build` AND `npm run lint` pass in `rekryteringsplattform/`. Build does NOT run ESLint — lint separately (a lint-only error, e.g. `react-hooks/set-state-in-effect`, shipped red to `main` twice on 2026-06-26).
-2. Tests pass; for bug fixes, the reproducing test exists and was red before the fix.
-3. Security-adjacent work checks §6 (auth, IDOR, error leakage, MIME, CSV injection, i18n).
+## 5. Production-ready gate (skip trivial typos/comments)
+1. `npm run build` AND `npm run lint` pass in `rekryteringsplattform/` — build doesn't run ESLint, so lint separately (lint-only errors shipped red to main twice).
+2. Tests pass; for bug fixes the reproducing test exists and was red first.
+3. Security-adjacent work re-checks §3 (auth, IDOR, error leakage, MIME, CSV, i18n).
 4. Handoff includes verification evidence, not assertions.
 
-Trivial edits (typos, comments) skip the gate.
-
+## 6. Harness structure (senior-dev setup) — confirm before any non-trivial build
+Subdir CLAUDE.md present ([`actions`](rekryteringsplattform/src/lib/actions/CLAUDE.md), [`migrations`](rekryteringsplattform/supabase/migrations/CLAUDE.md)) · `.claudeignore` at root · TS LSP installed (OMC `lsp_servers`) · `build-error-loop.py` hook active (`.claude/settings.json`).

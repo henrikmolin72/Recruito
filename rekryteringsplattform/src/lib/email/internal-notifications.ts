@@ -1,5 +1,6 @@
 import { createTransport } from "nodemailer";
 import { Resend } from "resend";
+import { isSuppressed } from "./suppression";
 
 type SendInternalRecruiterEmailParams = {
   subject: string;
@@ -92,6 +93,17 @@ async function dispatch(args: {
 }): Promise<{ sent: true } | { skipped: true } | { error: true }> {
   const from = getFromAddress();
   const subject = sanitizeSubject(args.subject);
+
+  // Hard bounces / spam complaints (recorded by the Resend webhook) must never
+  // be re-emailed — repeat sends to dead or complaining inboxes damage domain
+  // reputation. Enforced here at the single dispatch chokepoint so every send
+  // path (notifications + direct transactional) is covered. Fails open: a lookup
+  // error inside isSuppressed returns false, so transient DB issues never block
+  // critical mail like password resets.
+  if (await isSuppressed(args.to)) {
+    console.info("Recipient on suppression list, skipping send:", args.to);
+    return { skipped: true };
+  }
 
   // 1. Resend (primary)
   const resend = getResend();
