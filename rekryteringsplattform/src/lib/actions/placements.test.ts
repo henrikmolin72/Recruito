@@ -68,8 +68,18 @@ const { logCandidateStageChange } = vi.hoisted(() => ({ logCandidateStageChange:
 vi.mock("@/lib/candidate-stage-history", () => ({ logCandidateStageChange }));
 vi.mock("@/lib/notifications/create", () => ({ createNotification: vi.fn() }));
 vi.mock("@/lib/email/internal-notifications", () => ({ sendUserEmail: vi.fn() }));
-vi.mock("@/lib/email/email-templates", () => ({ paymentCompletedEmail: () => "<html></html>" }));
+// Spy so the payout link handed to the template can be asserted.
+const { paymentCompletedEmail } = vi.hoisted(() => ({
+  paymentCompletedEmail: vi.fn((_args: { payoutUrl: string }) => "<html></html>"),
+}));
+vi.mock("@/lib/email/email-templates", () => ({ paymentCompletedEmail }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+// getAppUrl() reads request headers; `headerValues` lets a test simulate the
+// proxy headers Vercel sets (or their absence, falling back to the env var).
+let headerValues: Record<string, string> = {};
+vi.mock("next/headers", () => ({
+  headers: async () => ({ get: (k: string) => headerValues[k.toLowerCase()] ?? null }),
+}));
 
 import { sendPlacementInvoice, recordPlacementPayment, reportGuaranteeFailure, completeGuarantee } from "./placements";
 
@@ -80,9 +90,48 @@ beforeEach(() => {
   rpcCalls.length = 0;
   updateErrorByTable = {};
   logCandidateStageChange.mockReset();
+  paymentCompletedEmail.mockClear();
+  headerValues = {};
   recruiterRow = { user_id: "user-1" };
   // email_opt_out short-circuits the email branch (keeps the test focused).
   profileRow = { email: "r@example.com", full_name: "Rec", email_opt_out: true };
+});
+
+describe("recordPlacementPayment — payout email link", () => {
+  // Opts IN to the email branch that the other tests deliberately skip.
+  function arrangePaidPlacement() {
+    profileRow = { email: "r@example.com", full_name: "Rec", email_opt_out: false };
+    placementRow = {
+      id: "p1", status: "invoice_sent", guarantee_end_date: null,
+      recruiter_id: "r1", candidate_id: "c1", job_id: "j1",
+      candidate: { first_name: "Cand", last_name: "Idate" },
+    };
+  }
+
+  const payoutUrl = () => paymentCompletedEmail.mock.calls.at(0)?.[0]?.payoutUrl;
+
+  it("builds the payout link from NEXT_PUBLIC_APP_URL", async () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://configured.example";
+    arrangePaidPlacement();
+
+    await recordPlacementPayment("p1");
+
+    expect(payoutUrl()).toBe("https://configured.example/recruiter/earnings");
+  });
+
+  it("falls back to the request host, never a third-party domain, when NEXT_PUBLIC_APP_URL is unset", async () => {
+    // Regression guard: this used to fall back to a hardcoded recruito.com —
+    // a domain the company does not own — putting links to someone else's site
+    // into recruiter payout emails.
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    headerValues = { "x-forwarded-host": "www.recruitomatch.com", "x-forwarded-proto": "https" };
+    arrangePaidPlacement();
+
+    await recordPlacementPayment("p1");
+
+    expect(payoutUrl()).toBe("https://www.recruitomatch.com/recruiter/earnings");
+    expect(payoutUrl()).not.toContain("recruito.com/");
+  });
 });
 
 describe("recordPlacementPayment — payment branch", () => {

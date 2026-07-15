@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/lib/notifications/create";
 import { requireAdmin } from "@/lib/actions/require-admin";
+import { getAppUrl } from "@/lib/app-url";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { paymentCompletedEmail } from "@/lib/email/email-templates";
 import { mapRecruiterPerfRow, isPerfSnapshotStale } from "@/lib/recruiter-metrics";
@@ -251,7 +252,7 @@ export async function recordPlacementPayment(placementId: string) {
                 const { data: jobRow } = placement.job_id
                     ? await admin.from("jobs").select("title").eq("id", placement.job_id).single()
                     : { data: null as { title?: string } | null };
-                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com";
+                const baseUrl = await getAppUrl();
 
                 await sendUserEmail({
                     to: recruiterProfile.email,

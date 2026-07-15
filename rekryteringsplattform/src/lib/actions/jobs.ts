@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getAppUrl } from "@/lib/app-url";
 import { validateJobForm, validatePipelineStages } from "@/lib/validation/forms";
 import { FAILED_PLACEMENT_STATUSES_FILTER, getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
@@ -336,6 +337,8 @@ async function notifyMatchingRecruitersAboutJob(jobId: string) {
             return industryMatch || locationMatch;
         });
 
+        const jobUrl = `${await getAppUrl()}/recruiter/jobs/${jobId}`;
+
         for (const recruiter of matchingRecruiters) {
             const profile = Array.isArray(recruiter.profiles)
                 ? recruiter.profiles[0]
@@ -344,7 +347,6 @@ async function notifyMatchingRecruitersAboutJob(jobId: string) {
             if (!profile?.email) continue;
 
             const recruiterName = profile.full_name || "Recruiter";
-            const jobUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/recruiter/jobs/${jobId}`;
 
             await createNotification(recruiter.user_id, {
                 titleKey: "notif.newJobTitle",

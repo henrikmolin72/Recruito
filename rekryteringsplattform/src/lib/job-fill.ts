@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createNotification } from "@/lib/notifications/create";
+import { getAppUrl } from "@/lib/app-url";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { jobLifecycleEmail } from "@/lib/email/email-templates";
 import { statusChangeTimestampPatch, isCandidateInProcess } from "@/lib/candidate-workflow";
@@ -217,7 +218,7 @@ export async function notifyRecruitersOfJobLifecycleChange(
                     ? "The company has paused this job. Please hold candidate submissions until further notice."
                     : "The company has reopened this job. You can resume submitting candidates.";
 
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com";
+        const baseUrl = await getAppUrl();
 
         const results = await Promise.allSettled(
             (profiles || [])

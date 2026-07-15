@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { runCandidateEvaluation } from "@/lib/screening/run-evaluation";
+import { getAppUrl } from "@/lib/app-url";
 import { createNotification } from "@/lib/notifications/create";
 import { notifyAdmins } from "@/lib/notifications/notify-admins";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
@@ -89,7 +90,7 @@ async function sendRecruiterStageEmail(
         if (!recruiterProfile?.email || (recruiterProfile as any).email_opt_out) return;
 
         const candidateUrl =
-            `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}` +
+            `${await getAppUrl()}` +
             `/recruiter/jobs/${params.jobId}#candidate/${params.candidateId}`;
 
         const emailHtml = candidateProgressEmail({
@@ -297,7 +298,7 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
                 .single();
 
             if (companyProfile?.email && !(companyProfile as any).email_opt_out && access.candidate) {
-                const candidateUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/company/jobs/${jobId}/candidates/${candidateId}`;
+                const candidateUrl = `${await getAppUrl()}/company/jobs/${jobId}/candidates/${candidateId}`;
                 const qualifications = (access.candidate as any)?.key_qualifications || "Professional experience in relevant field";
 
                 const emailHtml = candidateSubmissionEmail({
@@ -474,7 +475,7 @@ export async function moveCandidateToPipelineStage(
 
             if (recruiterProfile?.email && !(recruiterProfile as any).email_opt_out) {
                 const recruiterName = recruiterProfile.full_name || "Recruiter";
-                const candidateUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://recruito.com"}/recruiter/jobs/${jobId}#candidate/${candidateId}`;
+                const candidateUrl = `${await getAppUrl()}/recruiter/jobs/${jobId}#candidate/${candidateId}`;
 
                 const emailHtml = candidateProgressEmail({
                     recruiterName,
