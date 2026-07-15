@@ -8,7 +8,11 @@ type SendInternalRecruiterEmailParams = {
   html?: string;
 };
 
-const DEFAULT_FROM = "Recruito <no-reply@recruito.eu>";
+// Must be a domain verified in the Resend account, or every send 403s. The app
+// is served from recruitomatch.com; recruito.eu is NOT ours (it resolves to an
+// unrelated Italian site), so it could never be verified and every send using it
+// would have failed. Override per-environment with EMAIL_FROM.
+const DEFAULT_FROM = "Recruito <no-reply@recruitomatch.com>";
 
 /* ------------------------------------------------------------------ *
  * Provider selection

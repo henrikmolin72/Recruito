@@ -13,6 +13,13 @@ const PUBLIC_PATHS = [
     "/favicon.ico",
     "/images",
     "/api/preview",
+    // Machine-facing endpoints: callers are Svix and Vercel Cron, which have no
+    // preview cookie to present and follow no redirect, so the gate silently
+    // turned every delivery into a 307 to /coming-soon. Each carries its own
+    // auth (Svix signature / CRON_SECRET), so the gate added no protection here.
+    "/api/webhooks",
+    "/api/cron",
+    "/api/guarantee/reminders",
 ];
 
 export async function middleware(request: NextRequest) {
