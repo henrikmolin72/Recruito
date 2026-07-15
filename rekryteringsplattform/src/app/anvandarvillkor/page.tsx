@@ -24,8 +24,8 @@ export default function TermsPage() {
         <p className="text-sm text-muted-foreground">Last updated: 12 May 2026</p>
         <p className="text-sm text-muted-foreground">
           Operator: Recruito AB · Stockholm, Sweden ·{" "}
-          <a href="mailto:hello@recruito.eu" className="text-brand-600 hover:underline">
-            hello@recruito.eu
+          <a href="mailto:hello@recruitomatch.com" className="text-brand-600 hover:underline">
+            hello@recruitomatch.com
           </a>
         </p>
       </header>
@@ -204,8 +204,8 @@ export default function TermsPage() {
       <SectionHeading id="contact">14. Contact</SectionHeading>
       <p>
         Recruito AB · Stockholm, Sweden ·{" "}
-        <a href="mailto:hello@recruito.eu" className="text-brand-600 hover:underline">
-          hello@recruito.eu
+        <a href="mailto:hello@recruitomatch.com" className="text-brand-600 hover:underline">
+          hello@recruitomatch.com
         </a>
       </p>
 

@@ -45,7 +45,7 @@ function fakeAdminClient(admins: Array<{ id: string }>) {
 describe("sendSupportRequest", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.SUPPORT_EMAIL = "support@recruito.eu";
+    process.env.SUPPORT_EMAIL = "support@recruitomatch.com";
     sendUserEmailMock.mockResolvedValue({ sent: true });
     sendThreadMock.mockResolvedValue({ success: true });
     (createAdminClient as any).mockReturnValue(fakeAdminClient([{ id: "admin-1" }]));
@@ -83,7 +83,7 @@ describe("sendSupportRequest", () => {
     expect(res).toEqual({ success: true });
     expect(sendUserEmailMock).toHaveBeenCalledTimes(1);
     const call = sendUserEmailMock.mock.calls[0][0];
-    expect(call.to).toBe("support@recruito.eu");
+    expect(call.to).toBe("support@recruitomatch.com");
     expect(call.text).toContain("Jane Doe");
     expect(call.text).toContain("Backend Engineer");
     expect(call.text).toContain("job-1");

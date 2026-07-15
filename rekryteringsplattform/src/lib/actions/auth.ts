@@ -307,7 +307,7 @@ export async function registerRecruiter(formData: FormData) {
                       <p>${t("auth.recruiterConfirmEmailBody2")}</p>
                       <p style="color:#64748b;font-size:13px;">${t("auth.recruiterConfirmEmailIgnore")}</p>
                       <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;" />
-                      <p style="color:#94a3b8;font-size:12px;">Recruito · recruito.eu</p>
+                      <p style="color:#94a3b8;font-size:12px;">Recruito · recruitomatch.com</p>
                     </div>
                 `,
             });

@@ -8,8 +8,8 @@ import { getLocale } from "@/i18n/server";
 // translation is pending — accuracy beats half-translated legalese.
 
 const LAST_UPDATED = "2026-05-14";
-const CONTACT_EMAIL = "privacy@recruito.eu";
-const SUPPORT_EMAIL = "hello@recruito.eu";
+const CONTACT_EMAIL = "privacy@recruitomatch.com";
+const SUPPORT_EMAIL = "hello@recruitomatch.com";
 
 function DraftBanner({ locale }: { locale: string }) {
     const text = locale === "en"

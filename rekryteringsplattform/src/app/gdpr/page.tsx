@@ -5,7 +5,7 @@ import { getLocale } from "@/i18n/server";
 // HOW to exercise their rights and what we do internally to protect data.
 
 const LAST_UPDATED = "2026-05-14";
-const PRIVACY_EMAIL = "privacy@recruito.eu";
+const PRIVACY_EMAIL = "privacy@recruitomatch.com";
 
 function DraftBanner({ locale }: { locale: string }) {
     const text = locale === "en"

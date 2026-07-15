@@ -14,7 +14,7 @@ export default async function CompanyDataRightsPage() {
                 <h1 className="text-2xl font-bold text-gray-900">{t("company.companyDataPageHeading")}</h1>
                 <p className="text-sm text-gray-600">
                     {t("company.companyDataPageIntro")}{" "}
-                    <a href="mailto:privacy@recruito.eu" className="underline">privacy@recruito.eu</a>.
+                    <a href="mailto:privacy@recruitomatch.com" className="underline">privacy@recruitomatch.com</a>.
                 </p>
             </header>
             <div className="mt-8">
