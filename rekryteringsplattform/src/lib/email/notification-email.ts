@@ -1,7 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendUserEmail } from "./internal-notifications";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://recruito.eu";
+// Fallback only matters when NEXT_PUBLIC_APP_URL is unset; it must still be our
+// own domain, since every link in an outgoing email is built from it.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://recruitomatch.com";
 
 function escapeHtml(s: string): string {
   return s

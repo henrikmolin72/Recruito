@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1783964535138,
+  "lastScanned": 1784105135177,
   "projectRoot": "/Users/henrikmolin/Desktop/Recruito",
   "techStack": {
     "languages": [],
@@ -38,7 +38,7 @@
       "path": "Architecture",
       "purpose": null,
       "fileCount": 13,
-      "lastAccessed": 1783964535120,
+      "lastAccessed": 1784105135158,
       "keyFiles": [
         "00-MASTER-PLAN.md",
         "01-PROJECT-SETUP.md",
@@ -51,7 +51,7 @@
       "path": "Decisions",
       "purpose": null,
       "fileCount": 22,
-      "lastAccessed": 1783964535120,
+      "lastAccessed": 1784105135159,
       "keyFiles": [
         "2026-04-22-no-gstack.md",
         "2026-04-22-tooling-cleanup.md",
@@ -63,8 +63,8 @@
     "Dev-Notes": {
       "path": "Dev-Notes",
       "purpose": null,
-      "fileCount": 7,
-      "lastAccessed": 1783964535120,
+      "fileCount": 8,
+      "lastAccessed": 1784105135160,
       "keyFiles": [
         "README.md",
         "deployment-runbook.md",
@@ -77,7 +77,7 @@
       "path": "Work-Log",
       "purpose": null,
       "fileCount": 5,
-      "lastAccessed": 1783964535121,
+      "lastAccessed": 1784105135160,
       "keyFiles": [
         "2026-06-25-compliance-gap-analysis.md",
         "2026-28.md",
@@ -90,14 +90,14 @@
       "path": "docs",
       "purpose": "Documentation",
       "fileCount": 0,
-      "lastAccessed": 1783964535121,
+      "lastAccessed": 1784105135160,
       "keyFiles": []
     },
     "evals": {
       "path": "evals",
       "purpose": null,
       "fileCount": 2,
-      "lastAccessed": 1783964535122,
+      "lastAccessed": 1784105135160,
       "keyFiles": [
         "recruito.json",
         "recruito.judge-example.json"
@@ -107,7 +107,7 @@
       "path": "graphify-out",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1783964535122,
+      "lastAccessed": 1784105135161,
       "keyFiles": [
         "GRAPH_REPORT.md",
         "cost.json",
@@ -120,7 +120,7 @@
       "path": "rekryteringsplattform",
       "purpose": null,
       "fileCount": 31,
-      "lastAccessed": 1783964535122,
+      "lastAccessed": 1784105135161,
       "keyFiles": [
         "README.md",
         "components.json",
@@ -133,27 +133,39 @@
       "path": "tools",
       "purpose": null,
       "fileCount": 0,
-      "lastAccessed": 1783964535123,
+      "lastAccessed": 1784105135161,
       "keyFiles": []
     }
   },
   "hotPaths": [
     {
       "path": "rekryteringsplattform/src/lib/actions/admin.ts",
-      "accessCount": 49,
-      "lastAccessed": 1783882648294,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/actions/recruiter.ts",
-      "accessCount": 42,
-      "lastAccessed": 1783880895185,
+      "accessCount": 53,
+      "lastAccessed": 1784021594555,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/lib/actions/jobs.ts",
-      "accessCount": 38,
-      "lastAccessed": 1783882739996,
+      "accessCount": 52,
+      "lastAccessed": 1784021552709,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/actions/recruiter.ts",
+      "accessCount": 47,
+      "lastAccessed": 1784021572155,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/screening/run-evaluation.ts",
+      "accessCount": 40,
+      "lastAccessed": 1784027355932,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/actions/screening.ts",
+      "accessCount": 33,
+      "lastAccessed": 1784017980366,
       "type": "file"
     },
     {
@@ -163,15 +175,9 @@
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/actions/screening.ts",
-      "accessCount": 32,
-      "lastAccessed": 1783765713610,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/screening/run-evaluation.ts",
-      "accessCount": 30,
-      "lastAccessed": 1783770521528,
+      "path": "rekryteringsplattform/src/components/dashboard/recruiter/candidate-submission-form.tsx",
+      "accessCount": 31,
+      "lastAccessed": 1784027019009,
       "type": "file"
     },
     {
@@ -181,21 +187,33 @@
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/components/dashboard/recruiter/candidate-submission-form.tsx",
-      "accessCount": 26,
-      "lastAccessed": 1783667848076,
+      "path": "rekryteringsplattform/src/lib/screening/evaluation-prompt.ts",
+      "accessCount": 29,
+      "lastAccessed": 1784023867307,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/i18n/dictionaries/en.json",
-      "accessCount": 23,
-      "lastAccessed": 1783882308819,
+      "accessCount": 28,
+      "lastAccessed": 1784027614249,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/actions/candidates-extended.ts",
+      "accessCount": 25,
+      "lastAccessed": 1784026799327,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/lib/screening/extract-match-score.ts",
+      "accessCount": 23,
+      "lastAccessed": 1784017898835,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/[id]/page.tsx",
       "accessCount": 22,
-      "lastAccessed": 1783765977931,
+      "lastAccessed": 1784021630791,
       "type": "file"
     },
     {
@@ -205,15 +223,9 @@
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/[id]/page.tsx",
+      "path": "rekryteringsplattform/src/app/api/screening-report/route.ts",
       "accessCount": 20,
-      "lastAccessed": 1783880739246,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/lib/screening/evaluation-prompt.ts",
-      "accessCount": 19,
-      "lastAccessed": 1783764537367,
+      "lastAccessed": 1784026784788,
       "type": "file"
     },
     {
@@ -223,27 +235,27 @@
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/actions/candidates-extended.ts",
-      "accessCount": 18,
-      "lastAccessed": 1783325553457,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/app/api/screening-report/route.ts",
-      "accessCount": 17,
-      "lastAccessed": 1783667823656,
-      "type": "file"
-    },
-    {
       "path": "rekryteringsplattform/src/types/db-types.ts",
+      "accessCount": 17,
+      "lastAccessed": 1784019378611,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/screening/eval-data.ts",
+      "accessCount": 17,
+      "lastAccessed": 1784023872930,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/components/dashboard/recruiter/recruiter-jobs-list.tsx",
       "accessCount": 14,
-      "lastAccessed": 1783882114020,
+      "lastAccessed": 1784021645771,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/supabase/migrations/047_candidate_screenings.sql",
-      "accessCount": 12,
-      "lastAccessed": 1783325494091,
+      "accessCount": 13,
+      "lastAccessed": 1784018003574,
       "type": "file"
     },
     {
@@ -253,9 +265,15 @@
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/screening/eval-data.ts",
+      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/jobs-table.tsx",
       "accessCount": 10,
-      "lastAccessed": 1783764652406,
+      "lastAccessed": 1784021685638,
+      "type": "file"
+    },
+    {
+      "path": "rekryteringsplattform/src/lib/screening/run-evaluation.test.ts",
+      "accessCount": 10,
+      "lastAccessed": 1784027341686,
       "type": "file"
     },
     {
@@ -271,27 +289,21 @@
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/components/dashboard/recruiter/recruiter-jobs-list.tsx",
+      "path": "rekryteringsplattform/src/components/dashboard/admin/run-screening-button.tsx",
       "accessCount": 9,
-      "lastAccessed": 1783877891648,
+      "lastAccessed": 1784027027648,
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/app/(dashboard)/company/jobs/jobs-table.tsx",
+      "path": "rekryteringsplattform/src/components/screening/markdown-report.tsx",
       "accessCount": 8,
-      "lastAccessed": 1783877884828,
+      "lastAccessed": 1784018075859,
       "type": "file"
     },
     {
       "path": "rekryteringsplattform/src/components/screening/evaluation-prompt-panel.tsx",
       "accessCount": 7,
       "lastAccessed": 1782817350173,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/components/screening/markdown-report.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1783764560671,
       "type": "file"
     },
     {
@@ -307,12 +319,6 @@
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/lib/screening/run-evaluation.test.ts",
-      "accessCount": 6,
-      "lastAccessed": 1783764638200,
-      "type": "file"
-    },
-    {
       "path": "rekryteringsplattform/src/lib/actions/screening.test.ts",
       "accessCount": 6,
       "lastAccessed": 1783881780990,
@@ -325,15 +331,9 @@
       "type": "file"
     },
     {
-      "path": "rekryteringsplattform/src/components/dashboard/admin/run-screening-button.tsx",
-      "accessCount": 5,
-      "lastAccessed": 1782817355912,
-      "type": "file"
-    },
-    {
       "path": "rekryteringsplattform/src/app/api/screen/route.ts",
-      "accessCount": 5,
-      "lastAccessed": 1783004632814,
+      "accessCount": 6,
+      "lastAccessed": 1784017881785,
       "type": "file"
     },
     {
@@ -349,6 +349,12 @@
       "type": "file"
     },
     {
+      "path": "rekryteringsplattform/src/components/screening/candidate-score-card.tsx",
+      "accessCount": 5,
+      "lastAccessed": 1784017916485,
+      "type": "file"
+    },
+    {
       "path": "rekryteringsplattform/src/app/(dashboard)/admin/candidates/page.tsx",
       "accessCount": 4,
       "lastAccessed": 1782723597426,
@@ -358,12 +364,6 @@
       "path": "rekryteringsplattform/supabase/migrations/027_ai_compliance.sql",
       "accessCount": 4,
       "lastAccessed": 1782995335477,
-      "type": "file"
-    },
-    {
-      "path": "rekryteringsplattform/src/components/screening/candidate-score-card.tsx",
-      "accessCount": 4,
-      "lastAccessed": 1783025907222,
       "type": "file"
     },
     {
