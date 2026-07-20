@@ -113,6 +113,13 @@ describe("stripClientVisibleScores — no raw % reaches the client report", () =
     expect(out).toContain("Summary text.");
   });
 
+  it("drops the KEY_GAPS machine line from client-visible reports", () => {
+    const md = 'Summary line.\nKEY_GAPS: ["No X (~10%)"]\nFINAL_MATCH_SCORE: 90';
+    const out = stripClientVisibleScores(md);
+    expect(out).not.toMatch(/KEY_GAPS/);
+    expect(out).toContain("Summary line.");
+  });
+
   it("redacts labelled prose and table rows but keeps the surrounding text", () => {
     const out = stripClientVisibleScores(
       "Direct Match Score: 62%\nAdjusted Match Score: 81%\n| Direct Match Score | 72% |"

@@ -30,6 +30,12 @@ describe("evaluation prompt — client deal-breaker gates (2026-07-03 client req
   it("carries the deal-breaker cap into the machine-read FINAL_MATCH_SCORE instruction", () => {
     expect(prompt).toMatch(/if any deal-breaker \/ mandatory requirement is unmet, this number MUST NOT exceed 49/i);
   });
+
+  it("orders a machine-readable KEY_GAPS line next to the final score", () => {
+    expect(prompt).toMatch(/KEY_GAPS:/);
+    expect(prompt).toMatch(/single-line JSON array/i);
+    expect(prompt).toMatch(/NEVER list the criteria titles/i);
+  });
 });
 
 describe("deal-breaker cap → client-facing 'Not Recommended' (end-to-end deterministic tie)", () => {

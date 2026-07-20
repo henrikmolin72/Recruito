@@ -12,6 +12,7 @@ import {
     Phone,
     Linkedin,
     Download,
+    XCircle,
 } from "lucide-react";
 import { TabbedCandidateChat } from "@/components/shared/tabbed-candidate-chat";
 import { CompanyNextStepPanel } from "@/components/dashboard/recruiter/company-next-step-panel";
@@ -20,6 +21,9 @@ import { CandidateStageHistoryTimeline } from "@/components/dashboard/company/ca
 import { getCandidateConversation } from "@/lib/actions/messages";
 import { getDictionary } from "@/i18n/server";
 import { SkillTagEditor } from "@/components/skills/skill-tag-editor";
+import { getLatestEvaluation } from "@/lib/actions/screening";
+import { extractMatchScore } from "@/lib/screening/extract-match-score";
+import { extractCriticalGaps } from "@/lib/screening/extract-critical-gaps";
 
 async function getCandidate(candidateId: string) {
     const supabase = await createClient();
@@ -94,6 +98,13 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
         .eq("candidate_id", candidateId)
         .order("created_at", { ascending: false });
     const stageHistory: CandidateStageHistory[] = (stageHistoryRows as CandidateStageHistory[]) ?? [];
+    // AI self-check the recruiter ran pre-submission (client request 2026-07-14:
+    // viewable after submitting). Score + gaps only — the full report stays
+    // admin-side, per the 2026-07-02 visibility policy. getLatestEvaluation
+    // re-checks recruiter ownership of both mandate and candidate (IDOR).
+    const evaluation = await getLatestEvaluation(candidateId, mandateId);
+    const aiScore = evaluation ? extractMatchScore(evaluation.reportMarkdown) : null;
+    const aiGaps = evaluation ? extractCriticalGaps(evaluation.reportMarkdown) : [];
     // Reuse the client-side labels so the recruiter sees the same stage history UI.
     const cc = dict.company;
     const stageNames: Record<string, string> = {
@@ -208,6 +219,40 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                             )}
                         </CardContent>
                     </Card>
+
+                    {evaluation && (
+                        <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
+                            <CardHeader className="pb-2">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">{r.aiScreenTitle || "AI screening"}</h3>
+                            </CardHeader>
+                            <CardContent>
+                                {aiScore !== null ? (
+                                    <div className="flex items-baseline gap-2">
+                                        <span className={`text-3xl font-black tabular-nums ${aiScore >= 80 ? "text-emerald-600" : aiScore >= 60 ? "text-amber-500" : "text-red-500"}`}>
+                                            {aiScore}%
+                                        </span>
+                                        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{r.aiScreenScore || "AI Match Score"}</span>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-slate-500">{r.aiScreenNoScore || "Screening ran, but no score could be extracted."}</p>
+                                )}
+                                {aiGaps.length > 0 && (
+                                    <div className="mt-2">
+                                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{r.aiScreenGaps || "Gaps"}</p>
+                                        <ul className="mt-1 space-y-1">
+                                            {aiGaps.map((g, i) => (
+                                                <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
+                                                    <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
+                                                    <span>{g}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                <p className="mt-2 text-[11px] text-slate-400">{r.aiScreenDisclaimer || "Decision support only — not an automated decision."}</p>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white">
                         <CardHeader className="pb-2">

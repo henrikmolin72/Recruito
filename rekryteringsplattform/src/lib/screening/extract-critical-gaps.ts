@@ -17,6 +17,43 @@ const MAX_LEN = 140;
 const BOUNDARY =
   /^\s*(#{1,6}\s|\*{0,2}\d+\.\s|section\b|═{3,}|━{3,}|─{3,}|={3,}|-{3,}\s*$)/i;
 
+// Criterion/section titles from evaluation-prompt.ts — never real gaps. They
+// leak in when the model renders Section A as one table: rows start with "|",
+// never match BOUNDARY, and pass 2 harvests "| 4. Years of Professional
+// Experience | …" first cells (clean() strips the "4. "). Client bug 2026-07-20.
+const CRITERION_TITLES =
+  /^(jd match|direct match score|key gaps|years of professional experience|current employment status|short-?term positions|overqualification|recruiter summary|career history|education table|transferable skills|adjacent sector|bias|screening outcome)/i;
+
+// Structured marker (prompt emits it since 2026-07-20, next to
+// FINAL_MATCH_SCORE): "KEY_GAPS: [...]" — a single-line JSON array. Strict
+// parse; null = marker absent/broken → caller falls back to the heuristic.
+// [] is a VALID "no gaps" answer and must NOT fall through to the heuristic.
+function structuredGaps(markdown: string): string[] | null {
+  // Last match wins: the canonical line is emitted at the end (next to
+  // FINAL_MATCH_SCORE) — an earlier echo/duplicate (e.g. from CV text) must
+  // not win, especially a terminal `[]` that would silently suppress real gaps.
+  const matches = [...markdown.matchAll(/^\s*KEY_GAPS:\s*(\[.*\])\s*$/gim)];
+  const m = matches[matches.length - 1];
+  if (!m) return null;
+  try {
+    const arr = JSON.parse(m[1]);
+    if (!Array.isArray(arr)) return null;
+    const gaps: string[] = [];
+    for (const item of arr) {
+      if (typeof item !== "string") continue;
+      let v = item.replace(/\s+/g, " ").trim();
+      if (!v || !/[a-zA-Z]{3,}/.test(v)) continue;
+      if (CRITERION_TITLES.test(v)) continue;
+      if (v.length > MAX_LEN) v = v.slice(0, MAX_LEN - 1).trimEnd() + "…";
+      gaps.push(v);
+      if (gaps.length >= MAX_GAPS) break;
+    }
+    return gaps;
+  } catch {
+    return null;
+  }
+}
+
 function clean(s: string): string {
   return s
     .replace(/^[\s>*\-•|]+/, "") // leading bullet/table/quote marks
@@ -30,6 +67,8 @@ function clean(s: string): string {
 
 export function extractCriticalGaps(markdown: string): string[] {
   if (!markdown) return [];
+  const structured = structuredGaps(markdown);
+  if (structured !== null) return structured;
   const lines = markdown.split("\n");
 
   // Find the KEY GAPS heading.
@@ -56,6 +95,7 @@ export function extractCriticalGaps(markdown: string): string[] {
     // Drop rows that are pure punctuation/percentages with no description.
     if (!/[a-zA-Z]{3,}/.test(v)) return;
     if (/^(none|n\/?a|inga|ingen)\b/i.test(v)) return; // "None" → no gaps
+    if (CRITERION_TITLES.test(v)) return;
     if (v.length > MAX_LEN) v = v.slice(0, MAX_LEN - 1).trimEnd() + "…";
     const key = v.toLowerCase();
     if (seen.has(key)) return;
