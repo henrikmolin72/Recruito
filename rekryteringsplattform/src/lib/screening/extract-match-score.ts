@@ -57,6 +57,8 @@ export function stripClientVisibleScores(markdown: string): string {
   return markdown
     // Machine marker line ("FINAL_MATCH_SCORE: NN") — drop the whole line.
     .replace(/^.*FINAL_MATCH_SCORE:\s*\d{1,3}\s*%?.*$/gim, "")
+    // Machine marker line ("KEY_GAPS: [...]") — drop the whole line.
+    .replace(/^.*KEY_GAPS:\s*\[.*$/gim, "")
     // Internal screening machinery reads as a contradiction once the numbers
     // are hidden ("JD Match — Partial" next to "Overall Recommendation —
     // ADVANCE"; "Outcome Logic Applied: ≥ — → ADVANCE") — drop those lines
