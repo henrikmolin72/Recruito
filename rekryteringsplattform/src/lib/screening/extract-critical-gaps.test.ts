@@ -77,20 +77,21 @@ The CV lacks formal PLC certification; there is no evidence of safety compliance
     expect(gaps[0].endsWith("…")).toBe(true);
   });
 
-  it("strips leading criterion numbers from gap lines (client 14-07-06)", () => {
+  it("drops numbered criterion-title bullets, still stripping numbers from real gaps (14-07-06, superseded 2026-07-20)", () => {
+    // Superseded 2026-07-20: criterion titles are parser artifacts/model
+    // noise, never real gaps (evaluation-prompt.ts explicitly forbids the
+    // model emitting them as gap lines) — CRITERION_TITLES drops them even
+    // when correctly inside the KEY GAPS bullet block. Number-stripping still
+    // applies to a genuine numbered gap bullet.
     const md = [
       "3. KEY GAPS",
+      "- 1. No PLC programming experience (20%)",
       "- 4. Years of Professional Experience (20%)",
       "- 5. Current Employment Status (15%)",
       "- 6. Short-Term Positions (10%)",
       "- 7. Overqualification (5%)",
     ].join("\n");
-    expect(extractCriticalGaps(md)).toEqual([
-      "Years of Professional Experience (20%)",
-      "Current Employment Status (15%)",
-      "Short-Term Positions (10%)",
-      "Overqualification (5%)",
-    ]);
+    expect(extractCriticalGaps(md)).toEqual(["No PLC programming experience (20%)"]);
   });
 
   it("does not corrupt decimal numbers at the start of a gap", () => {
@@ -101,5 +102,32 @@ The CV lacks formal PLC certification; there is no evidence of safety compliance
     expect(extractCriticalGaps(md)).toEqual([
       "3.5 years of Kubernetes experience required (10%)",
     ]);
+  });
+
+  it("does not surface criterion-title table rows as gaps (table-format report, client bug 2026-07-20)", () => {
+    // Section A rendered as ONE table: rows start with "|", never match the
+    // BOUNDARY regex, so rows 4/5 leak into the Key Gaps block and pass 2
+    // harvested "Years of Professional Experience" / "Current Employment
+    // Status" as false gaps.
+    const md = `## SECTION A — CORE SCREENING
+
+| # | Criterion | Result |
+|---|---|---|
+| 1. JD Match — Direct | Partial |
+| 2. Direct Match Score | 90% |
+| 3. Key Gaps | - No explicit mention of manufacturing sector experience (~10%) - No formal continuous improvement methodology cited (~5%) |
+| 4. Years of Professional Experience | 7 years 2 months |
+| 5. Current Employment Status | Employed — Baltic Supply Solutions AB (Apr 2021–Present) |
+| 6. Short-Term Positions | 0 |
+| 7. Overqualification | No |
+`;
+    const gaps = extractCriticalGaps(md);
+    expect(gaps.join(" ")).not.toMatch(/years of professional experience/i);
+    expect(gaps.join(" ")).not.toMatch(/current employment status/i);
+    expect(gaps.join(" ")).not.toMatch(/short-term positions/i);
+    expect(gaps.join(" ")).not.toMatch(/overqualification/i);
+    // Trade-off accepted: the real gaps live inside row 3's cell and are lost
+    // in this layout — [] (score only) beats false gaps. New reports use the
+    // structured KEY_GAPS line (Task 2) and never hit this path.
   });
 });

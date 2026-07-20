@@ -17,6 +17,13 @@ const MAX_LEN = 140;
 const BOUNDARY =
   /^\s*(#{1,6}\s|\*{0,2}\d+\.\s|section\b|═{3,}|━{3,}|─{3,}|={3,}|-{3,}\s*$)/i;
 
+// Criterion/section titles from evaluation-prompt.ts — never real gaps. They
+// leak in when the model renders Section A as one table: rows start with "|",
+// never match BOUNDARY, and pass 2 harvests "| 4. Years of Professional
+// Experience | …" first cells (clean() strips the "4. "). Client bug 2026-07-20.
+const CRITERION_TITLES =
+  /^(jd match|direct match score|key gaps|years of professional experience|current employment status|short-?term positions|overqualification|recruiter summary|career history|education table|transferable skills|adjacent sector|bias|screening outcome)/i;
+
 function clean(s: string): string {
   return s
     .replace(/^[\s>*\-•|]+/, "") // leading bullet/table/quote marks
@@ -56,6 +63,7 @@ export function extractCriticalGaps(markdown: string): string[] {
     // Drop rows that are pure punctuation/percentages with no description.
     if (!/[a-zA-Z]{3,}/.test(v)) return;
     if (/^(none|n\/?a|inga|ingen)\b/i.test(v)) return; // "None" → no gaps
+    if (CRITERION_TITLES.test(v)) return;
     if (v.length > MAX_LEN) v = v.slice(0, MAX_LEN - 1).trimEnd() + "…";
     const key = v.toLowerCase();
     if (seen.has(key)) return;
