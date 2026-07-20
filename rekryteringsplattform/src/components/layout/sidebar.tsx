@@ -184,16 +184,22 @@ export function Sidebar({ role }: { role: string }) {
             isRecruiter ? "bg-slate-800 border-slate-700 text-brand-400 font-black" : isAdmin ? "bg-emerald-200 border-emerald-300 text-emerald-700 font-bold" : "bg-brand-100 border-brand-200 text-brand-600 font-bold"
           )}>
             <span className="text-xs uppercase tracking-tighter">
-              {userData?.initials || (role === "company" ? "AB" : role === "recruiter" ? "EL" : "AD")}
+              {userData?.initials ?? ""}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className={cn(
-              "text-sm font-bold truncate leading-none mb-1",
-              isRecruiter ? "text-white" : "text-foreground"
-            )}>
-              {userData?.fullName || (role === "company" ? "TechCorp AB" : role === "recruiter" ? "Erik Lindgren" : "Admin")}
-            </p>
+            {userData ? (
+              <p className={cn(
+                "text-sm font-bold truncate leading-none mb-1",
+                isRecruiter ? "text-white" : "text-foreground"
+              )}>
+                {userData.fullName}
+              </p>
+            ) : (
+              // Loading (or unauthenticated): neutral skeleton — never a fake
+              // identity like the old "Erik Lindgren"/"TechCorp AB" placeholders.
+              <div className="h-3.5 w-24 rounded bg-current opacity-20 animate-pulse mb-1" aria-hidden />
+            )}
             <p className={cn(
               "text-[9px] uppercase font-black tracking-widest opacity-70",
               isRecruiter ? "text-brand-400" : isAdmin ? "text-emerald-600" : "text-muted-foreground"
