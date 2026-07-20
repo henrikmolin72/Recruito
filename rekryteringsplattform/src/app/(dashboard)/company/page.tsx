@@ -29,7 +29,7 @@ export default async function CompanyDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{c.dashboardTitle}</h1>
-        <p className="text-muted-foreground">{c.welcomeBack.replace("{name}", company.company_name)}</p>
+        <p className="text-muted-foreground">{company.company_name ? c.welcomeBack.replace("{name}", company.company_name) : c.welcomeBack.replace(/,\s*\{name\}$/, "")}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">

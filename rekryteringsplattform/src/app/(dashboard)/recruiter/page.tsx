@@ -33,7 +33,7 @@ export default async function RecruiterDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{r.dashboardTitle}</h1>
-        <p className="text-muted-foreground">{r.welcomeBack.replace("{name}", userName)}</p>
+        <p className="text-muted-foreground">{userName ? r.welcomeBack.replace("{name}", userName) : r.welcomeBack.replace(/,\s*\{name\}$/, "")}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
