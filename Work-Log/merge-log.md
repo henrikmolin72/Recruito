@@ -163,3 +163,21 @@ notable lines into a dated milestone summary periodically, then trim.
 - b060e39 fix(ui): guarantee 0 months displays as '0 months' instead of dash/hidden (5 sites)
 - d363278 fix(admin): exclude drafts from admin jobs listing
 - 457a519 fix(i18n): add status.pending_approval + pending_client_reconfirm labels (all 4 dicts)
+
+## 2026-07-15
+- 5632a12 feat(email): Resend bounce/complaint suppression webhook
+
+## 2026-07-15
+- 4d5f496 fix(email): send from recruitomatch.com; stop the coming-soon gate eating machine endpoints
+
+## 2026-07-20
+- a8e17e9 feat(recruiter): show AI screening score + gaps on submitted candidate detail
+- 03f6c5e fix(screening): strip KEY_GAPS machine line from client fallback report
+- 20ac419 feat(screening): structured KEY_GAPS marker replaces heuristic gap scraping
+- 7c77a73 fix(screening): never surface criterion titles as recruiter gap chips
+
+## 2026-07-20
+- cd80a9b fix(auth): dev server now enforces route guards; sidebar never shows a fake identity
+
+## 2026-07-20
+- b3fc817 fix(dashboard): greet without a name instead of 'Välkommen tillbaka, undefined'
