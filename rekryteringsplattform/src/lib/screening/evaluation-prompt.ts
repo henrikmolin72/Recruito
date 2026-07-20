@@ -207,6 +207,10 @@ CV Hash      : {CV_HASH}
 ─────────────────────────────────────────────────────────────────
 
 ──────────────────────────────────────────────────────────────────
+SECOND-TO-LAST LINE (required, machine-read — output exactly once, immediately before the FINAL_MATCH_SCORE line):
+KEY_GAPS: <a single-line JSON array of the Q3 KEY GAPS, each a short plain-text string including its approximate % weight, e.g. ["No PLC programming experience (~20%)","No forklift certification (~10%)"]. Output KEY_GAPS: [] if there are none.>
+Rules for this line: entries MUST be genuinely missing JD elements from Q3 only. NEVER list the criteria titles (years of experience, employment status, short-term positions, overqualification) as entries, NEVER list anything the CV or the CANDIDATE-DECLARED FACTS already evidence, and NEVER list unanswered screening questions.
+
 FINAL LINE (required, machine-read — output exactly once, as the very last line):
 FINAL_MATCH_SCORE: <the final match score as an integer 0-100, no % sign>
 This number MUST equal the Adjusted Match Score if one applies, otherwise the Direct Match Score. Then apply the DEAL-BREAKER / HARD REQUIREMENTS CAP above: if any deal-breaker / mandatory requirement is unmet, this number MUST NOT exceed 49 (which renders the candidate Not Recommended), regardless of transferable skills or adjacent-sector strength.`;

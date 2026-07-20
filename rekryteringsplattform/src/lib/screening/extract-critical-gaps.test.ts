@@ -130,4 +130,60 @@ The CV lacks formal PLC certification; there is no evidence of safety compliance
     // in this layout — [] (score only) beats false gaps. New reports use the
     // structured KEY_GAPS line (Task 2) and never hit this path.
   });
+
+  it("prefers the structured KEY_GAPS line over the heuristic", () => {
+    const md = `### 3. KEY GAPS
+- Stale heuristic line that must be ignored
+
+KEY_GAPS: ["No manufacturing sector experience (~10%)", "No formal CI methodology cited (~5%)"]
+FINAL_MATCH_SCORE: 90`;
+    expect(extractCriticalGaps(md)).toEqual([
+      "No manufacturing sector experience (~10%)",
+      "No formal CI methodology cited (~5%)",
+    ]);
+  });
+
+  it("returns [] for KEY_GAPS: [] without falling back to the heuristic", () => {
+    const md = `### 3. KEY GAPS
+- Must not appear
+
+KEY_GAPS: []
+FINAL_MATCH_SCORE: 95`;
+    expect(extractCriticalGaps(md)).toEqual([]);
+  });
+
+  it("falls back to the heuristic when KEY_GAPS is malformed JSON", () => {
+    const md = `### 3. KEY GAPS
+- Real heuristic gap (10%)
+
+KEY_GAPS: [broken
+FINAL_MATCH_SCORE: 80`;
+    expect(extractCriticalGaps(md)).toEqual(["Real heuristic gap (10%)"]);
+  });
+
+  it("filters criterion titles even out of the structured line", () => {
+    const md = `KEY_GAPS: ["Current Employment Status", "No forklift certification (~10%)"]`;
+    expect(extractCriticalGaps(md)).toEqual(["No forklift certification (~10%)"]);
+  });
+
+  it("takes the LAST KEY_GAPS line when the marker appears more than once", () => {
+    const md = `KEY_GAPS: []
+
+### 3. KEY GAPS
+- ignored
+
+KEY_GAPS: ["Real gap (~10%)"]
+FINAL_MATCH_SCORE: 80`;
+    expect(extractCriticalGaps(md)).toEqual(["Real gap (~10%)"]);
+  });
+
+  it("falls back to the heuristic when KEY_GAPS matches but is not valid JSON", () => {
+    // "[broken]" matches the line regex but JSON.parse throws — the catch branch.
+    const md = `### 3. KEY GAPS
+- Real heuristic gap (10%)
+
+KEY_GAPS: [broken]
+FINAL_MATCH_SCORE: 80`;
+    expect(extractCriticalGaps(md)).toEqual(["Real heuristic gap (10%)"]);
+  });
 });
