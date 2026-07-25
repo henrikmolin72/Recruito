@@ -115,6 +115,9 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
         hired: cc.stageNameHired,
         rejected: cc.stageNameRejected,
         withdrawn: cc.stageNameWithdrawn,
+        guarantee_tracking: cc.stageNameGuaranteeStarted,
+        completed: cc.stageNameGuaranteeCompleted,
+        guarantee_failed: cc.stageNameGuaranteeFailed,
     };
 
     return (

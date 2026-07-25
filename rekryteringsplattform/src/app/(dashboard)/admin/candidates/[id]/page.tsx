@@ -222,9 +222,9 @@ export default async function AdminCandidateDetailPage({
                             offer_accepted: "Offer accepted",
                             recruito_rejected: "Rejected at screening",
                             under_client_review: "Under client review",
-                            guarantee_tracking: "Guarantee tracking",
+                            guarantee_tracking: "Guarantee started",
                             guarantee_failed: "Guarantee failed",
-                            completed: "Completed",
+                            completed: "Guarantee completed & paid",
                         },
                     }}
                 />

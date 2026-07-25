@@ -143,6 +143,9 @@ export default async function CandidateDetailsPage({ params }: { params: Promise
         hired: c.stageNameHired,
         rejected: c.stageNameRejected,
         withdrawn: c.stageNameWithdrawn,
+        guarantee_tracking: c.stageNameGuaranteeStarted,
+        completed: c.stageNameGuaranteeCompleted,
+        guarantee_failed: c.stageNameGuaranteeFailed,
     };
 
     return (
