@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
     CheckCircle2,
     XCircle,
+    AlertTriangle,
     Loader2,
     Plus,
     Trash2,
@@ -95,7 +96,7 @@ export function CandidateSubmissionForm({
 
     // --- Email (shared between Verify tool and Personal Details) ---
     const [email, setEmail] = useState(ds("email"));
-    const [verifyStatus, setVerifyStatus] = useState<"idle" | "checking" | "ok" | "blocked">("idle");
+    const [verifyStatus, setVerifyStatus] = useState<"idle" | "checking" | "ok" | "warned" | "blocked">("idle");
 
     // --- Section 2: location status & work auth ---
     const [locationStatus, setLocationStatus] = useState(ds("location_status"));
@@ -145,6 +146,7 @@ export function CandidateSubmissionForm({
     const [cvFile, setCvFile] = useState<File | null>(null);
     const cvInputRef = useRef<HTMLInputElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
+    const verifySeq = useRef(0);
 
     // --- In-form AI screening (pre-submission self-check: Score + a few gaps) ---
     const [screening, setScreening] = useState(false);
@@ -224,6 +226,7 @@ export function CandidateSubmissionForm({
 
     async function handleVerify() {
         if (!email.trim()) return;
+        const seq = ++verifySeq.current; // guard: only the latest check may set state
         setVerifyStatus("checking");
         try {
             const fd = new FormData();
@@ -236,14 +239,19 @@ export function CandidateSubmissionForm({
                 : "";
             if (linkedIn) fd.append("linkedin_url", linkedIn);
             const res = await fetch("/api/candidates/check-duplicate", { method: "POST", body: fd });
+            if (seq !== verifySeq.current) return; // stale response — a newer check is in flight
             if (res.ok) {
-                const { duplicate } = await res.json();
-                setVerifyStatus(duplicate ? "blocked" : "ok");
+                const { duplicate, blocking } = await res.json();
+                if (seq !== verifySeq.current) return;
+                // Only a same-job duplicate (blocking) stops submission — the
+                // server rejects exactly that case. Other duplicate signals
+                // (own portfolio, client-engaged) are advisory: warn, allow.
+                setVerifyStatus(duplicate ? (blocking ? "blocked" : "warned") : "ok");
             } else {
                 setVerifyStatus("ok"); // fail-open so UI isn't stuck; server will still block
             }
         } catch {
-            setVerifyStatus("ok");
+            if (seq === verifySeq.current) setVerifyStatus("ok");
         }
     }
 
@@ -471,6 +479,12 @@ export function CandidateSubmissionForm({
                                 <p className="mt-2 text-sm text-emerald-600 flex items-center gap-2">
                                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                                     {r.verifyNotFound || "Candidate not registered. You may proceed."}
+                                </p>
+                            )}
+                            {verifyStatus === "warned" && (
+                                <p className="mt-2 text-sm text-amber-600 flex items-center gap-2">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    {r.verifyWarnDuplicate || "This candidate already exists in the system (e.g. in your portfolio or with this client). You can still present them — duplicates for this job are blocked automatically."}
                                 </p>
                             )}
                             {verifyStatus === "blocked" && (

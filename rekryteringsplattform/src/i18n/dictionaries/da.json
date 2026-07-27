@@ -949,6 +949,7 @@
     "verifyButton": "Verificer kandidat",
     "verifyNotFound": "Kandidat ikke registreret. Du kan fortsætte.",
     "verifyAlreadyExists": "Kandidaten er allerede registreret i systemet. Indsendelse blokeret.",
+    "verifyWarnDuplicate": "Kandidaten findes allerede i systemet (f.eks. i din portefølje eller hos denne kunde). Du kan stadig præsentere – dubletter for samme opgave stoppes automatisk.",
     "sec2Title": "Afsnit 2 – Personlige oplysninger",
     "locationCityLabel": "Nuværende by",
     "locationCountryLabel": "Nuværende land",

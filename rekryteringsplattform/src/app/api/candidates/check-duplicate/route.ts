@@ -56,10 +56,14 @@ export async function POST(request: NextRequest) {
         const jobId = (mandate as any).job_id as string;
 
         // 1) Same-job duplicate (mirror createCandidateExtended same-job rule).
+        // Drafts are excluded: createCandidateExtended only blocks non-draft
+        // matches, so a recruiter's own saved draft must not self-block the
+        // form it was saved from.
         const { data: sameJobCandidates } = await admin
             .from("candidates")
             .select("email, linkedin_url")
-            .eq("job_id", jobId);
+            .eq("job_id", jobId)
+            .neq("status", "draft");
 
         // Cross-recruiter reasons (same_job, client_already_engaged) are collapsed
         // to a generic { duplicate: true } so this endpoint cannot be used as an
@@ -67,7 +71,12 @@ export async function POST(request: NextRequest) {
         // or engaged by other companies. Only the caller's own submissions get a
         // specific reason (recruiter_already_submitted) below.
         if ((sameJobCandidates || []).some((c: any) => candidateMatchesIdentity(c, email, linkedIn))) {
-            return NextResponse.json({ duplicate: true });
+            // blocking: true adds no enumeration oracle beyond what the submit
+            // path already discloses — createCandidateExtended returns a
+            // same-job-specific error for exactly this case, so it is already
+            // distinguishable by attempting a submit. Scenarios 2 and 3 (below)
+            // stay collapsed/advisory since the server accepts those.
+            return NextResponse.json({ duplicate: true, blocking: true });
         }
 
         // 2) Same-company active engagement duplicate (mirror createCandidateExtended
@@ -109,7 +118,8 @@ export async function POST(request: NextRequest) {
             const { data: recruiterCandidates } = await admin
                 .from("candidates")
                 .select("email, linkedin_url")
-                .eq("recruiter_id", recruiterId);
+                .eq("recruiter_id", recruiterId)
+                .neq("status", "draft");
 
             if ((recruiterCandidates || []).some((c: any) => candidateMatchesIdentity(c, email, linkedIn))) {
                 return NextResponse.json({ duplicate: true, reason: "recruiter_already_submitted" });

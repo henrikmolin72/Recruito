@@ -949,6 +949,7 @@
     "verifyButton": "Verifiser kandidat",
     "verifyNotFound": "Kandidat ikke registrert. Du kan fortsette.",
     "verifyAlreadyExists": "Kandidaten er allerede registrert i systemet. Innsending blokkert.",
+    "verifyWarnDuplicate": "Kandidaten finnes allerede i systemet (f.eks. i din portefølje eller hos denne kunden). Du kan likevel presentere – duplikater for samme oppdrag stoppes automatisk.",
     "sec2Title": "Seksjon 2 – Personopplysninger",
     "locationCityLabel": "Nåværende by",
     "locationCountryLabel": "Nåværende land",
