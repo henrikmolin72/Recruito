@@ -363,6 +363,15 @@ export function CandidateSubmissionForm({
             setFormError(r.declarationRequired || "You must confirm the declaration to submit.");
             return;
         }
+        // Auto-flag gate: a known duplicate can't be submitted — client mirror
+        // of the server-side block so the recruiter isn't told only after
+        // filling the whole form. Fail-open stays: an errored pre-check leaves
+        // status "ok" and the server block remains authoritative.
+        if (verifyStatus === "blocked") {
+            setFormError(r.verifyAlreadyExists || "Candidate already registered in the system. Submission blocked.");
+            if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+        }
         setFormError(null);
         setSubmitting(true);
 
