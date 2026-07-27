@@ -181,3 +181,12 @@ notable lines into a dated milestone summary periodically, then trim.
 
 ## 2026-07-20
 - b3fc817 fix(dashboard): greet without a name instead of 'Välkommen tillbaka, undefined'
+
+## 2026-07-27
+- 5d73c5d fix(recruiter): invalidate in-flight duplicate check when email is edited
+- 5386526 docs(plan): addendum — review-found blocking-scope fix (9b15bbd)
+- 9b15bbd fix(recruiter): hard-block only same-job duplicates; warn on advisory matches
+- 683d74e feat(recruiter): block Present while duplicate flag is active
+- 5b78b8c feat(recruiter): auto-flag duplicate candidates on email/LinkedIn blur
+- 15e53a5 test(candidates): pin cross-recruiter same-job duplicate block
+- cd88b63 docs(plan): duplicate-flagging auto-check implementation plan

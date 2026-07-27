@@ -1641,3 +1641,508 @@ tools/eval-harness/__pycache__/
 /withdrawClientFeeReconfirm().md
 /write_markdown().md
 # --- end graphify block ---
+/.githookspost-merge Auto-Append Hook.md
+/014022 to_regclass Guards Fix.md
+/AI Eval No Longer Counts Unanswered Questions as Gaps.md
+/AI Screening (Week 28 Summary).md
+/AI Screening Runs Automatically on CV Upload.md
+/AIcandidate screening feature area of the Recruito platform.md
+/Accepted Residual Risk (Untrusted CV Into Second Prompt).md
+/Active Candidates Card + Recent Activity Feed.md
+/Add Active Candidates Stat + Recent Activity Feed.md
+/Add Interview Rate and Hire Rate Boxes to Dashboard.md
+/Add status.pending_approval + pending_client_reconfirm Labels.md
+/Addendum Blocking-Scope Fix (9b15bbd) hard-block only same-job non-draft; advisory amber warned state; verifySeq stale-response guard.md
+/Addendum Rationale pre-check flags 3 scenarios but server rejects only 1 — raw duplicate-flag gate hard-blocked server-accepted flows (resumed draft self-match could never Present).md
+/Admin Guarantee CompletedFailed Workflow + Recruiter Sync.md
+/Admin Guarantee CompletedFailed Workflow.md
+/Admin Job Detail 404 Root Cause.md
+/Admin Job Detail 404 — Nonexistent linkedin_url Select.md
+/Admin Job-Detail 404 Fixed (Phantom linkedin_url).md
+/Admin Jobs List Hide Drafts.md
+/Admin Request-Changes Review Loop.md
+/Admin Request-Changes Workflow (Migration 069).md
+/AdminJobDetailsPage().md
+/AdminPlacementsPage().md
+/Alternatives Considered (svix dep, Per-Caller Checks, Suppress-Any-Bounce).md
+/Alternatives Rejected (Patch Regex  Generate-on-View  Gate-on-Admin).md
+/Answer Rationale Thematic Rhyme Only, Not a Real Dependency — AMBIGUOUS 0.15 tag is correct; no shared code, files, or citations.md
+/Anthropic Credit-Exhaustion Root Cause.md
+/Anti-Enumeration Rationale pre-check collapses cross-recruiter reasons to generic {duplicatetrue}; addendum's blocking flag adds no new oracle.md
+/Auto-Run Screening on CV Upload.md
+/Blast Radius (Isolated to candidate-pipeline.tsx).md
+/BonusBadge().md
+/CANDIDATE-DECLARED FACTS Prompt Block.md
+/CRITERION_TITLES Denylist.md
+/Candidate Submission Form (auto-check on blur + submit gate, candidate-submission-form.tsx).md
+/Candidate View Rebuild (Kanban to Filter-Tab List).md
+/Candidate View Rebuilt Kanban to Filter-Tab List.md
+/Canonical Semantic Successful Placement.md
+/Cap Gate on ACTIVE Count, Not Total.md
+/Cap Test Mock Pattern (candidates-extended-cap.test.ts, mirrored).md
+/Capture Prod-Only company_stage Columns (Migration 066).md
+/Clickable Job Titles Open Review Detail Page.md
+/Client-Facing AI Report (Migration 068).md
+/Client-Reported Fixes Guarantee Bars, Mandate Stats, Rejection Reasons, Payout Copy.md
+/Client-Reported Fixes from Annotated Screenshots (Images 1-7, 15-17).md
+/Company Full AI Report + Decision-Support Disclaimer.md
+/Company Surfaces (Week 28 Summary).md
+/CompanyGuaranteesPage().md
+/CompanyScreeningReport Component.md
+/CompanyScreeningReport().md
+/Confidential Company Masking.md
+/Consequences (Migration 069 Release Step).md
+/Contact Support Form.md
+/Context No BounceComplaint Handling.md
+/Cron Jobs (Guarantee Reminders, Mandate Expiry).md
+/DNS  Domain Setup.md
+/Data Integrity & Infra (Week 28 Summary).md
+/Database Migration Apply Steps.md
+/De-Duplicate Company Job-Detail Header.md
+/Decided Against Auto-Release Cron.md
+/Decision Confidential Masking Is Data-Layer + Pre-Claim Scoped.md
+/Decision Employment Type Restricted to Full-Time.md
+/Decision Filter-Tab List Replaces Kanban.md
+/Decision Joining-Date-Gated Activation (Design).md
+/Decision Joining-Date-Gated Activation.md
+/Decision Manual Guarantee Payout Release.md
+/Decision Request-Changes Reuses draft Status.md
+/Decision Salary Period Fixed to Annual.md
+/Decision Separate Client-Facing Prompt (Migration 068).md
+/Decision Signed Resend Webhook + Suppression Table.md
+/Decision Smaller Displayi18n Fixes.md
+/Decisions Locked In (Defaults Chosen).md
+/Dedicated Client-Facing AI Report (Migration 068).md
+/Deliberate Out-of-Scope Rationale (YAGNI no audit log, no fuzzy matching, no server-string i18n, no migration).md
+/Deploy Order Hard Gate (Migration 068 Before Code).md
+/Determinism Bug Regex-Parsed Score Flips Run-to-Run.md
+/Determinism Bug Regex-Parsed Score Flips Run-to-Run_1.md
+/Deterministic Match-Score Extraction via FINAL_MATCH_SCORE.md
+/Dev Server Enforces Route Guards; No Fake Identity.md
+/Duplicate Pre-Check API (apicandidatescheck-duplicate).md
+/Duplicate-Block Pinning Tests (candidates-extended-duplicate.test.ts, 4 characterization tests).md
+/Duplicate-Flagging Auto-Check Implementation Plan.md
+/Duplicate-Flagging Commit Series (2026-07-27 cd88b63, 15e53a5, 5b78b8c, 683d74e, 9b15bbd, 5386526, 5d73c5d).md
+/Employment Type Restricted to Full-Time.md
+/Enforce Candidate Cap on Submission + Admin Counts.md
+/Enforce Suppression in dispatch() Chokepoint.md
+/Environment Variables (Vercel).md
+/Exclude Drafts from Admin Jobs Listing.md
+/Exclude Failed Placements from Placement Counts.md
+/Expand Notification Messages Inline.md
+/ExpandableText().md
+/FAILED_PLACEMENT_STATUSES Constant.md
+/FINAL_MATCH_SCORE Canonical Marker.md
+/FK Hint Fix (placements_candidate_id_fkey).md
+/Fail-Open Pre-Check Rationale errored pre-check leaves status ok; server block remains authoritative.md
+/Fail-Open on Suppression-Lookup Error (email suppression system).md
+/Fail-Open on Suppression-Lookup Error.md
+/Field-Level Validation Feedback in Job Wizard.md
+/Fix graphify CLI Command in post-merge Hook.md
+/Fresh DB Missing Data-API Grants for service_role.md
+/Fresh-DB Migration Bootstrap Made Idempotent.md
+/Fresh-DB Migration Chain Order Bug.md
+/Fresh-DB Migration Chain Order Bug_1.md
+/GitHub Actions  E2E Secrets.md
+/Gotchas (Backfill, NULL-Keying Invariant).md
+/Grants Note (Service-Role-Only vs Authenticated SELECT).md
+/Graph Query Fresh-DB Migration Bug vs Determinism Bug (2026-07-20).md
+/Graph Report 2026-07-27 (1679 nodes, 1868 edges, 369 communities).md
+/Greet Without a Name Instead of 'undefined'.md
+/Grouped Rejection-Reasons List on Mandate Page.md
+/Guarantee 0 - '0 months' Fix (5 Sites).md
+/Guarantee 0 Months Displays as '0 Months'.md
+/Guarantee Progress Bar Fix (Tailwind Tokens).md
+/Guarantee Result Shows '—' When No Guarantee Completed (Migration 063).md
+/Guarantee Starts at Client-Confirmed Joining Date.md
+/Guarantee System (Week 28).md
+/Guard Support-Modal Send with tryfinally.md
+/Hard-Requirement Score Cap Rule.md
+/Hide Actively-Claimed Jobs from Browse.md
+/IA Changes adminguarantees Merge + New Nav.md
+/Image-to-Task Map (9 Screenshots).md
+/In-App Contact Support Form.md
+/Interview Rate  Hire Rate Dashboard Boxes.md
+/Job Wizard Field-Level Validation.md
+/Jobs List Shows Only Active Candidates Count.md
+/KEY_GAPS Structured JSON Marker.md
+/KEY_GAPS Structured Marker Replaces Heuristic Gap Scraping (commit 20ac419).md
+/Label Match Tiers as 'CV Match'.md
+/Local E2E Recipe.md
+/Localize AI Report Title + Disclaimer.md
+/Log Every Stage Transition to candidate_stage_history.md
+/Log Guarantee-Lifecycle Moves to Candidate Timeline.md
+/Logoicon asset (AI-generated, Gemini-produced graphic).md
+/Magnifying glass + crosshairtarget motif symbolizing scrutiny, vetting, and precision search.md
+/Make Fresh-DB Bootstrap Idempotent for 014022.md
+/Mandate-Detail Cap Gate Counts Job-Wide Occupancy.md
+/Mandates-List Cap-Reached Gate = Job-Wide Occupancy.md
+/Mask Confidential Company Name + Hide Website.md
+/Migration 060 Special Rollout (Recruito Thread Split).md
+/Migration 063 Pending (Guarantee Rate Fix).md
+/Migration 066 Adds company_stage Columns.md
+/Migration 067 (fn_auto_create_placement Rewrite).md
+/Migration 067 Steps (Design Spec).md
+/Migration 070 jobs.location Nullable.md
+/Missing Critical Requirements Treated as Deal-Breakers.md
+/Move AI Report Behind View AI Report Button.md
+/Never Surface Criterion Titles as Recruiter Gap Chips.md
+/Notify Recruiter + Admin on Every Company Stage Move.md
+/Numbered-Criteria Leak into Gap Bullets.md
+/One-Off Prod Data Repair.md
+/Ongoing-Process Stats on Both Job Views.md
+/Ops Prerequisites (Henrik Manual Steps).md
+/Opt-In €100 Final-Interview Recruiter Bonus + Badge.md
+/Out of Scope (Deliberate).md
+/Per-Candidate AI Presentation Replaces Batch Top-5 Shortlist.md
+/Per-Candidate AI Presentation Replaces Top-5 Shortlist.md
+/Phantom companies.linkedin_url Column.md
+/Pin 2026-07-02 Client Scenario Regression Test.md
+/Placement Counts Exclude Failed Placements.md
+/Post-Deploy Smoke Checks.md
+/PostgREST Embed Ambiguity (placements - candidates).md
+/Pre-Flight Checklist.md
+/PresentationGenerator().md
+/Presented Count = Admin Cap Badge.md
+/Presented Date = Recruito Approval, Not Submission.md
+/Problem 9-Column Kanban Doesn't Scale.md
+/Problem Disagreeing Hiring Counts (R92).md
+/Problem Guarantee Burns During Notice Period.md
+/Problem Guarantee Starts at 'Hired', Not Joining.md
+/Problem Regex-Masked Client Report Broken.md
+/Problem Regex-Masked Client Report Broken_1.md
+/Prompt Caps Score When Mandatory Requirement Unmet.md
+/RSC Flight-Payload Leak Finding (Security Review).md
+/Rationale Human Checkpoint Before Money Moves.md
+/Rationale Paused = Display-Only Fold.md
+/Rationale Presented Column Removal Is Safe (Always Empty).md
+/Recruiter Candidate Detail Shows Score+Gaps, Not Full Report.md
+/Recruiter Post-Submission AI Screening Card.md
+/Recruiter Sees AI Score + Gaps on Submitted Candidate Detail.md
+/Recruiter Surfaces (Week 28 Summary).md
+/Recruiter-Facing ScreeningSummaryCard (Score + Gaps Only).md
+/RecruiterClient Visibility Split Policy.md
+/RecruiterDashboard().md
+/RecruiterGuaranteesPage().md
+/RecruiterJobDetailPage().md
+/Recruito Merge Log.md
+/Recruito Screening logo icon — two-tone (tealblue) rounded-square mark with two overlapping human head silhouettes in profile and a magnifying-glass crosshairtarget reticle, above wordmark 'RECRUITO' (dark blue) + 'SCREENING' (teal).md
+/Recruito platform visual brand identity (tealblue color scheme).md
+/Refresh Perf Snapshot on Read When Stale.md
+/Remove Duplicated TitleCompanyLocation Block.md
+/Remove Earnings from Recruiter Dashboard.md
+/Remove Redundant Bottom Take-Mandate Box.md
+/Repo Hygiene Untracked ~520 Machine-State Files.md
+/Resend BounceComplaint Suppression Webhook.md
+/Restrict Employment Type to Full-Time.md
+/Revisit Trigger (Volume-Based).md
+/Rollback Procedure.md
+/Root Cause Anna Karlsson Withdrawal After Hire.md
+/Root Cause Migrations 038039 Never Applied to Prod.md
+/Run Recruito AI Eval at Submission (Non-Blocking).md
+/Salary Period Fixed to Annual.md
+/Salary Period Fixed to Annual_1.md
+/ScreeningSummaryCard (Recruiter).md
+/Security Reminders (2026-06-21 Audit).md
+/Self-Review Why Not Fix BOUNDARY Instead.md
+/Send Email from recruitomatch.com; Unblock Machine Endpoints.md
+/Server-Side Same-Job Duplicate Block (createCandidateExtended, cross-recruiter, admin client).md
+/Show AI Match as Quality Tiers, Hide Raw % from Clients.md
+/Signature Verification via resend.webhooks.verify().md
+/Stage Taxonomy 7 Display Buckets.md
+/Stage-History Completeness (Every Status Path Logged).md
+/Start Guarantee at Client-Confirmed Joining Date (Migration 067).md
+/State Machine (confirmed - guarantee_active, payment_received).md
+/Stop CV Delete Double-Dialog + Re-Screen on Re-Upload.md
+/Stop Tracking Machine State (OMCGraphifyTraces).md
+/Strip KEY_GAPS Machine Line from Client Fallback Report.md
+/Strip KEY_GAPS from Client-Visible Fallback.md
+/Strip Raw Company Join from Recruiter Marketplace Payload (Security).md
+/Stripe Go-Live (Future).md
+/Structured KEY_GAPS Marker Replaces Heuristic Gap Scraping.md
+/Support Bell Notification Title Fix.md
+/Suppress Only Permanent Failures.md
+/Surfaces AdminRecruiterCompany Guarantee Pages.md
+/Table-Row Criterion-Title Leak Bug.md
+/Temperature 0 for Deterministic AI Match Scores.md
+/Verify i18n Keys (verifyAlreadyExists reused; verifyWarnDuplicate added in addendum, all 4 dictionaries).md
+/View AI Report Button (Company).md
+/Viewed Eye Icon on Company Candidates Page.md
+/ViewedIndicator().md
+/Withdrawn Candidate No Longer Suspends 10-Day Expiry Timer.md
+/_COMMUNITY_AI Score Determinism.md
+/_COMMUNITY_AI Screening Reports.md
+/_COMMUNITY_Admin Dashboard & Auth.md
+/_COMMUNITY_Admin Governance & Config.md
+/_COMMUNITY_Candidate Pipeline Rebuild.md
+/_COMMUNITY_Client Launch Fixes.md
+/_COMMUNITY_Community 305.md
+/_COMMUNITY_Community 306.md
+/_COMMUNITY_Community 307.md
+/_COMMUNITY_Community 308.md
+/_COMMUNITY_Community 309.md
+/_COMMUNITY_Community 310.md
+/_COMMUNITY_Community 311.md
+/_COMMUNITY_Community 312.md
+/_COMMUNITY_Community 313.md
+/_COMMUNITY_Community 314.md
+/_COMMUNITY_Community 315.md
+/_COMMUNITY_Community 316.md
+/_COMMUNITY_Community 317.md
+/_COMMUNITY_Community 318.md
+/_COMMUNITY_Community 319.md
+/_COMMUNITY_Community 320.md
+/_COMMUNITY_Community 321.md
+/_COMMUNITY_Community 322.md
+/_COMMUNITY_Community 323.md
+/_COMMUNITY_Community 324.md
+/_COMMUNITY_Community 325.md
+/_COMMUNITY_Community 326.md
+/_COMMUNITY_Community 327.md
+/_COMMUNITY_Community 328.md
+/_COMMUNITY_Community 329.md
+/_COMMUNITY_Community 330.md
+/_COMMUNITY_Community 331.md
+/_COMMUNITY_Community 332.md
+/_COMMUNITY_Community 333.md
+/_COMMUNITY_Community 334.md
+/_COMMUNITY_Community 335.md
+/_COMMUNITY_Community 336.md
+/_COMMUNITY_Community 337.md
+/_COMMUNITY_Community 338.md
+/_COMMUNITY_Community 339.md
+/_COMMUNITY_Community 340.md
+/_COMMUNITY_Community 341.md
+/_COMMUNITY_Community 342.md
+/_COMMUNITY_Community 343.md
+/_COMMUNITY_Community 344.md
+/_COMMUNITY_Community 345.md
+/_COMMUNITY_Community 346.md
+/_COMMUNITY_Community 347.md
+/_COMMUNITY_Community 348.md
+/_COMMUNITY_Community 349.md
+/_COMMUNITY_Community 350.md
+/_COMMUNITY_Community 351.md
+/_COMMUNITY_Community 352.md
+/_COMMUNITY_Community 353.md
+/_COMMUNITY_Community 354.md
+/_COMMUNITY_Community 355.md
+/_COMMUNITY_Community 356.md
+/_COMMUNITY_Community 357.md
+/_COMMUNITY_Community 358.md
+/_COMMUNITY_Community 359.md
+/_COMMUNITY_Community 360.md
+/_COMMUNITY_Community 361.md
+/_COMMUNITY_Community 362.md
+/_COMMUNITY_Community 363.md
+/_COMMUNITY_Community 364.md
+/_COMMUNITY_Community 365.md
+/_COMMUNITY_Community 366.md
+/_COMMUNITY_Community 367.md
+/_COMMUNITY_Community 368.md
+/_COMMUNITY_Community 369.md
+/_COMMUNITY_Duplicate-Flag Protection.md
+/_COMMUNITY_E2E Tests & Migration Safety.md
+/_COMMUNITY_Email Suppression System.md
+/_COMMUNITY_Job Form Validation.md
+/_COMMUNITY_Job Wizard Test Helpers.md
+/_COMMUNITY_Release Checklist & Platform Docs.md
+/_COMMUNITY_Supabase Grants & Stage History.md
+/addSuppression().md
+/ai-error.test.ts.md
+/ai-error.ts.md
+/ai-report-dialog.tsx.md
+/anonymize_candidate() Function.md
+/anyPercent().md
+/apiError().md
+/applications.ts.md
+/arrangePaidPlacement().md
+/audit_log Table.md
+/averageGuaranteeRate().md
+/bonus-badge.tsx.md
+/buildShareText().md
+/buildValidJobFormData().md
+/candidate().md
+/candidate-presentation.spec.ts.md
+/candidate-submission-form.tsx_1.md
+/candidateReachedInterview().md
+/candidates-extended-duplicate.test.ts.md
+/candidates-extended-duplicate.test.ts_1.md
+/candidates-stage-notify.test.ts.md
+/candidates-withdraw-log.test.ts.md
+/canonicalScore().md
+/check-eval-reports.ts.md
+/client-report-prompt.test.ts.md
+/client-report-prompt.ts.md
+/company-candidate-buckets.test.ts.md
+/company-candidate-buckets.ts.md
+/company-screening-report.tsx.md
+/companyStageBucket().md
+/company_stage  company_viewed_at Were Prod-Only.md
+/completeGuarantee().md
+/computeGuaranteeEndDate().md
+/computeJobProcessStats — Cap-Parity Stats.md
+/computeProportionalRefund().md
+/constructor().md
+/constructor()_1.md
+/contact-support-card.tsx.md
+/createJobSchema().md
+/data_rights_requests Table.md
+/daysBetween()_2.md
+/dispatch().md
+/download-job-description.test.ts.md
+/email_suppressions Table (Migration 062).md
+/emit-eval-payloads.ts.md
+/escapeHtml()_1.md
+/escapeRegExp().md
+/evaluation-prompt.test.ts.md
+/evaluation-prompt.ts.md
+/expandable-text.test.ts.md
+/expandable-text.tsx.md
+/extractJsonObject()_1.md
+/fakeAdminClient().md
+/fakeSupabase().md
+/fd()_1.md
+/fieldError().md
+/fillClientReportPrompt().md
+/fillEvaluationPrompt().md
+/filled().md
+/filled()_1.md
+/firstError().md
+/format-job-location.test.ts.md
+/format-job-location.ts.md
+/formatGuaranteeMonths().md
+/formatJobLocation Helper.md
+/formatJobLocation().md
+/forms.test.ts.md
+/forms.ts.md
+/getAdminJobById().md
+/getBreachReports().md
+/getClientIp()_1.md
+/getClientMatchLevel().md
+/getCompanyCandidateScreening Server Action.md
+/getCompanyCandidateScreening Server Action_1.md
+/getCompanyCandidateScreening().md
+/getCompanyGuarantees().md
+/getFileExtension().md
+/getFromAddress().md
+/getInternalReviewEmail().md
+/getJobRejectionReasons().md
+/getMatchLevel().md
+/getMyActiveGuaranteeTimers().md
+/getPublicMandateApplicationContext().md
+/getRecruiterGuarantees().md
+/getResend().md
+/getSmtpConfig().md
+/groupStageReasons().md
+/guarantee-table.tsx.md
+/guarantee.test.ts.md
+/guarantee.ts.md
+/guaranteeDisplayStatus().md
+/handleSend()_2.md
+/handleSubmit()_6.md
+/htmlToText().md
+/i18nRequiredText().md
+/internal-notifications.test.ts.md
+/internal-notifications.ts.md
+/isActiveCompanyCandidate().md
+/isAiUnavailableError Classifier.md
+/isAiUnavailableError().md
+/isAllowedCvFile().md
+/isPerfSnapshotStale().md
+/isSuppressed().md
+/listOrNotSpecified().md
+/main()_5.md
+/makeAdminClient()_2.md
+/makeAdminClient()_3.md
+/makeClient()_8.md
+/makeClient()_9.md
+/makeRequest().md
+/makeSupabase()_1.md
+/makeSupabase()_2.md
+/mapExperienceBracketToYears().md
+/mapRecruiterPerfRow().md
+/match-level.test.ts.md
+/match-level.ts.md
+/normalize().md
+/normalizeMandateRow().md
+/notification-email.ts.md
+/onKey().md
+/optionalInteger().md
+/optionalText().md
+/orNotSpecified().md
+/page.tsx_55.md
+/page.tsx_56.md
+/page.tsx_57.md
+/page.tsx_58.md
+/page.tsx_59.md
+/page.tsx_60.md
+/parsePresentation().md
+/payment_received Enum Repurposed.md
+/payoutUrl().md
+/presentation-generator.tsx.md
+/presentation.test.ts.md
+/presentation.ts.md
+/rate_limits Table + consume_rate_limit().md
+/recruiter-metrics.test.ts.md
+/recruiter-metrics.ts.md
+/recruiter-onboarding-options.ts.md
+/recruiter-registration-copy.test.ts.md
+/releaseGuaranteePayout().md
+/renderTemplate()_1.md
+/renderText().md
+/request-changes-modal.tsx.md
+/request-job-changes.test.ts.md
+/requestJobChanges().md
+/requiredText().md
+/reviewApplication().md
+/route.test.ts.md
+/route.ts_21.md
+/route.ts_22.md
+/runScreening().md
+/safeJsonParse().md
+/safePath()_1.md
+/sanitizeFileName().md
+/sanitizeSubject().md
+/scoreCase().md
+/screening-dealbreaker-eval.ts.md
+/secure_email_change_enabled Removed (CLI 2.x).md
+/sendInternalRecruiterEmail().md
+/sendNotificationEmail().md
+/sendSupportRequest().md
+/sendUserEmail().md
+/setJob().md
+/setPlacementJoiningDate().md
+/status.pending_approval i18n Fix.md
+/stripClientVisibleScores().md
+/structuredGaps().md
+/stubCompanyStack().md
+/submitPublicMandateApplication().md
+/support.test.ts.md
+/support.ts.md
+/suppressRecipients().md
+/suppression.test.ts.md
+/suppression.ts.md
+/temperature 0 for Determinism.md
+/tierFor().md
+/toCheckboxBoolean().md
+/toOptionalFloat().md
+/toOptionalInt().md
+/toString().md
+/toStringArray().md
+/trySmtp().md
+/validateCandidateForm().md
+/validateCompanyProfileForm().md
+/validateJobForm().md
+/validateLoginForm().md
+/validatePasswordResetRequestForm().md
+/validatePipelineStages().md
+/validateRecruiterOnboardingProfileForm().md
+/validateRecruiterProfileForm().md
+/validateRegisterCompanyForm().md
+/validateRegisterRecruiterForm().md
+/validateStep().md
+/viewed-indicator.test.ts.md
+/viewed-indicator.tsx.md
+/withdrawReasonLabel().md
+/workTypeLabel().md

@@ -19,8 +19,14 @@
       "output_tokens": 0,
       "files": 272,
       "note": "incremental: 254 code AST + 17 docs + 1 image via 2 subagents (~322k subagent tokens)"
+    },
+    {
+      "date": "2026-07-27T10:50:19.847361+00:00",
+      "input_tokens": 33000,
+      "output_tokens": 4200,
+      "files": 11
     }
   ],
-  "total_input_tokens": 0,
-  "total_output_tokens": 0
+  "total_input_tokens": 33000,
+  "total_output_tokens": 4200
 }
