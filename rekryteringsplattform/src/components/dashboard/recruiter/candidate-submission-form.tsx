@@ -229,6 +229,12 @@ export function CandidateSubmissionForm({
             const fd = new FormData();
             fd.append("mandate_id", mandateId);
             fd.append("email", email.trim());
+            // Include LinkedIn so the pre-check matches the server block,
+            // which flags on email OR LinkedIn URL.
+            const linkedIn = formRef.current
+                ? String(new FormData(formRef.current).get("linkedin_url") || "").trim()
+                : "";
+            if (linkedIn) fd.append("linkedin_url", linkedIn);
             const res = await fetch("/api/candidates/check-duplicate", { method: "POST", body: fd });
             if (res.ok) {
                 const { duplicate } = await res.json();
@@ -434,6 +440,7 @@ export function CandidateSubmissionForm({
                                     type="email"
                                     value={email}
                                     onChange={(e) => { setEmail(e.target.value); setVerifyStatus("idle"); }}
+                                    onBlur={() => { if (verifyStatus === "idle" && email.trim()) handleVerify(); }}
                                     placeholder={r.emailPlaceholder || "Enter Email"}
                                     className="h-11 flex-1 bg-slate-50 border-slate-200"
                                 />
@@ -542,7 +549,7 @@ export function CandidateSubmissionForm({
                         <FieldRow>
                             <div>
                                 <Label>{r.linkedinProfileUrl || "LinkedIn Profile URL"}</Label>
-                                <Input type="url" name="linkedin_url" placeholder="https://linkedin.com/in/..." defaultValue={draftTextFields["linkedin_url"] || ""} className="h-11 bg-slate-50 border-slate-200" />
+                                <Input type="url" name="linkedin_url" placeholder="https://linkedin.com/in/..." defaultValue={draftTextFields["linkedin_url"] || ""} onBlur={() => { if (email.trim()) handleVerify(); }} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>
                                 <Label>{r.portfolioLabel || "Portfolio / GitHub (optional)"}</Label>
