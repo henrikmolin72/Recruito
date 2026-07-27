@@ -431,3 +431,16 @@ Handoff must include: test count, build output, and what was browser-verified (e
 ## Merge note
 
 After all tasks green, use superpowers:finishing-a-development-branch to merge `feature/duplicate-flag-autocheck` into `main`.
+
+---
+
+## Addendum (2026-07-27, post-review fix — commit 9b15bbd)
+
+Final review found a Critical in Task 3's premise: the pre-check flags **3** scenarios (same-job incl. drafts / same-company engaged / own portfolio) but the server rejects only **1** (same-job, non-draft). Gating submit on the raw `duplicate` flag hard-blocked flows the server accepts — worst case, a resumed draft self-matched its own row and could never be presented.
+
+Fix (kept the plan's no-new-oracle constraint honest instead of literal):
+- Route: same-job and own-portfolio queries exclude drafts; the same-job match alone returns `blocking: true`. This adds no enumeration oracle — `createCandidateExtended` already discloses exactly that case in its submit error, so it was always distinguishable by attempting a submit.
+- Client: gate fires only on `blocking`; other duplicate signals render a new amber `warned` state (advisory, submit allowed). `verifySeq` ref guards against stale out-of-order check responses.
+- i18n: `verifyWarnDuplicate` added to all 4 dictionaries (text-edited — the files contain duplicate JSON keys, never round-trip them).
+
+E2E re-verified on the local stack: same-job → red + blocked; own-portfolio → amber + submit passes gate; resumed draft → green, no self-block.
