@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
     CheckCircle2,
     XCircle,
+    AlertTriangle,
     Loader2,
     Plus,
     Trash2,
@@ -95,7 +96,7 @@ export function CandidateSubmissionForm({
 
     // --- Email (shared between Verify tool and Personal Details) ---
     const [email, setEmail] = useState(ds("email"));
-    const [verifyStatus, setVerifyStatus] = useState<"idle" | "checking" | "ok" | "blocked">("idle");
+    const [verifyStatus, setVerifyStatus] = useState<"idle" | "checking" | "ok" | "warned" | "blocked">("idle");
 
     // --- Section 2: location status & work auth ---
     const [locationStatus, setLocationStatus] = useState(ds("location_status"));
@@ -145,6 +146,7 @@ export function CandidateSubmissionForm({
     const [cvFile, setCvFile] = useState<File | null>(null);
     const cvInputRef = useRef<HTMLInputElement>(null);
     const formRef = useRef<HTMLFormElement>(null);
+    const verifySeq = useRef(0);
 
     // --- In-form AI screening (pre-submission self-check: Score + a few gaps) ---
     const [screening, setScreening] = useState(false);
@@ -224,20 +226,32 @@ export function CandidateSubmissionForm({
 
     async function handleVerify() {
         if (!email.trim()) return;
+        const seq = ++verifySeq.current; // guard: only the latest check may set state
         setVerifyStatus("checking");
         try {
             const fd = new FormData();
             fd.append("mandate_id", mandateId);
             fd.append("email", email.trim());
+            // Include LinkedIn so the pre-check matches the server block,
+            // which flags on email OR LinkedIn URL.
+            const linkedIn = formRef.current
+                ? String(new FormData(formRef.current).get("linkedin_url") || "").trim()
+                : "";
+            if (linkedIn) fd.append("linkedin_url", linkedIn);
             const res = await fetch("/api/candidates/check-duplicate", { method: "POST", body: fd });
+            if (seq !== verifySeq.current) return; // stale response — a newer check is in flight
             if (res.ok) {
-                const { duplicate } = await res.json();
-                setVerifyStatus(duplicate ? "blocked" : "ok");
+                const { duplicate, blocking } = await res.json();
+                if (seq !== verifySeq.current) return;
+                // Only a same-job duplicate (blocking) stops submission — the
+                // server rejects exactly that case. Other duplicate signals
+                // (own portfolio, client-engaged) are advisory: warn, allow.
+                setVerifyStatus(duplicate ? (blocking ? "blocked" : "warned") : "ok");
             } else {
                 setVerifyStatus("ok"); // fail-open so UI isn't stuck; server will still block
             }
         } catch {
-            setVerifyStatus("ok");
+            if (seq === verifySeq.current) setVerifyStatus("ok");
         }
     }
 
@@ -357,6 +371,15 @@ export function CandidateSubmissionForm({
             setFormError(r.declarationRequired || "You must confirm the declaration to submit.");
             return;
         }
+        // Auto-flag gate: a known duplicate can't be submitted — client mirror
+        // of the server-side block so the recruiter isn't told only after
+        // filling the whole form. Fail-open stays: an errored pre-check leaves
+        // status "ok" and the server block remains authoritative.
+        if (verifyStatus === "blocked") {
+            setFormError(r.verifyAlreadyExists || "Candidate already registered in the system. Submission blocked.");
+            if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+        }
         setFormError(null);
         setSubmitting(true);
 
@@ -433,7 +456,8 @@ export function CandidateSubmissionForm({
                                 <Input
                                     type="email"
                                     value={email}
-                                    onChange={(e) => { setEmail(e.target.value); setVerifyStatus("idle"); }}
+                                    onChange={(e) => { verifySeq.current++; setEmail(e.target.value); setVerifyStatus("idle"); }}
+                                    onBlur={() => { if (verifyStatus === "idle" && email.trim()) handleVerify(); }}
                                     placeholder={r.emailPlaceholder || "Enter Email"}
                                     className="h-11 flex-1 bg-slate-50 border-slate-200"
                                 />
@@ -455,6 +479,12 @@ export function CandidateSubmissionForm({
                                 <p className="mt-2 text-sm text-emerald-600 flex items-center gap-2">
                                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                                     {r.verifyNotFound || "Candidate not registered. You may proceed."}
+                                </p>
+                            )}
+                            {verifyStatus === "warned" && (
+                                <p className="mt-2 text-sm text-amber-600 flex items-center gap-2">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    {r.verifyWarnDuplicate || "This candidate already exists in the system (e.g. in your portfolio or with this client). You can still present them — duplicates for this job are blocked automatically."}
                                 </p>
                             )}
                             {verifyStatus === "blocked" && (
@@ -491,7 +521,7 @@ export function CandidateSubmissionForm({
                                     name="email"
                                     required
                                     value={email}
-                                    onChange={(e) => { setEmail(e.target.value); setVerifyStatus("idle"); }}
+                                    onChange={(e) => { verifySeq.current++; setEmail(e.target.value); setVerifyStatus("idle"); }}
                                     placeholder="anna@example.com"
                                     className="h-11 bg-slate-50 border-slate-200"
                                 />
@@ -542,7 +572,7 @@ export function CandidateSubmissionForm({
                         <FieldRow>
                             <div>
                                 <Label>{r.linkedinProfileUrl || "LinkedIn Profile URL"}</Label>
-                                <Input type="url" name="linkedin_url" placeholder="https://linkedin.com/in/..." defaultValue={draftTextFields["linkedin_url"] || ""} className="h-11 bg-slate-50 border-slate-200" />
+                                <Input type="url" name="linkedin_url" placeholder="https://linkedin.com/in/..." defaultValue={draftTextFields["linkedin_url"] || ""} onBlur={() => { if (email.trim()) handleVerify(); }} className="h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>
                                 <Label>{r.portfolioLabel || "Portfolio / GitHub (optional)"}</Label>

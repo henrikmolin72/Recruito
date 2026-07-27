@@ -949,6 +949,7 @@
     "verifyButton": "Verifiera kandidat",
     "verifyNotFound": "Kandidat ej registrerad. Du kan fortsätta.",
     "verifyAlreadyExists": "Kandidaten är redan registrerad i systemet. Inskickning blockerad.",
+    "verifyWarnDuplicate": "Kandidaten finns redan i systemet (t.ex. i din portfölj eller hos denna kund). Du kan ändå presentera – dubbletter för samma uppdrag stoppas automatiskt.",
     "sec2Title": "Avsnitt 2 – Personuppgifter",
     "locationCityLabel": "Nuvarande stad",
     "locationCountryLabel": "Nuvarande land",

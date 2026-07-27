@@ -949,6 +949,7 @@
     "verifyButton": "Verify Candidate",
     "verifyNotFound": "Candidate not registered. You may proceed.",
     "verifyAlreadyExists": "Candidate already registered in the system. Submission blocked.",
+    "verifyWarnDuplicate": "This candidate already exists in the system (e.g. in your portfolio or with this client). You can still present them — duplicates for this job are blocked automatically.",
     "sec2Title": "Section 2 – Personal Details",
     "locationCityLabel": "Present City",
     "locationCountryLabel": "Present Country",
