@@ -456,7 +456,7 @@ export function CandidateSubmissionForm({
                                 <Input
                                     type="email"
                                     value={email}
-                                    onChange={(e) => { setEmail(e.target.value); setVerifyStatus("idle"); }}
+                                    onChange={(e) => { verifySeq.current++; setEmail(e.target.value); setVerifyStatus("idle"); }}
                                     onBlur={() => { if (verifyStatus === "idle" && email.trim()) handleVerify(); }}
                                     placeholder={r.emailPlaceholder || "Enter Email"}
                                     className="h-11 flex-1 bg-slate-50 border-slate-200"
@@ -521,7 +521,7 @@ export function CandidateSubmissionForm({
                                     name="email"
                                     required
                                     value={email}
-                                    onChange={(e) => { setEmail(e.target.value); setVerifyStatus("idle"); }}
+                                    onChange={(e) => { verifySeq.current++; setEmail(e.target.value); setVerifyStatus("idle"); }}
                                     placeholder="anna@example.com"
                                     className="h-11 bg-slate-50 border-slate-200"
                                 />
