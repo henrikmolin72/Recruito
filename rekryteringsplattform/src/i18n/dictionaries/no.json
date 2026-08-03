@@ -1035,7 +1035,7 @@
     "assessmentLabel": "Vurderingssammendrag (maks 7 linjer)",
     "assessmentPlaceholder": "CV vs. jobbeskrivelse, tekniske nyckelkompetenser, personlige egenskaper, verktøy, risikofaktorer...",
     "declarationTitle": "Rekruttørererklæring & Samtykkebekreftelse",
-    "declarationText": "Jeg bekrefter at jeg personlig har kommunisert med denne kandidaten og fått deres uttrykkelige samtykke til å representere dem for denne spesifikke stillingen. Jeg bekrefter også at jeg er autorisert til å dele deres kontaktinformasjon og CV med klienten i samsvar med plattformens brukervilkår og personvernregler.",
+    "declarationText": "Jeg bekrefter at jeg personlig har kommunisert med denne kandidaten og fått deres uttrykkelige samtykke til å representere dem for denne spesifikke stillingen. Jeg bekrefter også at jeg er autorisert til å dele deres kontaktinformasjon og CV med klienten i samsvar med plattformens brukervilkår og personvernregler. Jeg bekrefter at jeg har informert kandidaten om at CV-en deres vurderes av et AI-system som beslutningsstøtte, og at et menneske tar alle beslutninger.",
     "declarationRequired": "Du må bekrefte erklæringen for å sende inn.",
     "copyrightText": "© 2026 Recruito. Alle rettigheter forbeholdt."
   },

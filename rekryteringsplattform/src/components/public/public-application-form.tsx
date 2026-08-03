@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -110,6 +110,29 @@ export function PublicApplicationForm({ mandateId, action, screeningQuestions = 
         </div>
       ) : null}
 
+      {/* AI disclosure — EU AI Act Art. 26(7)/86 + GDPR Art. 13. Must be visible
+          BEFORE the candidate submits, not buried in the consent checkbox. */}
+      <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4">
+        <p className="flex items-start gap-2 text-xs leading-5 text-slate-700">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+          <span>
+            <span className="font-semibold text-slate-900">AI is used in this process.</span> Your CV is assessed by an
+            AI system against the role requirements, which produces a written report and a match score for the
+            recruiter. <span className="font-semibold">The AI does not decide anything</span> — a person reviews your
+            application and makes every decision. You can ask for an explanation of the assessment or have it
+            reconsidered.{" "}
+            <a
+              href="/ai-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-brand-600 hover:underline"
+            >
+              How we use AI
+            </a>
+          </span>
+        </p>
+      </div>
+
       {/* Consent / Declaration */}
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
         <label className="flex items-start gap-3 cursor-pointer">
@@ -121,8 +144,9 @@ export function PublicApplicationForm({ mandateId, action, screeningQuestions = 
           />
           <span className="text-xs leading-5 text-slate-700">
             I consent to my personal data and application being shared with the recruiter and the hiring company for
-            the purpose of evaluating my candidacy for this role. My data will be processed in accordance with
-            applicable data protection regulations. I understand I can request deletion of my data at any time.
+            the purpose of evaluating my candidacy for this role, and to my CV being assessed by the AI screening
+            system described above. My data will be processed in accordance with applicable data protection
+            regulations. I understand I can request deletion of my data at any time.
           </span>
         </label>
       </div>

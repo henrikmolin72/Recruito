@@ -29,6 +29,7 @@ function makeAdmin() {
     return chain;
   });
   const screeningsInsert = vi.fn(() => Promise.resolve({ error: null }));
+  const auditInsert = vi.fn(() => Promise.resolve({ error: null }));
   const admin: any = {
     storage: {
       from: vi.fn(() => ({
@@ -37,11 +38,13 @@ function makeAdmin() {
     },
     from: vi.fn((table: string) => {
       if (table === "candidate_screenings") return { insert: screeningsInsert };
+      if (table === "ai_audit_log") return { insert: auditInsert };
       if (table === "candidates") return { update: candidatesUpdate };
       return {};
     }),
     candidatesUpdate,
     screeningsInsert,
+    auditInsert,
   };
   return admin;
 }
@@ -98,6 +101,44 @@ describe("runCandidateEvaluation", () => {
     expect((res as any).matchScore).toBe(77);
     expect(admin.candidatesUpdate).toHaveBeenCalledWith({ ai_match_score: 77 });
     expect(admin.screeningsInsert).toHaveBeenCalledTimes(1); // report always stored
+  });
+
+  it("writes an EU AI Act audit row with no CV content in it", async () => {
+    gather.mockResolvedValue(evalData("cvs/jane.pdf"));
+    const admin = makeAdmin();
+    await runCandidateEvaluation(baseArgs(admin, true));
+
+    expect(admin.auditInsert).toHaveBeenCalledTimes(1);
+    const row = admin.auditInsert.mock.calls[0][0];
+    expect(row.action).toBe("screening_completed");
+    expect(row.actor_id).toBe("u-1");
+    expect(row.actor_role).toBe("admin");
+    expect(row.job_id).toBe("job-1");
+    expect(row.prompt_hash).toMatch(/^[0-9a-f]{64}$/);
+    // screening_id FK points at ai_screenings; ours lives in candidate_screenings.
+    expect(row.screening_id).toBeNull();
+    expect(row.metadata.screening_id).toEqual(expect.any(String));
+    expect(row.metadata.score_written_to_candidate).toBe(true);
+    // Summaries must stay non-PII — hashes and sizes only, never CV text.
+    expect(JSON.stringify(row.input_summary)).not.toMatch(/jane/i);
+    expect(row.input_summary.cv_hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("records a recruiter self-check as recruiter, with no score written", async () => {
+    gather.mockResolvedValue(evalData("cvs/jane.pdf"));
+    const admin = makeAdmin();
+    await runCandidateEvaluation(baseArgs(admin, false));
+    const row = admin.auditInsert.mock.calls[0][0];
+    expect(row.actor_role).toBe("recruiter");
+    expect(row.metadata.score_written_to_candidate).toBe(false);
+  });
+
+  it("an audit-log failure never sinks the evaluation", async () => {
+    gather.mockResolvedValue(evalData("cvs/jane.pdf"));
+    const admin = makeAdmin();
+    admin.auditInsert.mockResolvedValueOnce({ error: { message: "audit down" } });
+    const res = await runCandidateEvaluation(baseArgs(admin, true));
+    expect(res.ok).toBe(true);
   });
 
   it("a recruiter self-check stores the report but NEVER sets ai_match_score", async () => {

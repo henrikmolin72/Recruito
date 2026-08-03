@@ -162,6 +162,7 @@ export async function runCandidateEvaluation(args: {
   // expose a client-facing score without its backing report. The live report is
   // still returned above, so a failed insert just yields no score (no data drift).
   const matchScore = extractMatchScore(reportMarkdown);
+  let scoreWritten = false;
   if (setScore && matchScore !== null && !insertError) {
     const { error: scoreError } = await admin
       .from("candidates")
@@ -169,7 +170,51 @@ export async function runCandidateEvaluation(args: {
       .eq("id", candidateId)
       .is("ai_match_score", null);
     if (scoreError) console.error("[run-evaluation] ai_match_score update", { code: scoreError.code, message: scoreError.message });
+    scoreWritten = !scoreError;
   }
 
-  return { ok: true, reportMarkdown, modelVersion: model, matchScore, criticalGaps: extractCriticalGaps(reportMarkdown) };
+  const criticalGaps = extractCriticalGaps(reportMarkdown);
+
+  // EU AI Act Art. 12 traceability. /api/screen (the legacy ai_screenings path)
+  // already wrote here; this path did not — so the audit trail our published AI
+  // policy promises only covered a route that is no longer the live one.
+  // screening_id stays null: that FK points at ai_screenings, and this screening
+  // lives in candidate_screenings, so the id rides in metadata instead.
+  // input_summary must stay non-PII: sizes and hashes, never CV content.
+  // Logged last so it records what actually happened (score written or not), and
+  // a failure here must never sink an evaluation the caller already holds.
+  const { error: auditError } = await admin.from("ai_audit_log").insert({
+    screening_id: null,
+    application_id: null,
+    job_id: data.jobId,
+    action: "screening_completed",
+    actor_id: actorUserId,
+    actor_role: setScore ? "admin" : "recruiter",
+    model,
+    model_version: model,
+    prompt_hash: createHash("sha256").update(prompt).digest("hex"),
+    input_summary: {
+      cv_hash: cvHash,
+      cv_bytes: cvBytes.byteLength,
+      cv_media_type: mediaType,
+      jd_chars: data.jdText.length,
+      declared_years_experience: data.declaredYearsExperience,
+    },
+    output_summary: {
+      score: matchScore,
+      report_chars: reportMarkdown.length,
+      client_report_generated: clientReportMarkdown !== null,
+      critical_gaps_count: criticalGaps.length,
+    },
+    metadata: {
+      screening_id: screeningId,
+      candidate_id: candidateId,
+      mandate_id: mandateId,
+      score_written_to_candidate: scoreWritten,
+      report_persisted: !insertError,
+    },
+  });
+  if (auditError) console.error("[run-evaluation] ai_audit_log", auditError);
+
+  return { ok: true, reportMarkdown, modelVersion: model, matchScore, criticalGaps };
 }

@@ -1035,7 +1035,7 @@
     "assessmentLabel": "Assessment Summary (max 7 lines)",
     "assessmentPlaceholder": "CV vs Job Description Match, Key Technical Skills, Soft Skills, Tools / Software Proficiency, Risk Factors...",
     "declarationTitle": "Recruiter Declaration & Consent Confirmation",
-    "declarationText": "I confirm that I have personally communicated with this candidate and have obtained their explicit consent to represent them for this specific position. I also confirm that I am authorized to share their contact information and CV with the client in accordance with the platform's Terms of Service and data protection policies.",
+    "declarationText": "I confirm that I have personally communicated with this candidate and have obtained their explicit consent to represent them for this specific position. I also confirm that I am authorized to share their contact information and CV with the client in accordance with the platform's Terms of Service and data protection policies. I confirm that I have informed the candidate that their CV will be assessed by an AI screening system as decision support, and that a human makes every decision.",
     "declarationRequired": "You must confirm the declaration to submit.",
     "copyrightText": "© 2026 Recruito. All rights reserved."
   },
