@@ -1035,7 +1035,7 @@
     "assessmentLabel": "Vurderingsresumé (maks. 7 linjer)",
     "assessmentPlaceholder": "CV vs. jobbeskrivelse, nøglekompetencer, bløde kompetencer, værktøjer, risikofaktorer...",
     "declarationTitle": "Rekruttørerklæring & Samtykkebkræftelse",
-    "declarationText": "Jeg bekræfter, at jeg personligt har kommunikeret med denne kandidat og opnået deres udtrykkelige samtykke til at repræsentere dem til denne specifikke stilling. Jeg bekræfter også, at jeg er bemyndiget til at dele deres kontaktoplysninger og CV med klienten i overensstemmelse med platformens servicevilkår og databeskyttelsespolitikker.",
+    "declarationText": "Jeg bekræfter, at jeg personligt har kommunikeret med denne kandidat og opnået deres udtrykkelige samtykke til at repræsentere dem til denne specifikke stilling. Jeg bekræfter også, at jeg er bemyndiget til at dele deres kontaktoplysninger og CV med klienten i overensstemmelse med platformens servicevilkår og databeskyttelsespolitikker. Jeg bekræfter, at jeg har informeret kandidaten om, at deres CV vurderes af et AI-system som beslutningsstøtte, og at et menneske træffer alle beslutninger.",
     "declarationRequired": "Du skal bekræfte erklæringen for at indsende.",
     "copyrightText": "© 2026 Recruito. Alle rettigheder forbeholdt."
   },

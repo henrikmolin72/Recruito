@@ -2,7 +2,7 @@ import { ShieldCheck, Eye, Brain, Scale, FileText, UserCheck, AlertTriangle } fr
 import { Card, CardContent } from "@/components/ui/card";
 
 interface AiPolicyContentProps {
-    role: "company" | "recruiter";
+    role: "company" | "recruiter" | "candidate";
 }
 
 export function AiPolicyContent({ role }: AiPolicyContentProps) {
@@ -52,26 +52,30 @@ export function AiPolicyContent({ role }: AiPolicyContentProps) {
                             <ul className="space-y-1.5 text-green-700">
                                 <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" /> Job title and description</li>
                                 <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" /> Job requirements and key skills</li>
-                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" /> Candidate CV text</li>
-                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" /> Cover letter (if provided)</li>
+                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" /> <span className="font-semibold">The CV file exactly as the candidate submitted it</span> — including any photograph, date of birth or other personal detail the candidate chose to put in it</li>
+                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" /> Declared employment status and years of experience</li>
                             </ul>
                         </div>
                         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                            <p className="font-bold text-red-800 mb-2">The AI does NOT see:</p>
+                            <p className="font-bold text-red-800 mb-2">The AI is NOT sent:</p>
                             <ul className="space-y-1.5 text-red-700">
-                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> Gender or sex</li>
-                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> Age or date of birth</li>
-                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> Ethnicity or nationality</li>
-                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> Disability status</li>
-                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> Photograph or profile picture</li>
-                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> Salary history</li>
+                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> Screening question answers</li>
+                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> The recruiter&apos;s internal assessment notes</li>
+                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> Any other candidate&apos;s data — each CV is evaluated alone</li>
+                                <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" /> Previous evaluations of the same candidate</li>
                             </ul>
                         </div>
                     </div>
-                    <p className="text-xs text-slate-500 mt-2">
-                        Note: While CV text may indirectly contain some demographic information (e.g. university names,
-                        graduation dates), the AI is instructed to evaluate only professional qualifications and skills.
-                    </p>
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 mt-2">
+                        <p className="text-xs text-amber-900 leading-relaxed">
+                            <span className="font-bold">Be aware:</span> because the CV is passed through unmodified, we
+                            cannot guarantee that the model never receives information relating to a protected
+                            characteristic (age, gender, ethnicity, disability, photograph). We do not extract or store
+                            such attributes, and the evaluation prompt instructs the model to assess professional
+                            qualifications only — but that is an instruction, not a technical guarantee. This is why the
+                            score is advisory and every decision stays with a human.
+                        </p>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -100,6 +104,13 @@ export function AiPolicyContent({ role }: AiPolicyContentProps) {
                                 each screening. You can request the full audit log for any job posting.
                             </p>
                         )}
+                        {role === "candidate" && (
+                            <p>
+                                <span className="font-bold">What this means for you:</span> no application is rejected
+                                by the AI. A recruiter reads your CV and makes every decision about your candidacy.
+                                The AI produces a written assessment that the recruiter may agree or disagree with.
+                            </p>
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -121,9 +132,14 @@ export function AiPolicyContent({ role }: AiPolicyContentProps) {
                             <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-400 shrink-0" /> Geographic distribution of candidates</li>
                         </ul>
                         <p>
-                            If a significant skew is detected (deviation &gt;20% from expected distribution), the
-                            system flags the job for admin review. Bias reports are available to companies and
-                            platform administrators.
+                            The report is computed from live screening data each time it is opened. Where a group of
+                            at least five screened candidates shortlists at a rate more than 20 percentage points away
+                            from the job&apos;s overall rate, that group is flagged in the report. Bias reports are
+                            available to companies and platform administrators on each job posting.
+                        </p>
+                        <p className="text-xs text-slate-500">
+                            These are proxy signals, not demographic audits — we do not collect gender, age or ethnicity,
+                            so we cannot measure outcomes against those characteristics directly.
                         </p>
                     </div>
                 </CardContent>
@@ -178,7 +194,7 @@ export function AiPolicyContent({ role }: AiPolicyContentProps) {
             </Card>
 
             <p className="text-xs text-slate-400 text-center pb-4">
-                Last updated: April 2026 &middot; Recruito AI Compliance Framework v1.0
+                Last updated: August 2026 &middot; Recruito AI Compliance Framework v1.1
             </p>
         </div>
     );
