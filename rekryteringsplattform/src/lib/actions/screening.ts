@@ -10,6 +10,8 @@ export type StoredEvaluation = {
   reportMarkdown: string;
   modelVersion: string;
   createdAt: string;
+  // Internal review signal (admin/recruiter only) — the company fetch never sets it.
+  injectionFlagged?: boolean;
 };
 
 /** Phase 2 — fetch the most recent stored evaluation report for display. */
@@ -37,7 +39,7 @@ export async function getLatestEvaluation(
 
   const { data } = await auth.admin
     .from("candidate_screenings")
-    .select("report_markdown, model_version, created_at")
+    .select("report_markdown, model_version, created_at, injection_flagged")
     .eq("candidate_id", candidateId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -49,6 +51,7 @@ export async function getLatestEvaluation(
     reportMarkdown: d.report_markdown,
     modelVersion: d.model_version,
     createdAt: d.created_at,
+    injectionFlagged: !!d.injection_flagged,
   };
 }
 

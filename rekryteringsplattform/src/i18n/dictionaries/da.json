@@ -922,6 +922,7 @@
     "aiScreenGaps": "Mangler",
     "aiScreenNoScore": "Screeningen blev kørt, men der kunne ikke udledes en score.",
     "aiScreenDisclaimer": "Kun beslutningsstøtte — ikke en automatiseret beslutning.",
+    "aiScreenInjectionFlag": "Mulig prompt injection opdaget i CV'et — markeret til gennemgang af Recruito.",
     "aiScreenErrNoCv": "Upload et CV først for at køre AI-screening.",
     "aiScreenErrUnsupportedCv": "AI-screening understøtter kun PDF- eller TXT-CV. Upload et af disse for at få en score.",
     "aiScreenErrRateLimited": "For mange screeninger — vent et par minutter, og prøv igen.",

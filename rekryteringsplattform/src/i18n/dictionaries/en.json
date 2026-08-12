@@ -922,6 +922,7 @@
     "aiScreenGaps": "Gaps",
     "aiScreenNoScore": "Screening ran, but no score could be extracted.",
     "aiScreenDisclaimer": "Decision support only — not an automated decision.",
+    "aiScreenInjectionFlag": "Possible prompt injection detected in the CV — flagged for Recruito review.",
     "aiScreenErrNoCv": "Upload a CV first to run AI screening.",
     "aiScreenErrUnsupportedCv": "AI screening supports PDF or TXT CVs only. Upload one of those to get a score.",
     "aiScreenErrRateLimited": "Too many screenings — wait a few minutes and try again.",
