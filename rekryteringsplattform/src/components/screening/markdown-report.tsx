@@ -37,6 +37,11 @@ export function MarkdownReport({ markdown }: { markdown: string }) {
           code: ({ children }) => (
             <code className="bg-slate-100 rounded px-1 py-0.5 text-xs font-mono">{children}</code>
           ),
+          // A CV-injected phishing link or tracking pixel must not survive into
+          // a rendered report: screening reports never legitimately contain
+          // links or images, so neutralize both instead of allowlisting.
+          a: ({ children }) => <span>{children}</span>,
+          img: () => null,
         }}
       >
         {markdown}

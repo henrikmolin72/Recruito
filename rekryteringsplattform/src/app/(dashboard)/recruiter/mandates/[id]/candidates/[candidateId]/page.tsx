@@ -252,6 +252,11 @@ export default async function RecruiterCandidateDetailsPage({ params }: { params
                                         </ul>
                                     </div>
                                 )}
+                                {evaluation.injectionFlagged && (
+                                    <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs font-bold text-amber-800">
+                                        {r.aiScreenInjectionFlag || "Possible prompt injection detected in the CV — flagged for Recruito review."}
+                                    </p>
+                                )}
                                 <p className="mt-2 text-[11px] text-slate-400">{r.aiScreenDisclaimer || "Decision support only — not an automated decision."}</p>
                             </CardContent>
                         </Card>

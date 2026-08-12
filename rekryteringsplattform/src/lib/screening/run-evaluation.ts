@@ -12,6 +12,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { gatherEvalData } from "@/lib/screening/eval-data";
 import { extractMatchScore } from "@/lib/screening/extract-match-score";
 import { extractCriticalGaps } from "@/lib/screening/extract-critical-gaps";
+import { extractInjectionFlag } from "@/lib/screening/extract-injection-flag";
+import { scanCvTextForInjection } from "@/lib/screening/cv-injection-scan";
 import { fillEvaluationPrompt } from "@/lib/screening/evaluation-prompt";
 import { fillClientReportPrompt } from "@/lib/screening/client-report-prompt";
 import { isAiUnavailableError } from "@/lib/screening/ai-error";
@@ -19,7 +21,7 @@ import { isAiUnavailableError } from "@/lib/screening/ai-error";
 type AdminClient = ReturnType<typeof createAdminClient>;
 
 export type RunEvalResult =
-  | { ok: true; reportMarkdown: string; modelVersion: string; matchScore: number | null; criticalGaps: string[] }
+  | { ok: true; reportMarkdown: string; modelVersion: string; matchScore: number | null; criticalGaps: string[]; injectionFlagged: boolean }
   | { ok: false; error: string; status: number };
 
 function cvMimeFromPath(path: string): "application/pdf" | "text/plain" | null {
@@ -58,6 +60,10 @@ export async function runCandidateEvaluation(args: {
   if (cvBytes.byteLength > 5 * 1024 * 1024) return { ok: false, error: "CV file too large", status: 422 };
   const cvHash = createHash("sha256").update(cvBytes).digest("hex");
   const base64 = cvBytes.toString("base64");
+
+  // Deterministic injection layer — only .txt exposes raw text server-side (PDF
+  // text lives in compressed streams the model reads, not us).
+  const txtScanHits = mediaType === "text/plain" ? scanCvTextForInjection(cvBytes.toString("utf8")) : [];
 
   const screeningId = randomUUID();
   const prompt = fillEvaluationPrompt({
@@ -118,6 +124,10 @@ export async function runCandidateEvaluation(args: {
 
   if (!reportMarkdown) return { ok: false, error: "Empty AI response", status: 500 };
 
+  // Injection verdict: model self-check marker OR the deterministic .txt scan.
+  // Flag-for-review, never block: the report is still produced and stored.
+  const injectionFlagged = extractInjectionFlag(reportMarkdown) || txtScanHits.length > 0;
+
   // Second pass — separate CLIENT-FACING report (client request 2026-07-11):
   // rewrites the internal report qualitatively (no scores), replacing the old
   // regex-masked view that showed broken "—" sentences to the company. Failure
@@ -154,6 +164,7 @@ export async function runCandidateEvaluation(args: {
     client_report_markdown: clientReportMarkdown,
     model_version: model,
     cv_hash: cvHash,
+    injection_flagged: injectionFlagged,
   });
   if (insertError) console.error("[run-evaluation] store", insertError);
 
@@ -163,7 +174,9 @@ export async function runCandidateEvaluation(args: {
   // still returned above, so a failed insert just yields no score (no data drift).
   const matchScore = extractMatchScore(reportMarkdown);
   let scoreWritten = false;
-  if (setScore && matchScore !== null && !insertError) {
+  // A flagged run never auto-publishes the client-visible score — a human
+  // (Recruito) reviews Section D and re-runs; a clean re-run writes it then.
+  if (setScore && matchScore !== null && !insertError && !injectionFlagged) {
     const { error: scoreError } = await admin
       .from("candidates")
       .update({ ai_match_score: matchScore })
@@ -205,6 +218,7 @@ export async function runCandidateEvaluation(args: {
       report_chars: reportMarkdown.length,
       client_report_generated: clientReportMarkdown !== null,
       critical_gaps_count: criticalGaps.length,
+      injection_flagged: injectionFlagged,
     },
     metadata: {
       screening_id: screeningId,
@@ -212,9 +226,10 @@ export async function runCandidateEvaluation(args: {
       mandate_id: mandateId,
       score_written_to_candidate: scoreWritten,
       report_persisted: !insertError,
+      txt_scan_hits: txtScanHits,
     },
   });
   if (auditError) console.error("[run-evaluation] ai_audit_log", auditError);
 
-  return { ok: true, reportMarkdown, modelVersion: model, matchScore, criticalGaps };
+  return { ok: true, reportMarkdown, modelVersion: model, matchScore, criticalGaps, injectionFlagged };
 }

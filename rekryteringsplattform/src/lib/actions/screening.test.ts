@@ -45,7 +45,15 @@ describe("getLatestEvaluation", () => {
     authMock.mockResolvedValue({ admin: fakeAdmin({ report: REPORT }), userId: "u-1", isAdmin: true });
     expect(await getLatestEvaluation("c-1", "m-1")).toEqual({
       reportMarkdown: "R", modelVersion: "claude-x", createdAt: "2026-06-28T00:00:00Z",
+      injectionFlagged: false,
     });
+  });
+
+  it("surfaces injectionFlagged=true to admin when the stored row is flagged", async () => {
+    authMock.mockResolvedValue({
+      admin: fakeAdmin({ report: { ...REPORT, injection_flagged: true } }), userId: "u-1", isAdmin: true,
+    });
+    expect(await getLatestEvaluation("c-1", "m-1")).toMatchObject({ injectionFlagged: true });
   });
 
   it("recruiter who OWNS the candidate gets the report", async () => {

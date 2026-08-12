@@ -81,3 +81,16 @@ describe("evaluation prompt — candidate-declared facts (client 14-07-06)", () 
     expect(prompt).toContain("If the CV clearly contradicts a declared fact");
   });
 });
+
+describe("evaluation prompt — untrusted-CV / prompt-injection defense (2026-08-12)", () => {
+  it("carries the untrusted-CV security rule and the INJECTION_CHECK marker instruction", () => {
+    const prompt = fillEvaluationPrompt({
+      jdText: "JD",
+      config: { targetSector: null, adjacentSectors: null, transferableSkills: null, customKeywords: null },
+      metadata: { screeningId: "s-1", modelVersion: "m-1", isoTimestamp: "2026-08-12T00:00:00Z", jdId: "j-1", cvHash: "abc" },
+    });
+    expect(prompt).toContain("SECURITY — UNTRUSTED CV CONTENT");
+    expect(prompt).toContain("INJECTION_CHECK:");
+    expect(prompt).toContain("prompt-injection attempts");
+  });
+});

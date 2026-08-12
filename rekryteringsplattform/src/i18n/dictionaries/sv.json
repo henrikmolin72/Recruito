@@ -922,6 +922,7 @@
     "aiScreenGaps": "Brister",
     "aiScreenNoScore": "Screeningen kördes, men ingen poäng kunde tas fram.",
     "aiScreenDisclaimer": "Endast beslutsstöd — inte ett automatiserat beslut.",
+    "aiScreenInjectionFlag": "Möjlig prompt injection upptäckt i CV:t — flaggad för granskning av Recruito.",
     "aiScreenErrNoCv": "Ladda upp ett CV först för att köra AI-screening.",
     "aiScreenErrUnsupportedCv": "AI-screening stöder endast PDF- eller TXT-CV. Ladda upp ett sådant för att få poäng.",
     "aiScreenErrRateLimited": "För många screeningar — vänta några minuter och försök igen.",

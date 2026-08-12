@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
       modelVersion: result.modelVersion,
       matchScore: result.matchScore,
       criticalGaps: result.criticalGaps,
+      injectionFlagged: result.injectionFlagged,
       createdAt: new Date().toISOString(),
     });
   } catch (err) {

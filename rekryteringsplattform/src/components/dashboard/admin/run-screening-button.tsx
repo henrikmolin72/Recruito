@@ -67,7 +67,7 @@ export function AdminScreeningPanel({
       }
       // Show the report immediately from the response, then refresh so the
       // server-rendered score picks up the value Recruito's run just set.
-      setReport({ reportMarkdown: json.reportMarkdown, modelVersion: json.modelVersion, createdAt: json.createdAt });
+      setReport({ reportMarkdown: json.reportMarkdown, modelVersion: json.modelVersion, createdAt: json.createdAt, injectionFlagged: json.injectionFlagged ?? false });
       router.refresh();
     } catch {
       setError("Network error — please try again.");
@@ -98,6 +98,11 @@ export function AdminScreeningPanel({
         </div>
       </div>
 
+      {report?.injectionFlagged && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
+          ⚠️ Possible prompt injection detected in the CV — auto-score withheld. Review the report&apos;s Section D before approving this candidate.
+        </div>
+      )}
       {report ? (
         <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
           <p className="mb-2 text-xs text-muted-foreground" suppressHydrationWarning>

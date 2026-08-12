@@ -922,6 +922,7 @@
     "aiScreenGaps": "Mangler",
     "aiScreenNoScore": "Screeningen kjørte, men ingen poengsum kunne hentes ut.",
     "aiScreenDisclaimer": "Kun beslutningsstøtte — ikke en automatisert beslutning.",
+    "aiScreenInjectionFlag": "Mulig prompt-injeksjon oppdaget i CV-en — flagget for gjennomgang av Recruito.",
     "aiScreenErrNoCv": "Last opp en CV først for å kjøre AI-screening.",
     "aiScreenErrUnsupportedCv": "AI-screening støtter kun PDF- eller TXT-CV. Last opp en av disse for å få poeng.",
     "aiScreenErrRateLimited": "For mange screeninger — vent noen minutter og prøv igjen.",
