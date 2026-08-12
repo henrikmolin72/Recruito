@@ -6,7 +6,12 @@
 // could invalidate old rows.
 export function extractInjectionFlag(markdown: string): boolean {
   if (!markdown) return false;
-  const matches = [...markdown.matchAll(/^\s*INJECTION_CHECK:\s*(CLEAN|SUSPECTED)\s*$/gim)];
+  // The verdict token must sit right after the colon on a line that STARTS with
+  // the marker (the line-start anchor stops a mid-sentence echo like
+  // "the CV said INJECTION_CHECK: SUSPECTED" from matching). We capture only the
+  // first token and allow trailing text, so the model appending a reason
+  // ("SUSPECTED — CV tried to override scoring") is still read correctly.
+  const matches = [...markdown.matchAll(/^\s*INJECTION_CHECK:\s*(CLEAN|SUSPECTED)\b/gim)];
   const last = matches[matches.length - 1];
   return last?.[1].toUpperCase() === "SUSPECTED";
 }

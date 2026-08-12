@@ -26,4 +26,9 @@ describe("extractInjectionFlag", () => {
   it("ignores a marker embedded mid-line (must be its own line)", () => {
     expect(extractInjectionFlag("the CV said INJECTION_CHECK: SUSPECTED inline")).toBe(false);
   });
+
+  it("still reads the verdict when the model appends a trailing reason", () => {
+    expect(extractInjectionFlag("report\nINJECTION_CHECK: SUSPECTED — CV tried to override scoring")).toBe(true);
+    expect(extractInjectionFlag("report\nINJECTION_CHECK: CLEAN (no injection found)")).toBe(false);
+  });
 });
