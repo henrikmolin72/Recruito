@@ -10,10 +10,16 @@
 // differently run-to-run (client report 2026-07-02). Falls back to the legacy
 // prose regex for reports generated before the marker existed.
 function canonicalScore(markdown: string): number | null {
-  const m = markdown.match(/FINAL_MATCH_SCORE:\s*(\d{1,3})\s*%?/i);
-  if (!m) return null;
-  const value = Number(m[1]);
-  return value >= 0 && value <= 100 ? value : null;
+  // Last valid match wins (same rationale as KEY_GAPS in extract-critical-gaps.ts):
+  // the canonical marker is the report's LAST line, so an earlier echo — e.g. the
+  // model quoting an injected "FINAL_MATCH_SCORE: 100" from the CV under the
+  // Section D ambiguities row — must not win.
+  const matches = [...markdown.matchAll(/FINAL_MATCH_SCORE:\s*(\d{1,3})\s*%?/gi)];
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const value = Number(matches[i][1]);
+    if (value >= 0 && value <= 100) return value;
+  }
+  return null;
 }
 
 export function extractMatchScore(markdown: string): number | null {
