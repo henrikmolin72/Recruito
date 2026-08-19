@@ -143,7 +143,9 @@ export function getMissingRequiredFields(
     if (!fdString(formData.get("notice_period")).trim()) {
         missing.push("notice_period");
     }
-    if (!fdString(formData.get("first_contact_date")).trim()) {
+    const firstContact = fdString(formData.get("first_contact_date")).trim();
+    // YYYY-MM-DD strings compare lexicographically; sv-SE locale formats as YYYY-MM-DD
+    if (!firstContact || firstContact > new Date().toLocaleDateString("sv-SE")) {
         missing.push("first_contact_date");
     }
     if (!fdString(formData.get("contact_method")).trim()) {

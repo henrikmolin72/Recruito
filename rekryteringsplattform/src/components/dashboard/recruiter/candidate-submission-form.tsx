@@ -983,7 +983,7 @@ export function CandidateSubmissionForm({
                         <FieldRow>
                             <div>
                                 <Label>{r.firstContactLabel || "Interview Date"}<Req /></Label>
-                                <Input type="date" name="first_contact_date" defaultValue={draftTextFields["first_contact_date"] || ""} className="date-input-lg h-11 bg-slate-50 border-slate-200" />
+                                <Input type="date" name="first_contact_date" defaultValue={draftTextFields["first_contact_date"] || ""} max={new Date().toLocaleDateString("sv-SE")} className="date-input-lg h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>
                                 <Label>{r.contactMethodLabel || "Method of Contact"}<Req /></Label>

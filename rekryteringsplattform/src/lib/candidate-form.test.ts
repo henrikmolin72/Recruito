@@ -129,6 +129,12 @@ describe("getMissingRequiredFields", () => {
         fd.delete("screening_answers");
         expect(getMissingRequiredFields(fd, 0)).not.toContain("screening_answers");
     });
+
+    it("rejects a future first_contact_date as missing", () => {
+        const fd = new FormData();
+        fd.set("first_contact_date", "2099-01-01");
+        expect(getMissingRequiredFields(fd, 0)).toContain("first_contact_date");
+    });
 });
 
 describe("hasCandidateCompensationData", () => {
