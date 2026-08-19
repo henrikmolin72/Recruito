@@ -30,6 +30,9 @@ import { toast } from "sonner";
 // Small red asterisk marking a field the recruiter must complete before presenting.
 const Req = () => <span className="text-red-500"> *</span>;
 
+const CONTACT_METHODS = ["in_person", "video_call"];
+const normalizeContactMethod = (v: string) => (CONTACT_METHODS.includes(v) ? v : "");
+
 type Dict = Record<string, string>;
 
 interface Props {
@@ -126,7 +129,7 @@ export function CandidateSubmissionForm({
         Number(expectedSalary) < Number(currentSalary);
 
     // --- Section 5: contact method, languages ---
-    const [contactMethod, setContactMethod] = useState(ds("contact_method"));
+    const [contactMethod, setContactMethod] = useState(normalizeContactMethod(ds("contact_method")));
     const [languages, setLanguages] = useState<{ language: string; proficiency: string }[]>(
         Array.isArray(draft?.language_proficiency) && draft.language_proficiency.length > 0
             ? draft.language_proficiency
@@ -211,7 +214,7 @@ export function CandidateSubmissionForm({
                 if (d.otherProcesses) setOtherProcesses(d.otherProcesses);
                 if (d.otherProcessesStage) setOtherProcessesStage(d.otherProcessesStage);
                 if (d.noticeNegotiable) setNoticeNegotiable(d.noticeNegotiable);
-                if (d.contactMethod) setContactMethod(d.contactMethod);
+                if (d.contactMethod) setContactMethod(normalizeContactMethod(d.contactMethod));
                 if (d.screeningAnswers) setScreeningAnswers(d.screeningAnswers);
                 const restoredText: Record<string, string> = {};
                 for (const key of TEXT_DRAFT_KEYS) {
@@ -988,9 +991,6 @@ export function CandidateSubmissionForm({
                                     {[
                                         { value: "in_person", label: r.contactInPerson || "In Person" },
                                         { value: "video_call", label: r.contactVideo || "Video Call" },
-                                        { value: "phone", label: r.contactPhone || "Phone" },
-                                        { value: "email", label: r.contactEmail || "Email" },
-                                        { value: "messaging", label: r.contactMessaging || "Messaging" },
                                     ].map((opt) => (
                                         <button
                                             key={opt.value}
