@@ -7,7 +7,7 @@ SET hired_at = h.first_hired
 FROM (
     SELECT candidate_id, MIN(created_at) AS first_hired
     FROM candidate_stage_history
-    WHERE action = 'hire' OR to_stage = 'hired'
+    WHERE action = 'hire'
     GROUP BY candidate_id
 ) h
 WHERE c.id = h.candidate_id
@@ -73,7 +73,7 @@ BEGIN
     perf_last_calculated_at = NOW()
   WHERE id = p_recruiter_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
 -- Refresh every snapshot so backfilled hired_at + new rate rules show immediately.
 SELECT fn_recalculate_recruiter_metrics(id) FROM recruiters;

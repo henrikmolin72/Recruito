@@ -132,5 +132,14 @@ describe("updateCompanyStage notifications", () => {
 
         expect(capturedPatch?.hired_at).toBeTruthy();
         expect(capturedPatch?.status_changed_at).toBeTruthy();
+        expect(capturedPatch?.status).toBe("hired");
+    });
+
+    it("does not restamp timestamps on the no-op 'viewed' first-open (no status change)", async () => {
+        const res = await updateCompanyStage("C", "J", "viewed");
+        expect(res).toEqual({ success: true });
+
+        expect(capturedPatch?.status).toBeUndefined();
+        expect(capturedPatch?.status_changed_at).toBeUndefined();
     });
 });
