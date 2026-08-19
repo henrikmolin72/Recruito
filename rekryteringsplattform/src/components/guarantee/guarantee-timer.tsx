@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Shield, ShieldCheck, ShieldAlert, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDateShort } from "@/lib/utils";
 import { useTranslations } from "@/i18n/client";
 
 interface GuaranteeTimerProps {
@@ -15,11 +15,13 @@ interface GuaranteeTimerProps {
 }
 
 function daysUntil(dateStr: string): number {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(dateStr);
-    target.setHours(0, 0, 0, 0);
-    return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    // UTC day boundaries on both sides: local-midnight math let SSR (UTC) and
+    // the browser (user TZ) disagree on {days} around midnight → hydration mismatch.
+    const now = new Date();
+    const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const d = new Date(dateStr);
+    const target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    return Math.round((target - today) / (1000 * 60 * 60 * 24));
 }
 
 function daysBetween(startStr: string, endStr: string): number {
@@ -95,7 +97,9 @@ export function GuaranteeTimer({ guaranteeEndDate, guaranteeStartDate, candidate
                 <span className="flex items-center gap-1">
                     <Clock className="h-2.5 w-2.5" /> {t("components.guaranteeDayOf").replace("{elapsed}", String(Math.max(0, elapsed))).replace("{total}", String(totalDays))}
                 </span>
-                <span>{t("components.guaranteeExpires")} {new Date(guaranteeEndDate).toLocaleDateString()}</span>
+                {/* formatDateShort pins the locale — bare toLocaleDateString() rendered
+                    "20/08/2026" on the server and "8/20/2026" in the browser → hydration error */}
+                <span>{t("components.guaranteeExpires")} {formatDateShort(guaranteeEndDate)}</span>
             </div>
         </div>
     );
