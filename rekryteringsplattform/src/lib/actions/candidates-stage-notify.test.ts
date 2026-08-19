@@ -14,6 +14,7 @@ const createNotification = vi.fn();
 const notifyAdmins = vi.fn();
 
 let candidateStage = "viewed"; // the candidate's CURRENT company_stage
+let capturedPatch: Record<string, any> | null = null; // last candidates.update(...) patch
 
 const job = { id: "J", title: "Electrical Engineer", company: { user_id: "CO" }, pipeline_stages: [] };
 function candidate() {
@@ -43,14 +44,17 @@ function makeSupabase() {
             // candidates
             return {
                 select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: candidate(), error: null }) }) }),
-                update: () => ({
-                    eq: () => ({
-                        // stage write: .eq("id").eq("job_id")
-                        eq: () => Promise.resolve({ error: null }),
-                        // clearCompanyNextStepRequest: .eq("id").not(...)
-                        not: () => Promise.resolve({ error: null }),
-                    }),
-                }),
+                update: (patch: Record<string, any>) => {
+                    capturedPatch = patch;
+                    return {
+                        eq: () => ({
+                            // stage write: .eq("id").eq("job_id")
+                            eq: () => Promise.resolve({ error: null }),
+                            // clearCompanyNextStepRequest: .eq("id").not(...)
+                            not: () => Promise.resolve({ error: null }),
+                        }),
+                    };
+                },
             };
         },
     };
@@ -83,6 +87,7 @@ beforeEach(() => {
     createNotification.mockReset();
     notifyAdmins.mockReset();
     candidateStage = "viewed";
+    capturedPatch = null;
 });
 
 describe("updateCompanyStage notifications", () => {
@@ -118,5 +123,14 @@ describe("updateCompanyStage notifications", () => {
         // Admins keep the specific "hired" copy.
         expect(notifyAdmins).toHaveBeenCalledTimes(1);
         expect(notifyAdmins.mock.calls[0][0].titleKey).toBe("notif.adminCandidateHiredTitle");
+    });
+
+    it("stamps hired_at (and status_changed_at) when the company moves a candidate to hired", async () => {
+        candidateStage = "job_offer";
+        const res = await updateCompanyStage("C", "J", "hired");
+        expect(res).toEqual({ success: true });
+
+        expect(capturedPatch?.hired_at).toBeTruthy();
+        expect(capturedPatch?.status_changed_at).toBeTruthy();
     });
 });
