@@ -979,7 +979,7 @@ export function CandidateSubmissionForm({
                     <div className="space-y-5">
                         <FieldRow>
                             <div>
-                                <Label>{r.firstContactLabel || "Date of First Contact"}<Req /></Label>
+                                <Label>{r.firstContactLabel || "Interview Date"}<Req /></Label>
                                 <Input type="date" name="first_contact_date" defaultValue={draftTextFields["first_contact_date"] || ""} className="date-input-lg h-11 bg-slate-50 border-slate-200" />
                             </div>
                             <div>

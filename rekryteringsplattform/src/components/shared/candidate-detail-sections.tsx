@@ -163,7 +163,7 @@ export function CandidateDetailSections({
                             </p>
                         </div>
                         <div>
-                            <p className="text-muted-foreground">Date of First Contact</p>
+                            <p className="text-muted-foreground">Interview Date</p>
                             <p className="font-semibold">
                                 {candidate.first_contact_date ? new Date(candidate.first_contact_date).toLocaleDateString() : notProvided}
                             </p>
