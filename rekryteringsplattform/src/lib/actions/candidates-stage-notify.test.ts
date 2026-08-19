@@ -14,6 +14,7 @@ const createNotification = vi.fn();
 const notifyAdmins = vi.fn();
 
 let candidateStage: string | null = "viewed"; // the candidate's CURRENT company_stage
+let companyViewedAt: string | null = "2020-01-01T00:00:00Z"; // candidate's CURRENT company_viewed_at
 let capturedPatch: Record<string, any> | null = null; // last candidates.update(...) patch
 
 const job = { id: "J", title: "Electrical Engineer", company: { user_id: "CO" }, pipeline_stages: [] };
@@ -22,7 +23,7 @@ function candidate() {
         id: "C",
         status: "under_client_review",
         company_stage: candidateStage,
-        company_viewed_at: "2020-01-01T00:00:00Z",
+        company_viewed_at: companyViewedAt,
         current_pipeline_stage: null,
         job_id: "J",
         recruiter: { user_id: "REC" },
@@ -87,6 +88,7 @@ beforeEach(() => {
     createNotification.mockReset();
     notifyAdmins.mockReset();
     candidateStage = "viewed";
+    companyViewedAt = "2020-01-01T00:00:00Z";
     capturedPatch = null;
 });
 
@@ -137,9 +139,13 @@ describe("updateCompanyStage notifications", () => {
 
     it("does not stamp status or timestamps on a first-open 'viewed' move", async () => {
         candidateStage = null;
+        companyViewedAt = null; // genuinely unviewed, so this is really the first open
         const res = await updateCompanyStage("C", "J", "viewed");
         expect(res).toEqual({ success: true });
 
+        // The first-open branch DOES stamp company_viewed_at (that's the point of it) —
+        // it's status/status_changed_at that must stay untouched.
+        expect(capturedPatch?.company_viewed_at).toBeTruthy();
         expect(capturedPatch?.status).toBeUndefined();
         expect(capturedPatch?.status_changed_at).toBeUndefined();
     });

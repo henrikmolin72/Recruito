@@ -36,7 +36,7 @@ function Tile({
                 <Icon className="h-4 w-4 text-white" />
             </div>
             <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground truncate">{label}</p>
+                <p className="text-xs font-medium text-muted-foreground">{label}</p>
                 <p className="text-lg font-bold leading-tight">
                     {value}{suffix && <span className="text-sm font-normal text-muted-foreground ml-0.5">{suffix}</span>}
                 </p>
@@ -57,6 +57,8 @@ export async function RecruiterOverview({ stats, rates, metrics, openJobs }: Rec
                 </CardTitle>
             </CardHeader>
             <CardContent>
+                {/* Hire rate lives ONLY in the "Hire rate" tile — client request 2026-07-10:
+                    it was shown 3x (tile + box + bar). Don't add a metrics.hireRate tile. */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     <Tile
                         label={t("recruiter.activeMandates")}
@@ -104,8 +106,8 @@ export async function RecruiterOverview({ stats, rates, metrics, openJobs }: Rec
                     />
                     <Tile
                         label={t("recruiter.perfAvgTimeToHire")}
-                        value={metrics?.avgTimeToHireDays ?? 0}
-                        suffix={t("recruiter.perfDaysSuffix")}
+                        value={metrics ? metrics.avgTimeToHireDays : "—"}
+                        suffix={metrics ? t("recruiter.perfDaysSuffix") : undefined}
                         icon={Clock}
                         color="bg-blue-600"
                     />
@@ -117,7 +119,7 @@ export async function RecruiterOverview({ stats, rates, metrics, openJobs }: Rec
                     />
                     <Tile
                         label={t("recruiter.perfActiveGuarantees")}
-                        value={metrics?.activePlacements ?? 0}
+                        value={metrics ? metrics.activePlacements : "—"}
                         icon={Shield}
                         color="bg-emerald-600"
                     />
