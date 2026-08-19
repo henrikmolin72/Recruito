@@ -142,4 +142,18 @@ describe("updateCompanyStage notifications", () => {
         expect(capturedPatch?.status).toBeUndefined();
         expect(capturedPatch?.status_changed_at).toBeUndefined();
     });
+
+    it("does not restamp hired_at/status_changed_at on a same-stage 'hired' replay (already hired)", async () => {
+        candidateStage = "hired";
+        const res = await updateCompanyStage("C", "J", "hired");
+        expect(res).toEqual({ success: true });
+
+        // "hired" -> "hired" is a same-stage no-op (canTransition allows to===from),
+        // so mappedStatus is still non-null and status IS re-set on the patch — that's
+        // fine. What must NOT happen is hired_at/status_changed_at getting clobbered
+        // by a replayed/duplicate call on an already-hired candidate.
+        expect(capturedPatch?.status).toBe("hired");
+        expect(capturedPatch?.hired_at).toBeUndefined();
+        expect(capturedPatch?.status_changed_at).toBeUndefined();
+    });
 });
