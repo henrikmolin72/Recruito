@@ -36,7 +36,7 @@ function Tile({
                 <Icon className="h-4 w-4 text-white" />
             </div>
             <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground">{label}</p>
+                <p className="text-xs font-medium text-muted-foreground break-words">{label}</p>
                 <p className="text-lg font-bold leading-tight">
                     {value}{suffix && <span className="text-sm font-normal text-muted-foreground ml-0.5">{suffix}</span>}
                 </p>
