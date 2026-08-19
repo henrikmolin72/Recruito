@@ -621,8 +621,7 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         if (stage !== current) {
             // Company-driven moves previously skipped the workflow timestamps, so
             // hired_at was never written → avg-time-to-hire always 0 (dashboard bug).
-            // Guarded to same-stage-change-only so a replayed/no-op call can't
-            // overwrite hired_at/status_changed_at.
+            // Timestamps only on real stage changes — replays must not restamp.
             Object.assign(patch, statusChangeTimestampPatch(mappedStatus));
         }
     }

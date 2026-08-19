@@ -13,7 +13,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const createNotification = vi.fn();
 const notifyAdmins = vi.fn();
 
-let candidateStage = "viewed"; // the candidate's CURRENT company_stage
+let candidateStage: string | null = "viewed"; // the candidate's CURRENT company_stage
 let capturedPatch: Record<string, any> | null = null; // last candidates.update(...) patch
 
 const job = { id: "J", title: "Electrical Engineer", company: { user_id: "CO" }, pipeline_stages: [] };
@@ -135,7 +135,8 @@ describe("updateCompanyStage notifications", () => {
         expect(capturedPatch?.status).toBe("hired");
     });
 
-    it("does not restamp timestamps on the no-op 'viewed' first-open (no status change)", async () => {
+    it("does not stamp status or timestamps on a first-open 'viewed' move", async () => {
+        candidateStage = null;
         const res = await updateCompanyStage("C", "J", "viewed");
         expect(res).toEqual({ success: true });
 
