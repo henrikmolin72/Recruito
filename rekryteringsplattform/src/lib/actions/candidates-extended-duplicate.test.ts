@@ -109,7 +109,7 @@ function fd(overrides: Record<string, string> = {}) {
     f.set("employment_reason", "Open to new roles");
     f.set("notice_period", "1_month");
     f.set("first_contact_date", "2026-07-01");
-    f.set("contact_method", "phone");
+    f.set("contact_method", "video_call");
     f.set("current_salary", "40000");
     f.set("expected_salary", "45000");
     for (const [k, v] of Object.entries(overrides)) f.set(k, v);
