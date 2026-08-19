@@ -828,7 +828,7 @@ export async function getRecruiterPerformanceMetrics() {
                 .from("placements")
                 .select("id", { count: "exact", head: true })
                 .eq("recruiter_id", recruiter.id)
-                .in("status", ["payout_released", "guarantee_failed"]);
+                .in("status", ["payout_released", "guarantee_failed", "refund_processing"]);
             if ((count ?? 0) === 0) {
                 await admin
                     .from("recruiters")
