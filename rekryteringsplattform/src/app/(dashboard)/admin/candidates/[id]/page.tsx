@@ -187,7 +187,7 @@ export default async function AdminCandidateDetailPage({
                     <Field label="Work authorization" value={c.work_authorization} />
                     <Field label="Employment status" value={c.employment_status ? `${c.employment_status}${c.employment_status_reason ? ` — ${c.employment_status_reason}` : ""}` : null} />
                     <Field label="Other processes" value={c.other_processes ? `Yes${c.other_processes_stage ? ` — ${c.other_processes_stage}` : ""}` : null} />
-                    <Field label="First contact" value={c.first_contact_date} />
+                    <Field label="Interview date" value={c.first_contact_date} />
                     <Field label="Contact method" value={c.contact_method} />
                     <Field
                         label="Languages"

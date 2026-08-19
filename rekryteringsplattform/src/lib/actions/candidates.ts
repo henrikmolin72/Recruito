@@ -618,6 +618,12 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
     const mappedStatus = COMPANY_STAGE_TO_STATUS[stage as CompanyStageValue];
     if (mappedStatus) {
         patch.status = mappedStatus;
+        if (stage !== current) {
+            // Company-driven moves previously skipped the workflow timestamps, so
+            // hired_at was never written → avg-time-to-hire always 0 (dashboard bug).
+            // Timestamps only on real stage changes — replays must not restamp.
+            Object.assign(patch, statusChangeTimestampPatch(mappedStatus));
+        }
     }
 
     const { error } = await supabase

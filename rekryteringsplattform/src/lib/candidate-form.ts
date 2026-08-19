@@ -143,10 +143,13 @@ export function getMissingRequiredFields(
     if (!fdString(formData.get("notice_period")).trim()) {
         missing.push("notice_period");
     }
-    if (!fdString(formData.get("first_contact_date")).trim()) {
+    const firstContact = fdString(formData.get("first_contact_date")).trim();
+    // allow up to +1 day: max possible local-vs-UTC skew; repo convention is toISOString for machine-comparable dates
+    if (!firstContact || firstContact > new Date(Date.now() + 864e5).toISOString().slice(0, 10)) {
         missing.push("first_contact_date");
     }
-    if (!fdString(formData.get("contact_method")).trim()) {
+    const method = fdString(formData.get("contact_method")).trim();
+    if (method !== "in_person" && method !== "video_call") {
         missing.push("contact_method");
     }
 

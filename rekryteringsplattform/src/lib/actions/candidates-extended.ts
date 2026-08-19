@@ -147,7 +147,7 @@ export async function createCandidateExtended(mandateId: string, formData: FormD
             error:
                 "Please complete all required fields before presenting the candidate: " +
                 "employment status & reason, current and expected salary, notice period, " +
-                "date and method of first contact, and every screening answer.",
+                "interview date and method of contact, and every screening answer.",
         };
     }
 

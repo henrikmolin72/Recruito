@@ -23,7 +23,7 @@ function fullFormData(): FormData {
     fd.set("notice_period", "1_month");
     fd.set("notice_negotiable", "yes");
     fd.set("first_contact_date", "2026-06-01");
-    fd.set("contact_method", "phone");
+    fd.set("contact_method", "video_call");
     fd.set("screening_answers", JSON.stringify([
         { question: "Q1", answer: "yes, 3 years" },
         { question: "Q2", answer: "BSc EE" },
@@ -42,7 +42,7 @@ describe("parseCandidateColumns", () => {
         expect(cols.employment_status_reason).toBe("Career growth");
         expect(cols.notice_period).toBe("1_month");
         expect(cols.notice_negotiable).toBe(true);
-        expect(cols.contact_method).toBe("phone");
+        expect(cols.contact_method).toBe("video_call");
         expect(cols.first_contact_date).toBe("2026-06-01");
         expect(cols.current_salary).toBe(60000);
         expect(cols.screening_answers).toHaveLength(2);
@@ -128,6 +128,26 @@ describe("getMissingRequiredFields", () => {
         const fd = fullFormData();
         fd.delete("screening_answers");
         expect(getMissingRequiredFields(fd, 0)).not.toContain("screening_answers");
+    });
+
+    it("rejects a future first_contact_date as missing", () => {
+        const fd = fullFormData();
+        fd.set("first_contact_date", "2099-01-01");
+        expect(getMissingRequiredFields(fd, 0)).toContain("first_contact_date");
+    });
+
+    it("accepts today's first_contact_date", () => {
+        const fd = fullFormData();
+        fd.set("first_contact_date", new Date().toISOString().slice(0, 10));
+        expect(getMissingRequiredFields(fd, 0)).not.toContain("first_contact_date");
+    });
+
+    it("rejects a stale contact_method value no longer offered", () => {
+        const fd = fullFormData();
+        fd.set("contact_method", "phone");
+        expect(getMissingRequiredFields(fd, 0)).toContain("contact_method");
+        fd.set("contact_method", "video_call");
+        expect(getMissingRequiredFields(fd, 0)).not.toContain("contact_method");
     });
 });
 

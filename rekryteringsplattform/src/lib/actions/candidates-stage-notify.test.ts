@@ -13,7 +13,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const createNotification = vi.fn();
 const notifyAdmins = vi.fn();
 
-let candidateStage = "viewed"; // the candidate's CURRENT company_stage
+let candidateStage: string | null = "viewed"; // the candidate's CURRENT company_stage
+let companyViewedAt: string | null = "2020-01-01T00:00:00Z"; // candidate's CURRENT company_viewed_at
+let capturedPatch: Record<string, any> | null = null; // last candidates.update(...) patch
 
 const job = { id: "J", title: "Electrical Engineer", company: { user_id: "CO" }, pipeline_stages: [] };
 function candidate() {
@@ -21,7 +23,7 @@ function candidate() {
         id: "C",
         status: "under_client_review",
         company_stage: candidateStage,
-        company_viewed_at: "2020-01-01T00:00:00Z",
+        company_viewed_at: companyViewedAt,
         current_pipeline_stage: null,
         job_id: "J",
         recruiter: { user_id: "REC" },
@@ -43,14 +45,17 @@ function makeSupabase() {
             // candidates
             return {
                 select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: candidate(), error: null }) }) }),
-                update: () => ({
-                    eq: () => ({
-                        // stage write: .eq("id").eq("job_id")
-                        eq: () => Promise.resolve({ error: null }),
-                        // clearCompanyNextStepRequest: .eq("id").not(...)
-                        not: () => Promise.resolve({ error: null }),
-                    }),
-                }),
+                update: (patch: Record<string, any>) => {
+                    capturedPatch = patch;
+                    return {
+                        eq: () => ({
+                            // stage write: .eq("id").eq("job_id")
+                            eq: () => Promise.resolve({ error: null }),
+                            // clearCompanyNextStepRequest: .eq("id").not(...)
+                            not: () => Promise.resolve({ error: null }),
+                        }),
+                    };
+                },
             };
         },
     };
@@ -83,6 +88,8 @@ beforeEach(() => {
     createNotification.mockReset();
     notifyAdmins.mockReset();
     candidateStage = "viewed";
+    companyViewedAt = "2020-01-01T00:00:00Z";
+    capturedPatch = null;
 });
 
 describe("updateCompanyStage notifications", () => {
@@ -118,5 +125,42 @@ describe("updateCompanyStage notifications", () => {
         // Admins keep the specific "hired" copy.
         expect(notifyAdmins).toHaveBeenCalledTimes(1);
         expect(notifyAdmins.mock.calls[0][0].titleKey).toBe("notif.adminCandidateHiredTitle");
+    });
+
+    it("stamps hired_at (and status_changed_at) when the company moves a candidate to hired", async () => {
+        candidateStage = "job_offer";
+        const res = await updateCompanyStage("C", "J", "hired");
+        expect(res).toEqual({ success: true });
+
+        expect(capturedPatch?.hired_at).toBeTruthy();
+        expect(capturedPatch?.status_changed_at).toBeTruthy();
+        expect(capturedPatch?.status).toBe("hired");
+    });
+
+    it("does not stamp status or timestamps on a first-open 'viewed' move", async () => {
+        candidateStage = null;
+        companyViewedAt = null; // genuinely unviewed, so this is really the first open
+        const res = await updateCompanyStage("C", "J", "viewed");
+        expect(res).toEqual({ success: true });
+
+        // The first-open branch DOES stamp company_viewed_at (that's the point of it) —
+        // it's status/status_changed_at that must stay untouched.
+        expect(capturedPatch?.company_viewed_at).toBeTruthy();
+        expect(capturedPatch?.status).toBeUndefined();
+        expect(capturedPatch?.status_changed_at).toBeUndefined();
+    });
+
+    it("does not restamp hired_at/status_changed_at on a same-stage 'hired' replay (already hired)", async () => {
+        candidateStage = "hired";
+        const res = await updateCompanyStage("C", "J", "hired");
+        expect(res).toEqual({ success: true });
+
+        // "hired" -> "hired" is a same-stage no-op (canTransition allows to===from),
+        // so mappedStatus is still non-null and status IS re-set on the patch — that's
+        // fine. What must NOT happen is hired_at/status_changed_at getting clobbered
+        // by a replayed/duplicate call on an already-hired candidate.
+        expect(capturedPatch?.status).toBe("hired");
+        expect(capturedPatch?.hired_at).toBeUndefined();
+        expect(capturedPatch?.status_changed_at).toBeUndefined();
     });
 });

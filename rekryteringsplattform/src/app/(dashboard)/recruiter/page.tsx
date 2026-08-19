@@ -1,10 +1,8 @@
-import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { Users, FileCheck, CalendarClock, UserCheck, Target } from "lucide-react";
 import { getRecruiterDashboard, getAvailableJobsForRecruiter } from "@/lib/actions/recruiter";
 import { getRecruiterPerformanceMetrics, getMyActiveGuaranteeTimers } from "@/lib/actions/placements";
-import { PerformanceMetrics } from "@/components/dashboard/recruiter/performance-metrics";
+import { RecruiterOverview } from "@/components/dashboard/recruiter/performance-metrics";
 import { getDictionary } from "@/i18n/server";
 import { formatJobLocation } from "@/lib/format-job-location";
 import { GuaranteeTimer } from "@/components/guarantee/guarantee-timer";
@@ -36,29 +34,18 @@ export default async function RecruiterDashboard() {
         <p className="text-muted-foreground">{userName ? r.welcomeBack.replace("{name}", userName) : r.welcomeBack.replace(/,\s*\{name\}$/, "")}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title={r.activeMandates} value={stats.activeMandates || 0} icon={FileCheck} />
-        <StatsCard title={r.presentedCandidates} value={stats.candidates || 0} icon={Users} />
-        <StatsCard title={r.inInterview} value={stats.inInterview || 0} icon={CalendarClock} />
-        <StatsCard title={r.hired} value={stats.hired || 0} icon={UserCheck} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <StatsCard
-          title={r.rateInterview}
-          value={`${interviewRate}%`}
-          icon={CalendarClock}
-          description={r.rateInterviewSub.replace("{moved}", String(stats.movedToInterview)).replace("{submitted}", String(submitted))}
-        />
-        <StatsCard
-          title={r.rateHire}
-          value={`${hireRate}%`}
-          icon={Target}
-          description={r.rateHireSub.replace("{hired}", String(candidatesHired)).replace("{submitted}", String(submitted))}
-        />
-      </div>
-
-      {metrics && <PerformanceMetrics metrics={metrics} openJobs={availableJobs.length} />}
+      <RecruiterOverview
+        openJobs={availableJobs.length}
+        stats={{
+          activeMandates: stats.activeMandates || 0,
+          candidates: stats.candidates || 0,
+          inInterview: stats.inInterview || 0,
+          hired: stats.hired || 0,
+          movedToInterview: stats.movedToInterview,
+        }}
+        rates={{ interviewRate, hireRate, submitted, candidatesHired }}
+        metrics={metrics}
+      />
 
       {activeGuarantees.length > 0 && (
         <Card>
