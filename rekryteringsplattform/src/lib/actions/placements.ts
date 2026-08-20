@@ -214,6 +214,34 @@ export async function recordPlacementPayment(placementId: string) {
                 changedByRole: "admin",
             });
         }
+    } else if (nextStatus === "payout_released") {
+        // 0-month / already-elapsed guarantee: payout releases at payment time, so the
+        // candidate is finished here — mark completed + write the stage-history row.
+        // Without this the candidate is stranded showing "active" forever (mirrors the
+        // guarantee_active branch and releaseGuaranteePayout).
+        const { error: candidateError } = await admin
+            .from("candidates")
+            .update({
+                status: "completed",
+                status_changed_at: new Date().toISOString(),
+            })
+            .eq("id", placement.candidate_id);
+        if (candidateError) {
+            console.error(
+                `[recordPlacementPayment] candidate ${placement.candidate_id} not moved to completed:`,
+                candidateError
+            );
+        } else {
+            await logCandidateStageChange({
+                candidateId: placement.candidate_id,
+                jobId: placement.job_id,
+                fromStage: "hired",
+                toStage: "completed",
+                action: "move",
+                changedBy: adminUser.id,
+                changedByRole: "admin",
+            });
+        }
     }
 
     // Notify recruiter
@@ -331,10 +359,19 @@ export async function setPlacementJoiningDate(
     // waiting on an invoice payment (invoice_sent flips via recordPlacementPayment,
     // which now sees the end date). Mirrors the pre-067 trigger behavior where a
     // placement could be guarantee_active before invoicing.
+    const guaranteeElapsed = guaranteeMonths > 0 && new Date(guaranteeEnd) <= new Date();
     const activate =
         guaranteeMonths > 0 &&
-        new Date(guaranteeEnd) > new Date() &&
+        !guaranteeElapsed &&
         (placement.status === "confirmed" || placement.status === "payment_received");
+    // Payment is already in but the guarantee window is already over (backdated
+    // joining date) → the guarantee was served in full; release the payout instead
+    // of stranding the row in payment_received forever. Only from payment_received:
+    // a confirmed (unpaid) placement must still be invoiced before any payout.
+    // ponytail: recruiter/company release notifications + immediate metric recalc are
+    // skipped on this rare backdated path (setPlacementJoiningDate is silent on activate
+    // too); the guarantee-rate self-heals on the hourly refresh-on-read.
+    const releaseNow = placement.status === "payment_received" && guaranteeElapsed;
 
     const { error } = await admin
         .from("placements")
@@ -342,6 +379,13 @@ export async function setPlacementJoiningDate(
             joining_date: joiningDate,
             guarantee_end_date: guaranteeEnd,
             ...(activate ? { status: "guarantee_active" } : {}),
+            ...(releaseNow
+                ? {
+                      status: "payout_released",
+                      payout_released_at: new Date().toISOString(),
+                      completed_at: new Date().toISOString(),
+                  }
+                : {}),
         })
         .eq("id", placementId);
 
@@ -363,7 +407,7 @@ export async function setPlacementJoiningDate(
         target_type: "placement",
         target_id: placementId,
         performed_by: adminUser.id,
-        metadata: { joining_date: joiningDate, guarantee_end_date: guaranteeEnd, activated: activate },
+        metadata: { joining_date: joiningDate, guarantee_end_date: guaranteeEnd, activated: activate, released: releaseNow },
     });
     if (auditError) console.error("[audit:placement_joining_date_set]", { code: auditError.code, message: auditError.message });
 
@@ -380,6 +424,24 @@ export async function setPlacementJoiningDate(
                 jobId: placement.job_id,
                 fromStage: "hired",
                 toStage: "guarantee_tracking",
+                action: "move",
+                changedBy: adminUser.id,
+                changedByRole: "admin",
+            });
+        }
+    } else if (releaseNow) {
+        const { error: candidateError } = await admin
+            .from("candidates")
+            .update({ status: "completed", status_changed_at: new Date().toISOString() })
+            .eq("id", placement.candidate_id);
+        if (candidateError) {
+            console.error(`[setPlacementJoiningDate] candidate ${placement.candidate_id} not moved to completed:`, candidateError);
+        } else {
+            await logCandidateStageChange({
+                candidateId: placement.candidate_id,
+                jobId: placement.job_id,
+                fromStage: "hired",
+                toStage: "completed",
                 action: "move",
                 changedBy: adminUser.id,
                 changedByRole: "admin",
