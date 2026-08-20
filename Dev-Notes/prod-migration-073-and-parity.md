@@ -23,6 +23,14 @@ once 073 is applied** — 073's definition wins regardless. No need to chase 063
 `rekryteringsplattform/supabase/migrations/073_hired_at_backfill_and_guarantee_rate.sql` → Run.
 No app redeploy needed.
 
+### 1b. Then apply migration 074 (recruiter-metrics accuracy)
+
+`074_recruiter_metrics_draft_filter_and_null_avg.sql` (code review 2026-08-20) also does
+`CREATE OR REPLACE` on `fn_recalculate_recruiter_metrics`, so it must run **after** 073
+(074's definition wins). Two fixes: `v_submitted` excludes `draft` candidates (rate
+denominator), and avg-time-to-hire stays `NULL` (→ UI "—") instead of a fake `0`.
+Idempotent; verified on the local stack. Same How as above with the 074 file.
+
 ## 2. Migration parity check (one-time, closes the audit)
 
 Confirm local and prod migration histories match so nothing else silently lags
