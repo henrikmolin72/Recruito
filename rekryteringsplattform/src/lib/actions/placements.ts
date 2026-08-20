@@ -62,17 +62,25 @@ export async function sendPlacementInvoice(placementId: string) {
         return { error: "Faktura har redan skickats" };
     }
 
-    const { error } = await admin
+    // Optimistic-concurrency guard: invoice only if not already invoiced (the row
+    // still has a null invoice_sent_at) and require the row to change, so a concurrent
+    // send can't double-fire the invoice notifications below.
+    const { data: affected, error } = await admin
         .from("placements")
         .update({
             status: "invoice_sent",
             invoice_sent_at: new Date().toISOString(),
         })
-        .eq("id", placementId);
+        .eq("id", placementId)
+        .is("invoice_sent_at", null)
+        .select("id");
 
     if (error) {
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
+    }
+    if (!affected || affected.length === 0) {
+        return { error: "Faktura har redan skickats" };
     }
 
     // Audit trail: financial action on a placement (admin-performed). Best-effort —
@@ -169,14 +177,22 @@ export async function recordPlacementPayment(placementId: string) {
         updatePatch.completed_at = new Date().toISOString();
     }
 
-    const { error } = await admin
+    // Optimistic-concurrency guard: transition only from invoice_sent and require the
+    // row to change, so a concurrent payment-record can't double-release the payout or
+    // re-fire the payment notification/email below.
+    const { data: affected, error } = await admin
         .from("placements")
         .update(updatePatch)
-        .eq("id", placementId);
+        .eq("id", placementId)
+        .eq("status", "invoice_sent")
+        .select("id");
 
     if (error) {
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
+    }
+    if (!affected || affected.length === 0) {
+        return { error: "Betalningen har redan registrerats." };
     }
 
     // Audit trail: payment recorded (admin-performed). Best-effort; log on failure.
@@ -518,17 +534,26 @@ async function releaseGuaranteePayout(
     placement: GuaranteePlacementRow,
     auditActionType: "placement_payout_auto_released" | "placement_guarantee_completed",
 ): Promise<boolean> {
-    const { error } = await admin
+    // Optimistic-concurrency guard: only transition a still-active guarantee, and
+    // require the row to actually change. If a concurrent completeGuarantee /
+    // processGuaranteeExpirations already released this payout, 0 rows change and we
+    // skip every side effect below rather than double-paying / double-notifying.
+    const { data: affected, error } = await admin
         .from("placements")
         .update({
             status: "payout_released",
             payout_released_at: new Date().toISOString(),
             completed_at: new Date().toISOString(),
         })
-        .eq("id", placement.id);
+        .eq("id", placement.id)
+        .eq("status", "guarantee_active")
+        .select("id");
 
     if (error) {
         console.error(`Failed to complete placement ${placement.id}:`, error);
+        return false;
+    }
+    if (!affected || affected.length === 0) {
         return false;
     }
 
@@ -697,7 +722,9 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
 
     const failureReason = reason?.trim() || "Kandidaten lämnade under garantiperioden";
 
-    const { error } = await admin
+    // Optimistic-concurrency guard: fail only a still-active guarantee and require the
+    // row to change, so a concurrent report can't double-fire the refund notifications.
+    const { data: affected, error } = await admin
         .from("placements")
         .update({
             status: "guarantee_failed",
@@ -705,11 +732,16 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
             guarantee_failed_reason: failureReason,
             refund_amount: placement.total_fee,
         })
-        .eq("id", placementId);
+        .eq("id", placementId)
+        .eq("status", "guarantee_active")
+        .select("id");
 
     if (error) {
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
+    }
+    if (!affected || affected.length === 0) {
+        return { error: "Placeringen är inte i aktiv garantiperiod" };
     }
 
     // Audit trail: guarantee failure triggers refund — record it (admin-performed).

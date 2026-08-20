@@ -15,6 +15,10 @@ let recruiterRow: any;
 let profileRow: any;
 // Per-table error injected into awaited update chains (simulates RLS/constraint failures).
 let updateErrorByTable: Record<string, any> = {};
+// Per-table affected rows returned by update(...).select() — default 1 row ("won the
+// optimistic-concurrency race"); set to [] to simulate a concurrent call having already
+// transitioned the row (0 rows affected).
+let updateResultByTable: Record<string, any[]> = {};
 const writes: Array<{ table: string; patch: any }> = [];
 const rpcCalls: Array<{ fn: string; args: any }> = [];
 
@@ -32,11 +36,14 @@ function makeClient() {
       if (table === "jobs") return { data: { title: "Developer" }, error: null };
       return { data: null, error: null };
     };
+    let selected = false;
     const chain: any = {
-      select: () => chain,
+      // .select() after update/insert requests the affected rows back.
+      select: () => { if (op !== "select") selected = true; return chain; },
       update: (p: any) => { op = "update"; patch = p; return chain; },
       insert: (p: any) => { op = "insert"; patch = p; return chain; },
       eq: () => chain,
+      is: () => chain,
       order: () => chain,
       limit: () => chain,
       single: async () => selectResult(),
@@ -45,7 +52,12 @@ function makeClient() {
       then: (resolve: any, reject: any) => {
         if (op === "update" || op === "insert") writes.push({ table, patch });
         const error = op === "update" ? updateErrorByTable[table] ?? null : null;
-        return Promise.resolve({ data: null, error }).then(resolve, reject);
+        // update(...).select() resolves with the affected rows (default 1); a bare
+        // update resolves data:null, matching PostgREST.
+        const data = op === "update" && selected
+          ? (updateResultByTable[table] ?? [{ id: "row" }])
+          : null;
+        return Promise.resolve({ data, error }).then(resolve, reject);
       },
     };
     return chain;
@@ -89,6 +101,7 @@ beforeEach(() => {
   writes.length = 0;
   rpcCalls.length = 0;
   updateErrorByTable = {};
+  updateResultByTable = {};
   logCandidateStageChange.mockReset();
   paymentCompletedEmail.mockClear();
   headerValues = {};
@@ -339,6 +352,21 @@ describe("completeGuarantee — admin marks guarantee period completed", () => {
 
     expect(res.error).toBeTruthy();
     expect(placementWrites()).toHaveLength(0);
+    expect(rpcCalls).toHaveLength(0);
+  });
+
+  it("skips payout side effects when the row was already released (0 rows affected — concurrency guard)", async () => {
+    placementRow = { ...activePlacement };
+    // A concurrent completeGuarantee / processGuaranteeExpirations already flipped the
+    // row out of guarantee_active, so the status-guarded UPDATE matches nothing.
+    updateResultByTable.placements = [];
+
+    const res = await completeGuarantee("p1");
+
+    // Reports it did not release, and NONE of the payout side effects double-fire.
+    expect(res.error).toBeTruthy();
+    expect(writes.some((w) => w.table === "candidates" && w.patch.status === "completed")).toBe(false);
+    expect(logCandidateStageChange).not.toHaveBeenCalled();
     expect(rpcCalls).toHaveLength(0);
   });
 });

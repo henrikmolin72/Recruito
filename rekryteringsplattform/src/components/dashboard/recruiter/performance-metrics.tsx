@@ -9,7 +9,7 @@ interface RecruiterOverviewProps {
     rates: { interviewRate: number; hireRate: number; submitted: number; candidatesHired: number };
     metrics: {
         rating: number;
-        avgTimeToHireDays: number;
+        avgTimeToHireDays: number | null;
         activePlacements: number;
         guaranteeSuccessRate: number | null;
     } | null;
@@ -106,8 +106,8 @@ export async function RecruiterOverview({ stats, rates, metrics, openJobs }: Rec
                     />
                     <Tile
                         label={t("recruiter.perfAvgTimeToHire")}
-                        value={metrics ? metrics.avgTimeToHireDays : "—"}
-                        suffix={metrics ? t("recruiter.perfDaysSuffix") : undefined}
+                        value={metrics?.avgTimeToHireDays ?? "—"}
+                        suffix={metrics?.avgTimeToHireDays != null ? t("recruiter.perfDaysSuffix") : undefined}
                         icon={Clock}
                         color="bg-blue-600"
                     />

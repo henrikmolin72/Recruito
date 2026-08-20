@@ -27,7 +27,6 @@ import {
 import {
     getPlacementByCandidateId,
     sendPlacementInvoice,
-    recalculateRecruiterMetrics,
 } from "@/lib/actions/placements";
 import { markJobFilledAndReject, maybeNudgeReopenForReview, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
 import { canTransition, canReopenTo, COMPANY_STAGES, COMPANY_STAGE_TO_STATUS, type CompanyStageValue } from "@/lib/candidate-stage-rules";
@@ -255,7 +254,16 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
                 .eq("id", candidateId)
                 .single();
             if (candidateRow?.recruiter_id) {
-                await recalculateRecruiterMetrics(candidateRow.recruiter_id);
+                // Recompute via the service-role RPC directly. This action is already
+                // authenticated for the recruiter, so it must NOT route through the
+                // admin-gated recalculateRecruiterMetrics — that redirect-throws for a
+                // recruiter, so the sync recalc never ran (it only self-healed on the
+                // hourly refresh-on-read).
+                const { error: recalcError } = await createAdminClient().rpc(
+                    "fn_recalculate_recruiter_metrics",
+                    { p_recruiter_id: candidateRow.recruiter_id },
+                );
+                if (recalcError) console.error("Metrics recalculation failed:", recalcError);
             }
         } catch (e) {
             console.error("Metrics recalculation failed:", e);

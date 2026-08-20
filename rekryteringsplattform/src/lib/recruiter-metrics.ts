@@ -19,7 +19,8 @@ export function mapRecruiterPerfRow(row: RecruiterPerfRow) {
         totalPlacements: row.total_placements ?? 0,
         rating: row.rating ?? 0,
         hireRate: row.perf_hire_rate ?? 0,
-        avgTimeToHireDays: row.perf_avg_time_to_hire_days ?? 0,
+        // null = no candidate has been hired yet; render "—", never a fake "0 days"
+        avgTimeToHireDays: row.perf_avg_time_to_hire_days ?? null,
         candidatesSubmitted: row.perf_candidates_submitted ?? 0,
         candidatesHired: row.perf_candidates_hired ?? 0,
         activePlacements: row.perf_active_placements ?? 0,

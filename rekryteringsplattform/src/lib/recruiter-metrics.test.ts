@@ -23,12 +23,21 @@ describe("mapRecruiterPerfRow", () => {
         expect(mapRecruiterPerfRow({ ...emptyRow, perf_guarantee_success_rate: 0 }).guaranteeSuccessRate).toBe(0);
     });
 
+    it("returns null avg time to hire when nobody has been hired (regression: showed 0 days)", () => {
+        expect(mapRecruiterPerfRow(emptyRow).avgTimeToHireDays).toBeNull();
+    });
+
+    it("keeps a real avg time to hire once candidates have been hired", () => {
+        expect(mapRecruiterPerfRow({ ...emptyRow, perf_avg_time_to_hire_days: 12 }).avgTimeToHireDays).toBe(12);
+        expect(mapRecruiterPerfRow({ ...emptyRow, perf_avg_time_to_hire_days: 0 }).avgTimeToHireDays).toBe(0);
+    });
+
     it("pins zero-defaults for the remaining metrics", () => {
         expect(mapRecruiterPerfRow(emptyRow)).toEqual({
             totalPlacements: 0,
             rating: 0,
             hireRate: 0,
-            avgTimeToHireDays: 0,
+            avgTimeToHireDays: null,
             candidatesSubmitted: 0,
             candidatesHired: 0,
             activePlacements: 0,
