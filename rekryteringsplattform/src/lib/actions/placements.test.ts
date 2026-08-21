@@ -15,6 +15,10 @@ let recruiterRow: any;
 let profileRow: any;
 // Per-table error injected into awaited update chains (simulates RLS/constraint failures).
 let updateErrorByTable: Record<string, any> = {};
+// Per-table affected rows returned by update(...).select() — default 1 row ("won the
+// optimistic-concurrency race"); set to [] to simulate a concurrent call having already
+// transitioned the row (0 rows affected).
+let updateResultByTable: Record<string, any[]> = {};
 const writes: Array<{ table: string; patch: any }> = [];
 const rpcCalls: Array<{ fn: string; args: any }> = [];
 
@@ -32,11 +36,14 @@ function makeClient() {
       if (table === "jobs") return { data: { title: "Developer" }, error: null };
       return { data: null, error: null };
     };
+    let selected = false;
     const chain: any = {
-      select: () => chain,
+      // .select() after update/insert requests the affected rows back.
+      select: () => { if (op !== "select") selected = true; return chain; },
       update: (p: any) => { op = "update"; patch = p; return chain; },
       insert: (p: any) => { op = "insert"; patch = p; return chain; },
       eq: () => chain,
+      is: () => chain,
       order: () => chain,
       limit: () => chain,
       single: async () => selectResult(),
@@ -45,7 +52,12 @@ function makeClient() {
       then: (resolve: any, reject: any) => {
         if (op === "update" || op === "insert") writes.push({ table, patch });
         const error = op === "update" ? updateErrorByTable[table] ?? null : null;
-        return Promise.resolve({ data: null, error }).then(resolve, reject);
+        // update(...).select() resolves with the affected rows (default 1); a bare
+        // update resolves data:null, matching PostgREST.
+        const data = op === "update" && selected
+          ? (updateResultByTable[table] ?? [{ id: "row" }])
+          : null;
+        return Promise.resolve({ data, error }).then(resolve, reject);
       },
     };
     return chain;
@@ -81,7 +93,7 @@ vi.mock("next/headers", () => ({
   headers: async () => ({ get: (k: string) => headerValues[k.toLowerCase()] ?? null }),
 }));
 
-import { sendPlacementInvoice, recordPlacementPayment, reportGuaranteeFailure, completeGuarantee } from "./placements";
+import { sendPlacementInvoice, recordPlacementPayment, reportGuaranteeFailure, completeGuarantee, setPlacementJoiningDate } from "./placements";
 
 const placementWrites = () => writes.filter((w) => w.table === "placements");
 
@@ -89,6 +101,7 @@ beforeEach(() => {
   writes.length = 0;
   rpcCalls.length = 0;
   updateErrorByTable = {};
+  updateResultByTable = {};
   logCandidateStageChange.mockReset();
   paymentCompletedEmail.mockClear();
   headerValues = {};
@@ -166,10 +179,10 @@ describe("recordPlacementPayment — payment branch", () => {
     });
   });
 
-  it("releases payout immediately when there is no open guarantee", async () => {
+  it("releases payout immediately AND completes the candidate when there is no open guarantee", async () => {
     placementRow = {
       id: "p1", status: "invoice_sent", guarantee_end_date: null,
-      recruiter_id: "r1", candidate_id: "c1",
+      recruiter_id: "r1", candidate_id: "c1", job_id: "j1",
       candidate: { first_name: "Cand", last_name: "Idate" },
     };
 
@@ -180,8 +193,13 @@ describe("recordPlacementPayment — payment branch", () => {
     expect(upd.status).toBe("payout_released");
     expect(upd.payout_released_at).toBeTruthy();
     expect(upd.completed_at).toBeTruthy();
-    // No guarantee tracking when released outright.
-    expect(writes.some((w) => w.table === "candidates")).toBe(false);
+    // Released outright (0-month / already-elapsed guarantee) must still finish the
+    // candidate — completed + a stage-history row — not strand them showing "active".
+    const candWrite = writes.find((w) => w.table === "candidates");
+    expect(candWrite?.patch.status).toBe("completed");
+    expect(logCandidateStageChange).toHaveBeenCalledWith(expect.objectContaining({
+      candidateId: "c1", jobId: "j1", toStage: "completed", action: "move", changedByRole: "admin",
+    }));
   });
 
   it("logs (not swallows) a failed candidate update while keeping the recorded payment", async () => {
@@ -336,6 +354,21 @@ describe("completeGuarantee — admin marks guarantee period completed", () => {
     expect(placementWrites()).toHaveLength(0);
     expect(rpcCalls).toHaveLength(0);
   });
+
+  it("skips payout side effects when the row was already released (0 rows affected — concurrency guard)", async () => {
+    placementRow = { ...activePlacement };
+    // A concurrent completeGuarantee / processGuaranteeExpirations already flipped the
+    // row out of guarantee_active, so the status-guarded UPDATE matches nothing.
+    updateResultByTable.placements = [];
+
+    const res = await completeGuarantee("p1");
+
+    // Reports it did not release, and NONE of the payout side effects double-fire.
+    expect(res.error).toBeTruthy();
+    expect(writes.some((w) => w.table === "candidates" && w.patch.status === "completed")).toBe(false);
+    expect(logCandidateStageChange).not.toHaveBeenCalled();
+    expect(rpcCalls).toHaveLength(0);
+  });
 });
 
 describe("recordPlacementPayment — recruiter metrics sync", () => {
@@ -354,5 +387,52 @@ describe("recordPlacementPayment — recruiter metrics sync", () => {
       fn: "fn_recalculate_recruiter_metrics",
       args: { p_recruiter_id: "r1" },
     });
+  });
+});
+
+describe("setPlacementJoiningDate — backdated guarantee window", () => {
+  // A guarantee job's joining date is entered AFTER the guarantee window would
+  // already have elapsed (candidate joined long ago; admin records it late).
+  const backdatedJoining = () =>
+    new Date(Date.now() - 60 * 86_400_000).toISOString().split("T")[0]; // 60 days ago
+
+  it("releases payout and completes the candidate when payment is already in and the window has elapsed", async () => {
+    // payment-first ordering: payment_received, then a backdated joining date whose
+    // 1-month guarantee window is already over → previously stranded forever.
+    placementRow = {
+      id: "p1", status: "payment_received", candidate_id: "c1", job_id: "j1",
+      recruiter_id: "r1", job: { guarantee_period_months: 1 },
+    };
+
+    const res = await setPlacementJoiningDate("p1", backdatedJoining());
+
+    expect(res).toEqual({ success: true });
+    const upd = placementWrites().at(0)?.patch;
+    expect(upd.status).toBe("payout_released");
+    expect(upd.payout_released_at).toBeTruthy();
+    expect(upd.completed_at).toBeTruthy();
+    // Candidate finished + a stage-history row (completeness invariant), not stranded.
+    const candDone = writes.find((w) => w.table === "candidates" && w.patch.status === "completed");
+    expect(candDone).toBeTruthy();
+    expect(logCandidateStageChange).toHaveBeenCalledWith(expect.objectContaining({
+      candidateId: "c1", jobId: "j1", toStage: "completed", action: "move", changedByRole: "admin",
+    }));
+  });
+
+  it("does NOT release payout for a confirmed (unpaid) placement with an elapsed window — waits for payment", async () => {
+    // Money-safety boundary: payout must never release before the client has paid.
+    placementRow = {
+      id: "p1", status: "confirmed", candidate_id: "c1", job_id: "j1",
+      recruiter_id: "r1", job: { guarantee_period_months: 1 },
+    };
+
+    const res = await setPlacementJoiningDate("p1", backdatedJoining());
+
+    expect(res).toEqual({ success: true });
+    const upd = placementWrites().at(0)?.patch;
+    expect(upd.status).toBeUndefined(); // stays confirmed; only the dates are written
+    expect(upd.payout_released_at).toBeUndefined();
+    expect(writes.some((w) => w.table === "candidates" && w.patch.status === "completed")).toBe(false);
+    expect(logCandidateStageChange).not.toHaveBeenCalled();
   });
 });

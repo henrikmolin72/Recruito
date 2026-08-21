@@ -70,7 +70,10 @@ export async function updateCompanyProfile(formData: FormData) {
         })
         .eq("user_id", user.id);
 
-    if (companyError) return { error: companyError.message };
+    if (companyError) {
+        console.error("[updateCompanyProfile]", companyError);
+        return { error: "Något gick fel. Försök igen." };
+    }
 
     // Update profile name
     if (parsed.data.contact_name) {

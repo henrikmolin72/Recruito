@@ -62,17 +62,25 @@ export async function sendPlacementInvoice(placementId: string) {
         return { error: "Faktura har redan skickats" };
     }
 
-    const { error } = await admin
+    // Optimistic-concurrency guard: invoice only if not already invoiced (the row
+    // still has a null invoice_sent_at) and require the row to change, so a concurrent
+    // send can't double-fire the invoice notifications below.
+    const { data: affected, error } = await admin
         .from("placements")
         .update({
             status: "invoice_sent",
             invoice_sent_at: new Date().toISOString(),
         })
-        .eq("id", placementId);
+        .eq("id", placementId)
+        .is("invoice_sent_at", null)
+        .select("id");
 
     if (error) {
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
+    }
+    if (!affected || affected.length === 0) {
+        return { error: "Faktura har redan skickats" };
     }
 
     // Audit trail: financial action on a placement (admin-performed). Best-effort —
@@ -169,14 +177,22 @@ export async function recordPlacementPayment(placementId: string) {
         updatePatch.completed_at = new Date().toISOString();
     }
 
-    const { error } = await admin
+    // Optimistic-concurrency guard: transition only from invoice_sent and require the
+    // row to change, so a concurrent payment-record can't double-release the payout or
+    // re-fire the payment notification/email below.
+    const { data: affected, error } = await admin
         .from("placements")
         .update(updatePatch)
-        .eq("id", placementId);
+        .eq("id", placementId)
+        .eq("status", "invoice_sent")
+        .select("id");
 
     if (error) {
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
+    }
+    if (!affected || affected.length === 0) {
+        return { error: "Betalningen har redan registrerats." };
     }
 
     // Audit trail: payment recorded (admin-performed). Best-effort; log on failure.
@@ -209,6 +225,34 @@ export async function recordPlacementPayment(placementId: string) {
                 jobId: placement.job_id,
                 fromStage: "hired",
                 toStage: "guarantee_tracking",
+                action: "move",
+                changedBy: adminUser.id,
+                changedByRole: "admin",
+            });
+        }
+    } else if (nextStatus === "payout_released") {
+        // 0-month / already-elapsed guarantee: payout releases at payment time, so the
+        // candidate is finished here — mark completed + write the stage-history row.
+        // Without this the candidate is stranded showing "active" forever (mirrors the
+        // guarantee_active branch and releaseGuaranteePayout).
+        const { error: candidateError } = await admin
+            .from("candidates")
+            .update({
+                status: "completed",
+                status_changed_at: new Date().toISOString(),
+            })
+            .eq("id", placement.candidate_id);
+        if (candidateError) {
+            console.error(
+                `[recordPlacementPayment] candidate ${placement.candidate_id} not moved to completed:`,
+                candidateError
+            );
+        } else {
+            await logCandidateStageChange({
+                candidateId: placement.candidate_id,
+                jobId: placement.job_id,
+                fromStage: "hired",
+                toStage: "completed",
                 action: "move",
                 changedBy: adminUser.id,
                 changedByRole: "admin",
@@ -331,10 +375,19 @@ export async function setPlacementJoiningDate(
     // waiting on an invoice payment (invoice_sent flips via recordPlacementPayment,
     // which now sees the end date). Mirrors the pre-067 trigger behavior where a
     // placement could be guarantee_active before invoicing.
+    const guaranteeElapsed = guaranteeMonths > 0 && new Date(guaranteeEnd) <= new Date();
     const activate =
         guaranteeMonths > 0 &&
-        new Date(guaranteeEnd) > new Date() &&
+        !guaranteeElapsed &&
         (placement.status === "confirmed" || placement.status === "payment_received");
+    // Payment is already in but the guarantee window is already over (backdated
+    // joining date) → the guarantee was served in full; release the payout instead
+    // of stranding the row in payment_received forever. Only from payment_received:
+    // a confirmed (unpaid) placement must still be invoiced before any payout.
+    // ponytail: recruiter/company release notifications + immediate metric recalc are
+    // skipped on this rare backdated path (setPlacementJoiningDate is silent on activate
+    // too); the guarantee-rate self-heals on the hourly refresh-on-read.
+    const releaseNow = placement.status === "payment_received" && guaranteeElapsed;
 
     const { error } = await admin
         .from("placements")
@@ -342,6 +395,13 @@ export async function setPlacementJoiningDate(
             joining_date: joiningDate,
             guarantee_end_date: guaranteeEnd,
             ...(activate ? { status: "guarantee_active" } : {}),
+            ...(releaseNow
+                ? {
+                      status: "payout_released",
+                      payout_released_at: new Date().toISOString(),
+                      completed_at: new Date().toISOString(),
+                  }
+                : {}),
         })
         .eq("id", placementId);
 
@@ -363,7 +423,7 @@ export async function setPlacementJoiningDate(
         target_type: "placement",
         target_id: placementId,
         performed_by: adminUser.id,
-        metadata: { joining_date: joiningDate, guarantee_end_date: guaranteeEnd, activated: activate },
+        metadata: { joining_date: joiningDate, guarantee_end_date: guaranteeEnd, activated: activate, released: releaseNow },
     });
     if (auditError) console.error("[audit:placement_joining_date_set]", { code: auditError.code, message: auditError.message });
 
@@ -380,6 +440,24 @@ export async function setPlacementJoiningDate(
                 jobId: placement.job_id,
                 fromStage: "hired",
                 toStage: "guarantee_tracking",
+                action: "move",
+                changedBy: adminUser.id,
+                changedByRole: "admin",
+            });
+        }
+    } else if (releaseNow) {
+        const { error: candidateError } = await admin
+            .from("candidates")
+            .update({ status: "completed", status_changed_at: new Date().toISOString() })
+            .eq("id", placement.candidate_id);
+        if (candidateError) {
+            console.error(`[setPlacementJoiningDate] candidate ${placement.candidate_id} not moved to completed:`, candidateError);
+        } else {
+            await logCandidateStageChange({
+                candidateId: placement.candidate_id,
+                jobId: placement.job_id,
+                fromStage: "hired",
+                toStage: "completed",
                 action: "move",
                 changedBy: adminUser.id,
                 changedByRole: "admin",
@@ -456,17 +534,26 @@ async function releaseGuaranteePayout(
     placement: GuaranteePlacementRow,
     auditActionType: "placement_payout_auto_released" | "placement_guarantee_completed",
 ): Promise<boolean> {
-    const { error } = await admin
+    // Optimistic-concurrency guard: only transition a still-active guarantee, and
+    // require the row to actually change. If a concurrent completeGuarantee /
+    // processGuaranteeExpirations already released this payout, 0 rows change and we
+    // skip every side effect below rather than double-paying / double-notifying.
+    const { data: affected, error } = await admin
         .from("placements")
         .update({
             status: "payout_released",
             payout_released_at: new Date().toISOString(),
             completed_at: new Date().toISOString(),
         })
-        .eq("id", placement.id);
+        .eq("id", placement.id)
+        .eq("status", "guarantee_active")
+        .select("id");
 
     if (error) {
         console.error(`Failed to complete placement ${placement.id}:`, error);
+        return false;
+    }
+    if (!affected || affected.length === 0) {
         return false;
     }
 
@@ -635,7 +722,9 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
 
     const failureReason = reason?.trim() || "Kandidaten lämnade under garantiperioden";
 
-    const { error } = await admin
+    // Optimistic-concurrency guard: fail only a still-active guarantee and require the
+    // row to change, so a concurrent report can't double-fire the refund notifications.
+    const { data: affected, error } = await admin
         .from("placements")
         .update({
             status: "guarantee_failed",
@@ -643,11 +732,16 @@ export async function reportGuaranteeFailure(placementId: string, reason?: strin
             guarantee_failed_reason: failureReason,
             refund_amount: placement.total_fee,
         })
-        .eq("id", placementId);
+        .eq("id", placementId)
+        .eq("status", "guarantee_active")
+        .select("id");
 
     if (error) {
         console.error("[ServerAction]", error);
         return { error: "Något gick fel. Försök igen." };
+    }
+    if (!affected || affected.length === 0) {
+        return { error: "Placeringen är inte i aktiv garantiperiod" };
     }
 
     // Audit trail: guarantee failure triggers refund — record it (admin-performed).
