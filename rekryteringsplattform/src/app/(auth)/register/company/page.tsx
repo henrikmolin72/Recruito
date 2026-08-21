@@ -9,6 +9,7 @@ import { AppLogo } from "@/components/shared/app-logo";
 import { registerCompany } from "@/lib/actions/auth";
 import { useTranslations } from "@/i18n/client";
 import { HOW_HEARD_OPTIONS } from "@/lib/recruiter-onboarding-options";
+import { INDUSTRY_OPTIONS } from "@/lib/job-form-options";
 
 export default function RegisterCompanyPage() {
   const { t } = useTranslations();
@@ -68,7 +69,19 @@ export default function RegisterCompanyPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">{t("auth.industryLabel")}</label>
-                <Input name="industry" placeholder={t("auth.industryPlaceholder")} />
+                <select
+                  name="industry"
+                  required
+                  defaultValue=""
+                  className="flex h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-1"
+                >
+                  <option value="" disabled>{t("auth.industryPlaceholder")}</option>
+                  {INDUSTRY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">{t("auth.contactPersonLabel")}</label>

@@ -29,7 +29,7 @@ import {
     sendPlacementInvoice,
     recalculateRecruiterMetrics,
 } from "@/lib/actions/placements";
-import { markJobFilledAndReject, maybeNudgeReopenForReview, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
+import { markJobFilledAndReject, fillJobIfAllPositionsHired, maybeNudgeReopenForReview, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
 import { canTransition, canReopenTo, COMPANY_STAGES, COMPANY_STAGE_TO_STATUS, type CompanyStageValue } from "@/lib/candidate-stage-rules";
 import { logCandidateStageChange } from "@/lib/candidate-stage-history";
 
@@ -262,9 +262,11 @@ export async function updateCandidateStatus(candidateId: string, jobId: string, 
         }
     }
 
-    // Hiring a candidate fills the position and auto-rejects the rest.
+    // Hiring a candidate fills a position and auto-rejects the rest — but only
+    // once EVERY open position is filled. A multi-position job that still needs
+    // more hires stays active and keeps its remaining candidates in process.
     if (status === "hired") {
-        await markJobFilledAndReject(jobId, candidateId);
+        await fillJobIfAllPositionsHired(jobId, candidateId);
     }
     // If the client's review pool just dropped to the threshold on a paused
     // job, nudge them once to reopen for more candidates.

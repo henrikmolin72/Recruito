@@ -50,6 +50,7 @@ interface Mandate {
     application_deadline: string | null;
     claimed_at: string | null;
     max_candidates: number | null;
+    open_positions: number | null;
     cap_occupied_count: number | null;
     candidates: MandateCandidate[];
 }

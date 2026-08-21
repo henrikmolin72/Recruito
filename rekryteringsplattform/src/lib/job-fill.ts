@@ -6,6 +6,7 @@ import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { jobLifecycleEmail } from "@/lib/email/email-templates";
 import { statusChangeTimestampPatch, isCandidateInProcess } from "@/lib/candidate-workflow";
 import { logCandidateStageChange } from "@/lib/candidate-stage-history";
+import { candidateInStage, openPositionsFilled } from "@/lib/mandate-stages";
 
 // Only candidates still in process are auto-rejected: hired-pipeline candidates
 // are protected, and terminal statuses (withdrawn, duplicate, already rejected…)
@@ -105,6 +106,27 @@ export async function rejectRemainingCandidates(jobId: string, opts: { exceptCan
     }
 
     return targets.length;
+}
+
+/**
+ * Auto-fill-on-hire path: fill the job and reject the rest ONLY once the hires
+ * meet the target headcount (jobs.open_positions, default 1). A multi-position
+ * job that still needs more hires stays active/paused and keeps its remaining
+ * candidates in process (client request 2026-08-21). Call this after the hired
+ * candidate's status is already persisted, so the count includes them.
+ *
+ * NOTE: the explicit "close the position now" action (closeJobAfterHire) calls
+ * markJobFilledAndReject directly and is intentionally NOT gated — an explicit
+ * close must always close, even below headcount.
+ */
+export async function fillJobIfAllPositionsHired(jobId: string, hiredCandidateId: string): Promise<void> {
+    const admin = createAdminClient();
+    const { data: job } = await admin.from("jobs").select("open_positions").eq("id", jobId).single();
+    const { data: rows } = await admin.from("candidates").select("status").eq("job_id", jobId);
+    const hiredCount = (rows || []).filter((c: any) => candidateInStage({ status: c.status }, "hired")).length;
+    if (openPositionsFilled(hiredCount, (job as any)?.open_positions)) {
+        await markJobFilledAndReject(jobId, hiredCandidateId);
+    }
 }
 
 /** Mark a job as filled (only from active/paused) and reject the remaining candidates. */
