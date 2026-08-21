@@ -284,7 +284,18 @@ export const REFERRAL_BLOCKED_JOB_STATUSES = new Set<string>([
 
 export interface ClassifiableMandate {
     status: string | null;
+    // Target headcount (jobs.open_positions). Absent/≤0 is treated as 1.
+    open_positions?: number | null;
     candidates: StageCandidate[];
+}
+
+// A job's positions are all filled once its hired count reaches the target
+// headcount (jobs.open_positions, default 1). Single source of truth shared by
+// the recruiter Mandates tab classifier and the auto-fill-on-hire engine, so
+// "stays Active until every position is filled" means the same thing in both.
+export function openPositionsFilled(hiredCount: number, openPositions: number | null | undefined): boolean {
+    const target = openPositions && openPositions > 0 ? openPositions : 1;
+    return hiredCount >= target;
 }
 
 // Buckets a mandate into the recruiter's My-Mandates tabs. There is deliberately
@@ -294,8 +305,11 @@ export interface ClassifiableMandate {
 // window before the cron runs, a timer-expired mandate classifies as "active";
 // the per-row expiry check still disables Refer and shows the "Expired" label.
 export function classifyMandate(m: ClassifiableMandate): MandateTabKey {
-    const hasHired = (m.candidates || []).some((c) => candidateInStage(c, "hired"));
-    if (hasHired) return "hired";
+    // Only leave the Active tab for "Hired" once every open position is filled.
+    // A multi-position job with one hire still needs more candidates, so it stays
+    // Active (client request 2026-08-21). An explicit client close still wins.
+    const hiredCount = (m.candidates || []).filter((c) => candidateInStage(c, "hired")).length;
+    if (openPositionsFilled(hiredCount, m.open_positions)) return "hired";
     if (m.status && CLIENT_CLOSED_JOB_STATUSES.has(m.status)) return "closed";
     return "active";
 }

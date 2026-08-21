@@ -10,6 +10,7 @@ import {
     isMandateLiveActive,
     mandateExpiryDaysLeft,
     MANDATE_EXPIRY_DAYS,
+    openPositionsFilled,
     REFERRAL_BLOCKED_JOB_STATUSES,
     type ExpiryCandidate,
 } from "./mandate-stages";
@@ -231,6 +232,49 @@ describe("classifyMandate", () => {
 
     it("prioritizes hired over a client-closed job status", () => {
         expect(classifyMandate({ status: "filled", candidates: [{ status: "hired" }] })).toBe("hired");
+    });
+
+    // Client bug (2026-08-21): one hire on a multi-position job used to jump the
+    // mandate to the Hired tab even though more hires were still needed. It must
+    // stay Active until hired count reaches open_positions.
+    it("keeps a partially-filled multi-position mandate active", () => {
+        expect(
+            classifyMandate({ status: "active", open_positions: 3, candidates: [{ status: "hired" }] }),
+        ).toBe("active");
+    });
+
+    it("classifies a multi-position mandate as hired only once every position is filled", () => {
+        expect(
+            classifyMandate({
+                status: "active",
+                open_positions: 2,
+                candidates: [{ status: "hired" }, { status: "hired" }],
+            }),
+        ).toBe("hired");
+    });
+
+    it("still buckets an explicitly closed under-filled job as closed", () => {
+        // The company can explicitly close before filling every seat; the closed
+        // job status wins over the not-yet-met headcount.
+        expect(
+            classifyMandate({ status: "filled", open_positions: 3, candidates: [{ status: "hired" }] }),
+        ).toBe("closed");
+    });
+});
+
+describe("openPositionsFilled", () => {
+    it("defaults the target to one position when open_positions is missing", () => {
+        expect(openPositionsFilled(0, null)).toBe(false);
+        expect(openPositionsFilled(1, null)).toBe(true);
+        expect(openPositionsFilled(1, undefined)).toBe(true);
+        expect(openPositionsFilled(1, 0)).toBe(true); // 0/negative headcount → treat as 1
+    });
+
+    it("is filled only once hires reach the headcount", () => {
+        expect(openPositionsFilled(1, 3)).toBe(false);
+        expect(openPositionsFilled(2, 3)).toBe(false);
+        expect(openPositionsFilled(3, 3)).toBe(true);
+        expect(openPositionsFilled(4, 3)).toBe(true);
     });
 });
 

@@ -633,6 +633,7 @@ export async function getRecruiterMandates() {
         published_at,
         application_deadline,
         max_candidates,
+        open_positions,
         company:companies(company_name)
       ),
       candidates:candidates(
@@ -691,6 +692,7 @@ export async function getRecruiterMandates() {
         application_deadline: mandate.job?.application_deadline,
         published_at: mandate.job?.published_at,
         max_candidates: mandate.job?.max_candidates ?? 8,
+        open_positions: mandate.job?.open_positions ?? 1,
         cap_occupied_count: mandate.job?.id ? (occupiedByJob.get(mandate.job.id) ?? 0) : 0,
         candidates: mandate.candidates?.map((c: any) => ({
             id: c.id,
