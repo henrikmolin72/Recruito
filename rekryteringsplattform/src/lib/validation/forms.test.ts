@@ -6,7 +6,7 @@ vi.mock("@/i18n/server", () => ({
       params ? `${key}|${Object.values(params).join(",")}` : key,
 }));
 
-import { validateJobForm } from "./forms";
+import { validateJobForm, validateRegisterRecruiterForm } from "./forms";
 
 export function buildValidJobFormData(): FormData {
   const fd = new FormData();
@@ -24,6 +24,44 @@ export function buildValidJobFormData(): FormData {
   fd.set("pipeline_stages", JSON.stringify([{ id: "s1", type: "screening", title: "Screening", order: 0 }]));
   return fd;
 }
+
+function buildValidRecruiterFormData(): FormData {
+  const fd = new FormData();
+  fd.set("email", "jane@example.com");
+  fd.set("password", "password1234");
+  fd.set("full_name", "Jane Doe");
+  fd.set("current_country", "Sweden");
+  fd.set("linkedin_url", "");
+  fd.set("years_experience_bracket", "2-3");
+  fd.set("how_heard", "LinkedIn");
+  fd.set("agreement_freelance_recruiter", "on");
+  fd.set("agreement_commission_after_guarantee", "on");
+  fd.set("legal_eligibility_confirmed", "yes");
+  return fd;
+}
+
+describe("validateRegisterRecruiterForm — legal eligibility", () => {
+  it('records "yes" as confirmed', () => {
+    const r = validateRegisterRecruiterForm(buildValidRecruiterFormData());
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.legal_eligibility_confirmed).toBe(true);
+  });
+
+  it('records "no" as not confirmed but still valid', () => {
+    const fd = buildValidRecruiterFormData();
+    fd.set("legal_eligibility_confirmed", "no");
+    const r = validateRegisterRecruiterForm(fd);
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.legal_eligibility_confirmed).toBe(false);
+  });
+
+  it("requires an answer", () => {
+    const fd = buildValidRecruiterFormData();
+    fd.delete("legal_eligibility_confirmed");
+    const r = validateRegisterRecruiterForm(fd);
+    expect(r.success).toBe(false);
+  });
+});
 
 describe("validateJobForm", () => {
   it("accepts a valid full_time job", async () => {

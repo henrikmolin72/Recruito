@@ -85,7 +85,8 @@ export async function getAdminRecruiters() {
             rating,
             total_placements,
             years_experience,
-            created_at
+            created_at,
+            legal_eligibility_confirmed
         `)
         .order("created_at", { ascending: false });
 
@@ -130,6 +131,7 @@ export async function getAdminRecruiters() {
             rejectedCandidates: rejected,
             years_experience: r.years_experience || 0,
             joinedAt: r.created_at,
+            legalEligibilityConfirmed: r.legal_eligibility_confirmed === true,
         };
     });
 }
@@ -1519,7 +1521,7 @@ export async function getAdminRecruiterById(recruiterId: string) {
         .select(`
             id, user_id, headline, bio, specializations, locations,
             years_experience, linkedin_url, approval_status, approved_at,
-            rating, total_placements, created_at
+            rating, total_placements, created_at, legal_eligibility_confirmed
         `)
         .eq("id", recruiterId)
         .single();
@@ -1562,6 +1564,7 @@ export async function getAdminRecruiterById(recruiterId: string) {
         rating: recruiter.rating || 0,
         total_placements: recruiter.total_placements || 0,
         created_at: recruiter.created_at,
+        legal_eligibility_confirmed: recruiter.legal_eligibility_confirmed === true,
         mandates: (mandates || []).map((m: any) => {
             const job = pickFirst(m.job);
             const company = job ? pickFirst(job.company) : null;

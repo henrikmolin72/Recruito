@@ -199,6 +199,32 @@ export default function RegisterRecruiterPage() {
                   </div>
                 </div>
 
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="mb-2 text-sm font-semibold">Legal eligibility</p>
+                  <p className="mb-3 text-sm leading-5 text-slate-700">
+                    Are you legally eligible to provide independent recruitment services in the country where you will perform work for Recruito?
+                  </p>
+                  <p className="mb-1.5 text-sm font-medium">By selecting Yes, you confirm that you:</p>
+                  <ul className="mb-4 list-disc space-y-1 pl-5 text-sm leading-5 text-slate-600">
+                    <li>Are legally authorised to work in that country.</li>
+                    <li>Are registered as self employed if required by local law.</li>
+                    <li>Have the required tax identification.</li>
+                    <li>Can provide evidence of your tax registration or an equivalent legally valid document when submitting your first invoice to Recruito.</li>
+                    <li>Can issue an invoice or another legally valid payment document.</li>
+                    <li>Are responsible for declaring your income and paying all applicable local taxes.</li>
+                  </ul>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-3 text-sm leading-5">
+                      <input type="radio" name="legal_eligibility_confirmed" value="yes" required className="h-4 w-4 border-slate-300" />
+                      <span>Yes, I confirm</span>
+                    </label>
+                    <label className="flex items-center gap-3 text-sm leading-5">
+                      <input type="radio" name="legal_eligibility_confirmed" value="no" required className="h-4 w-4 border-slate-300" />
+                      <span>No</span>
+                    </label>
+                  </div>
+                </div>
+
                 <Button className="w-full bg-success-500 hover:bg-success-700" size="lg" disabled={loading}>
                   {loading ? t("auth.sendingApplication") : t("auth.sendApplication")}
                 </Button>
