@@ -71,6 +71,8 @@ export async function sendSupportRequest(jobId: string, message: string) {
     if (SUPPORT_TO) {
         const result = await sendUserEmail({
             to: SUPPORT_TO,
+            // Operational mail to the support inbox, not a user notification.
+            transactional: true,
             subject: `Support: ${job.title} — ${senderName}`,
             html,
             text,

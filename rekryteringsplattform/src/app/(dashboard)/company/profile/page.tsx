@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Building2 } from "lucide-react";
 import { getCompanyProfile, updateCompanyProfile } from "@/lib/actions/company";
 import { SubmitButton } from "@/components/shared/submit-button";
+import { EmailPreferencesCard } from "@/components/shared/email-preferences-card";
 import { getDictionary } from "@/i18n/server";
 
 export default async function CompanyProfilePage() {
@@ -87,6 +88,8 @@ export default async function CompanyProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      <EmailPreferencesCard />
     </div>
   );
 }

@@ -21,14 +21,23 @@ function safePath(link: string | null): string | null {
   return link;
 }
 
+// Where each role manages its email preferences (EmailPreferencesCard). Roles
+// without a preferences UI (admin) get no footer link rather than a wrong one.
+const SETTINGS_PATH_BY_ROLE: Record<string, string> = {
+  recruiter: "/recruiter/profile",
+  company: "/company/profile",
+};
+
 function renderTemplate({
   title,
   body,
   link,
+  settingsPath,
 }: {
   title: string;
   body: string;
   link: string | null;
+  settingsPath: string | null;
 }): string {
   const safeLink = safePath(link);
   const cta = safeLink
@@ -65,9 +74,13 @@ function renderTemplate({
           <tr>
             <td style="padding-top:32px;border-top:1px solid #f1f5f9;margin-top:24px;">
               <p style="margin:24px 0 0 0;font-size:12px;color:#94a3b8;line-height:1.5;">
-                You're receiving this because you have a Recruito account.
+                You're receiving this because you have a Recruito account.${
+                  settingsPath
+                    ? `
                 Manage email preferences in your
-                <a href="${escapeHtml(`${APP_URL}/recruiter/profile`)}" style="color:#0b5fff;text-decoration:none;">profile settings</a>.
+                <a href="${escapeHtml(`${APP_URL}${settingsPath}`)}" style="color:#0b5fff;text-decoration:none;">profile settings</a>.`
+                    : ""
+                }
               </p>
             </td>
           </tr>
@@ -89,6 +102,7 @@ function renderText({ title, body, link }: { title: string; body: string; link: 
 type ProfileWithOptOut = {
   email: string | null;
   email_opt_out: boolean | null;
+  role: string | null;
 };
 
 /**
@@ -111,14 +125,15 @@ export async function sendNotificationEmail(
     // once `supabase gen types` is re-run.
     const { data: profile } = await admin
       .from("profiles")
-      .select("email, email_opt_out")
+      .select("email, email_opt_out, role")
       .eq("id", userId)
       .maybeSingle<ProfileWithOptOut>();
 
     if (!profile?.email) return;
     if (profile.email_opt_out) return;
 
-    const html = renderTemplate({ title, body, link });
+    const settingsPath = SETTINGS_PATH_BY_ROLE[profile.role ?? ""] ?? null;
+    const html = renderTemplate({ title, body, link, settingsPath });
     const text = renderText({ title, body, link });
     await sendUserEmail({
       to: profile.email,

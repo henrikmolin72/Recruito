@@ -299,6 +299,9 @@ export async function registerRecruiter(formData: FormData) {
             );
             await sendUserEmail({
                 to: parsed.data.email,
+                // Account-lifecycle mail: must reach the user regardless of
+                // notification preferences.
+                transactional: true,
                 subject: t("auth.recruiterConfirmEmailSubject"),
                 html: `
                     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a;">

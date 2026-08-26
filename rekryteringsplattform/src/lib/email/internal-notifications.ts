@@ -1,5 +1,6 @@
 import { createTransport } from "nodemailer";
 import { Resend } from "resend";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isSuppressed } from "./suppression";
 
 type SendInternalRecruiterEmailParams = {
@@ -64,6 +65,34 @@ function sanitizeSubject(s: string): string {
   return s.replace(/[\r\n]+/g, " ").trim();
 }
 
+/**
+ * True if a profile with this email has opted out of notification emails
+ * (profiles.email_opt_out, migration 037). Exact-match on the address: every
+ * user-facing send path reads the recipient from profiles.email, so the same
+ * string round-trips. Fails OPEN like isSuppressed — a lookup error must never
+ * block mail.
+ */
+async function isOptedOut(email: string): Promise<boolean> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .eq("email_opt_out", true)
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error("email_opt_out lookup failed, sending anyway:", error);
+      return false;
+    }
+    return !!data;
+  } catch (err) {
+    console.error("email_opt_out lookup threw, sending anyway:", err);
+    return false;
+  }
+}
+
 async function trySmtp(args: {
   from: string;
   to: string;
@@ -94,6 +123,9 @@ async function dispatch(args: {
   subject: string;
   html?: string;
   text?: string;
+  // Account-lifecycle / internal-operations mail that must ignore the user's
+  // notification opt-out (e.g. signup confirmation, internal review inbox).
+  transactional?: boolean;
 }): Promise<{ sent: true } | { skipped: true } | { error: true }> {
   const from = getFromAddress();
   const subject = sanitizeSubject(args.subject);
@@ -106,6 +138,14 @@ async function dispatch(args: {
   // critical mail like password resets.
   if (await isSuppressed(args.to)) {
     console.info("Recipient on suppression list, skipping send:", args.to);
+    return { skipped: true };
+  }
+
+  // User preference: profiles.email_opt_out silences notification email at the
+  // same chokepoint, so every direct sendUserEmail call site is covered — not
+  // just the createNotification path. Transactional mail bypasses it.
+  if (!args.transactional && (await isOptedOut(args.to))) {
+    console.info("Recipient opted out of notification email, skipping send:", args.to);
     return { skipped: true };
   }
 
@@ -153,6 +193,9 @@ export async function sendInternalRecruiterEmail(params: SendInternalRecruiterEm
     subject: params.subject,
     text: params.text,
     html: params.html,
+    // Operational mail to the internal review inbox — never gated on a
+    // profile's notification preference.
+    transactional: true,
   });
 }
 
@@ -161,6 +204,8 @@ type SendUserEmailParams = {
   subject: string;
   html: string;
   text?: string;
+  /** Bypass the recipient's email_opt_out (account-lifecycle mail only). */
+  transactional?: boolean;
 };
 
 export async function sendUserEmail(params: SendUserEmailParams) {
@@ -169,5 +214,6 @@ export async function sendUserEmail(params: SendUserEmailParams) {
     subject: params.subject,
     html: params.html,
     text: params.text,
+    transactional: params.transactional,
   });
 }

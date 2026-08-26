@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Star, ClipboardList, Sparkles } from "lucide-react";
 import { completeRecruiterOnboarding, getRecruiterProfile, updateRecruiterProfile } from "@/lib/actions/recruiter";
 import { SubmitButton } from "@/components/shared/submit-button";
+import { EmailPreferencesCard } from "@/components/shared/email-preferences-card";
 import { AppLogo } from "@/components/shared/app-logo";
 import { getDictionary } from "@/i18n/server";
 import {
@@ -350,6 +351,8 @@ export default async function RecruiterProfilePage() {
           </Card>
         </div>
       </div>
+
+      <EmailPreferencesCard />
     </div>
   );
 }
