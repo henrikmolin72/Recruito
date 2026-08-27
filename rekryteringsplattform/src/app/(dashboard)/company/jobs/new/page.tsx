@@ -10,9 +10,9 @@ export default async function CreateJobPage() {
     ]);
     const feePercentage = getFeePercentage(recentPlacements);
 
-    // Pre-fill the job's industry from the company's signup industry (still
-    // editable). Only when it's a canonical option, so the <select> has a
-    // matching value; legacy/free-text industries fall back to the empty picker.
+    // The job's industry is FIXED to the company's signup industry when it's a
+    // canonical option (createJob enforces the same rule server-side). Legacy/
+    // free-text industries fall back to the editable empty picker.
     const signupIndustry = company?.industry ?? "";
     const initialIndustry = (INDUSTRY_OPTIONS as readonly string[]).includes(signupIndustry)
         ? signupIndustry
@@ -22,6 +22,7 @@ export default async function CreateJobPage() {
         <CreateJobForm
             feePercentage={feePercentage}
             initialData={initialIndustry ? { industry: initialIndustry } : undefined}
+            industryLocked={Boolean(initialIndustry)}
         />
     );
 }

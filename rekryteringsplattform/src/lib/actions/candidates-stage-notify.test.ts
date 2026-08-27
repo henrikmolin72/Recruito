@@ -122,6 +122,13 @@ describe("updateCompanyStage notifications", () => {
         expect(createNotification.mock.calls[0][0]).toBe("REC");
         expect(createNotification.mock.calls[0][1].skipEmail).toBe(true);
 
+        // Hired is happy news: the recruiter bell uses the congratulatory copy,
+        // not the generic stage-moved copy — still exactly ONE notification.
+        const hiredContent = createNotification.mock.calls[0][1];
+        expect(hiredContent.titleKey).toBe("notif.companyStageHiredTitle");
+        expect(hiredContent.bodyKey).toBe("notif.companyStageHiredBody");
+        expect(hiredContent.params).toMatchObject({ candidate: "Arqeen Valtor", jobTitle: "Electrical Engineer" });
+
         // Admins keep the specific "hired" copy.
         expect(notifyAdmins).toHaveBeenCalledTimes(1);
         expect(notifyAdmins.mock.calls[0][0].titleKey).toBe("notif.adminCandidateHiredTitle");

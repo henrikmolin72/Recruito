@@ -705,9 +705,12 @@ export async function updateCompanyStage(candidateId: string, jobId: string, sta
         if (recruiterUserId) {
             const rich = RICH_EMAIL[stage];
             try {
+                // Hired is happy news — congratulatory copy instead of the generic
+                // stage-moved copy (client request 2026-08-27). Same single call site,
+                // so it can never double-notify.
                 await createNotification(recruiterUserId, {
-                    titleKey: "notif.companyStageMovedTitle",
-                    bodyKey: "notif.companyStageMovedBody",
+                    titleKey: stage === "hired" ? "notif.companyStageHiredTitle" : "notif.companyStageMovedTitle",
+                    bodyKey: stage === "hired" ? "notif.companyStageHiredBody" : "notif.companyStageMovedBody",
                     params: { candidate: name, stage: stageLabel, jobTitle },
                     link: mandateId
                         ? `/recruiter/mandates/${mandateId}/candidates/${candidateId}`

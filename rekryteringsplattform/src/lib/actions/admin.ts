@@ -26,7 +26,7 @@ export async function getAdminStats() {
         supabase.from("companies").select("*", { count: "exact", head: true }),
         supabase.from("recruiters").select("*", { count: "exact", head: true }),
         supabase.from("jobs").select("*", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("placements").select("status, jobs(client_fee_amount, recruiter_fee_amount)").limit(1000),
+        supabase.from("placements").select("status, jobs(client_fee_amount, recruiter_fee_amount, salary_currency)").limit(1000),
         supabase.from("recruiters").select("*", { count: "exact", head: true }).eq("approval_status", "pending"),
         // Only presented candidates — exclude drafts (mirrors isCandidateSubmitted: status !== "draft").
         supabase.from("candidates").select("*", { count: "exact", head: true }).neq("status", "draft"),
@@ -45,12 +45,19 @@ export async function getAdminStats() {
     // Platform revenue = Σ over placements of (client fee − recruiter fee), using the job's
     // admin-negotiated fees. The placement's own total_fee/recruiter_fee are stale seed
     // snapshots (15%-of-salary) and must not be used here.
-    const totalRevenue = placements.data?.reduce((sum, placement) => {
-        const job = pickFirst(placement.jobs);
-        const clientFee = Number(job?.client_fee_amount ?? 0);
-        const recruiterFee = Number(job?.recruiter_fee_amount ?? 0);
-        return sum + Math.max(clientFee - recruiterFee, 0);
-    }, 0) || 0;
+    // Grouped PER CURRENCY (jobs.salary_currency, legacy rows → EUR) — amounts in
+    // different currencies must never be summed into one number.
+    const revenueByCurrency = (placements.data ?? []).reduce<Record<string, number>>((acc, placement) => {
+        const job = pickFirst(placement.jobs) as
+            | { client_fee_amount: unknown; recruiter_fee_amount: unknown; salary_currency?: string | null }
+            | null
+            | undefined;
+        const spread = Math.max(Number(job?.client_fee_amount ?? 0) - Number(job?.recruiter_fee_amount ?? 0), 0);
+        if (spread <= 0) return acc;
+        const currency = job?.salary_currency || "EUR";
+        acc[currency] = (acc[currency] ?? 0) + spread;
+        return acc;
+    }, {});
 
     const completedPlacements = placements.data?.filter(p => p.status === "completed").length || 0;
     const totalPlacements = placements.data?.length || 0;
@@ -66,7 +73,7 @@ export async function getAdminStats() {
         totalPlacements: totalPlacements,
         completedPlacements: completedPlacements,
         placementSuccessRate: placementSuccessRate,
-        totalRevenue,
+        revenueByCurrency,
     };
 }
 

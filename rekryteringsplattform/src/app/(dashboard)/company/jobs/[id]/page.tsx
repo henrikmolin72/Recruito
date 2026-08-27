@@ -20,6 +20,7 @@ import {
     ShieldCheck,
 } from "lucide-react";
 import { formatDate, formatCurrency, calculateClientFee } from "@/lib/utils";
+import { normalizeCurrency } from "@/lib/currency-config";
 import { formatJobLocation } from "@/lib/format-job-location";
 import { FeeReconfirmCard } from "@/components/dashboard/company/fee-reconfirm-card";
 import { JobPreviewCard } from "@/components/dashboard/shared/job-preview-card";
@@ -252,7 +253,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                                 {job.client_fee_amount != null
                                     ? formatCurrency(Number(job.client_fee_amount), job.salary_currency || "EUR")
                                     : (job.salary_max || job.salary_min)
-                                        ? formatCurrency(calculateClientFee(job.salary_max || job.salary_min, job.guarantee_period_months ?? 0, !!job.is_exclusive), job.salary_currency || "EUR")
+                                        ? formatCurrency(calculateClientFee(job.salary_max || job.salary_min, job.guarantee_period_months ?? 0, !!job.is_exclusive, normalizeCurrency(job.salary_currency)), job.salary_currency || "EUR")
                                         : `${job.fee_percentage}%`}
                             </span>
                         </div>

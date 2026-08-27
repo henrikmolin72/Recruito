@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BonusBadge } from "@/components/shared/bonus-badge";
 import { formatCurrency, formatDateShort, calculateClientFee, cn } from "@/lib/utils";
+import { normalizeCurrency } from "@/lib/currency-config";
 import { formatJobLocation } from "@/lib/format-job-location";
 
 type Dict = Record<string, any>;
@@ -44,7 +45,7 @@ export function CompanyJobsTable({ jobs, dict: c }: { jobs: any[]; dict: Dict })
     const baseSalary = job.salary_max || job.salary_min;
     if (!baseSalary) return "—";
     return formatCurrency(
-      calculateClientFee(baseSalary, job.guarantee_period_months ?? 0, !!job.is_exclusive),
+      calculateClientFee(baseSalary, job.guarantee_period_months ?? 0, !!job.is_exclusive, normalizeCurrency(job.salary_currency)),
       currency,
     );
   }

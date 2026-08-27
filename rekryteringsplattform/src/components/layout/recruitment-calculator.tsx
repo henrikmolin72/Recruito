@@ -4,28 +4,32 @@ import { useState, useMemo } from "react";
 import { TrendingDown } from "lucide-react";
 import {
     cn,
-    CLIENT_FEE_MIN,
+    calculateClientFee,
     CLIENT_FEE_BASE_PCT,
+    CLIENT_FEE_EXCLUSIVE_BASE_PCT,
     CLIENT_FEE_GUARANTEE_PCT,
-    CLIENT_FEE_EXCLUSIVE_DISCOUNT,
     RECRUITER_FEE_DEFAULT_PCT,
 } from "@/lib/utils";
+import {
+    SUPPORTED_CURRENCIES,
+    CURRENCY_CONFIG,
+    clampSalaryToCurrency,
+    formatMoney,
+    type Currency,
+} from "@/lib/currency-config";
 import { useTranslations } from "@/i18n/client";
 
 // Canonical fee constants live in lib/utils.ts (same formula that locks fees
-// on job rows) — aliased here to the calculator's display vocabulary.
-const MIN_FEE = CLIENT_FEE_MIN;                       // EUR
-const BASE_COMMISSION = CLIENT_FEE_BASE_PCT;          // 11%
+// on job rows); per-currency minimums/slider bounds in lib/currency-config.ts.
 const GUARANTEE_ADJ = CLIENT_FEE_GUARANTEE_PCT;       // +1% per guarantee month
-const EXCLUSIVE_DISCOUNT = CLIENT_FEE_EXCLUSIVE_DISCOUNT; // 10% off for Exclusive
 const RECRUITER_PCT = RECRUITER_FEE_DEFAULT_PCT;      // 7% of annual salary (default, manually adjusted by Recruito)
 const TRADITIONAL_FEE_PCT = 25; // for savings comparison (marketing-only)
 
 const GUARANTEE_OPTIONS = [0, 1, 2] as const;
 
 interface CalcResults {
+    baseCommission: number;
     commission: number;
-    exclusiveDiscount: number;
     clientFee: number;
     recruiterFee: number;
     recruitorRevenue: number;
@@ -41,13 +45,14 @@ function calculate(
     guaranteeMonths: 0 | 1 | 2,
     isExclusive: boolean,
     hires: number,
+    currency: Currency,
 ): CalcResults {
-    const commission = BASE_COMMISSION + guaranteeMonths * GUARANTEE_ADJ;
-    const exclusiveDiscount = isExclusive ? EXCLUSIVE_DISCOUNT : 0;
+    // Exclusive is its own flat rate (10/11/12%), standard is 11/12/13%.
+    const baseCommission = isExclusive ? CLIENT_FEE_EXCLUSIVE_BASE_PCT : CLIENT_FEE_BASE_PCT;
+    const commission = baseCommission + guaranteeMonths * GUARANTEE_ADJ;
 
-    const rawFee = annualSalary * commission * (1 - exclusiveDiscount);
-    const minFeeApplied = rawFee < MIN_FEE;
-    const clientFee = Math.max(rawFee, MIN_FEE);
+    const clientFee = calculateClientFee(annualSalary, guaranteeMonths, isExclusive, currency);
+    const minFeeApplied = annualSalary * commission < CURRENCY_CONFIG[currency].minFee;
     const recruiterFee = annualSalary * RECRUITER_PCT;
     const recruitorRevenue = clientFee - recruiterFee;
     const totalClientFee = clientFee * hires;
@@ -56,8 +61,8 @@ function calculate(
     const savingsPercent = traditionalFee > 0 ? (savings / traditionalFee) * 100 : 0;
 
     return {
+        baseCommission,
         commission,
-        exclusiveDiscount,
         clientFee,
         recruiterFee,
         recruitorRevenue,
@@ -81,7 +86,7 @@ export interface CalculatorState {
     guaranteeMonths: 0 | 1 | 2;
     isExclusive: boolean;
     hires: number;
-    currency: string;
+    currency: Currency;
 }
 
 export const CALCULATOR_DEFAULTS: CalculatorState = {
@@ -91,8 +96,6 @@ export const CALCULATOR_DEFAULTS: CalculatorState = {
     hires: 1,
     currency: "EUR",
 };
-
-const CURRENCY_OPTIONS = ["SEK", "EUR", "USD", "GBP", "NOK", "DKK"] as const;
 
 interface RecruitmentCalculatorProps {
     state?: CalculatorState;
@@ -130,23 +133,26 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
         if (onStateChange && state) onStateChange({ ...state, hires: v });
         else setLocalHires(v);
     };
-    const setCurrency = (v: string) => {
-        if (onStateChange && state) onStateChange({ ...state, currency: v });
-        else setLocalCurrency(v);
+    // Currency switch clamps the salary into the new currency's range (never
+    // converts) — one combined update so the salary change can't be lost when
+    // the parent controls the state.
+    const setCurrency = (v: Currency) => {
+        const clamped = clampSalaryToCurrency(salary, v);
+        if (onStateChange && state) onStateChange({ ...state, currency: v, salary: clamped });
+        else {
+            setLocalCurrency(v);
+            setLocalSalary(clamped);
+        }
     };
 
     const r = useMemo(
-        () => calculate(salary, guaranteeMonths, isExclusive, hires),
-        [salary, guaranteeMonths, isExclusive, hires],
+        () => calculate(salary, guaranteeMonths, isExclusive, hires, currency),
+        [salary, guaranteeMonths, isExclusive, hires, currency],
     );
 
-    const isScandi = currency === "SEK" || currency === "NOK" || currency === "DKK";
-    const sliderMin = isScandi ? 200_000 : 20_000;
-    const sliderMax = isScandi ? 3_000_000 : 200_000;
-    const sliderStep = isScandi ? 10_000 : 1_000;
-    const currencySymbol = currency === "EUR" ? "€" : currency === "USD" ? "$" : currency === "GBP" ? "£" : "";
-    const minLabel = currencySymbol ? `${currencySymbol}${fmt(sliderMin)}` : `${fmt(sliderMin)} ${currency}`;
-    const maxLabel = currencySymbol ? `${currencySymbol}${fmt(sliderMax)}` : `${fmt(sliderMax)} ${currency}`;
+    const { minSalary: sliderMin, maxSalary: sliderMax, step: sliderStep } = CURRENCY_CONFIG[currency];
+    const minLabel = formatMoney(sliderMin, currency);
+    const maxLabel = formatMoney(sliderMax, currency);
 
     return (
         <div className="mx-0 mt-1 mb-1">
@@ -165,18 +171,10 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                                 </span>
                                 <select
                                     value={currency}
-                                    onChange={(e) => {
-                                        const next = e.target.value;
-                                        const nextIsScandi = next === "SEK" || next === "NOK" || next === "DKK";
-                                        const prevIsScandi = currency === "SEK" || currency === "NOK" || currency === "DKK";
-                                        if (nextIsScandi !== prevIsScandi) {
-                                            setSalary(nextIsScandi ? salary * 10 : Math.round(salary / 10));
-                                        }
-                                        setCurrency(next);
-                                    }}
+                                    onChange={(e) => setCurrency(e.target.value as Currency)}
                                     className="text-[10px] font-bold text-slate-600 bg-slate-100 border-0 rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-400"
                                 >
-                                    {CURRENCY_OPTIONS.map(c => (
+                                    {SUPPORTED_CURRENCIES.map(c => (
                                         <option key={c} value={c}>{c}</option>
                                     ))}
                                 </select>
@@ -246,7 +244,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                         </div>
                         {isExclusive && (
                             <p className="text-[9px] text-brand-500 font-semibold">
-                                {t("calculator.exclusiveDiscountNote")}
+                                {t("calculator.exclusiveRateNote")}
                             </p>
                         )}
                     </div>
@@ -287,23 +285,17 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                         </span>
                         <div className="rounded-lg bg-slate-50 border border-slate-100 p-2 space-y-0.5 text-[10px] tabular-nums">
                             <div className="flex justify-between text-slate-500">
-                                <span>{t("calculator.baseFee")}</span>
-                                <span className="font-semibold">11%</span>
+                                <span>{t(isExclusive ? "calculator.exclusiveRateLabel" : "calculator.baseFee")}</span>
+                                <span className="font-semibold">{fmt(r.baseCommission * 100, 0)}%</span>
                             </div>
                             <div className="flex justify-between text-slate-500">
                                 <span>{t("calculator.guarantee")} ({guaranteeMonths} {t("calculator.months")})</span>
                                 <span className="font-semibold">+{guaranteeMonths}%</span>
                             </div>
-                            {isExclusive && (
-                                <div className="flex justify-between text-brand-500">
-                                    <span>{t("calculator.exclusiveDiscountLabel")}</span>
-                                    <span className="font-semibold">−10%</span>
-                                </div>
-                            )}
                             <div className="h-px bg-slate-200 my-1" />
                             <div className="flex justify-between font-bold text-slate-700 text-[11px]">
                                 <span>{t("calculator.commission")}</span>
-                                <span>{fmt(r.commission * 100, 0)}%{isExclusive ? " × 0.9" : ""}</span>
+                                <span>{fmt(r.commission * 100, 0)}%</span>
                             </div>
                         </div>
                     </div>
@@ -318,7 +310,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                         </div>
                         {r.minFeeApplied && (
                             <div className="text-[9px] text-brand-500 mt-0.5">
-                                {t("calculator.minFeeApplied").replace("{currency}", currency)}
+                                {t("calculator.minFeeApplied").replace("{amount}", formatMoney(CURRENCY_CONFIG[currency].minFee, currency))}
                             </div>
                         )}
                         <div className="text-[9px] text-slate-500 mt-1.5 leading-snug">

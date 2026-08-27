@@ -7,6 +7,12 @@ import { getAdminStats, getPendingRecruiters, getAdminPlacements } from "@/lib/a
 import { RecruiterApprovalActions } from "@/components/dashboard/admin/recruiter-approval-actions";
 import { getDictionary } from "@/i18n/server";
 
+// One line per currency — revenue in different currencies is never summed.
+function revenueDisplay(revenueByCurrency: Record<string, number>): string {
+  const parts = Object.entries(revenueByCurrency).map(([currency, amount]) => formatCurrency(amount, currency));
+  return parts.length > 0 ? parts.join(" + ") : formatCurrency(0);
+}
+
 export default async function AdminDashboard() {
   const [stats, pendingRecruiters, placements] = await Promise.all([
     getAdminStats(),
@@ -30,7 +36,7 @@ export default async function AdminDashboard() {
         <StatsCard title={a.companiesStat} value={stats.companies} icon={Building2} />
         <StatsCard title={a.recruitersStat} value={stats.approvedRecruiters} description={`${stats.recruiters} total`} icon={Users} />
         <StatsCard title={a.activeJobsStat} value={stats.activeJobs} icon={Briefcase} />
-        <StatsCard title={a.platformRevenue} value={formatCurrency(stats.totalRevenue)} icon={Banknote} />
+        <StatsCard title={a.platformRevenue} value={revenueDisplay(stats.revenueByCurrency)} icon={Banknote} />
       </div>
 
       {/* Activity & Performance */}
@@ -125,7 +131,7 @@ export default async function AdminDashboard() {
             </a>
             <a href="/admin/analytics/earnings" className="p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-center">
               <p className="text-xs font-semibold text-muted-foreground">Revenue</p>
-              <p className="text-lg font-bold">{formatCurrency(stats.totalRevenue)}</p>
+              <p className="text-lg font-bold">{revenueDisplay(stats.revenueByCurrency)}</p>
             </a>
           </div>
         </CardContent>

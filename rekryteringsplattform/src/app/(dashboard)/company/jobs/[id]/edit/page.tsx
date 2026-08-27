@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCompanyPlacementCountRecent } from "@/lib/actions/company";
 import { getFeePercentage } from "@/lib/pricing";
+import { INDUSTRY_OPTIONS } from "@/lib/job-form-options";
 import { getDictionary } from "@/i18n/server";
 import { CreateJobForm } from "../../new/create-job-form";
 
@@ -9,16 +10,20 @@ async function getJob(id: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
-    const { data: company } = await supabase.from("companies").select("id").eq("user_id", user.id).single();
+    const { data: company } = await supabase.from("companies").select("id, industry").eq("user_id", user.id).single();
     if (!company) return null;
     const { data: job } = await supabase.from("jobs").select("*").eq("id", id).eq("company_id", company.id).single();
-    return job;
+    return job ? { job, companyIndustry: company.industry ?? "" } : null;
 }
 
 export default async function EditJobPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const job = await getJob(id);
-    if (!job) notFound();
+    const result = await getJob(id);
+    if (!result) notFound();
+    const { job, companyIndustry } = result;
+    // Same rule as the create form: canonical signup industry → field is locked
+    // (updateJob enforces it server-side as well).
+    const industryLocked = (INDUSTRY_OPTIONS as readonly string[]).includes(companyIndustry);
 
     if (job.status !== "draft") {
         redirect(`/company/jobs/${id}`);
@@ -39,6 +44,7 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
             <CreateJobForm
                 feePercentage={feePercentage}
                 editJobId={id}
+                industryLocked={industryLocked}
             initialData={{
                 title: job.title,
                 country: job.country ?? "",

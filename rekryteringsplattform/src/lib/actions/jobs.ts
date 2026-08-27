@@ -7,6 +7,7 @@ import { getAppUrl } from "@/lib/app-url";
 import { validateJobForm, validatePipelineStages } from "@/lib/validation/forms";
 import { FAILED_PLACEMENT_STATUSES_FILTER, getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
 import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
+import { normalizeCurrency } from "@/lib/currency-config";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/notifications/create";
 import { notifyAdmins } from "@/lib/notifications/notify-admins";
@@ -15,22 +16,22 @@ import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";
 import { rejectRemainingCandidates, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
-import { normalizeCountry } from "@/lib/job-form-options";
+import { normalizeCountry, INDUSTRY_OPTIONS } from "@/lib/job-form-options";
 import { formatJobLocation } from "@/lib/format-job-location";
 import type { PipelineStage } from "@/types/db-types";
 
 async function verifyJobOwnership(jobId: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { error: "Ej inloggad", supabase, user: null };
+    if (!user) return { error: "Ej inloggad", supabase, user: null, company: null };
 
     const { data: company } = await supabase
         .from("companies")
-        .select("id, company_name")
+        .select("id, company_name, industry")
         .eq("user_id", user.id)
         .single();
 
-    if (!company) return { error: "Ingen företagsprofil hittades", supabase, user };
+    if (!company) return { error: "Ingen företagsprofil hittades", supabase, user, company: null };
 
     const { data: job } = await supabase
         .from("jobs")
@@ -39,9 +40,9 @@ async function verifyJobOwnership(jobId: string) {
         .eq("company_id", company.id)
         .single();
 
-    if (!job) return { error: "Jobbet hittades inte eller tillhör inte ditt företag", supabase, user };
+    if (!job) return { error: "Jobbet hittades inte eller tillhör inte ditt företag", supabase, user, company };
 
-    return { error: null, supabase, user };
+    return { error: null, supabase, user, company };
 }
 
 export async function createJob(formData: FormData) {
@@ -63,7 +64,7 @@ export async function createJob(formData: FormData) {
     // 2. Get company profile to link job to company (auto-create if missing)
     let { data: company } = await supabase
         .from("companies")
-        .select("id, company_name")
+        .select("id, company_name, industry")
         .eq("user_id", user.id)
         .single();
 
@@ -83,7 +84,7 @@ export async function createJob(formData: FormData) {
                 user_id: user.id,
                 company_name: companyName,
             })
-            .select("id, company_name")
+            .select("id, company_name, industry")
             .single();
 
         if (createError) {
@@ -91,7 +92,7 @@ export async function createJob(formData: FormData) {
             if (createError.code === "23505") {
                 const { data: refetched } = await supabase
                     .from("companies")
-                    .select("id, company_name")
+                    .select("id, company_name, industry")
                     .eq("user_id", user.id)
                     .single();
                 if (refetched) {
@@ -155,9 +156,16 @@ export async function createJob(formData: FormData) {
     const salaryMax = (dAny.salary_max as number | undefined) ?? rawInt("salary_max");
     const guaranteeMonths = (dAny.guarantee_period_months as number | undefined) ?? rawInt("guarantee_period_months") ?? 0;
     const isExclusive = (dAny.is_exclusive as boolean | undefined) ?? rawBool("is_exclusive");
+    const profileIndustry = (company as { industry?: string | null }).industry ?? "";
+    const lockedIndustry = (INDUSTRY_OPTIONS as readonly string[]).includes(profileIndustry)
+        ? profileIndustry
+        : null;
     const feeBaseSalary = salaryMax || salaryMin || 0;
+    // Same currency value that lands on the row's salary_currency below;
+    // unknown/legacy values fall back to EUR minimums inside normalizeCurrency.
+    const salaryCurrency = (dAny.salary_currency as string | undefined) ?? (raw("salary_currency") || "SEK");
     const lockedClientFee = feeBaseSalary > 0
-        ? calculateClientFee(feeBaseSalary, guaranteeMonths || 0, isExclusive)
+        ? calculateClientFee(feeBaseSalary, guaranteeMonths || 0, isExclusive, normalizeCurrency(salaryCurrency))
         : null;
     const lockedRecruiterFee = feeBaseSalary > 0
         ? calculateRecruiterFee(feeBaseSalary)
@@ -172,7 +180,10 @@ export async function createJob(formData: FormData) {
         title: d.title || raw("title") || "Untitled Draft",
         description: d.description ?? rawOrNull("description") ?? "",
         location: d.location || (raw("location").trim() || null),
-        industry: d.industry ?? raw("industry") ?? "",
+        // Industry is locked to the company's signup industry whenever the profile
+        // carries a canonical one — the posted value is untrusted UI state. Legacy
+        // profiles (free text / empty) keep the posted value (editable fallback).
+        industry: lockedIndustry ?? d.industry ?? raw("industry") ?? "",
         country: d.country ?? rawOrNull("country"),
         city: d.city ?? rawOrNull("city"),
         location_code: d.location_code ?? rawOrNull("location_code"),
@@ -448,8 +459,14 @@ export async function getCompanyJobs() {
 }
 
 export async function updateJob(jobId: string, formData: FormData) {
-    const { error: authError, supabase } = await verifyJobOwnership(jobId);
+    const { error: authError, supabase, company } = await verifyJobOwnership(jobId);
     if (authError) return { error: authError };
+
+    // Same industry lock as createJob — editing a draft must not bypass it.
+    const updProfileIndustry = company?.industry ?? "";
+    const updLockedIndustry = (INDUSTRY_OPTIONS as readonly string[]).includes(updProfileIndustry)
+        ? updProfileIndustry
+        : null;
 
     // Verify job is still in draft status before allowing edits
     const { data: job } = await supabase
@@ -474,7 +491,7 @@ export async function updateJob(jobId: string, formData: FormData) {
             title: d.title,
             description: d.description,
             location: d.location || null,
-            industry: d.industry,
+            industry: updLockedIndustry ?? d.industry,
             country: d.country,
             city: d.city,
             location_code: d.location_code,

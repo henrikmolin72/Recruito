@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { cn, calculateClientFee } from "@/lib/utils";
+import { normalizeCurrency } from "@/lib/currency-config";
 import { RecruitmentCalculator, CALCULATOR_DEFAULTS, type CalculatorState } from "@/components/layout/recruitment-calculator";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { useTranslations } from "@/i18n/client";
@@ -86,6 +87,8 @@ interface CreateJobFormProps {
     feePercentage: number;
     editJobId?: string;
     initialData?: InitialJobData;
+    /** Industry is fixed from the company's signup industry (server enforces it too). */
+    industryLocked?: boolean;
 }
 
 interface LanguageRequirement {
@@ -93,7 +96,7 @@ interface LanguageRequirement {
     level: string;
 }
 
-export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJobFormProps) {
+export function CreateJobForm({ feePercentage, editJobId, initialData, industryLocked }: CreateJobFormProps) {
     const router = useRouter();
     const { t } = useTranslations();
     const isEditing = Boolean(editJobId);
@@ -116,7 +119,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
     const [calcState, setCalcState] = useState<CalculatorState>({
         ...CALCULATOR_DEFAULTS,
         salary: initialData?.salary_min ? Number(initialData.salary_min) : CALCULATOR_DEFAULTS.salary,
-        currency: initialData?.salary_currency ?? CALCULATOR_DEFAULTS.currency,
+        currency: normalizeCurrency(initialData?.salary_currency ?? CALCULATOR_DEFAULTS.currency),
     });
 
     const STEPS = [
@@ -130,7 +133,7 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
     ];
 
     const recruitmentFee = useMemo(
-        () => calculateClientFee(calcState.salary, calcState.guaranteeMonths, calcState.isExclusive),
+        () => calculateClientFee(calcState.salary, calcState.guaranteeMonths, calcState.isExclusive, calcState.currency),
         [calcState]
     );
 
@@ -639,12 +642,16 @@ export function CreateJobForm({ feePercentage, editJobId, initialData }: CreateJ
                                         <div className="space-y-2">
                                             <label className={labelClass}>{t("jobForm.industry")} *</label>
                                             <select name="industry" value={formData.industry} onChange={handleInputChange}
-                                                className={cn(selectClass, errClass("industry"))} required>
+                                                disabled={industryLocked}
+                                                className={cn(selectClass, errClass("industry"), industryLocked && "opacity-70 cursor-not-allowed")} required>
                                                 <option value="">{t("jobForm.industryPlaceholder")}</option>
                                                 {INDUSTRY_OPTIONS.map((opt) => (
                                                     <option key={opt} value={opt}>{opt}</option>
                                                 ))}
                                             </select>
+                                            {industryLocked && (
+                                                <p className="text-xs text-slate-400">{t("jobForm.industryLockedNote")}</p>
+                                            )}
                                             {fieldError("industry")}
                                         </div>
                                     </div>

@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { CURRENCY_CONFIG, type Currency } from "@/lib/currency-config";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -38,26 +39,28 @@ export function formatDateShort(date: string | Date | null | undefined): string 
 }
 
 // Canonical Recruito client-fee formula. Matches the marketing calculator:
-//   fee = max(salary × (11% + guaranteeMonths × 1%) × (exclusive ? 0.9 : 1), 3500)
+//   fee = max(salary × ((exclusive ? 10% : 11%) + guaranteeMonths × 1%),
+//             minimum fee for the salary's currency)
+// Exclusive is its own flat rate (10/11/12%) — "an exclusive rate for exclusive
+// roles", not a discount. Per-currency minimums live in CURRENCY_CONFIG.
 // Use this only to *suggest* a default fee at job creation. Once a job is approved,
 // the locked client_fee_amount on the row is the source of truth — never recompute.
 export const CLIENT_FEE_BASE_PCT = 0.11;
+export const CLIENT_FEE_EXCLUSIVE_BASE_PCT = 0.10;
 export const CLIENT_FEE_GUARANTEE_PCT = 0.01;
-export const CLIENT_FEE_EXCLUSIVE_DISCOUNT = 0.10;
-export const CLIENT_FEE_MIN = 3500;
 export const RECRUITER_FEE_DEFAULT_PCT = 0.07;
 
 export function calculateClientFee(
   annualSalary: number,
-  guaranteeMonths: number = 0,
-  isExclusive: boolean = false,
+  guaranteeMonths: number,
+  isExclusive: boolean,
+  currency: Currency,
 ): number {
   if (!annualSalary || annualSalary <= 0) return 0;
   const months = Math.max(0, Math.min(2, guaranteeMonths || 0));
-  const commission = CLIENT_FEE_BASE_PCT + months * CLIENT_FEE_GUARANTEE_PCT;
-  const discount = isExclusive ? 1 - CLIENT_FEE_EXCLUSIVE_DISCOUNT : 1;
-  const raw = annualSalary * commission * discount;
-  return Math.round(Math.max(raw, CLIENT_FEE_MIN));
+  const base = isExclusive ? CLIENT_FEE_EXCLUSIVE_BASE_PCT : CLIENT_FEE_BASE_PCT;
+  const raw = annualSalary * (base + months * CLIENT_FEE_GUARANTEE_PCT);
+  return Math.round(Math.max(raw, CURRENCY_CONFIG[currency].minFee));
 }
 
 // Floor to nearest 100 — e.g. 1 575 → 1 500, 1 625 → 1 600.

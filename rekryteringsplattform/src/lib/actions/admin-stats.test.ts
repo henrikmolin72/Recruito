@@ -10,14 +10,19 @@ import { describe, it, expect, vi } from "vitest";
 //   (b) Total Candidates excludes drafts (query must apply .neq status,draft).
 // ---------------------------------------------------------------------------
 
-// Placement fixtures mirror live data: first two carry the real negotiated job
-// fees (4180 + 4550 = 8730). The last two are 0-contribution edge cases.
+// Placement fixtures mirror live data: the first two carry real negotiated job
+// fees. Multi-currency: revenue must be grouped per currency (jobs.salary_currency,
+// missing → EUR for legacy rows) and NEVER summed across currencies — an ISK
+// placement would otherwise swamp every EUR figure on the dashboard.
 const PLACEMENTS = [
-  { status: "guarantee_active", jobs: { client_fee_amount: 11880, recruiter_fee_amount: 7700 } },
-  { status: "guarantee_active", jobs: [{ client_fee_amount: 9750, recruiter_fee_amount: 5200 }] }, // array embed → pickFirst
+  { status: "guarantee_active", jobs: { client_fee_amount: 11880, recruiter_fee_amount: 7700 } }, // no currency → EUR bucket
+  { status: "guarantee_active", jobs: [{ client_fee_amount: 9750, recruiter_fee_amount: 5200, salary_currency: "SEK" }] }, // array embed → pickFirst
   { status: "completed", jobs: { client_fee_amount: 5000, recruiter_fee_amount: 6000 } }, // negative spread → clamp 0
   { status: "confirmed", jobs: null }, // missing job → 0
+  { status: "guarantee_active", jobs: { client_fee_amount: 550_000, recruiter_fee_amount: 350_000, salary_currency: "ISK" } },
 ];
+
+let placementsSelect = ""; // captured select string — must fetch salary_currency
 
 function makeClient() {
   function from(table: string) {
@@ -42,7 +47,7 @@ function makeClient() {
       return { count: 0, data: [], error: null };
     };
     const chain: any = {
-      select: () => chain,
+      select: (sel?: string) => { if (table === "placements" && typeof sel === "string") placementsSelect = sel; return chain; },
       eq: (k: string, v: unknown) => { filters[k] = { op: "eq", v }; return chain; },
       neq: (k: string, v: unknown) => { filters[k] = { op: "neq", v }; return chain; },
       limit: () => chain,
@@ -61,9 +66,13 @@ vi.mock("@/lib/actions/require-admin", () => ({
 import { getAdminStats } from "./admin";
 
 describe("getAdminStats", () => {
-  it("revenue = Σ(client_fee − recruiter_fee) from job fees, clamped at 0", async () => {
+  it("revenue = Σ(client_fee − recruiter_fee) grouped PER CURRENCY, clamped at 0, no cross-currency total", async () => {
     const stats = await getAdminStats();
-    expect(stats.totalRevenue).toBe(8730);
+    expect(stats.revenueByCurrency).toEqual({ EUR: 4180, SEK: 4550, ISK: 200_000 });
+    // No combined number may exist — summing SEK + ISK + EUR is meaningless.
+    expect((stats as Record<string, unknown>).totalRevenue).toBeUndefined();
+    // The query must actually fetch the grouping key.
+    expect(placementsSelect).toContain("salary_currency");
   });
 
   it("Total Candidates excludes drafts", async () => {
