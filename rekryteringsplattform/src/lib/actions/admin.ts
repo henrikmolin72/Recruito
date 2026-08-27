@@ -1144,23 +1144,6 @@ export async function getAdminNotificationHistory() {
     );
 }
 
-export async function updateRecruiterFeePercentage(jobId: string, percentage: number) {
-    await requireAdmin();
-    const supabaseAdmin = createAdminClient();
-
-    if (percentage < 0 || percentage > 100) return { error: "Invalid percentage" };
-
-    const { error } = await supabaseAdmin
-        .from("jobs")
-        .update({ recruiter_fee_percentage: percentage })
-        .eq("id", jobId);
-
-    if (error) return { error: "Could not update recruiter fee" };
-
-    revalidatePath("/admin/jobs");
-    return { success: true };
-}
-
 // Override the locked client fee on a single job. Called from the admin review screen
 // before approval. Once approved, the value is treated as final and never recomputed.
 export async function updateClientFeeAmount(jobId: string, amount: number) {
@@ -1271,7 +1254,7 @@ export async function getCandidatesForScreening() {
             status,
             created_at,
             recruito_screened_at,
-            job:jobs(title, company:companies(company_name)),
+            job:jobs(id, title, company:companies(company_name)),
             recruiter:recruiters(profile:profiles!recruiters_user_id_fkey(full_name))
         `)
         // Drafts are not real submissions — keep them out of the screening queue.
@@ -1297,6 +1280,7 @@ export async function getCandidatesForScreening() {
             status: c.status,
             createdAt: c.created_at,
             screenedAt: c.recruito_screened_at,
+            jobId: job?.id ?? null,
             jobTitle: job?.title || "—",
             companyName: company?.company_name || "—",
             recruiterName: profile?.full_name || "—",

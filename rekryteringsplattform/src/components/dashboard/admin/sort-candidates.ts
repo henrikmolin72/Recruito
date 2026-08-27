@@ -22,6 +22,7 @@ export type ScreeningCandidate = {
     status: string;
     createdAt: string;
     screenedAt: string | null;
+    jobId: string | null;
     jobTitle: string;
     companyName: string;
     recruiterName: string;

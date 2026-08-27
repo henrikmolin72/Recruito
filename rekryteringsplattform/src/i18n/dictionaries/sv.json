@@ -1115,6 +1115,7 @@
     "placementErrorOccurred": "Ett fel uppstod",
     "placementActionDone": "Åtgärden utfördes",
     "placementInvoice": "Fakturera",
+    "placementInvoiceLocked": "Ange startdatum och vänta tills garantislutdatumet har passerat innan fakturering",
     "placementPayment": "Betalning",
     "placementFailed": "Misslyckad",
     "placementGuaranteeCompleted": "Slutförd",

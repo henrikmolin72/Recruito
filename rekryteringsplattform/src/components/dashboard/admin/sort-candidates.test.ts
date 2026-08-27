@@ -10,6 +10,7 @@ function row(p: Partial<ScreeningCandidate>): ScreeningCandidate {
         status: p.status ?? "",
         createdAt: p.createdAt ?? "2026-01-01T00:00:00Z",
         screenedAt: p.screenedAt ?? null,
+        jobId: p.jobId ?? null,
         jobTitle: p.jobTitle ?? "",
         companyName: p.companyName ?? "",
         recruiterName: p.recruiterName ?? "",

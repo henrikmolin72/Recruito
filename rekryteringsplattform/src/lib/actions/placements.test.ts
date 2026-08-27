@@ -217,8 +217,12 @@ describe("recordPlacementPayment — payment branch", () => {
 });
 
 describe("sendPlacementInvoice — invoice transition", () => {
+  // Client rule 2026-08-27: invoicing requires a confirmed joining date AND a
+  // guarantee end date that has already been reached — both dates here are in
+  // the past so the happy-path fixture clears the gate.
   const baseInvoiceable = {
     id: "p1", status: "confirmed", invoice_sent_at: null, recruiter_id: "r1",
+    joining_date: "2026-01-10", guarantee_end_date: "2026-03-10",
     candidate: { first_name: "Cand", last_name: "Idate", job_id: "j1" },
     job: { title: "Developer" },
     company: { user_id: "co-1", company_name: "Acme" },
@@ -259,6 +263,35 @@ describe("sendPlacementInvoice — invoice transition", () => {
     const res = await sendPlacementInvoice("p1");
 
     expect(res.error).toMatch(/status/i);
+    expect(placementWrites()).toHaveLength(0);
+  });
+
+  // Client rule 2026-08-27: no invoicing before the joining date and guarantee
+  // end date are entered AND the guarantee end date has been reached.
+  it("refuses to invoice when the joining date is missing", async () => {
+    placementRow = { ...baseInvoiceable, joining_date: null };
+
+    const res = await sendPlacementInvoice("p1");
+
+    expect(res.error).toBeTruthy();
+    expect(placementWrites()).toHaveLength(0);
+  });
+
+  it("refuses to invoice when the guarantee end date is missing", async () => {
+    placementRow = { ...baseInvoiceable, guarantee_end_date: null };
+
+    const res = await sendPlacementInvoice("p1");
+
+    expect(res.error).toBeTruthy();
+    expect(placementWrites()).toHaveLength(0);
+  });
+
+  it("refuses to invoice while the guarantee end date is still in the future", async () => {
+    placementRow = { ...baseInvoiceable, guarantee_end_date: "2999-01-01" };
+
+    const res = await sendPlacementInvoice("p1");
+
+    expect(res.error).toBeTruthy();
     expect(placementWrites()).toHaveLength(0);
   });
 });

@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { getCandidatesForScreening } from "@/lib/actions/admin";
 import { CandidateScreeningTable } from "@/components/dashboard/admin/candidate-screening-table";
 
@@ -17,11 +16,8 @@ export default async function AdminCandidatesPage() {
                 </p>
             </div>
 
-            <Card>
-                <CardContent className="p-0 overflow-x-auto">
-                    <CandidateScreeningTable candidates={candidates} />
-                </CardContent>
-            </Card>
+            {/* The table component owns its card + the company-style stage tabs/filters. */}
+            <CandidateScreeningTable candidates={candidates} />
         </div>
     );
 }

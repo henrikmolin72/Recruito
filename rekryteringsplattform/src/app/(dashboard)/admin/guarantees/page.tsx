@@ -101,6 +101,8 @@ export default async function AdminGuaranteesPage() {
                                             <PlacementActionButtons
                                                 placementId={placement.id}
                                                 status={placement.status}
+                                                joiningDate={placement.joiningDate}
+                                                guaranteeEndDate={placement.guaranteeEndDate}
                                             />
                                         </td>
                                     </tr>

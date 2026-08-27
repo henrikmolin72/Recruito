@@ -19,9 +19,11 @@ import { formatDate } from "@/lib/utils";
 interface PlacementActionButtonsProps {
     placementId: string;
     status: string;
+    joiningDate: string | null;
+    guaranteeEndDate: string | null;
 }
 
-export function PlacementActionButtons({ placementId, status }: PlacementActionButtonsProps) {
+export function PlacementActionButtons({ placementId, status, joiningDate, guaranteeEndDate }: PlacementActionButtonsProps) {
     const router = useRouter();
     const { t } = useTranslations();
     const [loading, setLoading] = useState<string | null>(null);
@@ -60,6 +62,15 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
         setLoading(null);
     }
 
+    // Client rule 2026-08-27: Invoice is inert until the joining date and
+    // guarantee end date are entered AND the guarantee end date has passed.
+    // The server action enforces the same gate.
+    const invoiceReady = Boolean(
+        joiningDate &&
+        guaranteeEndDate &&
+        guaranteeEndDate.slice(0, 10) <= new Date().toISOString().split("T")[0],
+    );
+
     return (
         <div className="flex gap-1">
             {(status === "confirmed") && (
@@ -67,7 +78,8 @@ export function PlacementActionButtons({ placementId, status }: PlacementActionB
                     size="sm"
                     variant="outline"
                     className="h-7 text-xs gap-1"
-                    disabled={loading !== null}
+                    disabled={loading !== null || !invoiceReady}
+                    title={invoiceReady ? undefined : t("admin.placementInvoiceLocked")}
                     onClick={() => handleAction("send_invoice")}
                 >
                     <FileText className="h-3 w-3" />

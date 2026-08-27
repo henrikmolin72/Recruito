@@ -1115,6 +1115,7 @@
     "placementErrorOccurred": "An error occurred",
     "placementActionDone": "The action was performed",
     "placementInvoice": "Invoice",
+    "placementInvoiceLocked": "Enter the joining date and wait until the guarantee end date has passed before invoicing",
     "placementPayment": "Payment",
     "placementFailed": "Failed",
     "placementGuaranteeCompleted": "Completed",

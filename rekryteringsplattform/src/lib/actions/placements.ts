@@ -62,6 +62,17 @@ export async function sendPlacementInvoice(placementId: string) {
         return { error: "Faktura har redan skickats" };
     }
 
+    // Client rule 2026-08-27: invoicing requires a confirmed joining date AND a
+    // guarantee end date that has already been reached. Enforced here (not just
+    // in the button) so a stale page or direct call can't invoice early.
+    if (!placement.joining_date || !placement.guarantee_end_date) {
+        return { error: "Ange startdatum och garantislutdatum innan faktura kan skickas" };
+    }
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (String(placement.guarantee_end_date).slice(0, 10) > todayStr) {
+        return { error: "Garantiperioden har inte löpt ut ännu — faktura kan skickas tidigast " + String(placement.guarantee_end_date).slice(0, 10) };
+    }
+
     const { error } = await admin
         .from("placements")
         .update({

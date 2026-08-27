@@ -1115,6 +1115,7 @@
     "placementErrorOccurred": "Det oppsto en feil",
     "placementActionDone": "Handlingen ble utført",
     "placementInvoice": "Fakturer",
+    "placementInvoiceLocked": "Angi startdato og vent til garantisluttdatoen har passert før fakturering",
     "placementPayment": "Betaling",
     "placementFailed": "Mislyktes",
     "placementGuaranteeCompleted": "Fullført",

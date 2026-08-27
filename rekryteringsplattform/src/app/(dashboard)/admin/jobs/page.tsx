@@ -6,7 +6,6 @@ import { getAdminJobs } from "@/lib/actions/admin";
 import { formatJobLocation } from "@/lib/format-job-location";
 import { getDictionary } from "@/i18n/server";
 import { JobFeeAmountEditor } from "@/components/dashboard/admin/job-fee-amount-editor";
-import { RecruiterFeeEditor } from "@/components/dashboard/admin/recruiter-fee-editor";
 import { ApproveJobButton } from "@/components/dashboard/admin/approve-job-button";
 import { ApproveJobModal } from "@/components/dashboard/admin/approve-job-modal";
 import { RequestChangesModal } from "@/components/dashboard/admin/request-changes-modal";
@@ -105,8 +104,13 @@ export default async function AdminJobsPage() {
                         currency={job.salaryCurrency}
                         field="recruiter"
                       />
-                      <div className="text-[10px] text-muted-foreground">
-                        <RecruiterFeeEditor jobId={job.id} initialFee={job.recruiterFeePercentage} />
+                      {/* Read-only effective % derived from the editable figure — the
+                          figure is the source of truth (client decision 2026-08-27; the
+                          old percentage editor changed nothing downstream). */}
+                      <div className="text-[10px] text-muted-foreground font-bold">
+                        {job.recruiterFeeAmount != null && job.salary
+                          ? `${((job.recruiterFeeAmount / job.salary) * 100).toFixed(1).replace(/\.0$/, "")}%`
+                          : `${job.recruiterFeePercentage}%`}
                       </div>
                     </td>
                     <td className="p-4">
@@ -148,7 +152,7 @@ export default async function AdminJobsPage() {
       </Card>
 
       <p className="text-xs text-muted-foreground px-1">
-        💡 <strong>Recruiter Fee %</strong> is the percentage of annual salary paid to the recruiter on successful placement. Click any value to edit. Default is 7%.
+        💡 <strong>Recruiter Fee</strong> is what the recruiter is paid on successful placement — click the amount to edit it. The percentage shown underneath is derived from the amount and is read-only.
       </p>
     </div>
   );
