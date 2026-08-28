@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { Company } from "@/types/db-types";
 
@@ -38,9 +39,13 @@ export async function getCompanyProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect("/login");
 
+    // Company read goes through the admin client: billing PII columns
+    // (billing_email/address, org_number, stripe_customer_id) are not selectable
+    // by the authenticated role, and the owner's own profile form needs them.
+    const supabaseAdmin = createAdminClient();
     const [{ data: profile }, { data: company }] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
-        supabase.from("companies").select("*").eq("user_id", user.id).single(),
+        supabaseAdmin.from("companies").select("*").eq("user_id", user.id).single(),
     ]);
 
     return { profile, company };
@@ -124,8 +129,10 @@ export async function getCompanyDashboard() {
         redirect("/login");
     }
 
-    // 2. Get company profile
-    const { data: company, error: companyError } = await supabase
+    // 2. Get company profile via the admin client — billing PII columns are not
+    // selectable by the authenticated role (select("*") would be denied).
+    const supabaseAdmin = createAdminClient();
+    const { data: company, error: companyError } = await supabaseAdmin
         .from("companies")
         .select("*")
         .eq("user_id", user.id)

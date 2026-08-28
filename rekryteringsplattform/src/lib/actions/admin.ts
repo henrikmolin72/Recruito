@@ -23,7 +23,7 @@ export async function getAdminStats() {
     const { supabase } = await requireAdmin();
 
     const [companies, recruiters, jobs, placements, pendingRecruiters, candidates, approvedRecruiters] = await Promise.all([
-        supabase.from("companies").select("*", { count: "exact", head: true }),
+        supabase.from("companies").select("id", { count: "exact", head: true }),
         supabase.from("recruiters").select("*", { count: "exact", head: true }),
         supabase.from("jobs").select("*", { count: "exact", head: true }).eq("status", "active"),
         supabase.from("placements").select("status, jobs(client_fee_amount, recruiter_fee_amount, salary_currency)").limit(1000),
