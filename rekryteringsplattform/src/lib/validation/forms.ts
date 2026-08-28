@@ -207,6 +207,9 @@ const registerRecruiterSchema = z.object({
   agreement_commission_after_guarantee: z
     .boolean()
     .refine((value) => value === true, { message: "Du måste godkänna provisionsvillkoret" }),
+  legal_eligibility_confirmed: z
+    .enum(["yes", "no"], { message: "Välj om du är behörig att tillhandahålla rekryteringstjänster" })
+    .transform((value) => value === "yes"),
 });
 
 export function validateRegisterRecruiterForm(formData: FormData) {
@@ -220,6 +223,7 @@ export function validateRegisterRecruiterForm(formData: FormData) {
     how_heard: toString(formData.get("how_heard")),
     agreement_freelance_recruiter: toCheckboxBoolean(formData.get("agreement_freelance_recruiter")),
     agreement_commission_after_guarantee: toCheckboxBoolean(formData.get("agreement_commission_after_guarantee")),
+    legal_eligibility_confirmed: toString(formData.get("legal_eligibility_confirmed")),
   });
 
   if (!parsed.success) {

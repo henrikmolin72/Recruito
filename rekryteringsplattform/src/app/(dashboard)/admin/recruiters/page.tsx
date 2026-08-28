@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
+import { Star, ShieldAlert } from "lucide-react";
 import { getAdminRecruiters } from "@/lib/actions/admin";
 import { RecruiterApprovalActions, RecruiterManageActions } from "@/components/dashboard/admin/recruiter-approval-actions";
 import { getDictionary } from "@/i18n/server";
@@ -47,6 +47,12 @@ export default async function AdminRecruitersPage() {
                         <div>
                           <p className="font-medium group-hover:text-brand-600">{r.name}</p>
                           <p className="text-xs text-muted-foreground">{r.email}</p>
+                          {!r.legalEligibilityConfirmed && (
+                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-danger-50 px-2 py-0.5 text-[11px] font-semibold text-danger-700">
+                              <ShieldAlert className="h-3 w-3" />
+                              Not eligible
+                            </span>
+                          )}
                         </div>
                       </Link>
                     </td>

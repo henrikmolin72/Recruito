@@ -262,6 +262,7 @@ export async function registerRecruiter(formData: FormData) {
             experience_bracket: parsed.data.years_experience_bracket,
             agreement_freelance_recruiter: parsed.data.agreement_freelance_recruiter,
             agreement_commission_after_guarantee: parsed.data.agreement_commission_after_guarantee,
+            legal_eligibility_confirmed: parsed.data.legal_eligibility_confirmed,
         });
 
         if (recruiterError) {
@@ -284,6 +285,7 @@ export async function registerRecruiter(formData: FormData) {
                     `Hur de hörde talas om oss: ${parsed.data.how_heard}`,
                     `Frilansavtal godkänt: ${parsed.data.agreement_freelance_recruiter ? "Ja" : "Nej"}`,
                     `Garantiperiod/provision godkänt: ${parsed.data.agreement_commission_after_guarantee ? "Ja" : "Nej"}`,
+                    `Behörig att tillhandahålla rekryteringstjänster: ${parsed.data.legal_eligibility_confirmed ? "Ja" : "Nej"}`,
                     "",
                     `User ID: ${data.user.id}`,
                 ].join("\n"),

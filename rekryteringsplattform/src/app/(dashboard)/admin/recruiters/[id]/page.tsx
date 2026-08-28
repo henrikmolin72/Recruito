@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Star } from "lucide-react";
+import { Star, ShieldCheck, ShieldAlert } from "lucide-react";
 import { getAdminRecruiterById } from "@/lib/actions/admin";
 import { RecruiterEditForm } from "@/components/dashboard/admin/recruiter-edit-form";
 import { RecruiterApprovalActions, RecruiterManageActions } from "@/components/dashboard/admin/recruiter-approval-actions";
@@ -56,6 +56,32 @@ export default async function AdminRecruiterDetailPage({ params }: { params: Pro
                     ) : <p className="mt-1 text-muted-foreground">{dict.common.noDataDash}</p>}
                 </CardContent></Card>
             </div>
+
+            {recruiter.legal_eligibility_confirmed ? (
+                <Card className="border-emerald-200 bg-emerald-50/50">
+                    <CardContent className="flex items-start gap-3 p-4">
+                        <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                        <div>
+                            <p className="font-semibold text-emerald-900">Legal eligibility — Confirmed</p>
+                            <p className="text-sm text-emerald-800">
+                                The recruiter confirmed they are legally eligible to provide independent recruitment services in the country where they will perform work for Recruito.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card className="border-danger-500 bg-danger-50">
+                    <CardContent className="flex items-start gap-3 p-4">
+                        <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-danger-500" />
+                        <div>
+                            <p className="font-semibold text-danger-700">Legal eligibility — Not confirmed</p>
+                            <p className="text-sm text-danger-700">
+                                This recruiter answered “No” (or did not confirm) legal eligibility to provide independent recruitment services. Review before approving.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <Card><CardContent className="p-6">
                 <h2 className="mb-4 text-lg font-semibold">{a.editProfile}</h2>
