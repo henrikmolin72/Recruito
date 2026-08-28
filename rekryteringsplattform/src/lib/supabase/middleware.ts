@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { DEFAULT_LOCALE } from "@/i18n/config";
+import { resolveRouteRole } from "@/lib/auth/resolve-role";
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
@@ -47,9 +48,11 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
     }
 
-    // Role-based route enforcement
+    // Role-based route enforcement. resolveRouteRole trusts admin ONLY from
+    // app_metadata (server-set); a forged user_metadata "admin" collapses to a
+    // non-privileged role, so it can never reach /admin.
     if (user) {
-        const role = user.app_metadata?.role || user.user_metadata?.role;
+        const role = resolveRouteRole(user);
         if (request.nextUrl.pathname.startsWith("/admin") && role !== "admin") {
             const url = request.nextUrl.clone();
             url.pathname = `/${role || "company"}`;
@@ -75,7 +78,7 @@ export async function updateSession(request: NextRequest) {
     );
 
     if (isAuthRoute && user) {
-        const role = user.app_metadata?.role || user.user_metadata?.role || "company";
+        const role = resolveRouteRole(user);
         const url = request.nextUrl.clone();
         url.pathname = `/${role}`;
         return NextResponse.redirect(url);

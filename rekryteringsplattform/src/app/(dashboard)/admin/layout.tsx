@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { isVerifiedAdmin, resolveRouteRole } from "@/lib/auth/resolve-role";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
     const supabase = await createClient();
@@ -9,9 +10,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         redirect("/login");
     }
 
-    const role = user.app_metadata?.role || user.user_metadata?.role;
-    if (role !== "admin") {
-        redirect(`/${role || "company"}`);
+    // Admin gate trusts app_metadata.role only; a forged user_metadata "admin"
+    // resolves to a non-admin route and is redirected away.
+    if (!isVerifiedAdmin(user)) {
+        redirect(`/${resolveRouteRole(user)}`);
     }
 
     return <>{children}</>;

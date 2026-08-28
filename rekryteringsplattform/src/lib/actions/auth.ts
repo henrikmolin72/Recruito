@@ -202,6 +202,14 @@ export async function registerCompany(formData: FormData) {
             return { error: "Kunde inte skapa företagsprofil. Försök igen." };
         }
 
+        // Set the authoritative role in app_metadata (server-only, not user-writable).
+        // This is the sole trusted source for the admin gate; never grant admin here.
+        const { error: roleError } = await supabaseAdmin.auth.admin.updateUserById(
+            data.user.id,
+            { app_metadata: { role: "company" } }
+        );
+        if (roleError) logSafeError("set-app-role", roleError);
+
         try {
             await sendInternalRecruiterEmail({
                 subject: `Ny företagsregistrering: ${parsed.data.company_name}`,
@@ -270,6 +278,14 @@ export async function registerRecruiter(formData: FormData) {
             await supabaseAdmin.auth.admin.deleteUser(data.user.id);
             return { error: "Kunde inte skapa rekryterarprofil. Försök igen." };
         }
+
+        // Set the authoritative role in app_metadata (server-only, not user-writable).
+        // This is the sole trusted source for the admin gate; never grant admin here.
+        const { error: roleError } = await supabaseAdmin.auth.admin.updateUserById(
+            data.user.id,
+            { app_metadata: { role: "recruiter" } }
+        );
+        if (roleError) logSafeError("set-app-role", roleError);
 
         try {
             await sendInternalRecruiterEmail({
