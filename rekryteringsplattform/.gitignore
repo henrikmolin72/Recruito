@@ -38,6 +38,9 @@ yarn-error.log*
 .env*
 !.env.example
 !.env.test.local.example
+# RTF/scratch copies of env files — dot-less names slip past .env* and have
+# leaked a real key before; never track these.
+env.local.rtf*
 
 # vercel
 .vercel
