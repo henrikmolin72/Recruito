@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqualStr } from "@/lib/security/timing-safe-equal";
 
 const PREVIEW_TOKEN = process.env.PREVIEW_TOKEN;
 const COOKIE_NAME = "recruito_preview";
@@ -7,7 +8,7 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 dagar
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
 
-  if (!PREVIEW_TOKEN || token !== PREVIEW_TOKEN) {
+  if (!timingSafeEqualStr(token, PREVIEW_TOKEN)) {
     return NextResponse.json({ error: "Invalid token" }, { status: 403 });
   }
 

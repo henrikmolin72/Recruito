@@ -14,6 +14,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { timingSafeEqualStr } from "@/lib/security/timing-safe-equal";
 import { releaseDueMandates } from "@/lib/mandate-expiry-release";
 
 export const runtime = "nodejs";
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
     const bearerSecret = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
     const secret = bearerSecret ?? request.headers.get("x-cron-secret");
-    if (!secret || secret !== process.env.CRON_SECRET) {
+    if (!timingSafeEqualStr(secret, process.env.CRON_SECRET)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
