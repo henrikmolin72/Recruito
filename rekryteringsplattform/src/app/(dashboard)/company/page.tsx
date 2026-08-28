@@ -40,12 +40,12 @@ export default async function CompanyDashboard() {
         <StatsCard title={c.successfulPlacements} value={stats.placements} icon={CheckCircle} />
       </div>
 
-      {activeGuarantees.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{c.activeGuaranteesTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <CardTitle>{c.activeGuaranteesTitle}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {activeGuarantees.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeGuarantees.map((g) => (
                 <GuaranteeTimer
@@ -57,9 +57,11 @@ export default async function CompanyDashboard() {
                 />
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <p className="text-sm text-muted-foreground">{c.activeGuaranteesEmpty}</p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

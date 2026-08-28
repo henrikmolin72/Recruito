@@ -47,12 +47,12 @@ export default async function RecruiterDashboard() {
         metrics={metrics}
       />
 
-      {activeGuarantees.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{r.activeGuaranteesTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <CardTitle>{r.activeGuaranteesTitle}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {activeGuarantees.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeGuarantees.map((g) => (
                 <GuaranteeTimer
@@ -64,9 +64,11 @@ export default async function RecruiterDashboard() {
                 />
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <p className="text-sm text-muted-foreground">{r.activeGuaranteesEmpty}</p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
