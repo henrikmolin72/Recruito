@@ -1,14 +1,9 @@
-import { getCompanyPlacementCountRecent, getCompanyProfile } from "@/lib/actions/company";
-import { getFeePercentage } from "@/lib/pricing";
+import { getCompanyProfile } from "@/lib/actions/company";
 import { INDUSTRY_OPTIONS } from "@/lib/job-form-options";
 import { CreateJobForm } from "./create-job-form";
 
 export default async function CreateJobPage() {
-    const [recentPlacements, { company }] = await Promise.all([
-        getCompanyPlacementCountRecent(),
-        getCompanyProfile(),
-    ]);
-    const feePercentage = getFeePercentage(recentPlacements);
+    const { company } = await getCompanyProfile();
 
     // The job's industry is FIXED to the company's signup industry when it's a
     // canonical option (createJob enforces the same rule server-side). Legacy/
@@ -20,7 +15,6 @@ export default async function CreateJobPage() {
 
     return (
         <CreateJobForm
-            feePercentage={feePercentage}
             initialData={initialIndustry ? { industry: initialIndustry } : undefined}
             industryLocked={Boolean(initialIndustry)}
         />

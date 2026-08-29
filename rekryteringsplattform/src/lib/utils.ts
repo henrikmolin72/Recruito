@@ -92,3 +92,17 @@ export function calculateRecruiterFee(
   const pct = RECRUITER_FEE_PCT_BY_GUARANTEE[months];
   return Math.max(roundToTen(annualSalary * pct), CURRENCY_CONFIG[currency].recruiterMinFee);
 }
+
+// Nominal fee percentages, derived from the same guarantee model as the amount
+// calculators above. These are the ONLY source for the stored fee_percentage /
+// recruiter_fee_percentage columns, so the stored % can never disagree with the
+// locked *_fee_amount. (Replaces the old volume-tier getFeePercentage 12/13/15.)
+export function clientFeePercent(guaranteeMonths: number, isExclusive: boolean): number {
+  const months = Math.max(0, Math.min(2, guaranteeMonths || 0));
+  return (isExclusive ? 10 : 11) + months; // +1% per guarantee month
+}
+export function recruiterFeePercent(guaranteeMonths: number): number {
+  const months = Math.max(0, Math.min(2, guaranteeMonths || 0));
+  // ×100 from the fraction table, rounded to one decimal to shed float error (6 / 6.5 / 7).
+  return Math.round(RECRUITER_FEE_PCT_BY_GUARANTEE[months] * 1000) / 10;
+}

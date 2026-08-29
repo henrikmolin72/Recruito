@@ -84,7 +84,6 @@ interface InitialJobData {
 }
 
 interface CreateJobFormProps {
-    feePercentage: number;
     editJobId?: string;
     initialData?: InitialJobData;
     /** Industry is fixed from the company's signup industry (server enforces it too). */
@@ -96,7 +95,7 @@ interface LanguageRequirement {
     level: string;
 }
 
-export function CreateJobForm({ feePercentage, editJobId, initialData, industryLocked }: CreateJobFormProps) {
+export function CreateJobForm({ editJobId, initialData, industryLocked }: CreateJobFormProps) {
     const router = useRouter();
     const { t } = useTranslations();
     const isEditing = Boolean(editJobId);
@@ -400,7 +399,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData, industryL
         data.append("key_requirements", JSON.stringify(keyRequirements.filter(r => r.trim())));
         data.append("language_requirements", JSON.stringify(languageRequirements.filter(lr => lr.language && lr.level)));
         data.append("pipeline_stages", JSON.stringify(pipelineStages));
-        data.append("fee_percentage", String(feePercentage));
         data.append("max_recruiters", "5");
 
         const result = await createJob(data);
@@ -440,7 +438,6 @@ export function CreateJobForm({ feePercentage, editJobId, initialData, industryL
         }
 
         // Hidden defaults for internal fields not shown in form
-        data.append("fee_percentage", String(feePercentage));
         data.append("max_recruiters", "5");
 
         // Append benefits array

@@ -1,7 +1,5 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCompanyPlacementCountRecent } from "@/lib/actions/company";
-import { getFeePercentage } from "@/lib/pricing";
 import { INDUSTRY_OPTIONS } from "@/lib/job-form-options";
 import { getDictionary } from "@/i18n/server";
 import { CreateJobForm } from "../../new/create-job-form";
@@ -29,8 +27,6 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
         redirect(`/company/jobs/${id}`);
     }
 
-    const recentPlacements = await getCompanyPlacementCountRecent();
-    const feePercentage = job.fee_percentage ?? getFeePercentage(recentPlacements);
     const dict = await getDictionary();
 
     return (
@@ -42,7 +38,6 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                 </div>
             )}
             <CreateJobForm
-                feePercentage={feePercentage}
                 editJobId={id}
                 industryLocked={industryLocked}
             initialData={{

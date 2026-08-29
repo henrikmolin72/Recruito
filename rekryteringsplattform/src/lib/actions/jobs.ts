@@ -5,8 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getAppUrl } from "@/lib/app-url";
 import { validateJobForm, validatePipelineStages } from "@/lib/validation/forms";
-import { FAILED_PLACEMENT_STATUSES_FILTER, getFeePercentage, TIER_WINDOW_MONTHS } from "@/lib/pricing";
-import { calculateClientFee, calculateRecruiterFee } from "@/lib/utils";
+import { calculateClientFee, calculateRecruiterFee, clientFeePercent, recruiterFeePercent } from "@/lib/utils";
 import { normalizeCurrency } from "@/lib/currency-config";
 import { DEFAULT_PIPELINE_STAGES } from "@/types/enums";
 import { createNotification } from "@/lib/notifications/create";
@@ -112,19 +111,6 @@ export async function createJob(formData: FormData) {
         }
     }
 
-    // 3. Calculate fee from volume tier
-    const twelveMonthsAgo = new Date();
-    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - TIER_WINDOW_MONTHS);
-
-    const { count: recentPlacements } = await supabase
-        .from("placements")
-        .select("*", { count: "exact", head: true })
-        .eq("company_id", company.id)
-        .gte("created_at", twelveMonthsAgo.toISOString())
-        .not("status", "in", FAILED_PLACEMENT_STATUSES_FILTER);
-
-    const feePercentage = getFeePercentage(recentPlacements ?? 0);
-
     // 4. Parse pipeline stages (optional, defaults applied)
     let pipelineStages: PipelineStage[] = DEFAULT_PIPELINE_STAGES;
     const rawPipeline = formData.get("pipeline_stages");
@@ -170,6 +156,11 @@ export async function createJob(formData: FormData) {
     const lockedRecruiterFee = feeBaseSalary > 0
         ? calculateRecruiterFee(feeBaseSalary, guaranteeMonths || 0, normalizeCurrency(salaryCurrency))
         : null;
+    // Stored percentages are DERIVED from the same guarantee model as the amounts
+    // above, so fee_percentage / recruiter_fee_percentage can never disagree with
+    // the locked *_fee_amount. (Replaces the old volume-tier getFeePercentage.)
+    const feePercentage = clientFeePercent(guaranteeMonths || 0, isExclusive);
+    const recruiterFeePercentage = recruiterFeePercent(guaranteeMonths || 0);
 
     // If updating an existing draft, use upsert with the provided ID
     const existingDraftId = formData.get("draft_id")?.toString();
@@ -224,6 +215,7 @@ export async function createJob(formData: FormData) {
         benefits_other: d.benefits_other ?? rawOrNull("benefits_other"),
         // Recruitment details
         fee_percentage: feePercentage,
+        recruiter_fee_percentage: recruiterFeePercentage,
         is_exclusive: isExclusive,
         client_fee_amount: lockedClientFee,
         // Snapshot the baseline once at submission. Drafts get NULL; the estimate is
