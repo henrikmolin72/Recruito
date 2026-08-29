@@ -50,6 +50,16 @@ export const CLIENT_FEE_EXCLUSIVE_BASE_PCT = 0.10;
 export const CLIENT_FEE_GUARANTEE_PCT = 0.01;
 export const RECRUITER_FEE_DEFAULT_PCT = 0.07;
 
+// Recruiter fee is guarantee-tiered (Sajid 2026-08-28): 0-day 6%, 30-day 6.5%,
+// 60-day 7% of annual base salary. Indexed by guarantee months (0/1/2).
+export const RECRUITER_FEE_PCT_BY_GUARANTEE = [0.06, 0.065, 0.07] as const;
+
+// Round to the nearest 10, midpoints up — e.g. 524 → 520, 525 → 530.
+export function roundToTen(amount: number): number {
+  if (!amount || amount <= 0) return 0;
+  return Math.round(amount / 10) * 10;
+}
+
 export function calculateClientFee(
   annualSalary: number,
   guaranteeMonths: number,
@@ -60,16 +70,25 @@ export function calculateClientFee(
   const months = Math.max(0, Math.min(2, guaranteeMonths || 0));
   const base = isExclusive ? CLIENT_FEE_EXCLUSIVE_BASE_PCT : CLIENT_FEE_BASE_PCT;
   const raw = annualSalary * (base + months * CLIENT_FEE_GUARANTEE_PCT);
-  return Math.round(Math.max(raw, CURRENCY_CONFIG[currency].minFee));
+  return roundToTen(Math.max(raw, CURRENCY_CONFIG[currency].minFee));
 }
 
-// Floor to nearest 100 — e.g. 1 575 → 1 500, 1 625 → 1 600.
+// Floor to nearest 100 — e.g. 1 575 → 1 500, 1 625 → 1 600. Retained for the
+// recruiter-jobs-list fallback display; fee locking uses calculateRecruiterFee.
 export function floorToHundreds(amount: number): number {
   if (!amount || amount <= 0) return 0;
   return Math.floor(amount / 100) * 100;
 }
 
-export function calculateRecruiterFee(annualSalary: number): number {
+// Recruiter fee: guarantee-tiered %, rounded to nearest 10, floored to the
+// per-currency recruiter minimum. Independent of exclusive/standard.
+export function calculateRecruiterFee(
+  annualSalary: number,
+  guaranteeMonths: number,
+  currency: Currency,
+): number {
   if (!annualSalary || annualSalary <= 0) return 0;
-  return floorToHundreds(annualSalary * RECRUITER_FEE_DEFAULT_PCT);
+  const months = Math.max(0, Math.min(2, guaranteeMonths || 0));
+  const pct = RECRUITER_FEE_PCT_BY_GUARANTEE[months];
+  return Math.max(roundToTen(annualSalary * pct), CURRENCY_CONFIG[currency].recruiterMinFee);
 }

@@ -5,10 +5,10 @@ import { TrendingDown } from "lucide-react";
 import {
     cn,
     calculateClientFee,
+    calculateRecruiterFee,
     CLIENT_FEE_BASE_PCT,
     CLIENT_FEE_EXCLUSIVE_BASE_PCT,
     CLIENT_FEE_GUARANTEE_PCT,
-    RECRUITER_FEE_DEFAULT_PCT,
 } from "@/lib/utils";
 import {
     SUPPORTED_CURRENCIES,
@@ -22,7 +22,6 @@ import { useTranslations } from "@/i18n/client";
 // Canonical fee constants live in lib/utils.ts (same formula that locks fees
 // on job rows); per-currency minimums/slider bounds in lib/currency-config.ts.
 const GUARANTEE_ADJ = CLIENT_FEE_GUARANTEE_PCT;       // +1% per guarantee month
-const RECRUITER_PCT = RECRUITER_FEE_DEFAULT_PCT;      // 7% of annual salary (default, manually adjusted by Recruito)
 const TRADITIONAL_FEE_PCT = 25; // for savings comparison (marketing-only)
 
 const GUARANTEE_OPTIONS = [0, 1, 2] as const;
@@ -53,7 +52,7 @@ function calculate(
 
     const clientFee = calculateClientFee(annualSalary, guaranteeMonths, isExclusive, currency);
     const minFeeApplied = annualSalary * commission < CURRENCY_CONFIG[currency].minFee;
-    const recruiterFee = annualSalary * RECRUITER_PCT;
+    const recruiterFee = calculateRecruiterFee(annualSalary, guaranteeMonths, currency);
     const recruitorRevenue = clientFee - recruiterFee;
     const totalClientFee = clientFee * hires;
     const traditionalFee = annualSalary * (TRADITIONAL_FEE_PCT / 100) * hires;

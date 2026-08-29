@@ -14,18 +14,20 @@ export interface CurrencyConfig {
     maxSalary: number;
     step: number;
     minFee: number;
+    /** Minimum recruiter fee (0.7× minFee) — the recruiter-side economic floor. */
+    recruiterMinFee: number;
     /** Prefix symbol; currencies without one render as a code suffix. */
     symbol?: string;
 }
 
 export const CURRENCY_CONFIG: Record<Currency, CurrencyConfig> = {
-    SEK: { minSalary: 300_000, maxSalary: 3_000_000, step: 10_000, minFee: 40_000 },
-    NOK: { minSalary: 400_000, maxSalary: 3_000_000, step: 10_000, minFee: 45_000 },
-    DKK: { minSalary: 300_000, maxSalary: 3_000_000, step: 10_000, minFee: 30_000 },
-    ISK: { minSalary: 5_000_000, maxSalary: 30_000_000, step: 100_000, minFee: 550_000 },
-    EUR: { minSalary: 25_000, maxSalary: 200_000, step: 500, minFee: 3_500, symbol: "€" },
-    GBP: { minSalary: 28_000, maxSalary: 200_000, step: 500, minFee: 3_000, symbol: "£" },
-    USD: { minSalary: 45_000, maxSalary: 300_000, step: 500, minFee: 4_000, symbol: "$" },
+    SEK: { minSalary: 300_000, maxSalary: 3_000_000, step: 10_000, minFee: 40_000, recruiterMinFee: 28_000 },
+    NOK: { minSalary: 400_000, maxSalary: 3_000_000, step: 10_000, minFee: 45_000, recruiterMinFee: 31_500 },
+    DKK: { minSalary: 300_000, maxSalary: 3_000_000, step: 10_000, minFee: 30_000, recruiterMinFee: 21_000 },
+    ISK: { minSalary: 5_000_000, maxSalary: 30_000_000, step: 100_000, minFee: 550_000, recruiterMinFee: 385_000 },
+    EUR: { minSalary: 25_000, maxSalary: 200_000, step: 500, minFee: 3_500, recruiterMinFee: 2_450, symbol: "€" },
+    GBP: { minSalary: 28_000, maxSalary: 200_000, step: 500, minFee: 3_000, recruiterMinFee: 2_100, symbol: "£" },
+    USD: { minSalary: 45_000, maxSalary: 300_000, step: 500, minFee: 4_000, recruiterMinFee: 2_800, symbol: "$" },
 };
 
 export function isCurrency(v: unknown): v is Currency {

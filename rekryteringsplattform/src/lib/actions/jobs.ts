@@ -168,7 +168,7 @@ export async function createJob(formData: FormData) {
         ? calculateClientFee(feeBaseSalary, guaranteeMonths || 0, isExclusive, normalizeCurrency(salaryCurrency))
         : null;
     const lockedRecruiterFee = feeBaseSalary > 0
-        ? calculateRecruiterFee(feeBaseSalary)
+        ? calculateRecruiterFee(feeBaseSalary, guaranteeMonths || 0, normalizeCurrency(salaryCurrency))
         : null;
 
     // If updating an existing draft, use upsert with the provided ID
