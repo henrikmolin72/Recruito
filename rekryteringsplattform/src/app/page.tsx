@@ -181,6 +181,56 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Audience positioning: companies + recruiters */}
+      <section className="py-14 md:py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Companies — the Nordic marketplace */}
+            <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-7 md:p-9">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-600">{t("landing.marketplaceEyebrow")}</p>
+              <h2 className="mt-3 text-[clamp(1.6rem,2.6vw,2.15rem)] font-black leading-tight tracking-tight text-slate-950">
+                {t("landing.marketplaceTitle")}
+              </h2>
+              <p className="mt-3 max-w-md text-base leading-relaxed text-slate-600">{t("landing.marketplaceDesc")}</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {[t("landing.trustNoSubscription"), t("landing.trustNoUpfront"), t("landing.trustSuccessOnly")].map((chip) => (
+                  <span key={chip} className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1 text-xs font-semibold text-brand-700">
+                    <CheckCircle className="h-3.5 w-3.5 text-brand-500" /> {chip}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {[
+                  { flag: "🇸🇪", name: t("landing.countrySweden") },
+                  { flag: "🇳🇴", name: t("landing.countryNorway") },
+                  { flag: "🇩🇰", name: t("landing.countryDenmark") },
+                  { flag: "🇫🇮", name: t("landing.countryFinland") },
+                  { flag: "🇮🇸", name: t("landing.countryIceland") },
+                ].map((c) => (
+                  <span key={c.name} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                    <span aria-hidden>{c.flag}</span> {c.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Recruiters — choose mandates, earn on hires */}
+            <div className="rounded-2xl border border-success-200 bg-success-50/40 p-7 md:p-9">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-success-700">{t("landing.recruiterEyebrow")}</p>
+              <h2 className="mt-3 text-[clamp(1.6rem,2.6vw,2.15rem)] font-black leading-tight tracking-tight text-slate-950">
+                {t("landing.recruiterEarnTitle")}
+              </h2>
+              <p className="mt-3 max-w-md text-base font-medium leading-relaxed text-slate-700">
+                {t("landing.recruiterEarnDesc")}
+              </p>
+              <p className="mt-4 inline-flex items-start gap-2 rounded-lg bg-white/70 px-3 py-2 text-sm text-slate-500">
+                <Shield className="mt-0.5 h-4 w-4 shrink-0 text-success-500" /> {t("landing.recruiterEarnNote")}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How it works */}
       <section id="how-it-works" className="py-20 bg-muted">
         <div className="max-w-6xl mx-auto px-6">
