@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
 import { CandidateChat } from "@/components/shared/candidate-chat";
-import { cn } from "@/lib/utils";
+import { cn, formatDateShort } from "@/lib/utils";
 import { markConversationAsRead } from "@/lib/actions/messages";
 import { useTranslations } from "@/i18n/client";
 
@@ -73,7 +73,9 @@ export function RecruiterInbox({ initialConversations, currentUserId }: Recruite
                                                 {conv.otherParticipantName || conv.candidate?.job?.company?.company_name || t("common.unknown")}
                                             </p>
                                             <span className="text-[10px] text-muted-foreground">
-                                                {lastMsg ? new Date(lastMsg.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''}
+                                                {/* Fixed-locale formatter — browser-locale output differs from the
+                                                    server's and hydration fails on the text mismatch */}
+                                                {lastMsg ? formatDateShort(lastMsg.created_at) : ''}
                                             </span>
                                         </div>
                                         <p className="text-xs text-brand-600 font-medium truncate mb-1">
