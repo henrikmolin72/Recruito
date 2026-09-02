@@ -207,7 +207,10 @@ export async function createJob(formData: FormData) {
         // Salary
         salary_min: d.salary_min ?? rawInt("salary_min"),
         salary_max: d.salary_max ?? rawInt("salary_max"),
-        salary_currency: d.salary_currency ?? (raw("salary_currency") || "SEK"),
+        // NULL = employer has not actively chosen a currency yet (draft saved
+        // before step-1 validation) — must survive the round-trip so the edit
+        // flow re-prompts instead of silently locking SEK fees.
+        salary_currency: "salary_currency" in dAny ? (dAny.salary_currency as string | null) : rawOrNull("salary_currency"),
         salary_gross_net: d.salary_gross_net ?? rawOrNull("salary_gross_net"),
         salary_period: d.salary_period ?? rawOrNull("salary_period"),
         bonus_structure: d.bonus_structure ?? rawOrNull("bonus_structure"),

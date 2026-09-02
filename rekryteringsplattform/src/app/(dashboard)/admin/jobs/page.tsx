@@ -14,16 +14,53 @@ import { formatDateShort } from "@/lib/utils";
 import { MaxCandidatesEditor } from "@/components/dashboard/admin/max-candidates-editor";
 import { MaxRecruitersEditor } from "@/components/dashboard/admin/max-recruiters-editor";
 
-export default async function AdminJobsPage() {
+// Same bucketing as the company jobs tabs: filled → Filled & Closed,
+// closed/cancelled → Closed, everything else (active/paused/pending) → Active.
+function bucketForStatus(status: string): "active" | "closed" | "filled" {
+  if (status === "filled") return "filled";
+  if (status === "closed" || status === "cancelled") return "closed";
+  return "active";
+}
+
+const STATUS_TABS = [
+  { key: "all", label: "All" },
+  { key: "active", label: "Active" },
+  { key: "closed", label: "Closed" },
+  { key: "filled", label: "Filled & Closed" },
+] as const;
+
+export default async function AdminJobsPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+  const { status: statusFilter = "all" } = await searchParams;
   const jobs = await getAdminJobs();
   const dict = await getDictionary();
   const a = dict.admin;
+
+  const visibleJobs = statusFilter === "all" ? jobs : jobs.filter((j) => bucketForStatus(j.status) === statusFilter);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">{a.jobsPageTitle}</h1>
         <p className="text-muted-foreground">{a.jobsPageSubtitle.replace("{count}", String(jobs.length))}</p>
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        {STATUS_TABS.map((t) => {
+          const count = t.key === "all" ? jobs.length : jobs.filter((j) => bucketForStatus(j.status) === t.key).length;
+          return (
+            <Link
+              key={t.key}
+              href={t.key === "all" ? "/admin/jobs" : `/admin/jobs?status=${t.key}`}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold border transition-colors ${
+                statusFilter === t.key
+                  ? "bg-brand-600 text-white border-brand-600"
+                  : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              {t.label} ({count})
+            </Link>
+          );
+        })}
       </div>
 
       <Card>
@@ -46,12 +83,12 @@ export default async function AdminJobsPage() {
               </tr>
             </thead>
             <tbody>
-              {jobs.length === 0 ? (
+              {visibleJobs.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="p-8 text-center text-muted-foreground">{a.noJobsRegistered}</td>
                 </tr>
               ) : (
-                jobs.map((job) => (
+                visibleJobs.map((job) => (
                   <tr key={job.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                     <td className="p-4 font-medium">
                       <Link href={`/admin/jobs/${job.id}`} className="text-brand-600 hover:underline">
@@ -88,6 +125,12 @@ export default async function AdminJobsPage() {
                       {job.clientFeeEstimated != null
                         ? formatCurrency(job.clientFeeEstimated, job.salaryCurrency)
                         : dict.common.noDataDash}
+                      {/* Effective % of salary, same read-only style as the Recruiter Fee % */}
+                      <div className="text-[10px] text-muted-foreground font-bold">
+                        {job.clientFeeEstimated != null && job.salary
+                          ? `${((job.clientFeeEstimated / job.salary) * 100).toFixed(1).replace(/\.0$/, "")}%`
+                          : `${job.feePercentage}%`}
+                      </div>
                     </td>
                     <td className="p-4">
                       <JobFeeAmountEditor

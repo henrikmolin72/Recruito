@@ -7,6 +7,7 @@ import {
   LANGUAGE_PROFICIENCY_OPTIONS,
 } from "@/lib/recruiter-onboarding-options";
 import { ACTIVE_EMPLOYMENT_TYPE_OPTIONS } from "@/lib/job-form-options";
+import { SUPPORTED_CURRENCIES } from "@/lib/currency-config";
 import { createTranslator } from "@/i18n/server";
 
 const EMAIL_MAX_LENGTH = 254;
@@ -289,7 +290,11 @@ function createJobSchema(t: TranslatorFn) {
       // Step 4 — Salary & benefits
       salary_min: optionalInteger(0, 10_000_000),
       salary_max: optionalInteger(0, 10_000_000),
-      salary_currency: z.string().trim().min(3, t("validation.currencyRequired")).max(5, t("validation.invalidCurrency")),
+      // Allowlist at the trust boundary — arbitrary codes crash formatCurrency
+      // (Intl RangeError) on every list that renders the stored value. Nullable:
+      // a draft saved before the employer actively chose a currency stores NULL
+      // so the wizard re-prompts on reopen (client requirement 2026-09-02).
+      salary_currency: z.enum(SUPPORTED_CURRENCIES, { message: t("validation.invalidCurrency") }).nullable(),
       salary_gross_net: z.enum(["gross", "net"]).nullable().optional(),
       salary_period: z.enum(["monthly", "yearly", "hourly"]).nullable().optional(),
       bonus_structure: optionalText(500),
@@ -377,7 +382,7 @@ export async function validateJobForm(formData: FormData) {
     // Step 4
     salary_min: toOptionalInt(formData.get("salary_min")),
     salary_max: toOptionalInt(formData.get("salary_max")),
-    salary_currency: toString(formData.get("salary_currency")) || "SEK",
+    salary_currency: toString(formData.get("salary_currency")) || null,
     salary_gross_net: toString(formData.get("salary_gross_net")) || null,
     salary_period: toString(formData.get("salary_period")) || null,
     bonus_structure: toString(formData.get("bonus_structure")),

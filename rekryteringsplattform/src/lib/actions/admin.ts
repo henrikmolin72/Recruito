@@ -9,6 +9,7 @@ import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { createNotification } from "@/lib/notifications/create";
 import { getDictionary } from "@/i18n/server";
 import { countRecruiterCandidateBuckets, countCompanyCandidateBuckets, countCandidatesAgainstCap } from "@/lib/candidate-workflow";
+import { classifyMandate } from "@/lib/mandate-stages";
 import { averageGuaranteeRate } from "@/lib/recruiter-metrics";
 import type { ClientFeeUpliftReason } from "@/types/db-types";
 
@@ -115,11 +116,42 @@ export async function getAdminRecruiters() {
     // the canonical workflow predicates — no per-recruiter N+1, no status strings here.
     const recruiterIds = (recruiters || []).map(r => r.id);
     const candidatesRes = recruiterIds.length > 0
-        ? await supabaseAdmin.from("candidates").select("recruiter_id, status").in("recruiter_id", recruiterIds)
+        ? await supabaseAdmin.from("candidates").select("recruiter_id, job_id, status").in("recruiter_id", recruiterIds)
         : { data: [] };
     const statusesByRecruiter: Record<string, (string | null)[]> = {};
-    for (const c of (candidatesRes.data || []) as Array<{ recruiter_id: string; status: string | null }>) {
+    const candsByRecruiterJob = new Map<string, { status: string | null }[]>();
+    for (const c of (candidatesRes.data || []) as Array<{ recruiter_id: string; job_id: string | null; status: string | null }>) {
         (statusesByRecruiter[c.recruiter_id] ??= []).push(c.status);
+        if (c.job_id) {
+            const key = `${c.recruiter_id}:${c.job_id}`;
+            const arr = candsByRecruiterJob.get(key) || [];
+            arr.push({ status: c.status });
+            candsByRecruiterJob.set(key, arr);
+        }
+    }
+
+    // Active mandates per recruiter — same classifyMandate definition as the
+    // recruiter's My Mandates "Active" tab. The admin list shows the count and
+    // expands it to the job titles on click.
+    const mandatesRes = recruiterIds.length > 0
+        ? await supabaseAdmin
+            .from("job_mandates")
+            .select("recruiter_id, is_active, job:jobs(id, title, status, open_positions)")
+            .in("recruiter_id", recruiterIds)
+            .eq("is_active", true)
+        : { data: [] };
+    const activeMandatesByRecruiter: Record<string, string[]> = {};
+    const seenMandateJobs = new Set<string>();
+    for (const m of (mandatesRes.data || []) as Array<{ recruiter_id: string; job: unknown }>) {
+        const job = pickFirst(m.job) as { id: string; title: string; status: string | null; open_positions: number | null } | null;
+        if (!job) continue;
+        // Mandate recycling can leave several rows per job — count each job once (by id).
+        const seenKey = `${m.recruiter_id}:${job.id}`;
+        if (seenMandateJobs.has(seenKey)) continue;
+        seenMandateJobs.add(seenKey);
+        const cands = candsByRecruiterJob.get(seenKey) || [];
+        if (classifyMandate({ status: job.status, open_positions: job.open_positions, candidates: cands }) !== "active") continue;
+        (activeMandatesByRecruiter[m.recruiter_id] ??= []).push(job.title);
     }
 
     return (recruiters || []).map((r: any) => {
@@ -136,6 +168,7 @@ export async function getAdminRecruiters() {
             placements: r.total_placements || 0,
             activeCandidates: active,
             rejectedCandidates: rejected,
+            activeMandates: activeMandatesByRecruiter[r.id] || [],
             years_experience: r.years_experience || 0,
             joinedAt: r.created_at,
             legalEligibilityConfirmed: r.legal_eligibility_confirmed === true,

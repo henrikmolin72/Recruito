@@ -85,7 +85,8 @@ export interface CalculatorState {
     guaranteeMonths: 0 | 1 | 2;
     isExclusive: boolean;
     hires: number;
-    currency: Currency;
+    /** null = employer has not actively chosen a currency yet (job wizard requirement). */
+    currency: Currency | null;
 }
 
 export const CALCULATOR_DEFAULTS: CalculatorState = {
@@ -114,7 +115,8 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
     const guaranteeMonths = state?.guaranteeMonths ?? localGuaranteeMonths;
     const isExclusive = state?.isExclusive ?? localIsExclusive;
     const hires = state?.hires ?? localHires;
-    const currency = state?.currency ?? localCurrency;
+    // Controlled null means "not chosen yet" and must NOT fall back to the local default.
+    const currency = state ? state.currency : localCurrency;
 
     const setSalary = (v: number) => {
         if (onStateChange && state) onStateChange({ ...state, salary: v });
@@ -145,9 +147,32 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
     };
 
     const r = useMemo(
-        () => calculate(salary, guaranteeMonths, isExclusive, hires, currency),
+        () => (currency == null ? null : calculate(salary, guaranteeMonths, isExclusive, hires, currency)),
         [salary, guaranteeMonths, isExclusive, hires, currency],
     );
+
+    // No currency chosen yet (job wizard): prompt an active choice before showing the calculator.
+    if (currency == null || r == null) {
+        return (
+            <div className="mx-0 mt-1 mb-1">
+                <div className="rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/80 shadow-lg shadow-brand-500/5 p-6 text-center space-y-3">
+                    <p className="text-sm font-bold text-slate-700">{t("calculator.selectCurrency")}</p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                        {SUPPORTED_CURRENCIES.map((c) => (
+                            <button
+                                key={c}
+                                type="button"
+                                onClick={() => setCurrency(c)}
+                                className="px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
+                            >
+                                {c}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const { minSalary: sliderMin, maxSalary: sliderMax, step: sliderStep } = CURRENCY_CONFIG[currency];
     const minLabel = formatMoney(sliderMin, currency);
@@ -171,7 +196,7 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                                 <select
                                     value={currency}
                                     onChange={(e) => setCurrency(e.target.value as Currency)}
-                                    className="text-[10px] font-bold text-slate-600 bg-slate-100 border-0 rounded px-1 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-400"
+                                    className="text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-400"
                                 >
                                     {SUPPORTED_CURRENCIES.map(c => (
                                         <option key={c} value={c}>{c}</option>

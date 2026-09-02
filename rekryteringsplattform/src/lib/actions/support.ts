@@ -25,6 +25,16 @@ export async function sendSupportRequest(jobId: string, message: string) {
     const jobUrl = `${process.env.NEXT_PUBLIC_APP_URL || ""}/admin/jobs/${job.id}`;
     const senderName = profile?.full_name || profile?.email || user.email || "Unknown user";
 
+    // The in-app thread is visible to the SENDER too — keep the admin job link
+    // and raw Job ID out of it (client request 2026-09-02); the email mirror and
+    // admin-only notifications keep the full metadata.
+    const threadLines = [
+        `From: ${senderName} (${profile?.email || user.email || "no email"})`,
+        `Job: ${job.title}`,
+        "",
+        trimmed,
+    ];
+    const threadText = threadLines.join("\n");
     const bodyLines = [
         `From: ${senderName} (${profile?.email || user.email || "no email"})`,
         `Job: ${job.title}`,
@@ -42,7 +52,7 @@ export async function sendSupportRequest(jobId: string, message: string) {
     // existing Recruito support thread (which also notifies admins); any other
     // sender (company) falls back to direct admin notifications.
     let deliveredInApp = false;
-    const threadResult = await sendRecruiterSupportMessage("", "", text);
+    const threadResult = await sendRecruiterSupportMessage("", "", threadText);
     if (threadResult && "success" in threadResult) {
         deliveredInApp = true;
     } else {

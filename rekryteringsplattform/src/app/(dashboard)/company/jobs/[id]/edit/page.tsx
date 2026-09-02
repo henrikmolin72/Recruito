@@ -60,7 +60,9 @@ export default async function EditJobPage({ params }: { params: Promise<{ id: st
                 position_type: job.position_type ?? "",
                 open_positions: job.open_positions,
                 salary_min: job.salary_min,
-                salary_currency: job.salary_currency ?? "EUR",
+                // Empty string (not a default) so the wizard re-prompts the
+                // currency chooser for rows where no currency was ever chosen.
+                salary_currency: job.salary_currency ?? "",
                 salary_period: job.salary_period ?? "",
                 benefits: (job.benefits as string[] | null) ?? [],
                 benefits_other: job.benefits_other ?? "",

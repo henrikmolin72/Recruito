@@ -90,4 +90,27 @@ describe("validateJobForm", () => {
     const r = await validateJobForm(fd);
     expect(r.success).toBe(true);
   });
+
+  // Currency is an allowlist at the trust boundary: garbage codes crash
+  // formatCurrency (Intl RangeError) on every list rendering the stored value.
+  it("rejects a salary_currency outside the supported allowlist", async () => {
+    const fd = buildValidJobFormData();
+    fd.set("salary_currency", "ZZZ");
+    const r = await validateJobForm(fd);
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.field).toBe("salary_currency");
+  });
+
+  // A draft saved before the employer actively chose a currency posts "" —
+  // it must parse to NULL (not a silent SEK default) so the edit flow
+  // re-prompts the chooser instead of locking fees in a never-chosen currency.
+  it("parses an empty salary_currency to null (unchosen draft round-trip)", async () => {
+    const fd = buildValidJobFormData();
+    fd.set("salary_currency", "");
+    fd.delete("salary_min");
+    fd.delete("salary_max");
+    const r = await validateJobForm(fd);
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.salary_currency).toBeNull();
+  });
 });

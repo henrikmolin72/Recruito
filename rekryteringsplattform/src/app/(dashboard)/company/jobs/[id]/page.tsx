@@ -265,6 +265,9 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ id:
                                 </span>
                             </div>
                         )}
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                            {job.is_exclusive ? c.assignmentExclusive : c.assignmentStandard}
+                        </div>
                     </div>
                 </div>
 

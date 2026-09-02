@@ -111,6 +111,11 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                                     Guarantee: {formatGuaranteeMonths(job.guarantee_period_months!)}
                                 </p>
                             )}
+                            {job.is_exclusive != null && (
+                                <p className="text-xs font-semibold text-slate-500">
+                                    {job.is_exclusive ? "Exclusive" : "Standard"}
+                                </p>
+                            )}
                         </div>
                     )}
                 </div>
@@ -127,6 +132,11 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                     {!isRecruiter && job.guarantee_period_months != null && (
                         <span className="flex items-center gap-1 px-3 py-1 bg-brand-50 rounded-full text-brand-700 font-medium">
                             <Shield className="h-3.5 w-3.5" /> Guarantee: {formatGuaranteeMonths(job.guarantee_period_months!)}
+                        </span>
+                    )}
+                    {!isRecruiter && job.is_exclusive != null && (
+                        <span className="px-3 py-1 bg-slate-100 rounded-full text-slate-600 font-medium">
+                            {job.is_exclusive ? "Exclusive" : "Standard"}
                         </span>
                     )}
                     {!job.is_confidential && company?.website && (

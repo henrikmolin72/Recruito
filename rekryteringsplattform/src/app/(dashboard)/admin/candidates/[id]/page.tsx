@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -94,6 +94,23 @@ export default async function AdminCandidateDetailPage({
                             {c.current_title || "—"}
                             {c.current_company ? ` @ ${c.current_company}` : ""} · {c.jobTitle} · {c.companyName} · Recruiter: {c.recruiterName}
                         </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            {/* Hide when the party can't be resolved ("—" fallback) — the thread could never be opened */}
+                            {c.companyName && c.companyName !== "—" && (
+                                <Link href={`/admin/messages/${c.id}?party=company`}>
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                        <MessageSquare className="h-3.5 w-3.5" /> Message {c.companyName}
+                                    </Button>
+                                </Link>
+                            )}
+                            {c.recruiterName && c.recruiterName !== "—" && (
+                                <Link href={`/admin/messages/${c.id}?party=recruiter`}>
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                        <MessageSquare className="h-3.5 w-3.5" /> Message {c.recruiterName}
+                                    </Button>
+                                </Link>
+                            )}
+                        </div>
                     </div>
                 </div>
                 {cvUrl && (

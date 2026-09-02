@@ -764,6 +764,24 @@ export async function getRecruiterSupportMessages() {
     return fetchThreadMessages(conversationId);
 }
 
+// Read-only variant for list surfaces (recruiter Messages inbox): never creates
+// the thread row, so rendering the inbox can't pollute the admin inbox with
+// empty support threads.
+export async function getRecruiterSupportMessagesIfExists() {
+    const user = await getRecruiterUser();
+    if (!user) return null;
+    const supabaseAdmin = createAdminClient();
+    const { data: existing } = await supabaseAdmin
+        .from("conversations")
+        .select("id")
+        .eq("owner_user_id", user.id)
+        .eq("conversation_type", RECRUITER_SUPPORT_TYPE)
+        .is("candidate_id", null)
+        .maybeSingle();
+    if (!existing?.id) return null;
+    return fetchThreadMessages(existing.id);
+}
+
 // Recruiter sends to Recruito. Signature matches CandidateChat's sendMessageFn
 // (leading candidateId/jobId are unused — the thread is the caller's own).
 export async function sendRecruiterSupportMessage(_candidateId: string, _jobId: string, content: string) {

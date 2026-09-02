@@ -118,7 +118,9 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
     const [calcState, setCalcState] = useState<CalculatorState>({
         ...CALCULATOR_DEFAULTS,
         salary: initialData?.salary_min ? Number(initialData.salary_min) : CALCULATOR_DEFAULTS.salary,
-        currency: normalizeCurrency(initialData?.salary_currency ?? CALCULATOR_DEFAULTS.currency),
+        // New jobs start with NO currency — the employer must actively choose one
+        // (client requirement 2026-09-02). Edits/drafts keep their saved currency.
+        currency: initialData?.salary_currency ? normalizeCurrency(initialData.salary_currency) : null,
     });
 
     const STEPS = [
@@ -132,7 +134,9 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
     ];
 
     const recruitmentFee = useMemo(
-        () => calculateClientFee(calcState.salary, calcState.guaranteeMonths, calcState.isExclusive, calcState.currency),
+        () => calcState.currency == null
+            ? null
+            : calculateClientFee(calcState.salary, calcState.guaranteeMonths, calcState.isExclusive, calcState.currency),
         [calcState]
     );
 
@@ -236,7 +240,7 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     const FIELD_TO_STEP: Record<string, number> = {
-        title: 1, country: 1, city: 1, location_code: 1, location: 1, industry: 1,
+        title: 1, country: 1, city: 1, location_code: 1, location: 1, industry: 1, currency: 1,
         employment_type: 2, contract_duration: 2, work_type: 2, remote_type: 2,
         description: 3, key_requirements: 3, language_requirements: 3, team_size: 3,
         reporting_to: 3, position_type: 3, open_positions: 3,
@@ -251,7 +255,7 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
 
     const REQUIRED_FIELDS_BY_STEP: Record<number, string[]> = {
         1: ["title", "industry"],
-        2: ["employment_type"],
+        2: ["employment_type", "work_type"],
         3: ["description"],
     };
 
@@ -262,6 +266,10 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
             if (typeof value === "string" && !value.trim()) {
                 errors[field] = t("jobForm.fieldRequired");
             }
+        }
+        // Currency lives in calculator state, not formData — required before leaving step 1.
+        if (s === 1 && calcState.currency == null) {
+            errors.currency = t("jobForm.fieldRequired");
         }
         return errors;
     }
@@ -367,10 +375,19 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
                 data.append(key, stringValue);
             }
         }
-        // Override salary and currency with values from the calculator
-        data.set("salary_min", String(calcState.salary));
-        data.set("salary_max", String(calcState.salary));
-        data.set("salary_currency", calcState.currency);
+        // Override salary and currency with values from the calculator.
+        // No currency chosen yet (draft save before step-1 validation): post
+        // neither salary nor currency, so the server stores NULL currency and
+        // locks no fees — reopening the draft re-prompts the chooser.
+        if (calcState.currency == null) {
+            data.delete("salary_min");
+            data.delete("salary_max");
+            data.set("salary_currency", "");
+        } else {
+            data.set("salary_min", String(calcState.salary));
+            data.set("salary_max", String(calcState.salary));
+            data.set("salary_currency", calcState.currency);
+        }
         // Pass calculator inputs so server can lock the client fee using the same formula
         data.set("guarantee_period_months", String(calcState.guaranteeMonths));
         data.set("is_exclusive", calcState.isExclusive ? "true" : "false");
@@ -579,7 +596,7 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
                             <CardTitle className="text-xl">{STEPS[step - 1].title}</CardTitle>
                             <CardDescription>{STEPS[step - 1].description}</CardDescription>
                         </div>
-                        {step === 7 && (
+                        {step === 7 && recruitmentFee != null && (
                             <div className="shrink-0 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-right">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-brand-500">
                                     {t("jobForm.recruitmentFeeLabel") || "Recruitment Fee"}
@@ -661,7 +678,14 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
                                     {/* Recruitment Fee Calculator */}
                                     <div className="pt-4 mt-4 border-t border-slate-100">
                                         <h3 className="text-sm font-bold text-slate-700 mb-3">{t("jobForm.calculatorTitle") || "Calculator"}</h3>
-                                        <RecruitmentCalculator state={calcState} onStateChange={setCalcState} />
+                                        {fieldError("currency")}
+                                        <RecruitmentCalculator
+                                            state={calcState}
+                                            onStateChange={(s) => {
+                                                setCalcState(s);
+                                                if (s.currency != null) setFieldErrors(prev => (prev.currency ? { ...prev, currency: "" } : prev));
+                                            }}
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -687,11 +711,12 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className={labelClass}>{t("jobForm.workType")}</label>
-                                            <select name="work_type" value={formData.work_type} onChange={handleInputChange} className={selectClass}>
+                                            <label className={labelClass}>{t("jobForm.workType")} *</label>
+                                            <select name="work_type" value={formData.work_type} onChange={handleInputChange} className={`${selectClass} ${errClass("work_type")}`}>
                                                 <option value="">{t("jobForm.selectWorkType")}</option>
                                                 {WORK_TYPE_OPTIONS.map(w => <option key={w} value={w}>{WORK_TYPE_LABELS[w]}</option>)}
                                             </select>
+                                            {fieldError("work_type")}
                                         </div>
                                         {formData.work_type === "remote" && (
                                             <div className="space-y-2">

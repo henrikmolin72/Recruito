@@ -157,13 +157,30 @@ export async function getRecruitoThreadForAdmin(
         .eq("candidate_id", candidateId)
         .eq("conversation_type", conversationType)
         .maybeSingle();
-    if (!conv) return null;
 
     const { data: cand } = await sb
         .from("candidates")
-        .select("first_name, last_name, current_title, status")
+        .select("first_name, last_name, current_title, status, job_id")
         .eq("id", candidateId)
         .single();
+    if (!cand) return null;
+
+    // No conversation yet: return an empty thread so the admin can open the view
+    // and start it — sendAdminMessage creates the row on the first message.
+    if (!conv) {
+        return {
+            conversationId: "",
+            candidateId,
+            jobId: cand.job_id ?? null,
+            candidate: {
+                first_name: cand.first_name ?? "",
+                last_name: cand.last_name ?? "",
+                current_title: cand.current_title ?? "",
+                status: cand.status ?? "",
+            },
+            messages: [],
+        };
+    }
 
     const { data: msgs } = await sb
         .from("messages")
