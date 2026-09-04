@@ -7,6 +7,7 @@ import { logout } from "@/lib/actions/auth";
 import { NotificationsDropdown } from "@/components/layout/notifications-dropdown";
 import { QuickActions } from "@/components/layout/quick-actions";
 import { NAV_MAP } from "@/components/layout/sidebar";
+import { OnlineCounter } from "@/components/layout/online-counter";
 import { AppLogo } from "@/components/shared/app-logo";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { useTranslations } from "@/i18n/client";
@@ -64,6 +65,7 @@ export function Header({ role }: { role: string }) {
             <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", isRecruiter ? "bg-brand-400" : isAdmin ? "bg-emerald-600" : "bg-blue-500")} />
             {isRecruiter ? t("nav.professional") : isAdmin ? "Admin" : t("nav.corporate")}
           </div>
+          {isAdmin && <OnlineCounter />}
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">

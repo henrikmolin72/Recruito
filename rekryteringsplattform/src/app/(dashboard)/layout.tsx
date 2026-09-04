@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { PresenceHeartbeat } from "@/components/layout/presence-heartbeat";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,6 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen">
+      <PresenceHeartbeat />
       <Sidebar role={role} />
       <div className="flex flex-1 flex-col min-w-0">
         <Header role={role} />
