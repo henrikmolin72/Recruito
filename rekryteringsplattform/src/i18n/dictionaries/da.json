@@ -1726,6 +1726,8 @@
   },
   "calculator": {
     "annualSalary": "Årsløn (uden variabel løn / fordele)",
+    "decreaseSalary": "Sænk lønnen ét trin",
+    "increaseSalary": "Hæv lønnen ét trin",
     "selectCurrency": "Vælg valuta for at fortsætte",
     "guarantee": "Garanti",
     "none": "Ingen",

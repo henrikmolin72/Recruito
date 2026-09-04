@@ -1726,6 +1726,8 @@
   },
   "calculator": {
     "annualSalary": "Årslön (exkl. rörlig lön / förmåner)",
+    "decreaseSalary": "Minska lönen ett steg",
+    "increaseSalary": "Öka lönen ett steg",
     "selectCurrency": "Välj valuta för att fortsätta",
     "guarantee": "Garanti",
     "none": "Ingen",

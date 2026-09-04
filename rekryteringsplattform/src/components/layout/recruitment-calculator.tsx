@@ -15,6 +15,7 @@ import {
     CURRENCY_CONFIG,
     clampSalaryToCurrency,
     formatMoney,
+    stepSalary,
     type Currency,
 } from "@/lib/currency-config";
 import { useTranslations } from "@/i18n/client";
@@ -190,9 +191,27 @@ export function RecruitmentCalculator({ state, onStateChange }: RecruitmentCalcu
                                 {t("calculator.annualSalary")}
                             </label>
                             <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-bold text-slate-700 tabular-nums">
+                                <button
+                                    type="button"
+                                    onClick={() => setSalary(stepSalary(salary, currency, -1))}
+                                    disabled={salary <= sliderMin}
+                                    aria-label={t("calculator.decreaseSalary")}
+                                    className="h-6 w-6 rounded-md border border-slate-300 bg-white text-sm font-bold leading-none text-slate-700 hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    −
+                                </button>
+                                <span className="min-w-[4.5rem] text-center text-xs font-bold text-slate-700 tabular-nums">
                                     {fmt(salary)}
                                 </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setSalary(stepSalary(salary, currency, 1))}
+                                    disabled={salary >= sliderMax}
+                                    aria-label={t("calculator.increaseSalary")}
+                                    className="h-6 w-6 rounded-md border border-slate-300 bg-white text-sm font-bold leading-none text-slate-700 hover:border-brand-500 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    +
+                                </button>
                                 <select
                                     value={currency}
                                     onChange={(e) => setCurrency(e.target.value as Currency)}

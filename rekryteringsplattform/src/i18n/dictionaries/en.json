@@ -1726,6 +1726,8 @@
   },
   "calculator": {
     "annualSalary": "Annual Salary (without variable / benefits)",
+    "decreaseSalary": "Decrease salary by one step",
+    "increaseSalary": "Increase salary by one step",
     "selectCurrency": "Select a currency to continue",
     "guarantee": "Guarantee",
     "none": "None",

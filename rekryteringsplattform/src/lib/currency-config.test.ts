@@ -19,6 +19,7 @@ import {
     normalizeCurrency,
     clampSalaryToCurrency,
     formatMoney,
+    stepSalary,
     type Currency,
 } from "./currency-config";
 import { calculateClientFee } from "./utils";
@@ -54,6 +55,11 @@ describe("CURRENCY_CONFIG", () => {
         expect(normalizeCurrency("ISK")).toBe("ISK");
         expect(normalizeCurrency("JPY")).toBe("EUR");
         expect(normalizeCurrency(undefined)).toBe("EUR");
+    });
+
+    // Client ask 2026-09-04: +/- moves the salary by 10 000 for the Nordic currencies.
+    it.each(["SEK", "NOK", "DKK", "ISK"] as Currency[])("%s slider/stepper step is 10 000", (currency) => {
+        expect(CURRENCY_CONFIG[currency].step).toBe(10_000);
     });
 });
 
@@ -158,5 +164,22 @@ describe("formatMoney", () => {
     it("suffixes the code for the rest", () => {
         expect(formatMoney(300_000, "SEK")).toBe("300 000 SEK");
         expect(formatMoney(5_000_000, "ISK")).toBe("5 000 000 ISK");
+    });
+});
+
+describe("stepSalary — +/- one step, snapped to the grid, clamped to the slider range", () => {
+    it("moves by one step from a grid value", () => {
+        expect(stepSalary(300_000, "SEK", 1)).toBe(310_000);
+        expect(stepSalary(310_000, "SEK", -1)).toBe(300_000);
+        expect(stepSalary(5_000_000, "ISK", 1)).toBe(5_010_000);
+        expect(stepSalary(25_000, "EUR", 1)).toBe(25_500);
+    });
+    it("snaps an off-grid value to the next grid point in the pressed direction", () => {
+        expect(stepSalary(305_000, "SEK", 1)).toBe(310_000);
+        expect(stepSalary(305_000, "SEK", -1)).toBe(300_000);
+    });
+    it("clamps at the slider bounds", () => {
+        expect(stepSalary(300_000, "SEK", -1)).toBe(300_000);
+        expect(stepSalary(3_000_000, "SEK", 1)).toBe(3_000_000);
     });
 });
