@@ -25,6 +25,7 @@ import {
     SHIFT_WORK_OPTIONS,
     COUNTRY_OPTIONS,
     normalizeCountry,
+    normalizeIndustry,
     EUROPEAN_LANGUAGE_OPTIONS,
     INDUSTRY_OPTIONS,
     REPORTING_TO_OPTIONS,
@@ -192,7 +193,7 @@ export function CreateJobForm({ editJobId, initialData, industryLocked }: Create
         city: initialData?.city ?? "",
         location_code: initialData?.location_code ?? "",
         location: initialData?.location ?? "",
-        industry: initialData?.industry ?? "",
+        industry: normalizeIndustry(initialData?.industry ?? ""),
         is_confidential: initialData?.is_confidential ?? false,
         // Step 2
         employment_type: (ACTIVE_EMPLOYMENT_TYPE_OPTIONS as readonly string[]).includes(initialData?.employment_type ?? "") ? initialData!.employment_type! : "full_time",

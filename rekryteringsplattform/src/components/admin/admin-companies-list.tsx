@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { CompanyApproveButton } from "@/components/dashboard/admin/company-approve-button";
 import { useTranslations } from "@/i18n/client";
 import { formatDateShort } from "@/lib/utils";
+import { normalizeIndustry } from "@/lib/job-form-options";
 
 interface AdminCompany {
     id: string;
@@ -88,7 +89,7 @@ export function AdminCompaniesList({ companies }: { companies: AdminCompany[] })
                                         </Link>
                                     </td>
                                     <td className="p-4">
-                                        {company.industry ? <Badge variant="outline">{company.industry}</Badge> : dash}
+                                        {company.industry ? <Badge variant="outline">{normalizeIndustry(company.industry)}</Badge> : dash}
                                     </td>
                                     <td className="p-4 text-muted-foreground">
                                         {company.joinedAt ? formatDateShort(company.joinedAt) : dash}

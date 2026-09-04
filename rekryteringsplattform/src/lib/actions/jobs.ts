@@ -15,7 +15,7 @@ import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { newJobNotificationEmail } from "@/lib/email/email-templates";
 import { requireAdmin } from "@/lib/actions/require-admin";
 import { rejectRemainingCandidates, notifyRecruitersOfJobLifecycleChange } from "@/lib/job-fill";
-import { normalizeCountry, INDUSTRY_OPTIONS } from "@/lib/job-form-options";
+import { normalizeCountry, normalizeIndustry, INDUSTRY_OPTIONS } from "@/lib/job-form-options";
 import { formatJobLocation } from "@/lib/format-job-location";
 import type { PipelineStage } from "@/types/db-types";
 
@@ -142,7 +142,7 @@ export async function createJob(formData: FormData) {
     const salaryMax = (dAny.salary_max as number | undefined) ?? rawInt("salary_max");
     const guaranteeMonths = (dAny.guarantee_period_months as number | undefined) ?? rawInt("guarantee_period_months") ?? 0;
     const isExclusive = (dAny.is_exclusive as boolean | undefined) ?? rawBool("is_exclusive");
-    const profileIndustry = (company as { industry?: string | null }).industry ?? "";
+    const profileIndustry = normalizeIndustry((company as { industry?: string | null }).industry ?? "");
     const lockedIndustry = (INDUSTRY_OPTIONS as readonly string[]).includes(profileIndustry)
         ? profileIndustry
         : null;
@@ -458,7 +458,7 @@ export async function updateJob(jobId: string, formData: FormData) {
     if (authError) return { error: authError };
 
     // Same industry lock as createJob — editing a draft must not bypass it.
-    const updProfileIndustry = company?.industry ?? "";
+    const updProfileIndustry = normalizeIndustry(company?.industry ?? "");
     const updLockedIndustry = (INDUSTRY_OPTIONS as readonly string[]).includes(updProfileIndustry)
         ? updProfileIndustry
         : null;

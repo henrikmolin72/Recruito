@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatDate, floorToHundreds } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { normalizeIndustry } from "@/lib/job-form-options";
 import { useTranslations } from "@/i18n/client";
 import { EMPLOYMENT_TYPE_DICT_KEY } from "@/lib/job-form-options";
 import { formatJobLocation } from "@/lib/format-job-location";
@@ -63,7 +64,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
 
   // Extract unique values from actual data
   const industries = useMemo(() => {
-    const set = new Set(jobs.map((j: any) => j.industry).filter(Boolean));
+    const set = new Set(jobs.map((j: any) => j.industry).filter(Boolean).map((v: string) => normalizeIndustry(v)));
     return Array.from(set).sort();
   }, [jobs]);
 
@@ -89,9 +90,10 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
 
   const filteredJobs = useMemo(() => {
     const filtered = jobs.filter((job: any) => {
-      const searchStr = `${job.title} ${job.company_name || ""} ${job.industry} ${job.location || ""} ${job.description || ""}`.toLowerCase();
+      const jobIndustry = job.industry ? normalizeIndustry(job.industry) : "";
+      const searchStr = `${job.title} ${job.company_name || ""} ${jobIndustry} ${job.location || ""} ${job.description || ""}`.toLowerCase();
       const matchesSearch = !search || searchStr.includes(search.toLowerCase());
-      const matchesIndustry = industry === "all" || job.industry === industry;
+      const matchesIndustry = industry === "all" || jobIndustry === industry;
       const matchesLocation = location === "all" || job.location === location;
       const matchesEmployment = employmentType === "all" || job.employment_type === employmentType;
       const matchesWorkType = workType === "all" || job.work_type === workType;
@@ -307,7 +309,7 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
                     <div className="flex-1 p-8">
                       <div className="flex items-center gap-3 mb-4">
                         <Badge variant="outline" className="rounded-full bg-slate-50 text-slate-500 border-slate-100 py-1 px-3">
-                          {job.industry}
+                          {job.industry ? normalizeIndustry(job.industry) : job.industry}
                         </Badge>
                         <Badge variant="outline" className="rounded-full bg-blue-50 text-blue-600 border-blue-100 py-1 px-3">
                           {t(`employment.${EMPLOYMENT_TYPE_DICT_KEY[job.employment_type] || "fullTime"}`)}

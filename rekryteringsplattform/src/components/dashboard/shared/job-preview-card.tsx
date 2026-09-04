@@ -5,6 +5,7 @@ import { ContactSupportCard } from "@/components/dashboard/shared/contact-suppor
 import { sanitizeRichText } from "@/lib/sanitize";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { formatJobLocation } from "@/lib/format-job-location";
+import { normalizeIndustry } from "@/lib/job-form-options";
 import type { Job } from "@/types/db-types";
 
 // Partial<Job> so callers can pass narrowed SELECT projections (e.g.
@@ -179,7 +180,7 @@ export function JobPreviewCard({ job, variant, showMandateCta = true, shiftWorkL
                             : null}
                     />
                     <OverviewItem label="Contract" value={formatEnumLabel(job.employment_type)} />
-                    <OverviewItem label="Industry" value={job.industry ?? null} />
+                    <OverviewItem label="Industry" value={job.industry ? normalizeIndustry(job.industry) : null} />
                     <OverviewItem label="Experience" value={job.experience_bracket} />
                     <OverviewItem
                         label="Language"

@@ -257,3 +257,38 @@ const LEGACY_COUNTRY_MAP: Record<string, string> = {
 export function normalizeCountry(value: string): string {
   return LEGACY_COUNTRY_MAP[value] ?? value;
 }
+
+// Legacy sector labels (the pre-2026-09-04 INDUSTRY_OPTIONS) mapped onto the
+// current taxonomy, so rows saved under an old label still resolve to a value
+// that IS in INDUSTRY_OPTIONS — the dropdown shows it selected instead of blank,
+// and the job-fee industry lock still recognizes it. Read-time only; no
+// migration. Unlisted / free-text values pass through unchanged.
+const LEGACY_INDUSTRY_MAP: Record<string, string> = {
+  "Agriculture": "Agriculture & Agribusiness",
+  "Construction & Real Estate": "Construction, Real Estate, Architecture & Infrastructure",
+  "Construction Materials & Infrastructure": "Construction, Real Estate, Architecture & Infrastructure",
+  "Education": "Education & Training",
+  "Energy & Utilities": "Energy, Utilities & Environmental Services",
+  "Environmental Services": "Energy, Utilities & Environmental Services",
+  "Financial Services": "Banking & Financial Services",
+  "FMCG": "FMCG, Food & Beverage & Consumer Goods",
+  "Healthcare": "Healthcare, Wellness & Fitness",
+  "IT - Artificial Intelligence": "IT - Artificial Intelligence, Data & Analytics",
+  "IT - SaaS / Software": "IT - Information Technology, Software, SaaS & IT Services",
+  "IT - Services": "IT - Information Technology, Software, SaaS & IT Services",
+  "Logistics & Transportation": "Logistics, Supply Chain & Transportation",
+  "Manufacturing": "Manufacturing & Engineering",
+  "Media & Entertainment": "Advertising, Marketing, Media & Broadcasting",
+  "Mining & Metals": "Mining, Metals, Oil & Gas",
+  "Oil & Gas": "Mining, Metals, Oil & Gas",
+  "Pharmaceutical": "Pharmaceuticals",
+  "Professional Services": "Consulting & Professional Services",
+  "Retail & E-commerce": "Retail, Wholesale & E-commerce",
+  "Telecommunications": "Telecommunications & Internet Services",
+  "Textile & Apparel": "Textile, Leather, Apparel, Footwear & Home Textiles",
+  "Others": "Other",
+};
+
+export function normalizeIndustry(value: string): string {
+  return LEGACY_INDUSTRY_MAP[value] ?? value;
+}
