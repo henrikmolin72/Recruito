@@ -151,6 +151,51 @@ export function countActiveRecruiters(
     return count;
 }
 
+export interface MandateRow<R> {
+    recruiter: R | null | undefined;
+    is_active: boolean | null | undefined;
+    claimed_at: string | null | undefined;
+}
+
+export interface RecruiterCandidateTiming extends ExpiryCandidate {
+    recruiter_id: string | null;
+}
+
+/**
+ * One row per recruiter for a job's Recruiters tab. A recruiter can hold several
+ * mandate rows on one job (mandate recycling, migration 045): an expired cycle
+ * stays as is_active=false history alongside a fresh re-claim. Collapse to one
+ * row — Active if ANY of their rows is live under the shared 10-day timer — so
+ * the company view and the admin view show the status the recruiter sees.
+ */
+export function collapseMandateRows<R extends { id: string }>(
+    mandates: MandateRow<R>[],
+    candidates: RecruiterCandidateTiming[],
+    now?: number,
+): { recruiter: R; active: boolean }[] {
+    const candsByRecruiter = new Map<string, ExpiryCandidate[]>();
+    for (const c of candidates) {
+        if (!c.recruiter_id) continue;
+        const arr = candsByRecruiter.get(c.recruiter_id) || [];
+        arr.push({ status: c.status, status_changed_at: c.status_changed_at });
+        candsByRecruiter.set(c.recruiter_id, arr);
+    }
+    const rows = new Map<string, { recruiter: R; active: boolean }>();
+    for (const m of mandates) {
+        const recruiter = m.recruiter;
+        if (!recruiter?.id) continue;
+        const live = isMandateLiveActive(
+            { isActive: m.is_active, claimedAt: m.claimed_at ?? null },
+            candsByRecruiter.get(recruiter.id) || [],
+            now,
+        );
+        const existing = rows.get(recruiter.id);
+        if (existing) existing.active = existing.active || live;
+        else rows.set(recruiter.id, { recruiter, active: live });
+    }
+    return [...rows.values()];
+}
+
 export interface StageCandidate {
     status: string | null;
     recruito_screened_at?: string | null;

@@ -16,9 +16,11 @@ interface Announcement {
 interface AnnouncementsTabProps {
     jobId: string;
     initialAnnouncements: Announcement[];
+    /** Admin view: history only, no compose form (posting as admin: add when asked). */
+    readOnly?: boolean;
 }
 
-export function AnnouncementsTab({ jobId, initialAnnouncements }: AnnouncementsTabProps) {
+export function AnnouncementsTab({ jobId, initialAnnouncements, readOnly = false }: AnnouncementsTabProps) {
     const [announcements, setAnnouncements] = useState(initialAnnouncements);
     const [message, setMessage] = useState("");
     const [sending, setSending] = useState(false);
@@ -44,29 +46,31 @@ export function AnnouncementsTab({ jobId, initialAnnouncements }: AnnouncementsT
     return (
         <div className="space-y-6 max-w-2xl">
             {/* New announcement form */}
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
-                    <Megaphone className="h-4 w-4" /> New Announcement
-                </h3>
-                <p className="text-sm text-slate-500 mb-4">
-                    Send an update to all recruiters working on this assignment. They will receive a notification and see it in the job description.
-                </p>
-                <form onSubmit={handleSubmit} className="space-y-3">
-                    <textarea
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        placeholder="e.g. We have updated the salary range. We are now also open to remote candidates..."
-                        rows={4}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
-                    />
-                    <div className="flex justify-end">
-                        <Button type="submit" disabled={sending || !message.trim()} className="gap-2">
-                            <Send className="h-4 w-4" />
-                            {sending ? "Sending…" : "Send to Recruiters"}
-                        </Button>
-                    </div>
-                </form>
-            </div>
+            {!readOnly && (
+                <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                        <Megaphone className="h-4 w-4" /> New Announcement
+                    </h3>
+                    <p className="text-sm text-slate-500 mb-4">
+                        Send an update to all recruiters working on this assignment. They will receive a notification and see it in the job description.
+                    </p>
+                    <form onSubmit={handleSubmit} className="space-y-3">
+                        <textarea
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            placeholder="e.g. We have updated the salary range. We are now also open to remote candidates..."
+                            rows={4}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                        />
+                        <div className="flex justify-end">
+                            <Button type="submit" disabled={sending || !message.trim()} className="gap-2">
+                                <Send className="h-4 w-4" />
+                                {sending ? "Sending…" : "Send to Recruiters"}
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             {/* Announcement history */}
             {announcements.length > 0 ? (
@@ -81,7 +85,7 @@ export function AnnouncementsTab({ jobId, initialAnnouncements }: AnnouncementsT
                 </div>
             ) : (
                 <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
-                    No announcements yet. Send your first update above.
+                    {readOnly ? "No announcements yet." : "No announcements yet. Send your first update above."}
                 </div>
             )}
         </div>

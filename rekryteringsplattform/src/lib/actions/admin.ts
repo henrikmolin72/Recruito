@@ -9,7 +9,7 @@ import { sendUserEmail } from "@/lib/email/internal-notifications";
 import { createNotification } from "@/lib/notifications/create";
 import { getDictionary } from "@/i18n/server";
 import { countRecruiterCandidateBuckets, countCompanyCandidateBuckets, countCandidatesAgainstCap } from "@/lib/candidate-workflow";
-import { classifyMandate } from "@/lib/mandate-stages";
+import { classifyMandate, collapseMandateRows } from "@/lib/mandate-stages";
 import { averageGuaranteeRate } from "@/lib/recruiter-metrics";
 import type { ClientFeeUpliftReason } from "@/types/db-types";
 
@@ -506,9 +506,23 @@ export async function getAdminJobById(id: string) {
     await requireAdmin();
     const supabaseAdmin = createAdminClient();
 
+    // Same candidates/mandates embeds as the company job page; the service-role
+    // client sees recruiter profile names directly (no RLS name backfill needed).
     const { data, error } = await supabaseAdmin
         .from("jobs")
-        .select(`*, company:companies (company_name, website, logo_url)`)
+        .select(`
+            *,
+            company:companies (company_name, website, logo_url),
+            candidates:candidates(
+                id, first_name, last_name, current_title, status, current_pipeline_stage,
+                recruiter_id, status_changed_at,
+                recruiter:recruiters(id, user_id, profile:profiles!recruiters_user_id_fkey(full_name))
+            ),
+            mandates:job_mandates(
+                id, is_active, claimed_at,
+                recruiter:recruiters(id, user_id, headline, rating, profile:profiles!recruiters_user_id_fkey(full_name))
+            )
+        `)
         .eq("id", id)
         .single();
 
@@ -519,7 +533,27 @@ export async function getAdminJobById(id: string) {
         return null;
     }
 
-    return { ...data, company: pickFirst((data as any).company) } as any;
+    const candidates = ((data as any).candidates || []) as any[];
+    const recruiterRows = collapseMandateRows(((data as any).mandates || []) as any[], candidates);
+
+    return { ...data, company: pickFirst((data as any).company), candidates, recruiterRows } as any;
+}
+
+export async function getAdminJobAnnouncements(jobId: string) {
+    await requireAdmin();
+    const supabaseAdmin = createAdminClient();
+    // job_announcements RLS (migration 025) has company/recruiter policies only —
+    // admin reads through the service-role client.
+    const { data, error } = await supabaseAdmin
+        .from("job_announcements")
+        .select("id, message, created_at")
+        .eq("job_id", jobId)
+        .order("created_at", { ascending: false });
+    if (error) {
+        console.error("[getAdminJobAnnouncements]", error.message);
+        return [];
+    }
+    return data || [];
 }
 
 export async function getAdminPlacements() {

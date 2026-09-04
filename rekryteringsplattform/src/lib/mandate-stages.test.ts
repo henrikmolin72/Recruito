@@ -3,6 +3,7 @@ import {
     candidateInStage,
     candidateReachedInterview,
     classifyMandate,
+    collapseMandateRows,
     computeJobProcessStats,
     countActiveRecruiters,
     groupStageReasons,
@@ -388,5 +389,36 @@ describe("groupStageReasons — rejection reasons list (client request 2026-07-1
 
     it("returns an empty list for no rejections", () => {
         expect(groupStageReasons([])).toEqual([]);
+    });
+});
+
+describe("collapseMandateRows — one Recruiters-tab row per recruiter (company + admin share it)", () => {
+    const NOW = Date.parse("2026-09-04T12:00:00Z");
+    const daysAgo = (d: number) => new Date(NOW - d * 864e5).toISOString();
+
+    it("collapses recycled mandate rows, Active if ANY row is live, skips rows without a recruiter", () => {
+        const rows = collapseMandateRows(
+            [
+                { recruiter: { id: "R1" }, is_active: false, claimed_at: daysAgo(30) }, // expired cycle
+                { recruiter: { id: "R1" }, is_active: true, claimed_at: daysAgo(1) },   // fresh re-claim
+                { recruiter: { id: "R2" }, is_active: true, claimed_at: daysAgo(20) },  // 10-day timer ran out
+                { recruiter: null, is_active: true, claimed_at: daysAgo(1) },
+            ],
+            [],
+            NOW,
+        );
+        expect(rows).toEqual([
+            { recruiter: { id: "R1" }, active: true },
+            { recruiter: { id: "R2" }, active: false },
+        ]);
+    });
+
+    it("a live candidate suspends the timer (mirrors isMandateLiveActive)", () => {
+        const rows = collapseMandateRows(
+            [{ recruiter: { id: "R2" }, is_active: true, claimed_at: daysAgo(20) }],
+            [{ recruiter_id: "R2", status: "submitted", status_changed_at: daysAgo(2) }],
+            NOW,
+        );
+        expect(rows).toEqual([{ recruiter: { id: "R2" }, active: true }]);
     });
 });

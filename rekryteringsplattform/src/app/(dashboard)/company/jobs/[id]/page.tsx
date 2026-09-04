@@ -31,7 +31,7 @@ import { AnnouncementsTab } from "@/components/dashboard/company/announcements-t
 import { getDictionary } from "@/i18n/server";
 import { getJobAnnouncements } from "@/lib/actions/jobs";
 import { BiasReportCard } from "@/components/compliance/bias-report-card";
-import { isMandateLiveActive } from "@/lib/mandate-stages";
+import { collapseMandateRows } from "@/lib/mandate-stages";
 
 async function getJob(id: string) {
     const supabase = await createClient();
@@ -110,44 +110,17 @@ async function getJob(id: string) {
             }
         }
 
-        // Per-recruiter mandate status for the Recruiters tab. A recruiter can
-        // hold several mandate rows on one job (mandate recycling, migration
-        // 045): an expired cycle stays as is_active=false history alongside a
-        // fresh re-claim. Collapse to one row per recruiter — Active if they
-        // currently hold a live mandate, else Expired — using the shared 10-day
-        // timer so the company sees the same status the recruiter does, without
-        // waiting for the daily expiry cron. Candidate timing is read with the
-        // admin client because the company's screened-only candidate RLS would
-        // under-count submissions and mistime the expiry.
+        // Per-recruiter rows for the Recruiters tab (shared with the admin job
+        // page via collapseMandateRows). Candidate timing is read with the admin
+        // client because the company's screened-only candidate RLS would
+        // under-count submissions and mistime the 10-day expiry.
         const mandates = (job as any).mandates || [];
         if (mandates.length > 0) {
             const { data: cands } = await admin
                 .from("candidates")
                 .select("recruiter_id, status, status_changed_at")
                 .eq("job_id", id);
-            const candsByRecruiter = new Map<string, { status: string | null; status_changed_at: string | null }[]>();
-            for (const cnd of cands || []) {
-                if (!cnd.recruiter_id) continue;
-                const arr = candsByRecruiter.get(cnd.recruiter_id) || [];
-                arr.push({ status: cnd.status, status_changed_at: cnd.status_changed_at });
-                candsByRecruiter.set(cnd.recruiter_id, arr);
-            }
-            const rowByRecruiter = new Map<string, { recruiter: any; active: boolean }>();
-            for (const m of mandates) {
-                const rid = m.recruiter?.id;
-                if (!rid) continue;
-                const liveActive = isMandateLiveActive(
-                    { isActive: m.is_active, claimedAt: m.claimed_at ?? null },
-                    candsByRecruiter.get(rid) || [],
-                );
-                const existing = rowByRecruiter.get(rid);
-                if (existing) {
-                    existing.active = existing.active || liveActive;
-                } else {
-                    rowByRecruiter.set(rid, { recruiter: m.recruiter, active: liveActive });
-                }
-            }
-            (job as any).recruiterRows = [...rowByRecruiter.values()];
+            (job as any).recruiterRows = collapseMandateRows(mandates, cands || []);
         } else {
             (job as any).recruiterRows = [];
         }
