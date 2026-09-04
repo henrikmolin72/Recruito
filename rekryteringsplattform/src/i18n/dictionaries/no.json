@@ -1020,6 +1020,8 @@
     "currentBenefitsPlaceholder": "Beskriv nåværende fordeler...",
     "desiredCompLabel": "Forventet kompensasjon",
     "desiredSalaryLabel": "Ønsket årslønn",
+    "salaryAboveMaxNote": "Kandidatens lønnsforventning ligger over kundens makslønn på {max} (innenfor 10 %). Nevn dette i presentasjonen.",
+    "salaryAbove10PctNote": "Kandidatens lønnsforventning ligger mer enn 10 % over kundens makslønn på {max}. Dette kan redusere sannsynligheten for at kandidaten blir akseptert.",
     "expectedBelowCurrentLabel": "For å sikre at vi har korrekte opplysninger, kan du forklare hvorfor forventet lønn er satt lavere enn nåværende lønn?",
     "expectedBelowCurrentPlaceholder": "Forklar årsaken...",
     "desiredBenefitsLabel": "Ønskede fordeler",

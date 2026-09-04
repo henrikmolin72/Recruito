@@ -1020,6 +1020,8 @@
     "currentBenefitsPlaceholder": "Beskriv nuvarande förmåner...",
     "desiredCompLabel": "Förväntad ersättning",
     "desiredSalaryLabel": "Önskad årslön",
+    "salaryAboveMaxNote": "Kandidatens löneanspråk ligger över kundens maxlön på {max} (inom 10 %). Nämn detta i din presentation.",
+    "salaryAbove10PctNote": "Kandidatens löneanspråk ligger mer än 10 % över kundens maxlön på {max}. Det kan minska sannolikheten att kandidaten accepteras.",
     "expectedBelowCurrentLabel": "För att säkerställa att vi har korrekta uppgifter, kan du förklara varför den förväntade lönen är lägre än den nuvarande?",
     "expectedBelowCurrentPlaceholder": "Förklara orsaken...",
     "desiredBenefitsLabel": "Önskade förmåner",

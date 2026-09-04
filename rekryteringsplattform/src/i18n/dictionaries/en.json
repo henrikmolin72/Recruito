@@ -1020,6 +1020,8 @@
     "currentBenefitsPlaceholder": "Describe current benefits...",
     "desiredCompLabel": "Expected Compensation",
     "desiredSalaryLabel": "Desired Annual Salary",
+    "salaryAboveMaxNote": "The candidate's expectation is above the client's maximum salary of {max} (within 10%). Please mention this in your presentation.",
+    "salaryAbove10PctNote": "The candidate's expectation is more than 10% above the client's maximum salary of {max}. This may reduce the likelihood of the candidate being accepted.",
     "expectedBelowCurrentLabel": "Just to ensure we have accurate details, could you please explain why the expected salary is set below the current salary?",
     "expectedBelowCurrentPlaceholder": "Explain the reason...",
     "desiredBenefitsLabel": "Desired Benefits",

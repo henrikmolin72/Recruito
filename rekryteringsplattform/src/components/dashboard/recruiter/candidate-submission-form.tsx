@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createCandidateExtended, saveDraftCandidate, deleteDraftCandidate, screenDraftCandidate } from "@/lib/actions/candidates-extended";
-import { getMissingRequiredFields } from "@/lib/candidate-form";
+import { getMissingRequiredFields, salaryExpectationLevel } from "@/lib/candidate-form";
 import { EUROPEAN_LANGUAGE_OPTIONS } from "@/lib/job-form-options";
 import { toast } from "sonner";
 
@@ -40,6 +40,9 @@ interface Props {
     jobTitle: string;
     companyName: string;
     screeningQuestions?: string[];
+    /** Client's maximum annual salary for the job (jobs.salary_max) — drives the expectation note. */
+    jobSalaryMax?: number | null;
+    jobSalaryCurrency?: string | null;
     dict: Dict;
     initialDraftId?: string | null;
     initialDraft?: Record<string, any> | null;
@@ -84,6 +87,8 @@ export function CandidateSubmissionForm({
     jobTitle,
     companyName,
     screeningQuestions = [],
+    jobSalaryMax = null,
+    jobSalaryCurrency = null,
     dict: r,
     initialDraftId = null,
     initialDraft = null,
@@ -117,8 +122,12 @@ export function CandidateSubmissionForm({
     const [noticePeriod, setNoticePeriod] = useState(ds("notice_period"));
 
     // --- Section 4: compensation (linked currency + below-current reason) ---
-    const [currentCurrency, setCurrentCurrency] = useState(draft?.current_salary_currency || "EUR");
-    const [expectedCurrency, setExpectedCurrency] = useState(draft?.desired_salary_currency || "EUR");
+    // Default both selects to the job's currency (when it is one we offer) so the
+    // expectation-vs-max note below can actually compare; drafts keep their own.
+    const jobCurrencyOption =
+        jobSalaryCurrency && CURRENCIES.includes(jobSalaryCurrency) ? jobSalaryCurrency : "EUR";
+    const [currentCurrency, setCurrentCurrency] = useState(draft?.current_salary_currency || jobCurrencyOption);
+    const [expectedCurrency, setExpectedCurrency] = useState(draft?.desired_salary_currency || jobCurrencyOption);
     const [currentSalary, setCurrentSalary] = useState(ds("current_salary"));
     const [expectedSalary, setExpectedSalary] = useState(
         draft?.desired_salary != null ? String(draft.desired_salary) : ""
@@ -127,6 +136,14 @@ export function CandidateSubmissionForm({
         !!currentSalary &&
         !!expectedSalary &&
         Number(expectedSalary) < Number(currentSalary);
+    const salaryLevel = salaryExpectationLevel(
+        expectedSalary ? Number(expectedSalary) : null,
+        expectedCurrency,
+        jobSalaryMax,
+        jobSalaryCurrency,
+    );
+    const jobMaxLabel =
+        jobSalaryMax != null ? `${jobSalaryMax.toLocaleString("sv-SE")} ${jobSalaryCurrency ?? ""}`.trim() : "";
 
     // --- Section 5: contact method, languages ---
     const [contactMethod, setContactMethod] = useState(normalizeContactMethod(ds("contact_method")));
@@ -907,6 +924,24 @@ export function CandidateSubmissionForm({
                                     />
                                 </div>
                             </FieldRow>
+                            {salaryLevel === "above" && (
+                                <p className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    <span>
+                                        {(r.salaryAboveMaxNote ||
+                                            "The candidate's expectation is above the client's maximum salary of {max} (within 10%). Please mention this in your presentation.").replace("{max}", jobMaxLabel)}
+                                    </span>
+                                </p>
+                            )}
+                            {salaryLevel === "above_10pct" && (
+                                <p className="mt-2 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    <span>
+                                        {(r.salaryAbove10PctNote ||
+                                            "The candidate's expectation is more than 10% above the client's maximum salary of {max}. This may reduce the likelihood of the candidate being accepted.").replace("{max}", jobMaxLabel)}
+                                    </span>
+                                </p>
+                            )}
                             {expectedBelowCurrent && (
                                 <div className="mt-3">
                                     <Label>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseCandidateColumns, getMissingRequiredFields, hasCandidateCompensationData } from "./candidate-form";
+import { parseCandidateColumns, getMissingRequiredFields, hasCandidateCompensationData, salaryExpectationLevel } from "./candidate-form";
 
 // Builds a FormData representing a fully-completed presentation form.
 function fullFormData(): FormData {
@@ -177,5 +177,28 @@ describe("hasCandidateCompensationData", () => {
         expect(hasCandidateCompensationData({ desired_salary: 70000 })).toBe(true);
         expect(hasCandidateCompensationData({ first_contact_date: "2026-06-01" })).toBe(true);
         expect(hasCandidateCompensationData({ contact_method: "phone" })).toBe(true);
+    });
+});
+
+describe("salaryExpectationLevel — candidate expectation vs. the client's max salary", () => {
+    it("within: at or below the max", () => {
+        expect(salaryExpectationLevel(500_000, "SEK", 500_000, "SEK")).toBe("within");
+        expect(salaryExpectationLevel(499_999, "SEK", 500_000, "SEK")).toBe("within");
+    });
+    it("above: over the max but at most +10% (allowed, with a note)", () => {
+        expect(salaryExpectationLevel(500_001, "SEK", 500_000, "SEK")).toBe("above");
+        expect(salaryExpectationLevel(550_000, "SEK", 500_000, "SEK")).toBe("above"); // exactly +10%
+    });
+    it("above_10pct: more than +10% over the max", () => {
+        expect(salaryExpectationLevel(550_001, "SEK", 500_000, "SEK")).toBe("above_10pct");
+        expect(salaryExpectationLevel(700_000, "SEK", 500_000, "SEK")).toBe("above_10pct");
+    });
+    it("null when the comparison is impossible (missing values or different currencies)", () => {
+        expect(salaryExpectationLevel(550_000, "EUR", 500_000, "SEK")).toBeNull();
+        expect(salaryExpectationLevel(550_000, "SEK", null, "SEK")).toBeNull();
+        expect(salaryExpectationLevel(null, "SEK", 500_000, "SEK")).toBeNull();
+        expect(salaryExpectationLevel(0, "SEK", 500_000, "SEK")).toBeNull();
+        expect(salaryExpectationLevel(550_000, "SEK", 500_000, null)).toBeNull();
+        expect(salaryExpectationLevel(550_000, "", 500_000, "SEK")).toBeNull();
     });
 });

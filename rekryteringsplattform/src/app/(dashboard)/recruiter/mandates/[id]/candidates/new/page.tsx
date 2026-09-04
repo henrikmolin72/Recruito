@@ -19,6 +19,8 @@ async function getMandate(id: string) {
         title,
         status,
         screening_questions,
+        salary_max,
+        salary_currency,
         company:companies(company_name)
       )
     `)
@@ -85,6 +87,8 @@ export default async function NewCandidatePage({
             jobTitle={job.title}
             companyName={company?.company_name ?? ""}
             screeningQuestions={screeningQuestions}
+            jobSalaryMax={job.salary_max ?? null}
+            jobSalaryCurrency={job.salary_currency ?? null}
             dict={r}
             initialDraftId={draftRow ? draftId : null}
             initialDraft={draftRow}

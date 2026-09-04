@@ -171,3 +171,25 @@ export function getMissingRequiredFields(
 
     return missing;
 }
+
+export type SalaryExpectationLevel = "within" | "above" | "above_10pct";
+
+/**
+ * Compares the candidate's expected salary with the client's maximum salary
+ * (client ask 2026-09-04). Returns null when no comparison is possible —
+ * missing values, or different currencies (we never convert FX). "above" = over
+ * the max but within +10% (accepted, with a note); "above_10pct" = more than
+ * 10% over (advisory warning; submission is NOT blocked).
+ */
+export function salaryExpectationLevel(
+    expected: number | null | undefined,
+    expectedCurrency: string | null | undefined,
+    jobMax: number | null | undefined,
+    jobCurrency: string | null | undefined,
+): SalaryExpectationLevel | null {
+    if (expected == null || jobMax == null || !(expected > 0) || !(jobMax > 0)) return null;
+    if (!expectedCurrency || !jobCurrency || expectedCurrency !== jobCurrency) return null;
+    // Integer arithmetic keeps exactly +10% on the "allowed" side (no float drift).
+    if (expected <= jobMax) return "within";
+    return expected * 10 <= jobMax * 11 ? "above" : "above_10pct";
+}
