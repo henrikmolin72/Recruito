@@ -84,14 +84,14 @@ function jobForm(industry: string): FormData {
 
 beforeEach(() => {
     insertedPayload = null;
-    companyIndustry = "Healthcare";
+    companyIndustry = "Healthcare, Wellness & Fitness";
 });
 
 describe("createJob industry lock", () => {
     it("ignores a tampered posted industry when the company profile has a canonical one", async () => {
         const res = await createJob(jobForm("Legal Services"));
         expect(res).toMatchObject({ success: true });
-        expect(insertedPayload?.industry).toBe("Healthcare");
+        expect(insertedPayload?.industry).toBe("Healthcare, Wellness & Fitness");
     });
 
     it("keeps the posted industry when the profile has none (editable fallback)", async () => {
