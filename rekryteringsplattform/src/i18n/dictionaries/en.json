@@ -1852,7 +1852,7 @@
     "nextStepRequestBody": "{request} for {candidate} ({jobTitle}).",
     "nextStepRequestBodyNote": "{request} for {candidate} ({jobTitle}). Comment: {note}",
     "clientViewedCandidateTitle": "The client viewed your candidate",
-    "clientViewedCandidateBody": "{subject} opened {candidate}'s profile. A 45-day hiring timeline applies.",
+    "clientViewedCandidateBody": "{subject} opened {candidate}'s profile.",
     "candidateReopenedTitle": "Candidate reopened",
     "candidateReopenedBody": "{candidate} was reopened into the process for {subject}.",
     "newRecruiterTitle": "New recruiter on the mandate!",

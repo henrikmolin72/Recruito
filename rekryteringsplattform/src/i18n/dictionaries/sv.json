@@ -1852,7 +1852,7 @@
     "nextStepRequestBody": "{request} för {candidate} ({jobTitle}).",
     "nextStepRequestBodyNote": "{request} för {candidate} ({jobTitle}). Kommentar: {note}",
     "clientViewedCandidateTitle": "Beställaren visade din kandidat",
-    "clientViewedCandidateBody": "{subject} öppnade {candidate}s profil. En 45-dagars rekryteringstidslinje gäller.",
+    "clientViewedCandidateBody": "{subject} öppnade {candidate}s profil.",
     "candidateReopenedTitle": "Kandidat återupptagen",
     "candidateReopenedBody": "{candidate} har återupptagits i processen för {subject}.",
     "newRecruiterTitle": "Ny rekryterare på uppdraget!",
