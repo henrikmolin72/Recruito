@@ -303,3 +303,7 @@ STILL PENDING (Henrik): browser-verify on local stack; merge to main; apply migr
 
 ## 2026-09-06 (deps)
 - `457d64d` chore(deps): @tiptap/* 3.31.3, sanitize-html 2.17.7, browserslist 4.28.9, npm audit 0 — branch `chore/dependency-bumps-2026-09-06` → main (fast-forward). See [[2026-36]].
+
+## 2026-09-06
+- 47f4002 docs(vault): Work-Log entry for the 2026-09-06 homepage copy update
+- 780ffa7 feat(landing): benefit-led homepage copy per Sajid's 2026-09-05 mockup
