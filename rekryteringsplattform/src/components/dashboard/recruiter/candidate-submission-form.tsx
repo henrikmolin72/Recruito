@@ -504,7 +504,7 @@ export function CandidateSubmissionForm({
                             {verifyStatus === "warned" && (
                                 <p className="mt-2 text-sm text-amber-600 flex items-center gap-2">
                                     <AlertTriangle className="h-4 w-4 shrink-0" />
-                                    {r.verifyWarnDuplicate || "This candidate already exists in the system (e.g. in your portfolio or with this client). You can still present them — duplicates for this job are blocked automatically."}
+                                    {r.verifyWarnDuplicate || "This candidate already exists in the system (e.g., in your portfolio or with this client). You may still present the candidate, but there is a risk of rejection due to duplication."}
                                 </p>
                             )}
                             {verifyStatus === "blocked" && (
@@ -929,7 +929,7 @@ export function CandidateSubmissionForm({
                                     <AlertTriangle className="h-4 w-4 shrink-0" />
                                     <span>
                                         {(r.salaryAboveMaxNote ||
-                                            "The candidate's expectation is above the client's maximum salary of {max} (within 10%). Please mention this in your presentation.").replace("{max}", jobMaxLabel)}
+                                            "The candidate's salary expectations exceed the client's maximum budget of {max}, which may impact the likelihood of the candidate being considered.").replace("{max}", jobMaxLabel)}
                                     </span>
                                 </p>
                             )}

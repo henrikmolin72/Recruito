@@ -57,9 +57,10 @@ describe("CURRENCY_CONFIG", () => {
         expect(normalizeCurrency(undefined)).toBe("EUR");
     });
 
-    // Client ask 2026-09-04: +/- moves the salary by 10 000 for the Nordic currencies.
-    it.each(["SEK", "NOK", "DKK", "ISK"] as Currency[])("%s slider/stepper step is 10 000", (currency) => {
-        expect(CURRENCY_CONFIG[currency].step).toBe(10_000);
+    // Sajid 2026-09-06: +/- and the slider move by 500 for EVERY currency
+    // (supersedes the 2026-09-04 ask of 10 000 for the Nordic currencies).
+    it.each([...SUPPORTED_CURRENCIES])("%s slider/stepper step is 500", (currency) => {
+        expect(CURRENCY_CONFIG[currency].step).toBe(500);
     });
 });
 
@@ -169,14 +170,14 @@ describe("formatMoney", () => {
 
 describe("stepSalary — +/- one step, snapped to the grid, clamped to the slider range", () => {
     it("moves by one step from a grid value", () => {
-        expect(stepSalary(300_000, "SEK", 1)).toBe(310_000);
-        expect(stepSalary(310_000, "SEK", -1)).toBe(300_000);
-        expect(stepSalary(5_000_000, "ISK", 1)).toBe(5_010_000);
+        expect(stepSalary(300_000, "SEK", 1)).toBe(300_500);
+        expect(stepSalary(300_500, "SEK", -1)).toBe(300_000);
+        expect(stepSalary(5_000_000, "ISK", 1)).toBe(5_000_500);
         expect(stepSalary(25_000, "EUR", 1)).toBe(25_500);
     });
     it("snaps an off-grid value to the next grid point in the pressed direction", () => {
-        expect(stepSalary(305_000, "SEK", 1)).toBe(310_000);
-        expect(stepSalary(305_000, "SEK", -1)).toBe(300_000);
+        expect(stepSalary(305_200, "SEK", 1)).toBe(305_500);
+        expect(stepSalary(305_200, "SEK", -1)).toBe(305_000);
     });
     it("clamps at the slider bounds", () => {
         expect(stepSalary(300_000, "SEK", -1)).toBe(300_000);

@@ -57,8 +57,9 @@ export async function touchPresence(): Promise<void> {
     }
 }
 
-/** Admin header pill. */
-export async function getOnlineCounts(): Promise<OnlineCounts> {
+/** Admin header pill. Returns null when the query fails (e.g. migration 080
+ *  not applied) so the pill shows "—" instead of a misleading 0. */
+export async function getOnlineCounts(): Promise<OnlineCounts | null> {
     await requireAdmin();
     const admin = createAdminClient();
     const since = new Date(Date.now() - ONLINE_WINDOW_MS).toISOString();
@@ -68,7 +69,7 @@ export async function getOnlineCounts(): Promise<OnlineCounts> {
         .gte("last_seen_at", since);
     if (error) {
         console.error("[getOnlineCounts]", error.message);
-        return { recruiters: 0, companies: 0 };
+        return null;
     }
     return countOnlineByRole((data || []) as PresenceSessionRow[]);
 }

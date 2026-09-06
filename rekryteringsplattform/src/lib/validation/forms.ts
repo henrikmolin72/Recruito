@@ -11,7 +11,9 @@ import { SUPPORTED_CURRENCIES } from "@/lib/currency-config";
 import { createTranslator } from "@/i18n/server";
 
 const EMAIL_MAX_LENGTH = 254;
-const PASSWORD_MIN_LENGTH = 8;
+// Must match supabase/config.toml `minimum_password_length` (10, also set in prod):
+// a shorter password passes this form and is then rejected by Supabase Auth.
+const PASSWORD_MIN_LENGTH = 10;
 const PASSWORD_MAX_LENGTH = 72;
 
 const optionalText = (max: number) =>

@@ -20,6 +20,10 @@ const PUBLIC_PATHS = [
     "/api/webhooks",
     "/api/cron",
     "/api/guarantee/reminders",
+    // Supabase email-confirmation landing: the link is opened wherever the mail
+    // client lives (often a browser/device without the preview cookie), and the
+    // one-time code is the only thing it carries — nothing to gate.
+    "/callback",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -42,7 +46,8 @@ export async function middleware(request: NextRequest) {
             return response;
         }
 
-        const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+        // Exact path or a child of it — never a plain prefix ("/callbackfoo").
+        const isPublicPath = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
         if (!isPublicPath) {
             const previewCookie = request.cookies.get(COOKIE_NAME);

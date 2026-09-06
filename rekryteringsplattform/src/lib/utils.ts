@@ -73,13 +73,6 @@ export function calculateClientFee(
   return roundToTen(Math.max(raw, CURRENCY_CONFIG[currency].minFee));
 }
 
-// Floor to nearest 100 — e.g. 1 575 → 1 500, 1 625 → 1 600. Retained for the
-// recruiter-jobs-list fallback display; fee locking uses calculateRecruiterFee.
-export function floorToHundreds(amount: number): number {
-  if (!amount || amount <= 0) return 0;
-  return Math.floor(amount / 100) * 100;
-}
-
 // Recruiter fee: guarantee-tiered %, rounded to nearest 10, floored to the
 // per-currency recruiter minimum. Independent of exclusive/standard.
 export function calculateRecruiterFee(

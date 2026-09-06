@@ -4,7 +4,8 @@
 //
 // minSalary is slider UX only — the server never rejects a salary below it;
 // the minimum FEE is what protects the economics. maxSalary/step are display
-// bounds for the calculator slider. Values per business decision 2026-08-27.
+// bounds for the calculator slider. Values per business decision 2026-08-27;
+// step is 500 for every currency (Sajid 2026-09-06, supersedes the 10 000 Nordic step).
 
 export const SUPPORTED_CURRENCIES = ["SEK", "EUR", "USD", "GBP", "NOK", "DKK", "ISK"] as const;
 export type Currency = (typeof SUPPORTED_CURRENCIES)[number];
@@ -21,10 +22,10 @@ export interface CurrencyConfig {
 }
 
 export const CURRENCY_CONFIG: Record<Currency, CurrencyConfig> = {
-    SEK: { minSalary: 300_000, maxSalary: 3_000_000, step: 10_000, minFee: 40_000, recruiterMinFee: 28_000 },
-    NOK: { minSalary: 400_000, maxSalary: 3_000_000, step: 10_000, minFee: 45_000, recruiterMinFee: 31_500 },
-    DKK: { minSalary: 300_000, maxSalary: 3_000_000, step: 10_000, minFee: 30_000, recruiterMinFee: 21_000 },
-    ISK: { minSalary: 5_000_000, maxSalary: 30_000_000, step: 10_000, minFee: 550_000, recruiterMinFee: 385_000 },
+    SEK: { minSalary: 300_000, maxSalary: 3_000_000, step: 500, minFee: 40_000, recruiterMinFee: 28_000 },
+    NOK: { minSalary: 400_000, maxSalary: 3_000_000, step: 500, minFee: 45_000, recruiterMinFee: 31_500 },
+    DKK: { minSalary: 300_000, maxSalary: 3_000_000, step: 500, minFee: 30_000, recruiterMinFee: 21_000 },
+    ISK: { minSalary: 5_000_000, maxSalary: 30_000_000, step: 500, minFee: 550_000, recruiterMinFee: 385_000 },
     EUR: { minSalary: 25_000, maxSalary: 200_000, step: 500, minFee: 3_500, recruiterMinFee: 2_450, symbol: "€" },
     GBP: { minSalary: 28_000, maxSalary: 200_000, step: 500, minFee: 3_000, recruiterMinFee: 2_100, symbol: "£" },
     USD: { minSalary: 45_000, maxSalary: 300_000, step: 500, minFee: 4_000, recruiterMinFee: 2_800, symbol: "$" },
@@ -48,7 +49,7 @@ export function clampSalaryToCurrency(salary: number, currency: Currency): numbe
 
 /**
  * +/- stepper for the calculator: one step in the pressed direction, snapped to
- * the step grid (305 000 → 310 000 / 300 000) and clamped to the slider range.
+ * the step grid (305 200 → 305 500 / 305 000) and clamped to the slider range.
  */
 export function stepSalary(salary: number, currency: Currency, direction: 1 | -1): number {
     const { step } = CURRENCY_CONFIG[currency];

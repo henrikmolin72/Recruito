@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,8 +15,32 @@ import { INDUSTRY_OPTIONS } from "@/lib/job-form-options";
 
 export default function RegisterCompanyPage() {
   const { t } = useTranslations();
+  const searchParams = useSearchParams();
+  const submitted = searchParams.get("submitted") === "1";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-muted flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-10 text-center space-y-5">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <AppLogo size="md" priority />
+            </Link>
+            <div className="mx-auto h-14 w-14 rounded-full bg-emerald-100 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">{t("auth.companyThankYouTitle")}</h1>
+            <p className="text-sm leading-6 text-slate-600">{t("auth.companyThankYouBody")}</p>
+            <Link href="/login" className="inline-block">
+              <Button variant="outline">{t("auth.loginButton")}</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -46,10 +72,10 @@ export default function RegisterCompanyPage() {
                 {error}
               </div>
             )}
-            <form action={handleSubmit} className="space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(new FormData(e.currentTarget)); }} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5">{t("auth.companyNameLabel")}</label>
-                <Input name="company_name" placeholder={t("auth.companyNamePlaceholder")} required />
+                <Input name="company_name" placeholder={t("auth.companyNamePlaceholder")} required minLength={2} maxLength={120} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">{t("auth.howHeardLabel")}</label>
@@ -85,7 +111,7 @@ export default function RegisterCompanyPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">{t("auth.contactPersonLabel")}</label>
-                <Input name="full_name" placeholder={t("auth.contactPersonPlaceholder")} required />
+                <Input name="full_name" placeholder={t("auth.contactPersonPlaceholder")} required minLength={2} maxLength={100} />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">{t("auth.emailLabel")}</label>
@@ -93,7 +119,7 @@ export default function RegisterCompanyPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">{t("auth.passwordLabel")}</label>
-                <Input type="password" name="password" placeholder={t("auth.passwordMinPlaceholder")} required />
+                <Input type="password" name="password" placeholder={t("auth.passwordMinPlaceholder")} required minLength={10} />
               </div>
               <Button className="w-full" size="lg" disabled={loading}>
                 {loading ? t("auth.creatingAccount") : t("auth.createAccount")}

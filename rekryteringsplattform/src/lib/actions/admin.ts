@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/actions/require-admin";
+import { roundToTen } from "@/lib/utils";
 import { isValidUpliftReason, reasonI18nKey } from "@/lib/fee-reconfirm";
 import { feeReconfirmEmail } from "@/lib/email/email-templates";
 import { sendUserEmail } from "@/lib/email/internal-notifications";
@@ -1223,7 +1224,7 @@ export async function updateClientFeeAmount(jobId: string, amount: number) {
 
     const { error } = await supabaseAdmin
         .from("jobs")
-        .update({ client_fee_amount: Math.round(amount) })
+        .update({ client_fee_amount: roundToTen(amount) })
         .eq("id", jobId);
 
     if (error) return { error: "Could not update client fee" };
@@ -1241,7 +1242,7 @@ export async function updateRecruiterFeeAmount(jobId: string, amount: number) {
 
     const { error } = await supabaseAdmin
         .from("jobs")
-        .update({ recruiter_fee_amount: Math.round(amount) })
+        .update({ recruiter_fee_amount: roundToTen(amount) })
         .eq("id", jobId);
 
     if (error) return { error: "Could not update recruiter fee" };

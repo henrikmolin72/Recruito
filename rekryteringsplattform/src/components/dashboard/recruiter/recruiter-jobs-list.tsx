@@ -16,7 +16,8 @@ import {
   X,
   SlidersHorizontal,
 } from "lucide-react";
-import { formatCurrency, formatDate, floorToHundreds } from "@/lib/utils";
+import { formatCurrency, formatDate, calculateRecruiterFee } from "@/lib/utils";
+import { normalizeCurrency } from "@/lib/currency-config";
 import { cn } from "@/lib/utils";
 import { normalizeIndustry } from "@/lib/job-form-options";
 import { useTranslations } from "@/i18n/client";
@@ -291,14 +292,13 @@ export function RecruiterJobsList({ jobs }: RecruiterJobsListProps) {
           </div>
         ) : (
           filteredJobs.map((job: any) => {
-            const recruiterFeePct = job.recruiter_fee_percentage ?? 7;
-            // Fallback estimate uses the same rounding as the locked fee
-            // (calculateRecruiterFee floors to hundreds) so the card never
-            // shows more than what would actually be locked on the row.
+            // Fallback estimate uses the SAME formula that locks the fee on the row
+            // (guarantee-tiered %, nearest 10, per-currency minimum), so the card
+            // never disagrees with what would actually be locked.
             const potentialCommission = job.recruiter_fee_amount != null
               ? Number(job.recruiter_fee_amount)
               : (job.salary_max || job.salary_min)
-                ? floorToHundreds((job.salary_max || job.salary_min) * (recruiterFeePct / 100))
+                ? calculateRecruiterFee(job.salary_max || job.salary_min, job.guarantee_period_months ?? 0, normalizeCurrency(job.salary_currency))
                 : null;
 
             return (

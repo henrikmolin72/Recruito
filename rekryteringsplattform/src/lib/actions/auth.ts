@@ -15,16 +15,36 @@ import { sendInternalRecruiterEmail, sendUserEmail } from "@/lib/email/internal-
 import { createTranslator } from "@/i18n/server";
 import { headers } from "next/headers";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
+import { authErrorKey } from "@/lib/auth/auth-error-key";
 
-function mapAuthError(message: string | undefined): string {
-  if (!message) return "Tjänsten är otillgänglig just nu. Försök igen.";
-  if (/invalid login credentials/i.test(message)) return "Felaktig e-post eller lösenord.";
-  if (/email not confirmed/i.test(message)) return "Bekräfta din e-post först.";
-  if (/rate.*limit|too many|429/i.test(message)) return "För många försök. Vänta en stund och försök igen.";
-  return "Tjänsten är otillgänglig just nu. Försök igen.";
+// User-facing auth messages come from the dictionary (the UI may be English,
+// Danish or Norwegian — hardcoded Swedish read as "an error" to a client).
+async function authMessage(key: string): Promise<string> {
+  const t = await createTranslator();
+  return t(`auth.${key}`);
 }
 
-const RATE_LIMITED_MESSAGE = "För många försök. Vänta en stund och försök igen.";
+async function mapAuthError(message: string | undefined): Promise<string> {
+  return authMessage(authErrorKey(message));
+}
+
+// Supabase answers a signUp for an EXISTING, UNCONFIRMED email by returning
+// that same user (and re-sending the confirmation) — not with an error. The
+// profile insert then fails on the user_id unique key, and "cleaning up" by
+// deleting the user wiped a real account (found 2026-09-06). Check first.
+async function emailRegistered(admin: ReturnType<typeof createAdminClient>, email: string): Promise<boolean> {
+  const { data, error } = await admin.from("profiles").select("id").eq("email", email.toLowerCase()).maybeSingle();
+  if (error) logSafeError("email-precheck", error); // fails open on purpose, but visibly
+  return !!data;
+}
+
+// The invariant that makes any post-signUp mutation safe: THIS request created
+// the user. A pre-existing user (however we got it back from signUp) must never
+// be inserted for, re-roled, or deleted. 5 min tolerates clock skew.
+function isFreshUser(user: { created_at?: string | null }): boolean {
+  const createdMs = Date.parse(user.created_at ?? "");
+  return Number.isFinite(createdMs) && Date.now() - createdMs < 5 * 60_000;
+}
 
 // Best-effort client IP for pre-auth rate-limit keys. On Vercel the first
 // x-forwarded-for entry IS the real client (the platform sets it); behind a
@@ -75,7 +95,7 @@ export async function login(formData: FormData) {
     // Throttle login: 10/15min per email+IP, plus 50/15min per IP to cap
     // email-rotation credential stuffing from a single source.
     if (await authRateLimited("login", parsed.data.email, 10, 50)) {
-        return { error: RATE_LIMITED_MESSAGE };
+        return { error: await authMessage("tooManyAttempts") };
     }
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -85,7 +105,7 @@ export async function login(formData: FormData) {
 
     if (error) {
         logSafeError("auth", error);
-        return { error: mapAuthError(error.message) };
+        return { error: await mapAuthError(error.message) };
     }
 
     // Get user role for redirect. Admin role MUST come from app_metadata only —
@@ -170,6 +190,16 @@ export async function registerCompany(formData: FormData) {
         return { error: parsed.error };
     }
 
+    // The existing-email answer is an enumeration oracle (accepted, see
+    // Decisions/2026-09-06-signup-enumeration-tradeoff): real humans register
+    // once, so the per-IP cap is tight.
+    if (await authRateLimited("register", parsed.data.email, 3, 5)) {
+        return { error: await authMessage("tooManyAttempts") };
+    }
+    if (await emailRegistered(supabaseAdmin, parsed.data.email)) {
+        return { error: await authMessage("emailAlreadyRegistered") };
+    }
+
     const { data, error } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
@@ -184,7 +214,13 @@ export async function registerCompany(formData: FormData) {
 
     if (error) {
         logSafeError("auth", error);
-        return { error: mapAuthError(error.message) };
+        return { error: await mapAuthError(error.message) };
+    }
+
+    // With email confirmation on, Supabase answers a duplicate email with a
+    // fake user (no identities) instead of an error — say so, don't insert.
+    if (data.user && ((data.user.identities?.length ?? 0) === 0 || !isFreshUser(data.user))) {
+        return { error: await authMessage("emailAlreadyRegistered") };
     }
 
     // Create company profile using Admin client to bypass RLS
@@ -198,8 +234,11 @@ export async function registerCompany(formData: FormData) {
 
         if (companyError) {
             logSafeError("company-create", companyError);
+            // 23505 = this user already has a company row → the account
+            // pre-existed (pre-check raced); deleting it would destroy it.
+            if (companyError.code === "23505") return { error: await authMessage("emailAlreadyRegistered") };
             await supabaseAdmin.auth.admin.deleteUser(data.user.id);
-            return { error: "Kunde inte skapa företagsprofil. Försök igen." };
+            return { error: await authMessage("companyProfileFailed") };
         }
 
         // Set the authoritative role in app_metadata (server-only, not user-writable).
@@ -230,7 +269,10 @@ export async function registerCompany(formData: FormData) {
         }
     }
 
-    redirect("/company");
+    // No session exists until the email is confirmed (and the account is
+    // admin-approved), so /company would just bounce to /login with no
+    // explanation — land on an explicit "check your email" state instead.
+    redirect("/register/company?submitted=1");
 }
 
 export async function registerRecruiter(formData: FormData) {
@@ -241,6 +283,13 @@ export async function registerRecruiter(formData: FormData) {
     const parsed = validateRegisterRecruiterForm(formData);
     if (!parsed.success) {
         return { error: parsed.error };
+    }
+
+    if (await authRateLimited("register", parsed.data.email, 3, 5)) {
+        return { error: await authMessage("tooManyAttempts") };
+    }
+    if (await emailRegistered(supabaseAdmin, parsed.data.email)) {
+        return { error: await authMessage("emailAlreadyRegistered") };
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -257,7 +306,11 @@ export async function registerRecruiter(formData: FormData) {
 
     if (error) {
         logSafeError("auth", error);
-        return { error: mapAuthError(error.message) };
+        return { error: await mapAuthError(error.message) };
+    }
+
+    if (data.user && ((data.user.identities?.length ?? 0) === 0 || !isFreshUser(data.user))) {
+        return { error: await authMessage("emailAlreadyRegistered") };
     }
 
     // Create recruiter profile using Admin client to bypass RLS
@@ -275,8 +328,9 @@ export async function registerRecruiter(formData: FormData) {
 
         if (recruiterError) {
             logSafeError("recruiter-create", recruiterError);
+            if (recruiterError.code === "23505") return { error: await authMessage("emailAlreadyRegistered") };
             await supabaseAdmin.auth.admin.deleteUser(data.user.id);
-            return { error: "Kunde inte skapa rekryterarprofil. Försök igen." };
+            return { error: await authMessage("recruiterProfileFailed") };
         }
 
         // Set the authoritative role in app_metadata (server-only, not user-writable).
@@ -358,7 +412,7 @@ export async function requestPasswordReset(formData: FormData) {
     // Throttle reset: 5/15min per email+IP, plus 20/15min per IP. These also
     // trigger outbound email, so keep the caps tight.
     if (await authRateLimited("password-reset", parsed.data.email, 5, 20)) {
-        return { error: RATE_LIMITED_MESSAGE };
+        return { error: await authMessage("tooManyAttempts") };
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
@@ -367,7 +421,7 @@ export async function requestPasswordReset(formData: FormData) {
 
     if (error) {
         logSafeError("password-reset", error);
-        return { error: "Kunde inte skicka återställningslänk just nu" };
+        return { error: await authMessage("passwordResetFailed") };
     }
 
     return { success: true };

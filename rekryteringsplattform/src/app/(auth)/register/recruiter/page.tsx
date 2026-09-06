@@ -117,11 +117,11 @@ export default function RegisterRecruiterPage() {
                 </div>
               )}
 
-              <form action={handleSubmit} className="space-y-5">
+              <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(new FormData(e.currentTarget)); }} className="space-y-5">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="md:col-span-2">
                     <label className="mb-1.5 block text-sm font-medium">Full Name</label>
-                    <Input name="full_name" placeholder="Jane Doe" required />
+                    <Input name="full_name" placeholder="Jane Doe" required minLength={2} maxLength={100} />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium">Email</label>
@@ -129,7 +129,7 @@ export default function RegisterRecruiterPage() {
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium">Password</label>
-                    <Input type="password" name="password" placeholder={t("auth.passwordMinPlaceholder")} required />
+                    <Input type="password" name="password" placeholder={t("auth.passwordMinPlaceholder")} required minLength={10} />
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium">Current Country</label>
