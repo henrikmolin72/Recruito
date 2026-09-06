@@ -89,7 +89,6 @@ Set all of these for the **Production** environment. `[SECRET]` = never expose /
 | Var | Type | Notes |
 |-----|------|-------|
 | `ANTHROPIC_MODEL` | public | defaults to `claude-sonnet-4-6` |
-| `PREVIEW_TOKEN` | SECRET-ish | "coming soon" gate. Use ≥32-char random. **Remove/rotate at GA.** Leave unset to disable the gate. |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | mixed | observability; SDK no-ops if unset |
 | `SENTRY_ORG` / `SENTRY_PROJECT` | public | build-time |
 | `SENTRY_AUTH_TOKEN` | **SECRET** | source-map upload at build only |
@@ -158,7 +157,7 @@ Both verify the `CRON_SECRET` bearer token. After first deploy:
 
 ## 7. Post-deploy smoke checks
 
-- [ ] Load the prod URL — landing page renders (or `PREVIEW_TOKEN` gate if still enabled)
+- [ ] Load the prod URL — landing page renders
 - [ ] Register a test company → email confirmation arrives → login works
 - [ ] Recruiter signup → `INTERNAL_REVIEW_EMAIL` receives the notice
 - [ ] Upload a CV → served via signed URL (not a 403 — confirms storage policy intact)
@@ -178,5 +177,5 @@ Both verify the `CRON_SECRET` bearer token. After first deploy:
 ## Security reminders (from the 2026-06-21 audit)
 
 - `SUPABASE_SERVICE_ROLE_KEY` and `VERCEL_OIDC_TOKEN` grant full RLS-bypass. They sit in plaintext in gitignored `.env.local` / `.vercel/.env.production.local` on dev machines — treat local-disk exposure as a real risk. Never commit them.
-- Rotate/strengthen `PREVIEW_TOKEN` (currently low-entropy) or remove the gate entirely at GA.
+- `PREVIEW_TOKEN` is dead since 2026-09-06 (coming-soon gate deleted at GA) — remove it from Vercel env.
 - No secret is exposed via any `NEXT_PUBLIC_` prefix — keep it that way.
