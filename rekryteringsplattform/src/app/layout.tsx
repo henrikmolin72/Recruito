@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ["latin"] });
 export async function generateMetadata(): Promise<Metadata> {
   const dict = await getDictionary();
   return {
-    title: `Recruito — ${dict.landing.heroTitleLine2}`,
+    title: `Recruito — ${dict.landing.heroTitleLine1} ${dict.landing.heroTitleLine2}`,
     description: dict.landing.heroDescription,
     manifest: "/manifest.webmanifest",
     appleWebApp: {

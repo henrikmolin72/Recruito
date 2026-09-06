@@ -12,10 +12,13 @@ import {
   Users,
   CheckCircle,
   Shield,
-  TrendingDown,
+  ShieldCheck,
   Clock,
   Star,
-  Zap,
+  Search,
+  Wallet,
+  CircleDollarSign,
+  FileText,
   ArrowRight,
   Building2,
   UserCircle,
@@ -109,8 +112,8 @@ export default function LandingPage() {
             </span>
 
             <h1 className="mt-6 text-[clamp(2.2rem,4.5vw,3.6rem)] font-black leading-[1.08] tracking-tight text-slate-950">
-              {t("landing.heroTitleLine1")}{" "}
-              <span className="text-brand-600">{t("landing.heroTitleLine2")}</span>
+              <span className="block">{t("landing.heroTitleLine1")}</span>
+              <span className="block text-brand-600">{t("landing.heroTitleLine2")}</span>
             </h1>
 
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
@@ -154,8 +157,9 @@ export default function LandingPage() {
 
               {/* Trust signals */}
               <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
-                <span className="flex items-center gap-1.5"><CheckCircle className="h-4 w-4 text-success-500" />{t("landing.matchingText")}</span>
-                <span className="flex items-center gap-1.5"><Shield className="h-4 w-4 text-brand-500" />{t("landing.safetyText")}</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="h-4 w-4 text-success-500" />{t("landing.trustNoSubscription")}</span>
+                <span className="flex items-center gap-1.5"><Shield className="h-4 w-4 text-brand-500" />{t("landing.trustNoUpfront")}</span>
+                <span className="flex items-center gap-1.5"><CheckCircle className="h-4 w-4 text-success-500" />{t("landing.trustSuccessOnly")}</span>
               </div>
             </div>
 
@@ -164,7 +168,7 @@ export default function LandingPage() {
               <div className="pointer-events-none absolute -right-6 -top-6 h-40 w-40 rounded-full bg-brand-200/30 blur-3xl" />
               <div className="pointer-events-none absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-success-200/25 blur-3xl" />
               <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl shadow-slate-900/10">
-                <div className="aspect-[4/3]">
+                <div className="relative aspect-[4/3]">
                   <Image
                     src="/images/recruito-hero-team.png"
                     alt={t("landing.heroImageAlt")}
@@ -174,6 +178,18 @@ export default function LandingPage() {
                     className="h-full w-full object-cover object-center"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 via-transparent to-white/10" />
+                </div>
+                <div className="grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 bg-white">
+                  {[
+                    { icon: Users, label: t("landing.heroStripApproved") },
+                    { icon: Shield, label: t("landing.heroStripScreening") },
+                    { icon: CheckCircle, label: t("landing.heroStripPayOnSuccess") },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-2 px-3 py-3 text-xs font-medium text-slate-700">
+                      <item.icon className="h-4 w-4 shrink-0 text-brand-600" />
+                      {item.label}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -262,10 +278,10 @@ export default function LandingPage() {
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: TrendingDown, title: t("landing.benefit60Cheaper"), desc: t("landing.benefit60CheaperDesc") },
-              { icon: Users, title: t("landing.benefitParallel"), desc: t("landing.benefitParallelDesc") },
-              { icon: CheckCircle, title: t("landing.benefitPayOnSuccess"), desc: t("landing.benefitPayOnSuccessDesc") },
-              { icon: Shield, title: t("landing.benefitGuarantee"), desc: t("landing.benefitGuaranteeDesc") },
+              { icon: Users, title: t("landing.companyBenefit1Title"), desc: t("landing.companyBenefit1Desc") },
+              { icon: Wallet, title: t("landing.companyBenefit2Title"), desc: t("landing.companyBenefit2Desc") },
+              { icon: Search, title: t("landing.companyBenefit3Title"), desc: t("landing.companyBenefit3Desc") },
+              { icon: ShieldCheck, title: t("landing.companyBenefit4Title"), desc: t("landing.companyBenefit4Desc") },
             ].map((benefit) => (
               <div key={benefit.title} className="text-center p-6">
                 <benefit.icon className="h-8 w-8 text-brand-600 mx-auto mb-3" />
@@ -286,10 +302,10 @@ export default function LandingPage() {
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: Zap, title: t("landing.benefitMoreJobs"), desc: t("landing.benefitMoreJobsDesc") },
-              { icon: Star, title: t("landing.benefit75Percent"), desc: t("landing.benefit75PercentDesc") },
-              { icon: Clock, title: t("landing.benefitWorkFree"), desc: t("landing.benefitWorkFreeDesc") },
-              { icon: TrendingDown, title: t("landing.benefitBuildReputation"), desc: t("landing.benefitBuildReputationDesc") },
+              { icon: Star, title: t("landing.recruiterBenefit1Title"), desc: t("landing.recruiterBenefit1Desc") },
+              { icon: CircleDollarSign, title: t("landing.recruiterBenefit2Title"), desc: t("landing.recruiterBenefit2Desc") },
+              { icon: Clock, title: t("landing.recruiterBenefit3Title"), desc: t("landing.recruiterBenefit3Desc") },
+              { icon: FileText, title: t("landing.recruiterBenefit4Title"), desc: t("landing.recruiterBenefit4Desc") },
             ].map((benefit) => (
               <div key={benefit.title} className="text-center p-6">
                 <benefit.icon className="h-8 w-8 text-success-500 mx-auto mb-3" />
@@ -305,18 +321,15 @@ export default function LandingPage() {
       <section id="pricing" className="py-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold mb-3">{t("landing.ctaTitle")}</h2>
+            <h2 className="text-3xl font-bold mb-3">{t("landing.demoSectionTitle")}</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              {t("landing.ctaSubtitle")}
+              {t("landing.demoSectionSubtitle")}
             </p>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1.05fr_1.35fr]">
             <Card className="p-6 lg:p-8 border-slate-200 shadow-sm">
               <div className="space-y-5">
-                <div className="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-brand-700">
-                  {t("landing.demoStartBadge")}
-                </div>
                 <div>
                   <h3 className="text-2xl font-black tracking-tight text-slate-900">
                     {t("landing.demoStartTitle")}
@@ -369,8 +382,9 @@ export default function LandingPage() {
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/35 via-transparent to-transparent" />
-                  <div className="absolute bottom-3 left-3 rounded-lg bg-white/95 px-3 py-2 text-xs font-semibold text-slate-900 shadow">
-                    Recruiter dashboard workflow
+                  <div className="absolute inset-x-3 bottom-3 rounded-lg bg-white/95 px-3 py-2 text-xs text-slate-900 shadow">
+                    <p className="font-semibold">{t("landing.demoCard1Title")}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-600">{t("landing.demoCard1Desc")}</p>
                   </div>
                 </div>
               </Card>
@@ -384,8 +398,9 @@ export default function LandingPage() {
                     className="object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-br from-brand-600/15 via-transparent to-success-500/15" />
-                  <div className="absolute inset-x-3 bottom-3 rounded-lg bg-white/95 px-3 py-2 text-xs font-semibold text-slate-900 shadow">
-                    Company overview &amp; candidate flow visibility
+                  <div className="absolute inset-x-3 bottom-3 rounded-lg bg-white/95 px-3 py-2 text-xs text-slate-900 shadow">
+                    <p className="font-semibold">{t("landing.demoCard2Title")}</p>
+                    <p className="mt-0.5 text-[11px] text-slate-600">{t("landing.demoCard2Desc")}</p>
                   </div>
                 </div>
               </Card>
@@ -408,13 +423,10 @@ export default function LandingPage() {
                   ) : (
                     <div className="relative h-full rounded-2xl border border-white/10 bg-black/20 backdrop-blur-sm flex flex-col items-center justify-center text-center px-6">
                       <PlayCircle className="h-14 w-14 text-white/90 mb-3" />
-                      <p className="text-white text-lg font-semibold">Demo video (YouTube)</p>
+                      <p className="text-white text-lg font-semibold">{t("landing.demoVideoTitle")}</p>
                       <p className="mt-2 text-sm text-slate-300 max-w-xl">
-                        Placeholder for the product demo. Add your YouTube video here to showcase onboarding, candidate work, and the client flowchart view.
+                        {t("landing.demoVideoDesc")}
                       </p>
-                      <div className="mt-4 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-slate-200">
-                        Set `NEXT_PUBLIC_LANDING_DEMO_YOUTUBE_URL` in the environment
-                      </div>
                     </div>
                   )}
                 </div>
@@ -434,7 +446,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register/company">
               <Button size="lg" className="w-full sm:w-auto bg-white text-brand-600 hover:bg-brand-50 gap-2">
-                {t("auth.registerCompanyButton")} <ArrowRight className="h-4 w-4" />
+                {t("landing.ctaPostJob")} <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <Link href="/register/recruiter">
