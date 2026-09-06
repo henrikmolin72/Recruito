@@ -297,3 +297,9 @@ STILL PENDING (Henrik): browser-verify on local stack; merge to main; apply migr
 
 ## 2026-09-06
 - `728e4c4` fix(client): calculator step 500, fee rounding, presence pill, signup data-loss + localized auth errors — branch `fix/client-final-points-2026-09-06` → main (fast-forward). See [[2026-36]].
+
+## 2026-09-06
+- 457d64d chore(deps): bump @tiptap/* 3.22.3→3.31.3, sanitize-html 2.17.7, browserslist 4.28.9 — npm audit 0
+
+## 2026-09-06 (deps)
+- `457d64d` chore(deps): @tiptap/* 3.31.3, sanitize-html 2.17.7, browserslist 4.28.9, npm audit 0 — branch `chore/dependency-bumps-2026-09-06` → main (fast-forward). See [[2026-36]].
