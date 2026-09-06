@@ -190,3 +190,110 @@ notable lines into a dated milestone summary periodically, then trim.
 - 5b78b8c feat(recruiter): auto-flag duplicate candidates on email/LinkedIn blur
 - 15e53a5 test(candidates): pin cross-recruiter same-job duplicate block
 - cd88b63 docs(plan): duplicate-flagging auto-check implementation plan
+
+## 2026-08-03
+- 3ad56b0 fix(compliance): make published EU AI Act claims true in code
+
+## 2026-08-12
+- b139be2 test(screening): adversarial integration test — real functions vs crafted malicious CVs
+- 7e0c828 harden(screening): INJECTION_CHECK marker tolerates a trailing reason
+- 90d3736 docs(plan): CV prompt-injection defense implementation plan
+- 91c0b2b docs(decisions): ADR + work-log for CV prompt-injection defense
+- b64f726 feat(screening): surface injection flag to admin + recruiter (never company)
+- f79151d feat(screening): report renderer strips links and images
+- 074de98 feat(screening): injection flag blocks auto-score, persisted + audited
+- 4f51016 feat(db): candidate_screenings.injection_flagged (migration 072)
+- 118d0f8 feat(screening): client-report prompt treats inputs as data, not instructions
+- f1c4566 feat(screening): declare CV untrusted in eval prompt + INJECTION_CHECK marker
+- e605026 feat(screening): deterministic injection scan for .txt CVs
+- d015fbc feat(screening): parse INJECTION_CHECK marker (last-match-wins)
+- 9b0ecf2 fix(screening): FINAL_MATCH_SCORE parse is last-match-wins — an echoed injected marker can no longer set the score
+
+## 2026-08-19
+- 7f2b64d chore(lint): ignore transient supabase/.temp edge-runtime bundles
+- 2358489 docs(decisions+plan): timestamps/guarantee-rate ADR, week-34 log, implementation plan
+- 1cc5893 polish(dashboard): break-words on tile labels for long Nordic strings
+- aeb002b polish(dashboard): wrap tile labels; honest null fallbacks; restore hire-rate note
+- 0da0c29 feat(dashboard): recruiter overview merged into one card with equal tiles
+- 94332d8 test(metrics): viewed case exercises first-open path; fix guard comment
+- 00ae17d test(metrics): pin no-restamp guard with differential replay case
+- 633acb6 harden(metrics): no-op moves keep timestamps; tighter backfill; fn search_path
+- 82ebcb7 fix(metrics): guarantee rate counts refund_processing; refresh snapshots
+- 5e9e26f fix(metrics): company hires stamp hired_at; backfill from stage history
+- 788abf4 harden(form): timezone-safe interview-date bound + contact-method allowlist
+- 3bab633 fix(form): interview date cannot be in the future
+- f6bb609 fix(form): contact method limited to In Person and Video Call
+- c25c449 fix(ui): rename Date of First Contact to Interview Date
+
+## 2026-08-19
+- 19f0185 fix(guarantee): hydration mismatch in GuaranteeTimer — pinned-locale date + UTC day math
+- 33325ef chore(lint): ignore transient supabase/.temp edge-runtime bundles
+
+## 2026-08-27
+- 3ebf21c feat(pricing): multi-currency fees + exclusive rate, industry lock, hired congrats
+
+## 2026-08-27
+- c9447bb fix(admin): client fixes — invoice gating, figure-based recruiter fee, candidate tabs, hydration
+
+## 2026-08-28
+- 1820e4b feat(recruiter-reg): legal-eligibility confirmation + admin visibility
+
+## 2026-08-28
+- 5f81643 fix(security): close admin-role privilege escalation (C1+H1+H2)
+
+## 2026-08-28
+- 408f0e6 chore(security): sync lockfile to patched deps — npm audit 0 (H6)
+- aa3790a chore(security): untrack env.local.rtf* and ignore them (H5)
+
+## 2026-08-28
+- 81d8355 fix(security): lock down SECURITY DEFINER RPCs + over-permissive RLS (H3/H4/M7/M1/M3/M4)
+
+## 2026-08-28
+- 90903e1 fix(security): protect company billing PII from non-owners (M2)
+- 19509e7 fix(security): delete dead legacy /api/screen route + unused score card (M5)
+
+## 2026-08-28
+- 0ad1ed1 fix(security): low-severity hardening (L4/L7/L8/L9)
+
+## 2026-08-28
+- 77ad355 feat(dashboard): always show Active guarantees section with empty state
+
+## 2026-08-29
+- 3dcaac6 feat(pricing): guarantee-tiered recruiter fee 6/6.5/7% + round-to-10 + minimums
+
+## 2026-08-30
+- 423c29b fix(pricing): derive fee % columns from guarantee model, drop vestigial volume-tier
+
+## 2026-08-30
+- bb8bd4f feat(landing): add companies + recruiters positioning bands after hero
+
+## 2026-09-02
+- 8ab5d40 fix(recruiter): hydration error on Messages inbox date
+- 29228fc feat(client): 8 fixes from 2026-08-31 client review (images 310726)
+
+## 2026-09-04 — Client fixes bundle (6 images, branch feat/client-fixes-2026-09-04)
+
+Subagent-driven execution of `docs/superpowers/plans/2026-09-04-client-fixes-sept4.md`. 5 feature commits on top of `8ab5d40`:
+
+- `2754a50` fix(notif): drop client-only "45-day hiring timeline" sentence from the recruiter client-viewed notification (4 dicts).
+- `4bd9c9f` feat(calculator): +/- salary stepper; `stepSalary` (snap-to-grid + clamp, TDD); ISK step 100k→10k.
+- `d176256` feat(recruiter): salary-expectation note vs client max — pure `salaryExpectationLevel` (TDD, +10% boundary), amber ≤10% / red >10%, currency-matched, non-blocking; form currency defaults to job currency.
+- `7a1c43c` feat(admin): admin job-detail 5 tabs (pipeline/description/recruiters/announcements/AI compliance); shared pure `collapseMandateRows` extracted so company + admin Recruiters tabs can't drift; `getAdminJobById` embeds + `getAdminJobAnnouncements`; announcements `readOnly`. Code-review APPROVED (opus).
+- `9bc5e9f` feat(admin): recruiters/companies online counter + `/admin/presence` history; service-role-only `presence_sessions` (migration 080), pure `presence.ts` (TDD), 60s heartbeat in dashboard layout, admins never counted. Code-review APPROVED (opus). Decision note `Decisions/2026-09-04-presence-tracking.md`.
+
+Gate: `npm run build` OK (both new routes registered), `npm run lint` 0 errors (3 pre-existing warnings), `npm test` 544 passing (526 baseline + 18 new). tsc clean.
+
+STILL PENDING (Henrik): browser-verify on local stack; merge to main; apply migrations 078/079/080 to prod (in order); push (= Vercel prod deploy).
+
+## 2026-09-04
+- 6d22eb9 feat(admin): recruiters/companies online counter + /admin/presence history (migration 080)
+- 7a1c43c feat(admin): job detail tabs (pipeline/description/recruiters/announcements/AI compliance)
+- d176256 feat(recruiter): salary-expectation note vs client max (+10% allowed, above warns)
+- 4bd9c9f feat(calculator): +/- salary stepper (10 000 for SEK/NOK/DKK/ISK)
+- 2754a50 fix(notif): drop client-only 45-day sentence from recruiter client-viewed notification
+
+## 2026-09-06
+- 728e4c4 fix(client): calculator step 500, fee rounding, presence pill, signup data-loss + localized auth errors
+
+## 2026-09-06
+- `728e4c4` fix(client): calculator step 500, fee rounding, presence pill, signup data-loss + localized auth errors — branch `fix/client-final-points-2026-09-06` → main (fast-forward). See [[2026-36]].
