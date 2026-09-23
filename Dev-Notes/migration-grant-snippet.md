@@ -36,6 +36,8 @@ GRANT USAGE, SELECT ON SEQUENCE public.audit_log_id_seq TO service_role; -- only
 
 Since migration 081, default privileges are off for tables, sequences **and** functions. A new RPC needs `GRANT EXECUTE ON FUNCTION public.fn(args) TO authenticated;` (or `service_role`), and a serial id needs the sequence grant for whichever role inserts.
 
+**SECURITY DEFINER functions:** `REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated;` then grant only the role that should call it. Revoking only `PUBLIC` is not enough — the old Supabase defaults also granted anon/authenticated directly (prod hole fixed in 082).
+
 ## Migrations 000 / 081
 
 `000_legacy_default_privileges.sql` restores the old auto-grants **only** so 001–080 replay to prod-identical grants on `supabase db reset` / branches; `081` switches them off again. Don't add migrations that rely on defaults.
