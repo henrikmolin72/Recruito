@@ -44,7 +44,7 @@ Since `018` added `candidates.placement_id`, there are TWO FK paths between `pla
 The whole company-stage engine (updateCompanyStage → stage history) 500s on a
 fresh DB because these two columns were added ad hoc in prod and never migrated
 (the 2026-06-29 vault-sync drift finding). **FIXED 2026-07-08:** migration
-`066_add_company_stage_columns.sql` adds both with `IF NOT EXISTS` (no-op on prod).
+`065_add_company_stage_columns.sql` (swapped with the backfill 2026-09-23 so fresh replay works) adds both with `IF NOT EXISTS` (no-op on prod).
 
 ## Local e2e recipe (as used)
 

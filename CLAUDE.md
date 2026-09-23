@@ -105,7 +105,8 @@ Earned from recent incidents (see commits `071dee6`, `26cfb3f`, `8df1e7a`).
 **New `CREATE TABLE public.*` migrations need explicit `GRANT`**
 - From Oct 30, 2026 Supabase will stop auto-exposing new `public` tables to the Data API. Adding the grant earlier is harmless and avoids a flag-day cliff.
 - For app-facing tables: `GRANT SELECT, INSERT, UPDATE, DELETE ON public.<name> TO authenticated;` (add `anon` only if truly public).
-- For service-role-only tables (audit logs, admin internals): omit the grant — `createAdminClient()` still works.
+- For service-role-only tables (audit logs, admin internals): grant only `service_role` — it bypasses RLS but NOT grants.
+- Same for new functions (`GRANT EXECUTE`) and serial sequences. Default privileges are off from migration 081 (000 re-enables them only to replay 001–080).
 - See [Dev-Notes/migration-grant-snippet.md](Dev-Notes/migration-grant-snippet.md) and [Decisions/2026-05-27-supabase-public-grant-default.md](Decisions/2026-05-27-supabase-public-grant-default.md).
 
 ## 7. Knowledge layout

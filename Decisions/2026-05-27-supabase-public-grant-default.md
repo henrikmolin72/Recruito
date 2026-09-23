@@ -30,3 +30,11 @@ Project `CLAUDE.md` §6 has the operational reminder.
 ## Audit step before Oct 30
 
 Run **Security Advisor** in the Supabase dashboard. It surfaces tables currently exposed to the Data API. Confirm everything listed is intended to be reachable from the app — anything that should be admin-only / service-role-only can be locked down before the enforcement date.
+
+## Update 2026-09-23 — replay fix (migrations 000 + 081)
+
+Supabase's Oct-30 notice also covers `supabase db reset`, preview branches and new projects. 29 of our 32 tables (and most functions) are created without explicit grants, so a fresh replay would leave the app with `permission denied` everywhere (verified: service_role `GET /rest/v1/jobs` → 403).
+
+**Chose:** `000_legacy_default_privileges.sql` (re-enable old defaults for replay) + `081_end_legacy_default_privileges.sql` (turn them off). Replay grants are byte-identical to a pre-Oct-30 replay, and later REVOKEs (078 companies PII) still land in order.
+**Rejected:** backfilling GRANTs on all 29 tables — would silently re-grant what 078 revoked and needs per-table judgement.
+**Also corrected:** service_role does NOT bypass grants (see 080); snippet + CLAUDE.md said otherwise.

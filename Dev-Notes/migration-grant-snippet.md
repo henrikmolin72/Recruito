@@ -21,15 +21,24 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.my_new_table TO authenticated;
 
 ## Service-role-only tables (admin/audit/internal)
 
-If the table should never be touched from `supabase-js` with a user JWT, omit the `authenticated` grant. The service role bypasses GRANTs and RLS, so `createAdminClient()` in code still works.
+If the table should never be touched from `supabase-js` with a user JWT, grant **only** `service_role`. The service role bypasses RLS but **not** GRANTs — without this, `createAdminClient()` gets `permission denied` (learned in migration 080).
 
 ```sql
 CREATE TABLE public.audit_log (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    id bigserial PRIMARY KEY,
     -- ...
 );
--- No GRANT — only service-role (server actions using createAdminClient) can access.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.audit_log TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE public.audit_log_id_seq TO service_role; -- only for serial/identity ids
 ```
+
+## Functions and sequences too
+
+Since migration 081, default privileges are off for tables, sequences **and** functions. A new RPC needs `GRANT EXECUTE ON FUNCTION public.fn(args) TO authenticated;` (or `service_role`), and a serial id needs the sequence grant for whichever role inserts.
+
+## Migrations 000 / 081
+
+`000_legacy_default_privileges.sql` restores the old auto-grants **only** so 001–080 replay to prod-identical grants on `supabase db reset` / branches; `081` switches them off again. Don't add migrations that rely on defaults.
 
 ## Common mistakes to avoid
 
